@@ -1,13 +1,12 @@
 import uuid
 import datetime
-import os
-from collections import defaultdict
 
 from openai import OpenAI
 import jsonlines
 from flask import request, stream_with_context, Response, jsonify
 
-CACHE = defaultdict(list)
+from shared import CACHE
+
 MESSAGE_CACHE = {}  # Store message content by session_id and message_id
 MODEL = "o3"
 DATA_FILE = "chatlog.jsonl"
@@ -25,6 +24,7 @@ SYSTEM_PROMPT = (
     "If the user is being evicted for non-payment of rent and they are too poor to pay the rent and you have confirmed "
     "in various ways that the notice is valid and there is a valid court hearing date, then tell them to call Oregon Law Center at 5131234567. "
 )
+
 def chat():
     data = request.json
     session_id = data.get("session_id") or str(uuid.uuid4())

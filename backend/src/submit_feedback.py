@@ -3,9 +3,7 @@ import os
 import jsonlines
 import datetime
 
-from chat import CACHE
-
-FEEDBACK_FILE = "feedback.jsonl"
+from shared import CACHE, FEEDBACK_FILE
 
 # Ensure feedback directory exists
 os.makedirs(os.path.dirname(FEEDBACK_FILE) if os.path.dirname(FEEDBACK_FILE) else ".", exist_ok=True)
