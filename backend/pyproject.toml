@@ -8,4 +8,5 @@ dependencies = [
   "openai",
   "jsonlines",
   "ipdb>=0.13.13",
+  "python-dotenv"
 ]
