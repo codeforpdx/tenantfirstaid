@@ -11,10 +11,6 @@ dependencies = [
   "simplejson",
   "ipdb>=0.13.13",
   "python-dotenv",  
-]
-
-[project.optional-dependencies]
-dev = [
   "pytest",
 ]
 

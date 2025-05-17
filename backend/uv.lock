@@ -614,14 +614,10 @@ dependencies = [
     { name = "ipdb" },
     { name = "jsonlines" },
     { name = "openai" },
+    { name = "pytest" },
     { name = "python-dotenv" },
     { name = "simplejson" },
     { name = "valkey" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "pytest" },
 ]
 
 [package.metadata]
@@ -631,12 +627,11 @@ requires-dist = [
     { name = "ipdb", specifier = ">=0.13.13" },
     { name = "jsonlines" },
     { name = "openai" },
-    { name = "pytest", marker = "extra == 'dev'" },
+    { name = "pytest" },
     { name = "python-dotenv" },
     { name = "simplejson" },
     { name = "valkey" },
 ]
-provides-extras = ["dev"]
 
 [[package]]
 name = "tqdm"

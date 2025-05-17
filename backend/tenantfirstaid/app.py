@@ -7,6 +7,8 @@ if Path(".env").exists():
 
     load_dotenv(override=True)
 
+print("broken step", 1/0)
+
 from .chat import ChatView
 from .shared import CACHE
 from .submit_feedback import submit_feedback
@@ -14,12 +16,9 @@ from .get_feedback import get_feedback
 from .prompt import get_prompt, set_prompt
 from .session import TenantSession
 
-import blahblah 
-
 app = Flask(__name__)
 
 session = TenantSession()
-
 
 @app.get("/api/history/<session_id>")
 def history(session_id):
