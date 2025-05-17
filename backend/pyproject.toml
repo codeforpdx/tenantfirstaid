@@ -10,7 +10,12 @@ dependencies = [
   "jsonlines",
   "simplejson",
   "ipdb>=0.13.13",
-  "python-dotenv",
+  "python-dotenv",  
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
 ]
 
 [tool.setuptools.packages.find]
