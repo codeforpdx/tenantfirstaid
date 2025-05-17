@@ -18,7 +18,6 @@ app = Flask(__name__)
 
 session = TenantSession()
 
-
 @app.get("/api/history/<session_id>")
 def history(session_id):
     return jsonify(session.get(session_id))

@@ -11,7 +11,13 @@ dependencies = [
   "simplejson",
   "ipdb>=0.13.13",
   "python-dotenv",
+  "pytest"
 ]
 
 [tool.setuptools.packages.find]
+where = ["."]
 exclude = ["data*"]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
