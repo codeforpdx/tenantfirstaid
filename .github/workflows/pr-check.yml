@@ -23,5 +23,7 @@ jobs:
         run: uv sync --dev
 
       - name: Run tests
+        env:
+          PERSISTENT_STORAGE_DIR: /tmp/tenantfirstaid_data
         run: uv run pytest -v -s
 
