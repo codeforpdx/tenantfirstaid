@@ -7,8 +7,6 @@ if Path(".env").exists():
 
     load_dotenv(override=True)
 
-print("broken step", 1/0)
-
 from .chat import ChatView
 from .shared import CACHE
 from .submit_feedback import submit_feedback
