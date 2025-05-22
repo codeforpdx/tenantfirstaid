@@ -48,8 +48,14 @@ def upload_file():
         session = TenantSession()
         current_session = session.get(session_id)
         
+        # Determine document type
+        if extension.lower() in ['pdf']:
+            document_type = "PDF document"
+        else:
+            document_type = "image"
+            
         # Process the file with OpenAI Vision API
-        response = process_document(file_path, extension)
+        response = process_document(file_path, extension, document_type)
         
         # Update session with the document upload and AI response
         current_session.append({
@@ -62,6 +68,17 @@ def upload_file():
         })
         session.set(session_id, current_session)
         
+        # Store document context for future reference
+        document_context = {
+            "filename": unique_filename,
+            "original_filename": original_filename,
+            "document_type": document_type,
+            "extension": extension,
+            "upload_timestamp": str(uuid.uuid1()),  # Use UUID1 to get timestamp
+            "analysis_summary": response[:500] + "..." if len(response) > 500 else response
+        }
+        session.set_document_context(session_id, document_context)
+        
         return jsonify({
             "success": True,
             "filename": unique_filename,
@@ -71,7 +88,7 @@ def upload_file():
     
     return jsonify({"error": "File type not allowed"}), 400
 
-def process_document(file_path, extension):
+def process_document(file_path, extension, document_type):
     # Initialize OpenAI client
     client = OpenAI(
         api_key=os.getenv("OPENAI_API_KEY", os.getenv("GITHUB_API_KEY")),
@@ -81,12 +98,6 @@ def process_document(file_path, extension):
     # Encode the image to base64
     with open(file_path, "rb") as image_file:
         base64_image = base64.b64encode(image_file.read()).decode('utf-8')
-    
-    # Use different prompt based on file type
-    if extension.lower() in ['pdf']:
-        document_type = "PDF document"
-    else:
-        document_type = "image"
     
     # System prompt for document analysis
     vision_system_prompt = f"""You are a legal expert who gives advice about eviction notices in Oregon.
