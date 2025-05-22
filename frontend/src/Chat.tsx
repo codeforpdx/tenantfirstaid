@@ -32,7 +32,9 @@ export default function Chat() {
   const [feedbackOpen, setFeedbackOpen] = useState<string | null>(null);
   const [betterResponse, setBetterResponse] = useState("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const isOngoing = messages.length > 0;
 
@@ -124,6 +126,71 @@ export default function Chat() {
     localStorage.setItem("sessionId", newSessionId);
     setSessionId(newSessionId);
     setMessages([]);
+  };
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) return;
+    
+    setIsLoading(true);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('session_id', sessionId);
+    
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!res.ok) {
+        throw new Error(`Upload failed: ${res.status}`);
+      }
+      
+      const result = await res.json();
+      
+      // Add the result to the chat
+      setMessages((prev) => [
+        ...prev,
+        { 
+          role: "user", 
+          content: `I uploaded a document: ${file.name}`, 
+          messageId: Date.now().toString() 
+        },
+        { 
+          role: "assistant", 
+          content: result.response, 
+          messageId: (Date.now() + 1).toString(),
+          showFeedback: true 
+        },
+      ]);
+      
+      // Clear the file input
+      setFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      // Show error message
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Sorry, I encountered an error processing your document. Please try again.",
+          messageId: Date.now().toString(),
+          showFeedback: false,
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSend = async () => {
@@ -335,33 +402,64 @@ export default function Chat() {
           </div>
         </div>
         <div>
-          <div className="flex gap-2 mt-4 h-11 items-stretch">
-            <input
-              type="text"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault(); // prevent form submission or newline
-                  handleSend();
+          <div className="flex flex-col gap-2 mt-4">
+            <div className="flex gap-2 h-11 items-stretch">
+              <input
+                type="text"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault(); // prevent form submission or newline
+                    handleSend();
+                  }
+                }}
+                className="w-full p-3 border-1 border-[#ddd] rounded-md box-border transition-colors duration-300 focus:outline-0 focus:border-[#4a90e2] focus:shadow-[0_0_0_2px_rgba(74,144,226,0.2)]"
+                placeholder={
+                  feedbackSubmitted
+                    ? "Please refresh the page to start a new conversation"
+                    : "Type your message here..."
                 }
-              }}
-              className="w-full p-3 border-1 border-[#ddd] rounded-md box-border transition-colors duration-300 focus:outline-0 focus:border-[#4a90e2] focus:shadow-[0_0_0_2px_rgba(74,144,226,0.2)]"
-              placeholder={
-                feedbackSubmitted
-                  ? "Please refresh the page to start a new conversation"
-                  : "Type your message here..."
-              }
-              disabled={isLoading || feedbackSubmitted}
-              ref={inputRef}
-            />
-            <button
-              className="px-6 bg-[#4a90e2] hover:bg-[#3a7bc8] text-white rounded-md cursor-pointer transition-color duration-300"
-              onClick={handleSend}
-              disabled={isLoading || !text.trim() || feedbackSubmitted}
-            >
-              {isLoading ? "..." : "Send"}
-            </button>
+                disabled={isLoading || feedbackSubmitted}
+                ref={inputRef}
+              />
+              <button
+                className="px-6 bg-[#4a90e2] hover:bg-[#3a7bc8] text-white rounded-md cursor-pointer transition-color duration-300"
+                onClick={handleSend}
+                disabled={isLoading || !text.trim() || feedbackSubmitted}
+              >
+                {isLoading ? "..." : "Send"}
+              </button>
+            </div>
+            <div className="flex gap-2 mt-2">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*,.pdf"
+                className="hidden"
+                disabled={isLoading || feedbackSubmitted}
+              />
+              <button
+                className="px-4 py-2 bg-[#4a90e2] hover:bg-[#3a7bc8] text-white rounded-md cursor-pointer transition-color duration-300 text-sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading || feedbackSubmitted}
+              >
+                Select Document
+              </button>
+              {file && (
+                <div className="flex gap-2 items-center">
+                  <span className="text-sm truncate max-w-[200px]">{file.name}</span>
+                  <button
+                    className="px-4 py-2 bg-[#4a90e2] hover:bg-[#3a7bc8] text-white rounded-md cursor-pointer transition-color duration-300 text-sm"
+                    onClick={handleUpload}
+                    disabled={isLoading || feedbackSubmitted}
+                  >
+                    Upload & Analyze
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex justify-center mt-4">
             <button

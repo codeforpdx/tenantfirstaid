@@ -39,3 +39,23 @@ class TenantSession:
 
     def set(self, session_id, value):
         self.db_con.set(session_id, json.dumps(value))
+        
+    def get_document_context(self, session_id):
+        """
+        Retrieve document context for a session if it exists.
+        This contains metadata about documents that have been uploaded and analyzed.
+        """
+        key = f"{session_id}_document_context"
+        context = self.db_con.get(key)
+        return json.loads(context) if context else None
+        
+    def set_document_context(self, session_id, document_data):
+        """
+        Store document context for a session.
+        
+        Args:
+            session_id: The session identifier
+            document_data: Dictionary containing document metadata and analysis
+        """
+        key = f"{session_id}_document_context"
+        self.db_con.set(key, json.dumps(document_data))

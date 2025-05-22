@@ -13,6 +13,7 @@ from .submit_feedback import submit_feedback
 from .get_feedback import get_feedback
 from .prompt import get_prompt, set_prompt
 from .session import TenantSession
+from .upload import upload_file
 
 app = Flask(__name__)
 
@@ -33,6 +34,9 @@ app.add_url_rule(
 )
 app.add_url_rule(
     "/api/prompt", endpoint="prompt_post", view_func=set_prompt, methods=["POST"]
+)
+app.add_url_rule(
+    "/api/upload", view_func=upload_file, methods=["POST"]
 )
 
 if __name__ == "__main__":
