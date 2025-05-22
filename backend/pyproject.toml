@@ -11,7 +11,9 @@ dependencies = [
   "simplejson",
   "ipdb>=0.13.13",
   "python-dotenv",
-  "pytest"
+  "pytest",
+  "Werkzeug",
+  "Pillow"
 ]
 
 [tool.setuptools.packages.find]
