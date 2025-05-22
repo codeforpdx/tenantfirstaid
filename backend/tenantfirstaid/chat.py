@@ -97,7 +97,8 @@ class ChatView(View):
 
     def _get_enhanced_instructions(self, session_id):
         """
-        Enhance the system prompt with document context if available.
+        Enhance the system prompt with a reminder about document uploads if available.
+        The document analysis itself is already in the chat history.
         """
         # Start with the base system prompt
         base_instructions = SYSTEM_PROMPT["prompt"]
@@ -107,12 +108,11 @@ class ChatView(View):
         if not document_context:
             return base_instructions
             
-        # Enhance the prompt with document context
+        # Add a simple reminder without including user content in the system prompt
         doc_info = (
-            f"\n\nThe user has previously uploaded a {document_context['document_type']} "
-            f"named '{document_context['original_filename']}'. "
-            f"The analysis of this document revealed: {document_context['analysis_summary']}\n\n"
-            f"Please incorporate this context when responding to questions about eviction notices, "
+            f"\n\nThe user has previously uploaded a document. "
+            f"The document analysis is already included in the conversation history. "
+            f"Please refer to it when answering questions about eviction notices, "
             f"legal documents, or tenant rights. The user may be referring to this document in their questions."
         )
         

@@ -58,24 +58,30 @@ def upload_file():
         response = process_document(file_path, extension, document_type)
         
         # Update session with the document upload and AI response
+        # Use a clearer message to make the document upload more explicit in the chat history
         current_session.append({
             "role": "user", 
             "content": f"I uploaded a document: {original_filename}"
         })
+        
+        # Add a preamble to the assistant response to make it clear this is document analysis
+        response_with_context = f"**Document Analysis**\n\nI've analyzed the {document_type} you uploaded ({original_filename}). Here's what I found:\n\n{response}"
         current_session.append({
             "role": "assistant", 
-            "content": response
+            "content": response_with_context
         })
         session.set(session_id, current_session)
         
         # Store document context for future reference
+        # We're not using the analysis_summary in the system prompt anymore,
+        # but we'll keep it in the document context for potential future use
         document_context = {
             "filename": unique_filename,
             "original_filename": original_filename,
             "document_type": document_type,
             "extension": extension,
             "upload_timestamp": str(uuid.uuid1()),  # Use UUID1 to get timestamp
-            "analysis_summary": response[:500] + "..." if len(response) > 500 else response
+            "analysis_summary": "Document analysis is in the conversation history"
         }
         session.set_document_context(session_id, document_context)
         
@@ -83,7 +89,7 @@ def upload_file():
             "success": True,
             "filename": unique_filename,
             "original_filename": original_filename,
-            "response": response
+            "response": response_with_context
         })
     
     return jsonify({"error": "File type not allowed"}), 400
