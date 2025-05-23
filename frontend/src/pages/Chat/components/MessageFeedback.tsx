@@ -1,21 +1,21 @@
 import { useState } from "react";
 import { IMessage } from "../../../Chat";
+import useSession from "../../../hooks/useSession";
 
 interface Props {
   message: IMessage;
   setMessages: React.Dispatch<React.SetStateAction<IMessage[]>>;
-  sessionId: string;
   setFeedbackSubmitted: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export default function MessageFeedback({
   message,
   setMessages,
-  sessionId,
   setFeedbackSubmitted,
 }: Props) {
   const [feedbackOpen, setFeedbackOpen] = useState<string | null>(null);
   const [betterResponse, setBetterResponse] = useState("");
+  const { sessionId } = useSession();
 
   const handleFeedback = async (_messageId: string, betterText: string) => {
     if (!betterText.trim()) return;

@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { IMessage } from "../../../Chat";
+import useSession from "../../../hooks/useSession";
 
 interface Props {
   setMessages: React.Dispatch<React.SetStateAction<IMessage[]>>;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   isLoading: boolean;
   feedbackSubmitted: boolean;
-  sessionId: string;
   inputRef: React.RefObject<HTMLInputElement | null>;
 }
 
@@ -15,10 +15,10 @@ export default function InputField({
   isLoading,
   setIsLoading,
   feedbackSubmitted,
-  sessionId,
   inputRef,
 }: Props) {
   const [text, setText] = useState("");
+  const { sessionId } = useSession();
 
   const handleSend = async () => {
     // If feedback was submitted, disable further interaction

@@ -3,7 +3,7 @@ import { IMessage } from "../../../Chat";
 import InputField from "./InputField";
 import MessageContent from "./MessageContent";
 import MessageFeedback from "./MessageFeedback";
-import generateSessionId from "../utils/sessionHelper";
+import useSession from "../../../hooks/useSession";
 
 interface Props {
   messages: IMessage[];
@@ -17,7 +17,7 @@ export default function MessageWindow({
   isOngoing,
 }: Props) {
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState<string>("");
+  const { setSessionId, handleNewSession } = useSession();
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
@@ -61,19 +61,15 @@ export default function MessageWindow({
 
     const cachedSessionId = localStorage.getItem("sessionId");
     if (cachedSessionId === null) {
-      const newSessionId = generateSessionId();
-      localStorage.setItem("sessionId", newSessionId);
-      setSessionId(newSessionId);
+      handleNewSession();
     } else {
       setSessionId(cachedSessionId);
       fetchChatHistory(cachedSessionId);
     }
-  }, [setMessages]);
+  }, [setMessages, setSessionId, handleNewSession]);
 
-  const handleClearSession = async () => {
-    const newSessionId = generateSessionId();
-    localStorage.setItem("sessionId", newSessionId);
-    setSessionId(newSessionId);
+  const handleClearSession = () => {
+    handleNewSession();
     setMessages([]);
   };
 
@@ -125,7 +121,6 @@ export default function MessageWindow({
                       <MessageFeedback
                         message={message}
                         setMessages={setMessages}
-                        sessionId={sessionId}
                         setFeedbackSubmitted={setFeedbackSubmitted}
                       />
                     )}
@@ -146,7 +141,6 @@ export default function MessageWindow({
           isLoading={isLoading}
           setIsLoading={setIsLoading}
           feedbackSubmitted={feedbackSubmitted}
-          sessionId={sessionId}
           inputRef={inputRef}
         />
         <div className="flex justify-center mt-4">
