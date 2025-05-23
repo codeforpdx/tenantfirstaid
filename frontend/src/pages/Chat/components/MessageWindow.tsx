@@ -103,25 +103,33 @@ export default function MessageWindow({
           ref={messagesRef}
         >
           {isOngoing ? (
-            <div className="messages">
+            <div className="flex flex-col gap-4">
               {messages.map((message) => (
                 <div
-                  key={message.messageId}
-                  className={`message ${
+                  className={`flex w-full ${
                     message.role === "assistant"
-                      ? "bot-message"
-                      : "user-message"
+                      ? "justify-start"
+                      : "justify-end"
                   }`}
+                  key={message.messageId}
                 >
-                  <MessageContent message={message} isLoading={isLoading} />
-                  {message.role === "assistant" && message.showFeedback && (
-                    <MessageFeedback
-                      message={message}
-                      setMessages={setMessages}
-                      sessionId={sessionId}
-                      setFeedbackSubmitted={setFeedbackSubmitted}
-                    />
-                  )}
+                  <div
+                    className={`p-3 rounded-2xl max-w-[95%] ${
+                      message.role === "assistant"
+                        ? "bg-gray-100 rounded-tl-sm"
+                        : "bg-[#4a90e2] text-white rounded-tr-sm"
+                    }`}
+                  >
+                    <MessageContent message={message} isLoading={isLoading} />
+                    {message.role === "assistant" && message.showFeedback && (
+                      <MessageFeedback
+                        message={message}
+                        setMessages={setMessages}
+                        sessionId={sessionId}
+                        setFeedbackSubmitted={setFeedbackSubmitted}
+                      />
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
