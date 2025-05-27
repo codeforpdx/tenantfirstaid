@@ -13,7 +13,6 @@ if Path(".env").exists():
 DATA_DIR = Path(os.getenv("PERSISTENT_STORAGE_DIR", "/root/tenantfirstaid_data"))
 DATA_DIR.mkdir(exist_ok=True)
 
-FEEDBACK_FILE = DATA_DIR / "feedback.jsonl"
 
 DEFAULT_INSTRUCTIONS = """Pretend you're a legal expert who giving advice about eviction notices in Oregon. 
 Please give shorter answers. 

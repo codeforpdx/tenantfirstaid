@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { IMessage } from "../../../Chat";
 import InputField from "./InputField";
 import MessageContent from "./MessageContent";
-import MessageFeedback from "./MessageFeedback";
 import useSession from "../../../hooks/useSession";
 
 interface Props {
@@ -18,7 +17,6 @@ export default function MessageWindow({
 }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const { setSessionId, handleNewSession } = useSession();
-  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
 
@@ -121,13 +119,6 @@ export default function MessageWindow({
                     }`}
                   >
                     <MessageContent message={message} isLoading={isLoading} />
-                    {message.role === "assistant" && message.showFeedback && (
-                      <MessageFeedback
-                        message={message}
-                        setMessages={setMessages}
-                        setFeedbackSubmitted={setFeedbackSubmitted}
-                      />
-                    )}
                   </div>
                 </div>
               ))}
@@ -144,7 +135,6 @@ export default function MessageWindow({
           setMessages={setMessages}
           isLoading={isLoading}
           setIsLoading={setIsLoading}
-          feedbackSubmitted={feedbackSubmitted}
           inputRef={inputRef}
         />
         <div className="flex justify-center mt-4">

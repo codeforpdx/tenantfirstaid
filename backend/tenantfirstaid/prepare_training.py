@@ -12,41 +12,36 @@ from .shared import SYSTEM_PROMPT
 # Define file paths (relative to the script location)
 SCRIPT_DIR = Path(__file__).parent.parent  # Go up one level to backend directory
 DATA_FILE = SCRIPT_DIR / "chatlog.jsonl"
-FEEDBACK_FILE = SCRIPT_DIR / "feedback.jsonl"
 OUTPUT_FILE = SCRIPT_DIR / f"combined_training_{MODEL.replace('.', '_')}.jsonl"
 
 
 def prepare_training_data():
     """
-    Combine and process training data from chatlog.jsonl and feedback.jsonl
-    to create a clean combined_training.jsonl file suitable for model training.
+    Process training data from chatlog.jsonl to create a clean combined_training.jsonl 
+    file suitable for model training.
 
     This script fixes several issues with the data format:
     1. Removes the 'metadata' field from each entry (causing API errors)
     2. Ensures each conversation includes the system prompt
     3. Organizes messages by session to create proper conversation flows
-    4. Handles feedback examples correctly
-    5. Uses a sliding window approach to create multiple training examples from each conversation
+    4. Uses a sliding window approach to create multiple training examples from each conversation
        at different points, which helps the model learn to respond appropriately at various stages
 
     The approach:
-    - For regular conversations: [system, assistant, user, assistant, user, assistant, ...]
+    - For conversations: [system, assistant, user, assistant, user, assistant, ...]
       - Creates the full conversation example
       - Plus intermediate examples ending with assistant responses:
         1. [system, assistant, user, assistant]
         2. [system, assistant, user, assistant, user, assistant]
         3. And so on
-    - For feedback examples, we always include the full conversation to ensure the corrected
-      assistant response is properly included
     - This helps the model learn to respond appropriately at different
-      points in a conversation while ensuring feedback is fully preserved
+      points in a conversation
 
     Returns:
         Path: The path to the generated training file
     """
     print(f"Preparing training data...")
     print(f"- Data file: {DATA_FILE}")
-    print(f"- Feedback file: {FEEDBACK_FILE}")
     print(f"- Output file: {OUTPUT_FILE}")
 
     # List to collect all processed training examples
@@ -79,65 +74,9 @@ def prepare_training_data():
     else:
         print(f"Warning: {DATA_FILE} not found")
 
-    # Process feedback data
-    separate_feedback_examples = []
-    feedback_session_ids = set()  # Track which sessions came from feedback
-
-    if os.path.exists(FEEDBACK_FILE):
-        print(f"Reading feedback data from {FEEDBACK_FILE}")
-        with jsonlines.open(FEEDBACK_FILE, mode="r") as inf:
-            for item in inf:
-                if "messages" in item:
-                    # Feedback examples often contain complete conversations already
-                    # Just need to ensure they have a system message
-                    if item["messages"] and item["messages"][0]["role"] != "system":
-                        item["messages"].insert(
-                            0, {"role": "system", "content": SYSTEM_PROMPT}
-                        )
-
-                    # For feedback examples, create sliding window examples
-                    # just like for regular conversations
-                    messages = item["messages"]
-
-                    if len(messages) >= 3:  # system + user + assistant
-                        # Create sliding window examples with proper user/assistant pairs
-                        user_indices = []
-                        for i, msg in enumerate(messages):
-                            if msg["role"] == "user":
-                                user_indices.append(i)
-
-                        # For each user message, create a training example that ends
-                        # with that user message and the assistant's response
-                        for idx in user_indices:
-                            # Only create example if there's an assistant response after this user message
-                            if (
-                                idx < len(messages) - 1
-                                and messages[idx + 1]["role"] == "assistant"
-                            ):
-                                # Create a window up to and including this user message + assistant response
-                                window = messages[
-                                    : idx + 2
-                                ]  # Include user message and assistant response
-                                separate_feedback_examples.append({"messages": window})
-
-                    # If this feedback has a session_id, track it and update the session data
-                    if "metadata" in item and "session_id" in item["metadata"]:
-                        session_id = item["metadata"]["session_id"]
-                        feedback_session_ids.add(
-                            session_id
-                        )  # Mark this session as coming from feedback
-
-                        if session_id in sessions:
-                            # Replace the session with the corrected conversation but we won't process it again
-                            sessions[session_id] = item["messages"]
-    else:
-        print(f"Warning: {FEEDBACK_FILE} not found")
 
     # Convert sessions to training examples using sliding window approach
     for session_id, messages in sessions.items():
-        # Skip sessions that came from feedback to avoid duplication
-        if session_id in feedback_session_ids:
-            continue
 
         # Only use examples with at least one exchange
         if len(messages) >= 3:  # system + user + assistant
@@ -164,8 +103,6 @@ def prepare_training_data():
             if not added_full:
                 processed_examples.append({"messages": messages})
 
-    # Add separate feedback examples (with normal weighting)
-    processed_examples.extend(separate_feedback_examples)
 
     # Write the processed data to the output file
     print(f"Writing {len(processed_examples)} examples to {OUTPUT_FILE}")
@@ -182,5 +119,5 @@ if __name__ == "__main__":
     print(f"\nSuccess! Your training file is ready at:\n{output_file}")
     print("\nTo use this file for training, run:")
     print(
-        f"openai fine-tuning create -t {output_file} -m {MODEL} --suffix law_chat_with_feedback"
+        f"openai fine-tuning create -t {output_file} -m {MODEL} --suffix law_chat"
     )
