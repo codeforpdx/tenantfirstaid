@@ -29,7 +29,7 @@ export default function PromptEditor() {
   }, []);
   const handleUnauthorized = () => {
     localStorage.removeItem("password");
-    navigate("/feedback", { replace: true });
+    navigate("/", { replace: true });
   };
 
   /** Handlers */

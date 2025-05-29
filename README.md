@@ -38,4 +38,4 @@ On DO, we:
 
 ## Additional features
 
-go to the routes `/feedback` and `/prompt` for extra features. You will need to provide the password defined in your `.env` file.
+go to the route `/prompt` for extra features. You will need to provide the password defined in your `.env` file.

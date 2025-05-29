@@ -1,6 +1,6 @@
 # Persistent Data Storage
 
-The application now stores persistent data (chatlog.jsonl and feedback.jsonl) in a dedicated directory:
+The application now stores persistent data (chatlog.jsonl) in a dedicated directory:
 
 ```
 /root/tenantfirstaid_data/
@@ -15,10 +15,6 @@ The following files are stored persistently:
 1. **Chat Logs**: `/root/tenantfirstaid_data/chatlog.jsonl`
    - Contains all chat interactions for training and analysis
    - Automatically appended to after each conversation
-
-2. **Feedback**: `/root/tenantfirstaid_data/feedback.jsonl`
-   - Contains user feedback on responses
-   - Used for improving the model and analyzing performance
 
 ## Benefits
 
@@ -35,4 +31,4 @@ Periodically back up the `/root/tenantfirstaid_data/` directory to prevent data 
 tar -czf /root/tenantfirstaid_backups/data_backup_$(date +%Y%m%d).tar.gz /root/tenantfirstaid_data/
 ```
 
-This change ensures that valuable conversation and feedback data is preserved even when the application code is updated or the server is redeployed.
+This change ensures that valuable conversation data is preserved even when the application code is updated or the server is redeployed.
