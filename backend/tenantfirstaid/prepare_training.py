@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-import json
 import jsonlines
 import os
-import sys
 from pathlib import Path
 
 # Import the model from app.py
 from .chat import MODEL
-from .shared import SYSTEM_PROMPT
+from .shared import DEFAULT_INSTRUCTIONS
 
 # Define file paths (relative to the script location)
 SCRIPT_DIR = Path(__file__).parent.parent  # Go up one level to backend directory
@@ -44,7 +42,7 @@ def prepare_training_data():
     Returns:
         Path: The path to the generated training file
     """
-    print(f"Preparing training data...")
+    print("Preparing training data...")
     print(f"- Data file: {DATA_FILE}")
     print(f"- Feedback file: {FEEDBACK_FILE}")
     print(f"- Output file: {OUTPUT_FILE}")
@@ -70,7 +68,7 @@ def prepare_training_data():
                     # Initialize session with system prompt if needed
                     if session_id not in sessions:
                         sessions[session_id] = [
-                            {"role": "system", "content": SYSTEM_PROMPT}
+                            {"role": "system", "content": DEFAULT_INSTRUCTIONS}
                         ]
 
                     # Add the user and assistant messages
@@ -92,7 +90,7 @@ def prepare_training_data():
                     # Just need to ensure they have a system message
                     if item["messages"] and item["messages"][0]["role"] != "system":
                         item["messages"].insert(
-                            0, {"role": "system", "content": SYSTEM_PROMPT}
+                            0, {"role": "system", "content": DEFAULT_INSTRUCTIONS}
                         )
 
                     # For feedback examples, create sliding window examples

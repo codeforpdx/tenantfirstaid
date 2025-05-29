@@ -14,6 +14,7 @@ Live at https://tenantfirstaid.com/
 1. `cd backend`
 1. `docker-compose up` (use `-d` if you want to run this in the background, otherwise open a new terminal)
 1. `uv sync`
+1. If you have not uploaded the Oregon Housing Law documents to a vector store in OpenAI, run `uv run scripts/create_vector_store.py` and follow the instructions to add the vector store ID to your `.env`.
 1. `uv run python -m tenantfirstaid.app`
 1. Open a new terminal / tab
 1. `cd ../frontend`
@@ -38,4 +39,4 @@ On DO, we:
 
 ## Additional features
 
-go to the routes `/feedback` and `/prompt` for extra features. You will need to provide the password defined in your `.env` file.
+go to the route `/feedback` for extra features. You will need to provide the password defined in your `.env` file.
