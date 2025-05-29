@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 export default function PromptEditor() {
   const [prompt, setPrompt] = useState<string>("");
@@ -7,7 +7,6 @@ export default function PromptEditor() {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [error, setError] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
-  const navigate = useNavigate();
 
   /** Fetch current prompt immediately after mount */
   useEffect(() => {
@@ -27,10 +26,6 @@ export default function PromptEditor() {
       }
     })();
   }, []);
-  const handleUnauthorized = () => {
-    localStorage.removeItem("password");
-    navigate("/", { replace: true });
-  };
 
   /** Handlers */
   const startEditing = () => !loading && setIsEditing(true);
@@ -45,13 +40,8 @@ export default function PromptEditor() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: editValue,
-          password: localStorage.getItem("password"),
         }),
       });
-      if (res.status === 401) {
-        handleUnauthorized();
-        return;
-      }
       if (!res.ok) throw new Error();
       const data = (await res.json()) as { prompt: string };
       setPrompt(data.prompt);
@@ -68,9 +58,8 @@ export default function PromptEditor() {
       const res = await fetch("/api/prompt?default=true", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: localStorage.getItem("password") }),
+        body: JSON.stringify({}),
       });
-      if (res.status === 401) return handleUnauthorized();
       if (!res.ok) throw new Error();
       const data = (await res.json()) as { prompt: string };
       setPrompt(data.prompt);

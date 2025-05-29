@@ -1,6 +1,6 @@
 from flask import jsonify, request
 
-from .shared import SYSTEM_PROMPT, PASSWORD, DEFAULT_PROMPT
+from .shared import SYSTEM_PROMPT, DEFAULT_PROMPT
 
 
 def get_prompt():
@@ -8,11 +8,6 @@ def get_prompt():
 
 
 def set_prompt():
-    data = request.json
-    password = data.get("password")
-    if password != PASSWORD:
-        return jsonify({"error": "unauthorized"}), 401
-
     if request.args.get("default", "false").lower() == "true":
         SYSTEM_PROMPT["prompt"] = DEFAULT_PROMPT
         return jsonify(SYSTEM_PROMPT), 200
