@@ -1,4 +1,7 @@
 '''
+
+# This commented code is a script that writes the sections.json file from the statute in our prompt text.
+
 import json
 import pathlib
 import re
