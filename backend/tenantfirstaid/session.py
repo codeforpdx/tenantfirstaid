@@ -5,11 +5,14 @@ import simplejson as json
 
 class TenantSession:
     def __init__(self):
-        print("Connecting to Valkey:", {
-            "host": os.getenv("DB_HOST"),
-            "port": os.getenv("DB_PORT"),
-            "ssl": os.getenv("DB_USE_SSL"),
-        })
+        print(
+            "Connecting to Valkey:",
+            {
+                "host": os.getenv("DB_HOST"),
+                "port": os.getenv("DB_PORT"),
+                "ssl": os.getenv("DB_USE_SSL"),
+            },
+        )
         try:
             self.db_con = Valkey(
                 host=os.getenv("DB_HOST", "127.0.0.1"),
@@ -23,18 +26,6 @@ class TenantSession:
             print(e)
 
     def get(self, session_id):
-        from flask import current_app
-        current_app.logger.info(f"""self.db_con: {self.db_con} \n 
-{os.getenv("DB_HOST")} 
-{os.getenv("DB_PORT")} 
-{os.getenv("DB_USE_SSL")
-        }""")
-        print(f"""self.db_con: {self.db_con} \n 
-{os.getenv("DB_HOST")} 
-{os.getenv("DB_PORT")} 
-{os.getenv("DB_USE_SSL")
-        }""")
-        print("self.db_con", self.db_con)
         return json.loads(self.db_con.get(session_id) or "[]")
 
     def set(self, session_id, value):

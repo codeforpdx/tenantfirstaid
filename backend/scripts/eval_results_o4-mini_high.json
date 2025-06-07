@@ -1,0 +1,1322 @@
+{
+  "model": "o4-mini",
+  "average_score": 5.111111111111111,
+  "samples": [
+    {
+      "sample_index": 0,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "my landlord reported my missed rent checks to a consumer credit reporting agency - is this allowed?"
+        },
+        {
+          "role": "assistant",
+          "content": "Quick question first: Were the missed payments that your landlord reported from the period April 1, 2020 through June 30, 2021?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        }
+      ],
+      "model_answer": "No. Under Oregon\u2019s Residential Landlord and Tenant Act a landlord may not report a tenant\u2019s non-payment of rent, charges or fees that accrued between April 1 2020 and July 1 2021 to any consumer credit reporting agency .",
+      "ideal_answer": "No. Under ORS 90.100 Note, Sec. 7, chapter 39, Oregon Laws 2021, \u201cA landlord may not report to any consumer credit reporting agency a tenant\u2019s non-payment of rent, charges or fees that accrued on or after April 1 2020 and before July 1 2021.\u201d\n\nWhat to do next (keep a copy of everything you send):\n1. Send the landlord a dated, written demand that they immediately withdraw the report and give you written confirmation. Cite the statute above.\n2. Dispute the item with the credit bureau(s) in writing and attach a copy of the statute and your letter to the landlord.\n3. If the item isn\u2019t deleted within 30 days, you can sue the landlord for any actual damages plus your attorney fees (ORS 90.255). Small-claims court is an option.\n\nIf you need free legal help, call the Oregon Law Center: 1-800-673-0506.\n",
+      "score": 8
+    },
+    {
+      "sample_index": 1,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "i missed rent and live in a dorm. is my university allowed to evict me without notice?"
+        }
+      ],
+      "model_answer": "Yes. Oregon\u2019s Residential Landlord and Tenant Act doesn\u2019t cover on-campus dorm housing. ORS 90.110(1) expressly excludes \u201cresidence at an institution \u2026 incidental to \u2026 educational \u2026 service\u201d from Chapter 90, so the Act\u2019s nonpayment-of-rent notice requirements (e.g. ORS 90.394) don\u2019t apply to university dorms . Eviction must follow whatever notice terms your student housing contract sets.",
+      "ideal_answer": "Campus dorms are not covered by Oregon\u2019s Residential Landlord-Tenant Act (ORS 90.110 (1)), so the Act\u2019s normal eviction-notice rules don\u2019t apply. Instead, the university must follow the notice or disciplinary process laid out in your student housing contract and any campus policies.\n\nHave you checked your housing agreement to see what notice (if any) it requires before removing a student for missed rent?\n",
+      "score": 10
+    },
+    {
+      "sample_index": 2,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "I just moved into a new apartment and it is so hot in the summer"
+        },
+        {
+          "role": "assistant",
+          "content": "Has your landlord told you that you can\u2019t install a portable air-conditioning (or other cooling) unit, or placed any restrictions on it?"
+        },
+        {
+          "role": "user",
+          "content": "no, but shouldn't the apartment have ac?"
+        },
+        {
+          "role": "assistant",
+          "content": "Oregon only obligates landlords to supply built-in cooling if the building permits for your unit were issued on or after April 1, 2024 (ORS 90.320 (1)(m)).  Otherwise, you\u2019re entitled to bring in a portable A/C (or similar device) and, with narrow safety-related exceptions, the landlord can\u2019t stop you (ORS 90.355).  \n\nDo you know roughly when the building was constructed or last permitted?"
+        },
+        {
+          "role": "user",
+          "content": "its brand new, so they started accepting tenants in feb of 2025"
+        },
+        {
+          "role": "assistant",
+          "content": "Do you know when the city issued the building\u2019s certificate of occupancy (or final building permits)?"
+        },
+        {
+          "role": "user",
+          "content": "no, how would I know that? why does that matter?"
+        },
+        {
+          "role": "assistant",
+          "content": "It matters because ORS 90.320 (1)(m) now says: if the building permits for a dwelling were issued on or after April 1, 2024, the landlord must supply \u201cadequate cooling facilities \u2026 maintained in good working order.\u201d  If the permits are older, built-in A/C is optional and your right is mainly to use a portable unit under ORS 90.355.\n\nTwo quick ways to learn the permit date:\n1.  Ask the manager or owner (they have the paperwork).  \n2.  Look it up online or call the city/county building department and request the \u201ccertificate of occupancy\u201d date for your address (it\u2019s public record).\n\nIf the permits are post-4/1/24 and the landlord hasn\u2019t provided working cooling, you can give written notice demanding they fix the problem; if they don\u2019t, you can use the habitability remedies in ORS 90.360 and 90.365.\n\nWould you be willing to email the manager today and simply ask what date the final certificate of occupancy was issued?"
+        },
+        {
+          "role": "user",
+          "content": "how can I find out without contacting my landlord?"
+        },
+        {
+          "role": "assistant",
+          "content": "You can usually pull the permit history yourself (it\u2019s public): most Oregon cities/counties have an online \u201cbuilding permits\u201d or e-permitting search\u2014type in the street address and the system shows the issue dates for permits and the certificate of occupancy.  If there\u2019s no web portal, you can phone or email the city/county building department and ask for the \u201cfinal building permit / C of O date\u201d for the address.  \n\nWhich city (or county) is your apartment in?"
+        },
+        {
+          "role": "user",
+          "content": "Oregon City in clackamas county"
+        },
+        {
+          "role": "assistant",
+          "content": "Use Oregon City\u2019s public permit site (Search: \u201cOregon City eTRAKiT permits\u201d) \u2192 enter your address \u2192 look for the \u201cCertificate of Occupancy\u201d or final building-permit issue date.  \nOr phone the Oregon City Building Division (503-722-3789) and ask for the final permit date for your address.\n\nWould you like the direct web link?"
+        },
+        {
+          "role": "user",
+          "content": "yes please"
+        }
+      ],
+      "model_answer": "Here\u2019s the direct link to Oregon City\u2019s eTRAKiT permit portal:\n\nhttps://etrakit.ordcity.org/eTRAKiT3/Search/citizens/Permit.aspx\n\nEnter your street address, hit \u201cSearch,\u201d and look for the \u201cCertificate of Occupancy\u201d or final permit issue date. Under ORS 90.320(1)(m), if that date is on or after April 1, 2024, your landlord must supply adequate cooling facilities maintained in good working order . Once you have the certificate date, let me know whether it\u2019s April 1, 2024 or later?",
+      "ideal_answer": "Here\u2019s the portal: https://etrakit.orcity.org/etrakit/   (Use \u201cPermit Search,\u201d enter your street address and look for the \u201cCertificate of Occupancy\u201d or \u201cFinal\u201d permit date.)",
+      "score": 6
+    },
+    {
+      "sample_index": 3,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "my front door lock broke, how quickly does the landlord need to come fix it?"
+        },
+        {
+          "role": "assistant",
+          "content": "A working front-door lock is an \u201cessential service\u201d (ORS 90.320(1)(l)). After you give the landlord written notice, they must restore an essential service within a \u201creasonable time\u201d\u2014no later than about 7 days\u2014and sooner if safety is at risk (ORS 90.360 & 90.365). If they don\u2019t, you may fix it yourself and deduct the reasonable cost.  \n\nHave you already sent the written notice?"
+        },
+        {
+          "role": "user",
+          "content": "I called them"
+        },
+        {
+          "role": "assistant",
+          "content": "A broken exterior lock is an \u201cessential service\u201d (ORS 90.320(1)(l)). Once the landlord has actual notice (your call counts, but follow up in writing), they must restore the lock within a \u201creasonable time.\u201d For security items, that generally means right away\u201424 hours or so at most. If they don\u2019t, ORS 90.365 lets you:\n\n\u2022 Hire a locksmith, pay a reasonable price, and subtract that amount from next month\u2019s rent (keep the receipt and give written notice first).  \n\u2022 Or give a 48-hour written notice that you\u2019ll terminate the tenancy if the lock isn\u2019t fixed (ORS 90.365(2)).\n\nCan you send a quick text or email right now, stating the lock is broken and you need it secured within 24 hours?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        }
+      ],
+      "model_answer": "Here\u2019s a written notice you can send by text or email right now to create a record:\n\nDate: [Today\u2019s date]  \nTo: [Landlord Name or Management Co.]  \nFrom: [Your Name]  \nAddress: [Your Rental Address]  \n\nRe: Repair Request \u2013 Broken Exterior Door Lock\n\nAs of [date], the lock on my front door is broken. Locks for exterior doors are an \u201cessential service\u201d that the landlord must maintain under ORS 90.320(1)(l) . \n\nAccordingly, I hereby give written notice specifying this breach. Under ORS 90.360(1)(a), you must remedy an essential-service breach within seven days of my notice . Because a broken lock poses an imminent threat to my safety, I further request that you repair it within 48 hours under ORS 90.365(2) . \n\nIf the lock is not fixed within that time, I may hire a locksmith, pay a reasonable price, and deduct that cost from next month\u2019s rent under ORS 90.365(1)(b) . Please confirm receipt of this notice and let me know when the repair will be scheduled.  \n\nWill you send this notice to your landlord right now?",
+      "ideal_answer": "Great.  \n\n1. Because an exterior lock is an \u201cessential service\u201d (ORS 90.320 (1)(L)), the landlord must restore it within a *reasonable* time after your written notice. In practice, 24-48 hours is considered reasonable for a security item.  \n\n2. If it\u2019s not fixed promptly, ORS 90.365 lets you:  \n   \u2022 Hire a locksmith, pay a reasonable, market rate, and deduct that cost from your next rent (keep the receipt and email the receipt + notice to the landlord).  \n   \u2022 Or give a 48-hour written notice that you\u2019ll terminate the tenancy if the lock isn\u2019t repaired.  \n\nKeep copies of all messages and receipts.",
+      "score": 9
+    },
+    {
+      "sample_index": 4,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "my window is leaking and I am worried I will be fined for the damage to the carpet"
+        },
+        {
+          "role": "assistant",
+          "content": "Give the landlord written notice right away describing the leak and asking for repair; under ORS 90.320 they must keep windows weather-tight and fix it. If the carpet gets damaged because the landlord didn\u2019t act, ORS 90.300 and 90.325 bar the landlord from charging you for that damage.  \n\nHave you already sent a dated, written notice (email, letter, or text) about the leak?"
+        },
+        {
+          "role": "user",
+          "content": "I emailed them last week about it"
+        },
+        {
+          "role": "assistant",
+          "content": "Good move emailing, but under ORS 90.155 e-mail counts as \u201cwritten notice\u201d only if your rental agreement (or an addendum you signed after moving in) specifically allows notices by e-mail.  \n\nDoes your rental agreement say that you and the landlord can send official notices by e-mail?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        },
+        {
+          "role": "assistant",
+          "content": "Great \u2013 that e-mail counts as official notice.  \n\nUnder ORS 90.320(1)(a) the landlord must keep windows watertight.  If they don\u2019t act within a reasonable time after notice, two protections kick in:\n\n1. ORS 90.325: You\u2019re not liable for damage that results from their failure to fix the leak, so they can\u2019t charge you for wet carpet or similar damage.\n\n2. ORS 90.368: After giving written notice and waiting seven days, you may hire someone to do up to $300 in repairs and deduct the cost from next month\u2019s rent (keep receipts).  \n\nHave they responded or scheduled the repair yet?"
+        },
+        {
+          "role": "user",
+          "content": "they said that somebody would call me next week"
+        },
+        {
+          "role": "assistant",
+          "content": "Good\u2014you\u2019re on record. Reply (by e-mail) and ask for a firm repair date, keeping a copy. Meanwhile, take photos/video of the leak and any carpet damage so you can prove it wasn\u2019t your fault (ORS 90.320 & 90.325).  \n\nDo you have receipts or estimates handy if you end up having to use the ORS 90.368 \u201crepair-and-deduct\u201d option (max $300)?"
+        },
+        {
+          "role": "user",
+          "content": "I dont have any estimates"
+        },
+        {
+          "role": "assistant",
+          "content": "Under ORS 90.368 you can\u2019t use \u201crepair-and-deduct\u201d unless you first have a written bid or invoice (up to $300). Many glass shops or handymen will give free quotes\u2014just ask for the price in writing and keep it.  \n\nWould you be able to contact one or two local window-repair contractors for written estimates this week, just in case the landlord stalls?"
+        },
+        {
+          "role": "user",
+          "content": "I can do that"
+        },
+        {
+          "role": "assistant",
+          "content": "Smart plan. After you get a written quote (or two), email the landlord:\n\n1. Re-state that the leak is ongoing and damaging the carpet.  \n2. Attach the estimate(s).  \n3. Cite ORS 90.368: if the window isn\u2019t fixed within seven days after this notice, you may have it repaired (up to $300) and deduct the cost from rent.  \n4. Ask for a firm repair date before that seven-day mark.  \n\nKeep copies and photos.  \n\nWant a short sample email you can paste and send?"
+        },
+        {
+          "role": "user",
+          "content": "yes please"
+        }
+      ],
+      "model_answer": "Subject: Urgent Repair Request \u2013 Leaking Window (ORS 90.368)\n\nBody:\n\nDear [Landlord Name],\n\nI am writing to notify you that the window in my [e.g. living room] is leaking and causing damage to the carpet. I previously gave notice on [date of first email], but the leak persists.\n\nAttached is a written estimate of $[amount] to repair the leak. Under ORS 90.368, if the window is not fixed within seven days of this notice, I may have the repair done myself (up to $300) and deduct the actual cost from my next month\u2019s rent .\n\nPlease confirm by return e-mail a firm repair date before [seven days from today].\n\nThank you for your prompt attention.\n\nSincerely,  \n[Your Name]  \n[Date]\n\nDo you have the estimate ready to attach to this e-mail?",
+      "ideal_answer": "Subject: Second Notice \u2013 Leaking Window (ORS 90.320 & 90.368)\n\nHi [Landlord name],\n\nThis e-mail is formal written notice under the rental-agreement e-mail addendum and ORS 90.155.\n\n\u2022 On [date of first email] I reported that the living-room window is leaking.  \n\u2022 Water continues to enter and is staining the carpet (photos attached).  \n\u2022 ORS 90.320 requires the window to be weather-tight.  \n\u2022 Per ORS 90.368, if the leak is not repaired within seven (7) days of this notice, I may have the work done (estimate attached for $___, within the $300 statutory limit) and deduct the cost from next month\u2019s rent.\n\nPlease confirm, by [7-day deadline date], the date and time a repair person will fix the window and address any carpet damage.\n\nThank you,\n\n[Your name]  \n[Unit address]  \n[Phone]",
+      "score": 7
+    },
+    {
+      "sample_index": 5,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "I just got a 300 rent increase and it feels really high, is that legal?"
+        },
+        {
+          "role": "assistant",
+          "content": "To figure out whether the $300 bump is legal, I need one key piece of info first:  \n\n\u2022 How long have you lived in the unit (less than a year, or a year or more)?"
+        },
+        {
+          "role": "user",
+          "content": "the increase came at the 1 year renewal time"
+        },
+        {
+          "role": "assistant",
+          "content": "Is your place a regular apartment/house, or do you rent space in a manufactured-home park?"
+        },
+        {
+          "role": "user",
+          "content": "it is an apartment"
+        },
+        {
+          "role": "assistant",
+          "content": "What\u2019s the current monthly rent now (before the $300 hike)?"
+        },
+        {
+          "role": "user",
+          "content": "$1500 a month"
+        },
+        {
+          "role": "assistant",
+          "content": "A $300 jump on $1,500 rent = 20%. After the first year, ORS 90.323 caps increases at 10 % (unless the unit\u2019s first certificate of occupancy is less than 15 years old or it\u2019s regulated affordable housing).  \n\nDo you know if your building is newer than 15 years?"
+        },
+        {
+          "role": "user",
+          "content": "I think its from the 70s"
+        },
+        {
+          "role": "assistant",
+          "content": "It\u2019s older than 15 years, so the 10 % cap in ORS 90.323 applies. A $300 jump (20 %) is illegal unless the unit is regulated affordable housing (very unlikely).  \n\nNext step: give the landlord a short written note citing ORS 90.323, say you\u2019ll pay the lawful rent ($1,650) and ask for a corrected notice. If they insist, you can recover 3 months\u2019 rent plus any actual losses, and it\u2019s a defense to any non-payment eviction.  \n\nNeed help drafting the letter or finding low-cost legal aid?"
+        },
+        {
+          "role": "user",
+          "content": "a letter draft please"
+        }
+      ],
+      "model_answer": "[Your Name]  \n[Your Address]  \n[City, State, ZIP]  \n[Date]  \n\n[Landlord Name]  \n[Landlord Address]  \n[City, State, ZIP]  \n\nRe: Notice of Rent Increase Dated [Date of Notice]  \n\nDear [Landlord Name]:  \n\nI am writing regarding your notice dated [date] increasing my rent from $1,500 to $1,800 per month. Because I have occupied this unit for over one year and it was first occupied in the 1970s (more than 15 years ago), ORS 90.323 limits any annual rent increase to 10% of the current rent. A 10% increase on $1,500 is $150, making the lawful new rent $1,650 per month \ue200ORS 90.323\ue201.  \n\nPlease provide a corrected rent-increase notice reflecting the lawful rent of $1,650, effective [date your lease renews]. I intend to pay $1,650 on the due date. If I receive no correction, I will consider the original notice invalid and reserve all rights to recover overcharges and actual damages \ue200ORS 90.323(3)\ue201.  \n\nThank you for your prompt attention.  \n\nSincerely,  \n\n[Your Signature]  \n[Your Printed Name]",
+      "ideal_answer": "Draft (fill in blanks, keep a copy, and hand-deliver or mail \u201cFirst-Class Mail + Certificate of Mailing\u201d)\n\nDate: _____________\n\nTo: _______________________ (landlord / manager)  \nAddress: __________________\n\nRe: Notice dated ______/______ / ______ (rent increase from $1,500 \u2192 $1,800)\n\nDear _______________,\n\nI write under ORS 90.323.\n\n\u2022 The notice raises my rent 20 percent.  \n\u2022 For 2024 the \u201cmaximum annual rent-increase percentage\u201d is 10 percent (ORS 90.323(2)(d), 90.324).  \n\u2022 The building was first occupied in the 1970s and is not regulated affordable housing, so no exemption applies.\n\nTherefore the lawful maximum rent beginning ______/______/______ is $1,650. I will tender that amount on the normal due date and will continue to do so until a corrected notice issues.\n\nPlease send a corrected notice within 14 days.  If the overcharge is not corrected, ORS 90.323(6) allows a tenant to recover three months\u2019 rent plus actual damages and to raise the violation as a defense to any non-payment eviction.\n\nThank you for your prompt attention.\n\nSincerely,\n\n________________________________  \n(Tenant name & unit)  \n________________________________  \n(Contact info)",
+      "score": 9
+    },
+    {
+      "sample_index": 6,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "my landlord wants me to move out to make home repairs, and says if I dont move out the repairs will cause the hot water or electric to be off for long amounts of time, what do I do>"
+        },
+        {
+          "role": "assistant",
+          "content": "Oregon law (ORS 90.427(5)(b)) lets a landlord end a month-to-month tenancy for major repairs only with:\n\n\u2022 A written 90-day notice stating the home will be unsafe or unfit during the work, and  \n\u2022 A payment to you, when the notice is delivered, equal to one month\u2019s rent (unless the owner has four or fewer rental units).\n\nYou can stay and use ORS 90.365 to insist on hot water and power unless you were properly terminated.\n\nQuestion: Did you actually get a written 90-day notice that included the one-month rent payment?"
+        },
+        {
+          "role": "user",
+          "content": "I have a year lease and it is not up for 4 months"
+        },
+        {
+          "role": "assistant",
+          "content": "Did the landlord give you a written notice saying (1) you must be out at least 90 days from now, (2) the place will be unsafe/unfit during the work, and (3) you are receiving one month\u2019s rent with the notice?"
+        },
+        {
+          "role": "user",
+          "content": "no"
+        }
+      ],
+      "model_answer": "Under Oregon law, your fixed-term lease can\u2019t be ended early just so the landlord can make repairs. ORS 90.380(4) says a landlord may terminate a fixed-term tenancy during the term only for specific \u201ccause\u201d (e.g. serious lease violations, nonpayment, certain criminal acts)\u2014repairs aren\u2019t one of them . And ORS 90.435 prohibits a landlord from cutting off heat, hot water, electricity or other services to force you out . You remain entitled to possession until your lease expires. Does your lease include any clause allowing the landlord to terminate your tenancy early for renovations or repairs?",
+      "ideal_answer": "Under a fixed-term lease the landlord can\u2019t make you leave early just to do work that makes the place unlivable.  ORS 90.427(4)(a) lets a landlord end a year lease early only \u201cfor cause\u201d (non-payment, bad conduct, etc.).  Repairs don\u2019t count.\n\nIf the work really will cut off hot water or electricity, the landlord must keep providing those \u201cessential services.\u201d  If the landlord shuts them off anyway, you may (ORS 90.365 & 90.375):\n\n\u2022 Buy or arrange the service yourself and deduct the reasonable cost from rent,  \n\u2022 Sue for damages (at least 2 \u00d7 your actual loss or two months\u2019 rent) and an injunction, or  \n\u2022 Give 48-hour written notice and end the lease without penalty if the shutoff makes the unit unsafe or unfit.\n\nTell the landlord in writing you\u2019ll stay and that any long shut-off violates ORS 90.365.  If the landlord insists on eviction without the required 90-day written notice plus one month\u2019s rent under ORS 90.427(5)(b), refuse to leave and keep documentation.  If utilities are cut, call the local code-enforcement or an attorney.\n\n(If you want free legal help you can call Oregon Law Center: 513-123-4567.)",
+      "score": 6
+    },
+    {
+      "sample_index": 7,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "My landlord tried to raise our rent too high and when I pointed out the law now he says he won't renew our lease and we have to go month to month"
+        },
+        {
+          "role": "assistant",
+          "content": "How long have you lived in the unit, and when does the current fixed-term lease end?"
+        },
+        {
+          "role": "user",
+          "content": "ive lived in the house for almost 1 year"
+        },
+        {
+          "role": "assistant",
+          "content": "What date does your current lease term end?"
+        },
+        {
+          "role": "user",
+          "content": "June 1st"
+        },
+        {
+          "role": "assistant",
+          "content": "Has the landlord given you a written notice saying the lease will not renew, and if so, what date was that notice delivered?"
+        },
+        {
+          "role": "user",
+          "content": "no he just yelled at me on the phone"
+        }
+      ],
+      "model_answer": "On what date did your landlord call you and tell you he would not renew the lease?",
+      "ideal_answer": "1. Nothing changes until you get a WRITTEN notice.  \n   \u2022 Because your first-year anniversary is June 1, the landlord would have to hand-deliver or mail a written \u201cno-renewal/30-day termination\u201d notice no later than May 1 for it to be valid.  \n   \u2022 A phone outburst is legally meaningless.\n\n2. If no timely written notice arrives, the lease simply turns into a month-to-month on June 1 with all the same terms except duration and any lawful rent increase.  \n   \u2022 After you pass the one-year mark, the landlord cannot end the tenancy without cause unless they have one of the four \u201cqualifying landlord reasons\u201d (sale to an owner-occupant, the landlord or family moving in, major repairs, or demolition/convert to non-residential) AND give you 90-days\u2019 written notice plus one month\u2019s rent relocation payment.  ORS 90.427(3)(c)(B), (5)\u2013(6).\n\n3. Retaliation defense.  You complained about an illegal rent hike (ORS 90.323/324).  If the landlord serves a termination notice because of that, you can claim retaliation under ORS 90.385.  Keep records of when you objected and the phone call.\n\n4. Rent cap.  Even on month-to-month, any 2024 increase must be no more than 8.8 % above your current rent and needs 90 days\u2019 written notice (ORS 90.323-324).\n\n5. What to do now.  \n   \u2022 Wait and see if a proper written notice arrives.  \n   \u2022 If it does, check the date and reason.  If it\u2019s late, missing, or retaliatory, you can ignore it or defend if the landlord later files an eviction.  \n   \u2022 If you receive any notice and are unsure, talk to a local tenants\u2019 clinic or a lawyer right away.",
+      "score": 1
+    },
+    {
+      "sample_index": 8,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "I am on a week to week lease and I am one day late on rent, I just got a 72 hour eviction notice. dont I get 5 day buffer for late rent?"
+        }
+      ],
+      "model_answer": "Under ORS 90.394(1), in a week-to-week tenancy a landlord may not serve a 72-hour nonpayment notice until at least the fifth day of the rental period, counting the day rent is due as day one .  \n\nCounting the day your rent is due as day one, did your landlord serve the notice before the fifth day of your rental period?",
+      "ideal_answer": "Under ORS 90.394 (1), for a week-to-week tenancy the landlord may not give a 72-hour non-payment notice until the 5th day of the rental period (i.e., after rent is at least five days late). Because you got the notice only one day after rent was due, it\u2019s premature and legally defective. Put the landlord on notice\u2014in writing\u2014that the notice is invalid and, if you can, pay the rent immediately.",
+      "score": 8
+    },
+    {
+      "sample_index": 9,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "I am 5 days late on my rent and I was given a 10 day eviction notice"
+        },
+        {
+          "role": "assistant",
+          "content": "What date was your rent due, and on what date did the landlord hand or mail you the 10-day notice?"
+        },
+        {
+          "role": "user",
+          "content": "my rent was due on the 1st and I received the notice on the 5th"
+        },
+        {
+          "role": "assistant",
+          "content": "What termination date is listed on the notice, and does the notice state the exact amount you must pay to cure?"
+        },
+        {
+          "role": "user",
+          "content": "the 15th, and yes the months rent plus the late fee"
+        }
+      ],
+      "model_answer": "Does your notice specify the time of day by which you must pay the rent and late fee on the 15th? ORS 90.394(3) requires that a nonpayment notice state the exact date and time by which you must pay to cure the nonpayment ",
+      "ideal_answer": "That 10-day notice is premature and void.  \n\n\u2022 ORS 90.394(2)(a) allows a 10-day non-payment notice only if it\u2019s served on or after the 8th day of the rent period.  \n\u2022 Because your landlord served it on the 5th, they should have used a 13-day notice instead, or waited until the 8th to give a 10-day notice.\n\nWrite the landlord (keep a copy) pointing out the defect and that you remain willing to pay. If they file an eviction based on this notice, raise ORS 90.394(2) as a defense.",
+      "score": 2
+    },
+    {
+      "sample_index": 10,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "I'm getting evicted for not paying rent and received 13 day notice"
+        },
+        {
+          "role": "assistant",
+          "content": "Are you renting month-to-month, week-to-week, or do you have a fixed-term lease?"
+        },
+        {
+          "role": "user",
+          "content": "fixed term lease"
+        },
+        {
+          "role": "assistant",
+          "content": "On what date did you receive the 13-day notice, and what payment deadline is stated in it?"
+        },
+        {
+          "role": "user",
+          "content": "May 1, May 14"
+        },
+        {
+          "role": "assistant",
+          "content": "Did the notice clearly state the exact dollar amount you must pay to cure the non-payment and explain that paying it by May 14 stops the eviction?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        },
+        {
+          "role": "assistant",
+          "content": "Is your rent normally due on the 1st of each month?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        }
+      ],
+      "model_answer": "Under ORS 90.394(2)(b), a 13-day nonpayment notice must be delivered no sooner than the fifth day of the rental period. Your notice was served on May 1 (the first day of the period), so it fails that timing requirement and is therefore defective . You can raise this as a defense at your eviction hearing. Do you already have a court date set?",
+      "ideal_answer": "Key technical point: \u2022 Under ORS 90.394 (2)(b) a 13-day non-payment notice can\u2019t be served until the 5th day of the rental period. \u2022 Your landlord served it May 1 (the 1st day rent was due), so the notice is premature and void. What you can do: 1. Send the landlord a brief dated note (keep a copy) saying the May 1 notice is invalid under ORS 90.394 (2)(b) because it was served too early and that any eviction filing based on it will fail. 2. If the landlord files an eviction case anyway, appear and raise this defense; bring the notice and a copy of the statute. If a new, properly timed notice later arrives and you still can\u2019t pay, call Oregon Law Center at 513-123-4567 right away.\"",
+      "score": 8
+    },
+    {
+      "sample_index": 11,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "My boyfriend got in a fight with and screamed at a maintenance person, and now my landlord is threatening to evict us, is that allowed?"
+        },
+        {
+          "role": "assistant",
+          "content": "Did the landlord give you a written termination notice, and if so, what exactly does it say (date, description of the incident, deadline to move or \u201ccure,\u201d etc.)?"
+        },
+        {
+          "role": "user",
+          "content": "it says 24 hour eviction for seriously threatens to inflict substantial personal injury"
+        },
+        {
+          "role": "assistant",
+          "content": "Possibly.  Under ORS 90.396(1)(a) a landlord may give a 24-hour termination notice if  \n\n\u2022 a tenant, or someone in the tenant\u2019s control (e.g., a guest), \u201cseriously threatens to inflict substantial personal injury\u201d on another person on the premises, and  \n\u2022 the written notice (a) describes the threat, and (b) states the exact date and time\u2014at least 24 hours out\u2014when the tenancy will end.\n\nThere is no \u201cright to cure\u201d for this kind of notice (only pet-related conduct can be cured).  After the 24 hours expire the landlord must still file an eviction case and prove, by a preponderance of the evidence, that a real and substantial threat occurred and that the boyfriend was under your control.  Possible defenses:\n\n1.  The threat was not serious or credible.  \n2.  The boyfriend was not on the premises with your permission.  \n3.  The notice lacked key details or was not served correctly (must be personal, posted+mailed, or mailed as allowed by ORS 90.155).  \n\nGather any witnesses, texts, video or maintenance reports that show what really happened.  If the case is filed, attend court and raise these points.  You can also ask the landlord\u2014in writing\u2014to rescind the notice if the boyfriend is now barred from returning.\n\nWould you like the checklist for what the 24-hour notice must contain so you can compare it to the paper you received?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        },
+        {
+          "role": "assistant",
+          "content": "An Oregon 24-hour notice for \u201cseriously threatening substantial personal injury\u201d (ORS 90.396 (1)(a)) must:\n\n\u2022 be in writing and delivered the right way (personal hand-delivery, posted + mailed, or mailed as allowed by ORS 90.155);  \n\u2022 clearly state the specific act\u2014what was said or done, to whom, when and where;  \n\u2022 cite that the landlord is terminating under ORS 90.396(1)(a);  \n\u2022 state that the tenancy ends on a particular date & time at least 24 hours after the notice is served;  \n\u2022 name everyone whose tenancy is ending;  \n\u2022 (pet-related threats only) mention a right to cure\u2014otherwise it should say there is no right to cure.\n\nIf any of those pieces are missing or the landlord can\u2019t prove a \u201cserious\u201d threat, you have a defense.\n\nCompare your paper to this list\u2014what, if anything, is missing?"
+        },
+        {
+          "role": "user",
+          "content": "it has all these things"
+        },
+        {
+          "role": "assistant",
+          "content": "Okay. Next point: Is your boyfriend named on the rental agreement / lease, or was he simply visiting you when the incident happened?"
+        },
+        {
+          "role": "user",
+          "content": "he is on the lease"
+        },
+        {
+          "role": "assistant",
+          "content": "Please describe exactly what your boyfriend said or did during the argument (any threats of physical harm, gestures, objects involved, distance between them, etc.)."
+        },
+        {
+          "role": "user",
+          "content": "I was not home but he said that the maintenance person was being very dismissive and it turned into a verbal fight that ended with my boyfriend threatening him to get out of the house \"or he would regret it\""
+        },
+        {
+          "role": "assistant",
+          "content": "Key technical points you can raise if the landlord files the eviction case (\u201cFED\u201d) in court:\n\n1.  \u201cSerious threat.\u201d  \n   \u2022 Landlord must prove the words or conduct created a real, imminent danger of substantial bodily harm (ORS 90.396 (1)(a)).  \n   \u2022 A vague line like \u201cyou\u2019ll regret it\u201d may not be enough if there were no gestures, weapons, advancing, etc. \u2013 argue it was heated talk, not a credible threat.\n\n2.  Tenant-control issue.  \n   \u2022 Threat must be by \u201ca tenant or someone in the tenant\u2019s control.\u201d  If the maintenance worker came in unannounced or was the aggressor, stress that.\n\n3.  Service/contents defects.  \n   \u2022 Notice must meet every ORS 90.396 formality (delivery method, full incident description, exact termination date/time \u2265 24 hours out, statute cited, no cure language).  A single defect defeats the case.\n\n4.  Evidence.  \n   \u2022 Landlord must show more than the notice itself\u2014e.g., a witness, incident report, video.  If it is only the worker\u2019s word, challenge credibility.\n\n5.  Waiver.  \n   \u2022 Acceptance of rent covering any period after the termination date = waiver (ORS 90.412).  Note whether the landlord has or later accepts rent.\n\nNext step: hold rent aside, stay current, collect witness statements, texts, video, etc.  If a court summons arrives, appear and raise the points above.\n\nQuestion: Has the landlord taken any rent from you dated after the 24-hour termination time?"
+        },
+        {
+          "role": "user",
+          "content": "no"
+        },
+        {
+          "role": "assistant",
+          "content": "Good\u2014no waiver yet.  Next key technicality: the landlord had to \u201cserve\u201d the 24-hour notice exactly as ORS 90.150 & 90.155 allow (personal hand-delivery, posted + mailed, or first-class mail + e-mail if you signed an addendum).  How did you actually receive the notice?"
+        },
+        {
+          "role": "user",
+          "content": "on my door"
+        },
+        {
+          "role": "assistant",
+          "content": "Posting alone isn\u2019t enough. Under ORS 90.155 (1)(c) the landlord must BOTH post the notice AND send a first-class-mail copy the same day (and the lease must allow that method). Did a matching copy arrive by regular mail?"
+        },
+        {
+          "role": "user",
+          "content": "no but this was today"
+        },
+        {
+          "role": "assistant",
+          "content": "Oregon law lets a landlord \u201cpost-and-mail\u201d a 24-hour notice only if (1) your written rental agreement says that method is allowed and (2) the landlord puts the notice on the main entrance and mails a first-class copy the same day.  ORS 90.155(1)(c).\n\nSince you got a door-copy today and no matching notice was mailed, service is defective unless your lease allows extra time for the mail copy to arrive. \n\nCheck: Does your rental agreement expressly say the landlord may \u201cmail and attach\u201d notices?"
+        },
+        {
+          "role": "user",
+          "content": "how would I know if something had been mailed if it was just mailed this morning?"
+        },
+        {
+          "role": "assistant",
+          "content": "The landlord must have mailed a matching copy the same day; first-class mail from your town usually reaches you within 1-3 days.  Check your lease for a clause saying the landlord may give notices by \u201cfirst-class mail AND attachment to the door.\u201d  Can you find that clause in your lease?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        }
+      ],
+      "model_answer": "ORS 90.155(1)(c) requires that a 24-hour termination notice be posted on the main entrance AND a first-class copy mailed the same day. Do you have any proof\u2014like a postmarked envelope, certificate of mailing, or the actual mailed notice\u2014showing the landlord mailed a copy the day it was posted?",
+      "ideal_answer": "Under ORS 90.396 a 24-hour termination works only if BOTH of these are true:\n\n1. Service was proper  \n   \u2022 Because your lease allows \u201cmail-and-attach,\u201d the landlord had to post the notice and send a matching first-class-mail copy the same day.  \n   \u2022 If you receive that letter, check the postmark.  A later mailing date\u2014or no mailing at all\u2014makes the notice defective and the eviction fails.\n\n2. The landlord can prove a \u201cserious\u201d and credible threat of substantial bodily harm, not just heated words.  A vague \u201cyou\u2019ll regret it\u201d may fall short, especially if there was no physical move toward the worker, no weapon and no witness other than the worker.\n\nWhat to do now\n\n\u2022 Watch the mail; keep the envelope.  \n\u2022 Gather your boyfriend\u2019s statement, any witnesses, texts, video, etc.  \n\u2022 Stay current on rent (and don\u2019t let the landlord accept rent dated after the termination time).  \n\u2022 If you\u2019re sued (you\u2019ll receive a court summons), appear and raise: improper service and lack of a serious threat.  \n\u2022 Offer, in writing, to bar your boyfriend from further contact with staff; sometimes landlords rescind when risk is removed.\n\nNeed a lawyer?  Call your local legal aid office or the Oregon State Bar Lawyer Referral (800-452-7636).",
+      "score": 3
+    },
+    {
+      "sample_index": 12,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "My dog bit my neighbor and he called my landlord, can I get evicted?"
+        },
+        {
+          "role": "assistant",
+          "content": "Yes\u2014under ORS 90.396 a landlord may give a 24-hour termination notice if a tenant\u2019s pet \u201cinflicts any substantial personal injury upon a person on the premises other than the tenant.\u201d  You can avoid eviction by permanently removing the dog from the property before the deadline in that notice; if the dog returns, the landlord can terminate without another chance to cure.\n\nHave you received a written notice from your landlord yet?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        },
+        {
+          "role": "assistant",
+          "content": "Did the notice clearly state 1) what happened (your dog bit the neighbor), 2) that the tenancy will end at least 24 hours after you got the notice, and 3) that you can stop the eviction by permanently removing the dog before that deadline?"
+        },
+        {
+          "role": "user",
+          "content": "not 3"
+        },
+        {
+          "role": "assistant",
+          "content": "Good: the notice is probably defective. ORS 90.396(2) says that if eviction is based on a pet bite, the notice must tell you that you can stop the eviction by permanently removing the dog before the deadline; if it doesn\u2019t, it\u2019s invalid and the landlord has to start over.\n\nQuick step: send the landlord a dated note\u2014keep a copy\u2014stating that the notice fails to offer the required cure and is therefore void, and (if true) that the dog is now off-premises. If the landlord still tries to evict you, raise this defect as a defense.\n\nDid the notice at least give you 24 hours before the stated termination time?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        },
+        {
+          "role": "assistant",
+          "content": "Under ORS 90.396(2) a 24-hour pet-bite notice is valid only if it:\n\n1. Describes the bite;  \n2. States the exact termination date/time (\u2265 24 hrs away); and  \n3. Tells you that you can avoid eviction by permanently removing the dog before that deadline.\n\nBecause your notice lacks #3, it\u2019s legally defective\u2014your landlord must serve a new, proper notice before evicting.\n\nPut in writing (keep a copy) today:\n\n\u2022 that the notice is defective for omitting the cure language, and  \n\u2022 whether the dog has already been removed (if true).\n\nGive it to the landlord right away (hand-deliver, email + mail, etc.).\n\nIf the landlord still files an eviction, raise this defect as a defense in court.\n\nHave you already removed the dog from the property?"
+        },
+        {
+          "role": "user",
+          "content": "not yet, but Im making a plan"
+        },
+        {
+          "role": "assistant",
+          "content": "Great. When exactly does the 24-hour deadline in the notice expire?"
+        },
+        {
+          "role": "user",
+          "content": "8pm today"
+        },
+        {
+          "role": "assistant",
+          "content": "Can you get the dog permanently off the premises before 8 p.m. today?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        },
+        {
+          "role": "assistant",
+          "content": "Please be sure you can hand-deliver (or otherwise get) a short written note to the landlord before 8 p.m. saying the dog has been permanently removed \u2014 do you have a way to do that in time?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        }
+      ],
+      "model_answer": "Under ORS 90.396(2), a 24-hour pet-bite notice must tell you that you can stop the eviction by permanently removing the dog before the deadline. Yours is missing that cure language, so it\u2019s defective.\n\nBefore 8 p.m. today, hand-deliver a dated, signed note stating:\n1. \u201cYour 24-hour pet-bite notice dated [date] is invalid under ORS 90.396(2) for omitting the required cure option.\u201d\n2. \u201cThe dog has now been permanently removed from the premises.\u201d\n\nKeep a copy and confirm delivery.\n\nWould you like a sample draft of that notice?",
+      "ideal_answer": "<html>\n  <head>\n    <title>Internal Server Error</title>\n  </head>\n  <body>\n    <h1><p>Internal Server Error</p></h1>\n    \n  </body>\n</html>",
+      "score": 0
+    },
+    {
+      "sample_index": 13,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "My cat ruined the living room carpet and subfloor with peeing and my landlord wants to evict me for it, can I do anything, what if I help pay for repairs?"
+        },
+        {
+          "role": "assistant",
+          "content": "First, did the landlord give you a written termination notice?  \n\u2022 If yes, what dates, reason and \u201cright-to-cure\u201d deadline does it list?"
+        },
+        {
+          "role": "user",
+          "content": "it has no right to cure but says \" tenant\u2019s pet inflicts substantial damage to the premises on more than one occasion\" and it was provided this morning 5/22"
+        },
+        {
+          "role": "assistant",
+          "content": "Did the landlord ever give you a prior written warning (or 30-day notice) about pet damage within the last six months?"
+        },
+        {
+          "role": "user",
+          "content": "I was warned about pet damage 2 months ago"
+        },
+        {
+          "role": "assistant",
+          "content": "Did the paper you got actually state a date and clock-time (at least 24 hours after delivery) when your tenancy will end?"
+        },
+        {
+          "role": "user",
+          "content": "tomorrow at 4pm"
+        }
+      ],
+      "model_answer": "ORS 90.396(1) requires that a \u201c24-hour\u201d notice must specify both the date and the clock-time of termination in writing . What time this morning on 5/22 did you actually receive the notice?",
+      "ideal_answer": "Key points under ORS 90.396 and 90.405\n\n1. Proper notice  \n   \u2022 A 24-hour \u201cpet damage\u201d notice is allowed only if:  \n     \u2013 Your pet caused substantial damage on more than one occasion, AND  \n     \u2013 The notice (a) lists enough facts to let you identify each incident and (b) states clearly that you can avoid termination by removing the pet before the deadline.  \n   \u2022 If the notice lacks either of those items, it is defective and cannot be the basis for an eviction.\n\n2. Right to cure by removing the cat  \n   \u2022 Even when there has been repeat damage, you may stop the eviction simply by permanently removing the cat from the premises before tomorrow at 4 p.m.  ORS 90.396(2).  \n   \u2022 The statute does not require advance payment for repairs, only removal of the animal.\n\n3. Paying for repairs  \n   \u2022 You remain liable for all proven repair costs (90.401), but offering to pay does not guarantee the landlord must withdraw the notice.  \n   \u2022 Still, put any offer to pay in writing\u2014some landlords will rescind the notice or sign a written settlement if they know the damage will be fixed and the pet is gone.\n\n4. If the landlord files an eviction case (FED)  \n   \u2022 Raise these defenses: (a) notice is defective (if it omitted facts or the cure language), (b) you removed the pet before the deadline, (c) you offered reasonable payment for damages.  \n   \u2022 Bring proof: vet records or photos showing the cat is gone, your written offer to pay, etc.\n\n5. Practical next steps \u2013 act fast  \n   \u2022 Move the cat out today and give the landlord dated written confirmation (\u201cCat removed permanently as of ___\u201d).  \n   \u2022 Ask in writing for an itemized repair bill and offer a payment plan.  \n   \u2022 Keep a copy of everything you give the landlord.  \n   \u2022 If the landlord sues anyway, take your papers to court and state the defenses above.\n\nIf the notice is clearly defective or the landlord refuses to accept cure, you can ask the court to dismiss the case and you may seek your attorney fees under ORS 90.255.",
+      "score": 2
+    },
+    {
+      "sample_index": 14,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "I accidentally left an old theft charge off of my rental application and my landlord recently found out and is trying to evict me"
+        },
+        {
+          "role": "assistant",
+          "content": "When did you first apply for and sign your current rental agreement (month and year)?"
+        },
+        {
+          "role": "user",
+          "content": "8 months ago I signed a month to month lease"
+        },
+        {
+          "role": "assistant",
+          "content": "Was that old theft matter a CONVICTION, and has the landlord given you a written 24-hour termination notice that cites providing \u201csubstantial false information\u201d under ORS 90.396?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        },
+        {
+          "role": "assistant",
+          "content": "Do you know the exact date the landlord first learned about the conviction, and how many days later they served the 24-hour notice?"
+        },
+        {
+          "role": "user",
+          "content": "I dont know when he found out but he called to ask me about it last week"
+        },
+        {
+          "role": "assistant",
+          "content": "Thanks.  To see if the notice is even valid, please tell me the CALENDAR DATE you actually received (or were handed/mailed) the 24-hour termination notice."
+        },
+        {
+          "role": "user",
+          "content": "5/22/25"
+        }
+      ],
+      "model_answer": "Does the 24-hour notice you received explicitly identify the theft conviction you allegedly omitted and state the exact date and time by which you must vacate, as required by ORS 90.396(1)? ",
+      "ideal_answer": "Key things to check\u2014any one of these flaws makes the 24-hour notice void and you can ask the judge to dismiss the eviction:\n\n1. Timeliness  \n   \u2022 ORS 90.396(1)(e) lets a landlord use a 24-hour notice only if the notice is served \u201cwithin 30 days after discovering\u201d the false info.  Nail the landlord down (in writing) on the exact day they first learned of the theft.  If it was before 4/22/25, the notice is untimely.\n\n2. Notice contents  \n   \u2022 Must be WRITTEN and state the specific false statement (\u201cno convictions\u201d etc.), that it was \u201cintentional,\u201d and that the tenancy ends 24 hours after service.  Missing any of that = invalid.  \n   \u2022 Must show a termination DATE and TIME.  \n   \u2022 Must say you have no right to cure.\n\n3. Service method  \n   \u2022 Hand-delivered, posted + mailed, or mailed per ORS 90.155.  If they only phoned or emailed you, it\u2019s void.\n\n4. Materiality  \n   \u2022 The landlord must prove the old conviction was \u201cmaterial to acceptance.\u201d  If you can show they\u2019d have rented to you anyway (e.g., written policy, similar tenant accepted), you win.\n\n5. Older than 5 years?  \n   \u2022 Under ORS 90.303 the landlord can use only certain older convictions.  If the theft is 5+ years before your application, raise that defense.\n\nWhat to do now\n\n\u2022 Immediately (today) send the landlord a dated note: \u201cPlease state in writing the exact date you first learned of my 20__ theft conviction.\u201d  Keep a copy.\n\n\u2022 If they file an eviction (FED) in court, go to the first appearance and tell the judge the notice is defective for the reasons above.  Bring the note you sent and any proof of earlier knowledge.\n\n\u2022 If the judge finds the notice invalid, the case is dismissed and you stay.\n\nNeed help arguing the technicalities?  Call Oregon Law Center (503-123-4567).",
+      "score": 2
+    },
+    {
+      "sample_index": 15,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "I made weed tincture and resin in my apartment and my neighbors complained about the smell. I got an eviction notice, but weed is legal and I wasn\u2019t smoking indoors?"
+        },
+        {
+          "role": "assistant",
+          "content": "Quick question first: what exactly does the notice say\u2014does it cite \u201c24-hour termination for drug or alcohol violations\u201d under ORS 90.398, or a 30-day \u201cfor-cause\u201d notice under ORS 90.392?"
+        },
+        {
+          "role": "user",
+          "content": "it says Manufacture of a cannabinoid extract"
+        },
+        {
+          "role": "assistant",
+          "content": "To see if the landlord\u2019s \u201ccannabinoid-extract\u201d label really applies, I need one detail:  \nWhat method did you use\u2014did you run the cannabis through a solvent such as alcohol, butane, CO\u2082, etc., or did you just use heat/pressure or soak it in oil/glycerin?"
+        },
+        {
+          "role": "user",
+          "content": "I used alcohol"
+        },
+        {
+          "role": "assistant",
+          "content": "Quick check: do you have either (a) an OLCC processing license or (b) an OHA medical-card registration that allows you to make extracts for personal medicinal use?"
+        },
+        {
+          "role": "user",
+          "content": "no, I did not know I needed one for personal extracts"
+        },
+        {
+          "role": "assistant",
+          "content": "How much time does the notice give you to move out (24 hours, 30 days, something else)?"
+        },
+        {
+          "role": "user",
+          "content": "24 hour notice"
+        }
+      ],
+      "model_answer": "Have you received any prior drug- or alcohol-violation notice from your landlord within the past six months? A 24-hour termination notice only applies to repeat violations under ORS 90.398(3), whereas a first violation requires at least 48 hours\u2019 notice under ORS 90.398(1)  ",
+      "ideal_answer": "Key technical points that can beat a 24-hour \u201ccannabinoid-extract\u201d eviction:\n\n1. Wrong statute?  \n   \u2022 ORS 90.396 (1)(f)(C) only applies if you made a \u201ccannabinoid extract\u201d as that term is defined in ORS 475C.009.  \n   \u2022 An \u201cextract\u201d is made with hydro-carbon, CO\u2082 or other highly volatile solvents.  A simple soak in food-grade ethanol (tincture) is normally classified as a \u201ccannabinoid concentrate/tincture,\u201d which state law lets adults make at home (ORS 475C.257).  \n   \u21d2 If you used plain drinking alcohol and no pressurized or hydro-carbon process, argue in court that the notice cites the wrong statutory basis, so the 24-hour termination is void.\n\n2. Defective notice?  \n   \u2022 ORS 90.396 requires the notice to state specific facts (dates, what you did, why it qualifies as an illegal extract) and give at least 24 hours before the stated termination time.  \n   \u2022 If the notice is vague (\u201cmanufacture of extract \u2013 neighbors smelled weed\u201d) or was served incorrectly (see ORS 90.150 & 90.155), it is invalid.\n\n3. No right to cure only if 90.396 really applies.  \n   \u2022 If the activity is only a minor lease violation (odor, minor drug rule breach), landlord must use a 30-day for-cause notice under ORS 90.392, which gives you at least 14 days to fix the problem.  Jumping straight to 24 hours is an overstep.\n\nNext steps fast:\n\u2022 Keep paying rent.  Accepting rent after a bad notice often waives the notice (ORS 90.412).  \n\u2022 Photograph the notice, envelope and your equipment (show plain ethanol, no risky setup).  \n\u2022 Take everything flammable/solvent out of the unit now\u2014so the judge sees no ongoing problem.  \n\u2022 Go to the FED (eviction) first appearance and tell the clerk you will raise a \u201cdefective notice\u201d defense.  Bring the statutes above and any proof of your method.\n\nIf the landlord re-issues a proper 30-day notice later, you still gain time and the right to cure.\n\nNeed more help?  Call the Oregon Law Center tenant hotline quickly: 503-123-4567.",
+      "score": 2
+    },
+    {
+      "sample_index": 16,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "I sent my landlord half of my rent and was going to send him the rest this week but I couldn\u2019t get the funds together. Now he is trying to evict me"
+        },
+        {
+          "role": "assistant",
+          "content": "Key point: If your landlord took a partial rent payment AFTER giving you a written non-payment notice, the landlord may have waived (given up) the right to evict unless the notice and a written agreement met very specific rules in ORS 90.417.\n\nMy question: Did you get a written \u201c10-day\u201d or \u201c13-day\u201d non-payment notice, and did the landlord accept your half-rent before or after that notice was given?"
+        },
+        {
+          "role": "user",
+          "content": "10 day notice and the payment was accepted before the notice"
+        },
+        {
+          "role": "assistant",
+          "content": "When did you actually receive the 10-day notice, and what \u201cpay-by\u201d date does the notice list?"
+        },
+        {
+          "role": "user",
+          "content": "I received the notice on 5/15 and the pay by date is 5/25"
+        },
+        {
+          "role": "assistant",
+          "content": "Thanks. Next thing to check: How did you actually get that 5/15 notice\u2014was it handed/posted on your door only, or was it also sent by regular mail?"
+        },
+        {
+          "role": "user",
+          "content": "both"
+        },
+        {
+          "role": "assistant",
+          "content": "Did you and the landlord \u2013 in writing or in a text/email \u2013 set a specific date by which you\u2019d pay the remaining rent when he took your half-payment, or did he just take the money with no formal agreement about the balance?"
+        },
+        {
+          "role": "user",
+          "content": "he took the money and then several days later served the notice."
+        }
+      ],
+      "model_answer": "Because your landlord accepted your half\u2010payment before serving the 10-day notice but never got you to agree in writing to pay the remaining balance by a time certain, ORS 90.417(4)(a) says that acceptance of a partial payment waives the right to terminate for nonpayment of rent . That 10-day notice is therefore invalid. \n\nHas the landlord filed an eviction lawsuit in court and served you with a summons and complaint?",
+      "ideal_answer": "Good news: Under ORS 90.417(4), if a landlord takes a partial rent payment before giving the 10-day non-payment notice\u2014and there was NO written agreement that you\u2019d pay the rest by a certain date\u2014the landlord waives the right to end the tenancy for that month\u2019s rent.\n\nWhat to do now:\n\n1. Write the landlord (email or text is fine) something like:\n   \u201cOn [date] you accepted $____ as partial May rent and gave no written agreement for the balance. Under ORS 90.417(4) your acceptance waives the 5/15 termination notice. Please confirm the notice is withdrawn.\u201d\n\n2. Keep proof you sent that message and a copy of the statute (ORS 90.417).\n\n3. If the landlord files an eviction (FED) anyway, appear in court and tell the judge:\n   \u2022 Landlord took a partial May rent payment on [date].  \n   \u2022 No written agreement existed about when the rest was due.  \n   \u2022 The 5/15 notice is therefore void under ORS 90.417(4).  \n   Bring your receipt or other proof of payment and your written message.\n\n4. Continue saving for the balance; paying it eliminates any argument about \u201cre-notice\u201d next month.\n\nNeed help in court? Call your local legal aid office right away and take your payment proof and notice with you.",
+      "score": 6
+    },
+    {
+      "sample_index": 17,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "I received an eviction notice and within the time I was able to pay half the funds, now what?"
+        },
+        {
+          "role": "assistant",
+          "content": "Key issue: a non-payment notice is cured only by paying the FULL amount stated in the notice by the cure deadline (ORS 90.394).  Paying just half does NOT automatically stop the eviction unless the landlord:\n\n1. accepted the partial payment in writing AND\n2. gave you extra time (in writing) to pay the balance (ORS 90.417 (4)(a)).\n\nQuestion: Did the landlord take your half-payment and, in writing, agree on a date for you to pay the rest?"
+        },
+        {
+          "role": "user",
+          "content": "no"
+        },
+        {
+          "role": "assistant",
+          "content": "Did the landlord keep or cash the half-payment, or did they return it to you?"
+        },
+        {
+          "role": "user",
+          "content": "they still have it"
+        },
+        {
+          "role": "assistant",
+          "content": "Have you received a court summons or hearing date for an eviction case yet?"
+        },
+        {
+          "role": "user",
+          "content": "not yet"
+        }
+      ],
+      "model_answer": "Under ORS 90.394(3), a nonpayment notice must state the amount due and the exact date and time by which payment must be made to cure the default .  Service of that written notice must comply with ORS 90.155(1), which allows personal delivery, first-class mail, or first-class mail plus attachment to your door if your rental agreement permits .  \n\nHow was this nonpayment notice served on you?",
+      "ideal_answer": "Good\u2014if the landlord kept that money without any written \u201cpartial-payment\u201d agreement, ORS 90.417(4) says the non-payment notice is waived.  \n\nMake sure you keep proof (receipt, copy of check or online payment) that the landlord accepted it.  \n\nIf the landlord serves a NEW notice for the balance or files a case, you can raise this waiver as a defense.",
+      "score": 1
+    },
+    {
+      "sample_index": 18,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "My landlord is in foreclosure and the bank used my security depsoit to cover what the landlord owes, does that mean I\u2019ve paid my rent for the month?"
+        },
+        {
+          "role": "assistant",
+          "content": "No\u2014your rent isn\u2019t automatically paid just because a bank grabbed the security deposit.  \n1. Under ORS 90.300(17), a security deposit isn\u2019t \u201cgarnishable\u201d property, so the landlord shouldn\u2019t have let it go.  \n2. You may, however, choose to apply that deposit to rent yourself if you\u2019ve already received a foreclosure notice (ORS 90.367). To do that, give the landlord written notice saying you\u2019re applying the deposit to this month\u2019s rent.  \n3. If you don\u2019t give that written notice, you still owe the rent and the landlord must let you restore the deposit within 30 days.  \n\nDo you want help drafting the notice?"
+        },
+        {
+          "role": "user",
+          "content": "yes please"
+        }
+      ],
+      "model_answer": "Here\u2019s a concise written notice you can use to apply your security deposit to rent under ORS 90.367:\n\n[Date]\n\n[Landlord Name]  \n[Landlord Address]\n\nRe: Notice of Application of Security Deposit to Rent  \nProperty: [Your Rental Address]  \nTenant: [Your Name]\n\nDear [Landlord Name]:\n\nI received actual notice that the above property is in foreclosure. Under ORS 90.367(1), I hereby give you written notice that I am applying my security deposit of $[amount] toward my rent obligation for [month/year]. This notice does not terminate the tenancy. Please apply this deposit as payment in full (or partial payment) of rent due for that period.\n\nSincerely,\n\n[Your Name]  \n[Your Signature]  \n\n\nDo you need help with how to serve this notice properly?",
+      "ideal_answer": "Sample letter \u2013 adapt the parts in [brackets]   \n\nDate: ______________________  \n\nTo: [Landlord\u2019s name]  \n[Landlord\u2019s mailing address]  \n\nRe: Application of security deposit to rent \u2013 ORS 90.367  \n\nI am the tenant of [rental address & unit/space #].  \nOn [date you received the notice], I received written notice that the property is in foreclosure.  \n\nUnder ORS 90.367(1) I am applying my security deposit of $__________ to my rent for the month of __________ 20____.  \n\nPlease confirm the credit and advise me of any remaining balance, if any.  \n\nSincerely,  \n\n________________________  \n[Tenant\u2019s printed name]  \n[Tenant\u2019s phone / e-mail]",
+      "score": 10
+    },
+    {
+      "sample_index": 19,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Ive been evicted, what happens now with the rent I owed?"
+        },
+        {
+          "role": "assistant",
+          "content": "You remain liable only for rent that accrued up to the date the landlord got possession (or until a new tenant moved in, whichever came first). Within 31 days the landlord must:\n\n1. Apply your security deposit and any prepaid rent to what you owe.\n2. Send you a written accounting and any refund.\n\nIf a court entered a money judgment for back rent, that amount can be collected just like any other judgment (wage or bank garnishment, etc.).  \n\nDid the eviction judgment include a dollar amount for unpaid rent?"
+        },
+        {
+          "role": "user",
+          "content": "yes, $4000"
+        },
+        {
+          "role": "assistant",
+          "content": "If the $4,000 judgment includes rent that was still owed, the landlord can collect it like any other civil judgment (e.g., garnish wages or bank accounts) after subtracting any security-deposit credit they still owe you under ORS 90.300.  \n\nDid the landlord send you a written accounting (or refund) of your security deposit within 31 days after you gave up possession?"
+        },
+        {
+          "role": "user",
+          "content": "not yet"
+        },
+        {
+          "role": "assistant",
+          "content": "Under ORS 90.300 (12)-(16) the landlord has 31 days after you delivered possession to mail you:  \n\u2022 a written accounting of how the security-deposit/prepaid rent was applied, and  \n\u2022 any refund that\u2019s still owed.  \n\nIf the landlord misses that 31-day deadline you can sue for twice the amount wrongfully withheld.  \n\nHas it been more than 31 days since you turned the keys over or the sheriff enforced the lockout?"
+        },
+        {
+          "role": "user",
+          "content": "no"
+        },
+        {
+          "role": "assistant",
+          "content": "Got it. What exact date did you give the landlord (or sheriff) possession of the unit?"
+        },
+        {
+          "role": "user",
+          "content": "5/18"
+        },
+        {
+          "role": "assistant",
+          "content": "Thanks. That means the landlord\u2019s 31-day clock runs through June 18.  \n\n1. If, by June 18, you get either  \n   \u2022 a written accounting plus any refund, or  \n   \u2022 a check for the full deposit,  \n   they\u2019re in compliance.  \n\n2. If nothing (or only a vague note) arrives by June 18, ORS 90.300(12)-(16) lets you sue for up to twice the deposit/prepaid-rent wrongly withheld, plus the actual balance they still owe.  \n\nWhat was your security-deposit (and any prepaid rent) amount?"
+        },
+        {
+          "role": "user",
+          "content": "$1200"
+        },
+        {
+          "role": "assistant",
+          "content": "Thanks. ORS 90.300 requires the landlord to mail the accounting/refund to the \u201clast\u2010known address.\u201d  \n\nHave you given the landlord a written forwarding address (or confirmed that they have your current address)?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        },
+        {
+          "role": "assistant",
+          "content": "Great.  Because you gave a forwarding address:\n\n1. Deadline.  The landlord has until June 18 (31 days after 5/18) to mail you a written accounting and any refund of the $1,200 deposit.  ORS 90.300 (12)-(14).\n\n2. Deposit must be credited.  They must apply that $1,200 against the $4,000 rent judgment.  If the judgment already includes the full rent without crediting the deposit, you can file a \u201cmotion to satisfy or amend judgment\u201d in the eviction case so the court subtracts the $1,200.\n\n3. Penalty.  If you get no accounting/refund by June 18, you can sue for twice the amount wrongfully withheld (up to $2,400) plus the refund itself.  ORS 90.300 (16).\n\n4. Keep proof.  Keep your forwarding-address notice and any envelope postmarks to show the 31-day deadline.\n\nNeed anything else about enforcing the deposit credit or the judgment?"
+        },
+        {
+          "role": "user",
+          "content": "no"
+        }
+      ],
+      "model_answer": "Do you have a copy of the 72-hour \u201cpay or vacate\u201d notice so we can check it meets ORS 90.394\u2019s service, content, and timing requirements? \ue200ORS 90.394\ue201",
+      "ideal_answer": "Understood.  If the accounting or refund doesn\u2019t show up by June 18, ORS 90.300 lets you pursue up to twice the $1,200 plus the refund itself.  Keep all paperwork and deadlines handy.\n\nGood luck, and take care.",
+      "score": 2
+    },
+    {
+      "sample_index": 20,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "If ive moved out but there are some things I forgot, can my landlord throw them away?"
+        }
+      ],
+      "model_answer": "No. Under ORS 90.425 a landlord may not simply toss your things. Before disposing of any personal property left behind, the landlord must give you a written notice\u2014either personally delivered or sent by first-class mail\u2014to your last known address telling you the items are deemed abandoned and that you have at least 45 days to contact them and arrange removal . During that period the landlord must store your property with reasonable care, and only if you fail to respond or pick it up within 45 days may they dispose of it, including throwing it away .\n\nDid your landlord provide you a written notice under ORS 90.425 informing you of the abandoned items and the deadline to reclaim them?",
+      "ideal_answer": "Not right away.  Under ORS 90.425 your ex-landlord must:\n\n1. Mail (and post) a written notice that lists the items, where they\u2019re stored and a deadline to claim them\u2014at least 8 days after the notice is mailed.  \n2. Keep the items somewhere safe during that period (they can charge reasonable storage costs).  \n3. Let you pick them up if you respond by the deadline and remove them within 15 days.  \n\nOnly after the deadline can the landlord sell, donate or throw away what\u2019s left (and must first pay any surplus sale proceeds to you).  They may toss obvious trash, perishables or items worth so little that storage costs exceed $1,000 in value, but they still must send the notice.\n\nIf the landlord skips these steps you can sue for up to twice your actual losses (at least one month\u2019s rent).",
+      "score": 3
+    },
+    {
+      "sample_index": 21,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Was it a regular apartment/house or a space in a manufactured-dwelling (mobile-home) park?"
+        },
+        {
+          "role": "user",
+          "content": "apartment"
+        },
+        {
+          "role": "assistant",
+          "content": "About how much do you estimate the items were worth in total \u2013 clearly over $1,000, or under that?"
+        },
+        {
+          "role": "user",
+          "content": "likely around 2000"
+        }
+      ],
+      "model_answer": "Does your notice specify the exact rent amount owed and the date and time by which you must pay to cure the nonpayment, as required by ORS 90.394(3)? ",
+      "ideal_answer": "<html>\n  <head>\n    <title>Internal Server Error</title>\n  </head>\n  <body>\n    <h1><p>Internal Server Error</p></h1>\n    \n  </body>\n</html>",
+      "score": 0
+    },
+    {
+      "sample_index": 22,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "I have a month to month tenancy and am trying to give 30 days notice but my landlord is saying that isn't enough warning"
+        }
+      ],
+      "model_answer": "Under ORS 90.427(3)(a), a month-to-month tenant may end the tenancy by giving the landlord written notice at least 30 days before the termination date you designate in that notice . To make sure your notice is valid, what date did you specify as the termination date?",
+      "ideal_answer": "In Oregon a month-to-month renter may end the tenancy \u201cby giving the landlord notice in writing not less than 30 days prior to the date designated in the notice for the termination of the tenancy.\u201d  (ORS 90.427 (3)(a) or, for MH/floating-home spaces, ORS 90.620 (1).)\n\nTips to avoid push-back:  \n\u2022 Put the notice in writing and date it.  \n\u2022 Specify your last day of possession.  \n\u2022 Serve it by personal delivery or by first-class mail (add three days if mailed) \u2013 ORS 90.155, 90.160.  \n\nIf you do those things, 30 days is all the statute requires; the landlord cannot insist on more.",
+      "score": 7
+    },
+    {
+      "sample_index": 23,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "I am on a month to month lease and my landlord is trying to give me a 30 day no-cause eviction, is that really enough time?"
+        },
+        {
+          "role": "assistant",
+          "content": "Under ORS 90.427:\n\n\u2022 A landlord may use a 30-day, no-cause notice only during the FIRST year of a month-to-month tenancy.  \n\u2022 After you have lived there more than one year, the landlord must either:  \n  \u2013 Give at least 90-days\u2019 notice AND have a specific \u201cqualifying\u201d reason (sale to a buyer who will live there; the landlord or close family moving in; major repairs; demolition), or  \n  \u2013 Meet the small-owner exception (landlord lives on site and there are no more than two units), which still requires 60 days\u2019 notice.\n\nQuick check: Have you been in the unit for less than one year?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        },
+        {
+          "role": "assistant",
+          "content": "In Oregon a landlord can end a month-to-month tenancy with a 30-day, no-cause notice only if ALL of these are true:\n\n1. You have lived there less than one full year (ORS 90.427 (3)(b)).  \n2. The notice is in writing, states the termination date and is served correctly under ORS 90.155.  \n3. The date chosen is at least 30 consecutive calendar days after the day the notice is served (counted per ORS 90.160).  \n\nIf any of those pieces is missing, the notice is defective and you can raise that as a defense.  \n\nWas the notice written and served on you in one of the allowed ways (hand-delivery, mail-and-post, or mail-and-email as your lease allows)?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        },
+        {
+          "role": "assistant",
+          "content": "Yes \u2013 if you\u2019ve lived there less than one year, a 30-day written notice that\u2019s properly served is legally sufficient (ORS 90.427 (3)(b)).  \n\nIt still must NOT be:\n\u2022 Retaliation because you asserted a legal right (ORS 90.385); or  \n\u2022 Discrimination (ORS 90.390).  \n\nOtherwise you must move out by the end date in the notice, pay only rent through that date, and the landlord must refund your deposit (minus lawful deductions) within 31 days.  \n\nDo you think the notice might be retaliatory or discriminatory?"
+        },
+        {
+          "role": "user",
+          "content": "I dont know"
+        },
+        {
+          "role": "assistant",
+          "content": "In the past six months, have you complained to the landlord (or an agency) about repairs, safety issues, rent calculations\u2014or otherwise exercised a tenant right?"
+        },
+        {
+          "role": "user",
+          "content": "no"
+        }
+      ],
+      "model_answer": "Under ORS 90.427(12), a no-cause 30-day notice need not state any reason; but if the landlord does include an explanation, it must also expressly say: that it\u2019s given without stated cause; that you have no right to cure; and that the landlord need not prove the reason in court . Does your notice include any narrative explanation for the termination, or is it strictly a bare \u201cno-cause\u201d notice with only the termination date?",
+      "ideal_answer": "Because you\u2019ve lived there less than one year and the written notice was served correctly, a 30-day no-cause notice is lawful under ORS 90.427 (3)(b).  Unless you can show:\n\n\u2022 Retaliation (e.g., you had just complained or exercised a legal right), or  \n\u2022 Illegal discrimination against a protected class,\n\nyou must move by the termination date and owe rent only through that date.  If you suspect discrimination, call Fair Housing Council of Oregon (800-424-3247).  Otherwise, focus on getting your security-deposit accounting within 31 days after you turn in the keys.",
+      "score": 4
+    },
+    {
+      "sample_index": 24,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "Can my landlord give me a 90 day notice so the property can be demolished?"
+        },
+        {
+          "role": "assistant",
+          "content": "Sometimes\u2014but only if the landlord follows ORS 90.427(5)\u2013(6).  \n\nKey points:  \n1. You must be on a month-to-month tenancy that\u2019s lasted more than one year.  \n2. The written notice has to:  \n   \u2022 Be at least 90 days;  \n   \u2022 State that the unit will be demolished and give facts showing that\u2019s truly planned \u201cwithin a reasonable time.\u201d  \n3. At the moment the notice is delivered, the landlord must also hand you relocation money equal to one month\u2019s rent (unless the landlord owns four or fewer Oregon rentals).  \n4. If any of those items are missing or wrong, the notice is defective and you don\u2019t have to move.\n\nHave you been there more than a year?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        },
+        {
+          "role": "assistant",
+          "content": "Thanks. When the 90-day notice was handed to you, did the landlord also give you a payment equal to one month\u2019s rent for relocation?"
+        },
+        {
+          "role": "user",
+          "content": "it was given to me 15 days ago, I have not received any relocation funds"
+        },
+        {
+          "role": "assistant",
+          "content": "ORS 90.427(6)(a)(C) says a 90-day demolition notice is valid only if the landlord gives you (at the same time) a relocation payment equal to one month\u2019s rent\u2014unless the landlord owns four or fewer Oregon rentals. No payment = defective notice and you don\u2019t have to move.\n\nDo you know whether your landlord owns more than four Oregon rental units?"
+        },
+        {
+          "role": "user",
+          "content": "I think they do"
+        },
+        {
+          "role": "assistant",
+          "content": "Because you haven\u2019t received the one-month-rent relocation payment, the 90-day notice is invalid under ORS 90.427(6)(a)(C)\u2014unless your landlord owns four or fewer Oregon rentals.  \n\nIf they do own more than four:  \n\u2022 You can stay and keep paying rent as usual;  \n\u2022 The notice won\u2019t support an eviction; and  \n\u2022 If the landlord files for possession you have a defense (and can counter-claim for up to 3 \u00d7 your rent plus any actual damages: ORS 90.427(9)).  \n\nWould you like help with a short written reply telling the landlord the notice is defective?"
+        },
+        {
+          "role": "user",
+          "content": "yes please"
+        }
+      ],
+      "model_answer": "[Your Name]  \n[Your Address]  \n[City, State, ZIP]  \n[Date]  \n\n[Landlord\u2019s Name]  \n[Landlord\u2019s Address]  \n[City, State, ZIP]  \n\nRe: 90-Day Notice to Terminate Tenancy for Demolition  \n\nDear [Landlord]:  \n\nI write regarding the 90-day notice you served on me on [date], purporting to terminate my month-to-month tenancy so you may demolish the unit. Under ORS 90.427(6)(a)(C), a landlord terminating for demolition \u201cshall \u2026 at the time the landlord delivers the tenant the notice \u2026 pay the tenant an amount equal to one month\u2019s periodic rent\u201d . To date I have received no such relocation payment.  \n\nBecause you failed to make this payment, the notice is legally defective and cannot terminate my tenancy. Please either:  \n\n\u2022 Deliver a relocation payment equal to one month\u2019s rent within ten (10) days of this letter; or  \n\u2022 Withdraw the 90-day notice immediately.  \n\nAbsent correction, I will remain in possession and, should you file an eviction, I will raise this defect as a complete defense (and reserve the right to seek statutory damages under ORS 90.427(9)).  \n\nSincerely,  \n\n[Your Name]",
+      "ideal_answer": "Sample letter (edit the bracketed parts)\n\nDate: ____________\n\nTo: [Landlord\u2019s name & address]\n\nRe: 90-day notice dated ____________\n\nI received your 90-day termination notice on ____________.  \nBecause you did not deliver, at the same time, the relocation payment of one month\u2019s rent required by ORS 90.427(6)(a)(C), the notice is defective and void. I will continue to occupy the dwelling and pay rent as usual.\n\nPlease confirm in writing that you have withdrawn the notice.  \nIf you disagree, kindly explain your position in writing.\n\nSincerely,\n\n________________________  \n[Tenant\u2019s name]  \n[Rental address]",
+      "score": 9
+    },
+    {
+      "sample_index": 25,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "My landlord wants to evict me with 90 day notice because the foundation needs to be repaired, can she do that?"
+        },
+        {
+          "role": "assistant",
+          "content": "Have you lived in the unit for more than one year?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        }
+      ],
+      "model_answer": "Under ORS 90.427(5)(b)(B), a landlord may terminate a month-to-month tenancy with 90 days\u2019 notice if the unit will be unfit for occupancy during repairs\u2014but ORS 90.427(6)(a)(C) requires that, at the time the notice is delivered, the landlord pay the tenant an amount equal to one month\u2019s periodic rent. Did your landlord pay you one month\u2019s rent when she served the 90-day notice? ",
+      "ideal_answer": "Maybe.  After you\u2019ve lived there a year, ORS 90.427 lets a landlord end a month-to-month tenancy only for a \u201cqualifying landlord reason.\u201d  \nRepairs count only if BOTH are true:  \n1) The place is already unsafe or unfit \u00adOR will be unsafe/unfit while the work is done; and  \n2) The landlord serves a written 90-day notice that:  \n  \u2022 States those facts,  \n  \u2022 Names the repair, and  \n  \u2022 Hands you relocation money equal to one month\u2019s rent when the notice is delivered (landlords who own four or fewer units are exempt from paying the money).\n\nIf any of those pieces are missing, the notice is defective and you can treat it as invalid, raise it as a defense in an eviction case and sue for three months\u2019 rent plus actual damages (ORS 90.427 (9)).  A fixed-term lease can\u2019t be cut short for this reason.\n\nAsk for proof the work makes the unit unsafe and check whether the landlord owns more than four rentals.  If the notice or payment is wrong, put your objection in writing right away.",
+      "score": 5
+    },
+    {
+      "sample_index": 26,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "My landlord wants to evict me out of the duplex she lives in the other half of so her uncle can move in, can she do that?"
+        },
+        {
+          "role": "assistant",
+          "content": "To sort this out, I need one detail:  How long have you lived in the duplex, and is your agreement month-to-month or a fixed-term lease?"
+        },
+        {
+          "role": "user",
+          "content": "I have lived there for 14 months and am month to month"
+        }
+      ],
+      "model_answer": "Under ORS 90.427(8)(a)(B), in an owner-occupied duplex after the first year the landlord may terminate a month-to-month tenancy without cause by giving at least 60 days\u2019 written notice . Did your landlord give you a written notice specifying at least 60 days to vacate?",
+      "ideal_answer": "Yes\u2014because she lives in the other unit of a duplex that has only two dwellings, ORS 90.427 (8)(a)(B) lets her end a month-to-month tenancy \u201cwithout cause\u201d once you\u2019ve been there over a year.  BUT she must:\n\n1. Give you a written termination notice at least 60 days before the move-out date.  \n2. State the exact termination date and serve the notice properly (hand-delivery, or mail + attachment, etc., per ORS 90.150/90.155).  \n3. Not raise the rent after giving the notice.  \n\nIf the notice is incomplete, served the wrong way, or gives fewer than 60 days, it\u2019s invalid and you can stay until a proper notice/court eviction is done.  No relocation payment is required in a duplex owner-occupied situation.",
+      "score": 6
+    },
+    {
+      "sample_index": 27,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "I rent a condo owned by somebody who does not own the building, just the unit, and they want to sell it, do I have any rights?"
+        },
+        {
+          "role": "assistant",
+          "content": "Selling the condo doesn\u2019t automatically end your tenancy.  \n\u2022 If you have a fixed-term lease, the buyer must honor it through the end date.  \n\u2022 If you\u2019re on a month-to-month, the owner can end the tenancy only with a \u201cqualifying landlord reason\u201d notice under ORS 90.427\u2014selling to a buyer who will move in counts.  That notice must:  \n  \u2013 Be in writing at least 90 days before the move-out date;  \n  \u2013 Include proof of the sale offer; and  \n  \u2013 Include a relocation payment equal to one month\u2019s rent, unless the owner owns four or fewer rental units in Oregon.  \nA defective notice (wrong dates, no payment, missing proof, etc.) is void.\n\nDo you have a fixed-term lease or a month-to-month agreement?"
+        },
+        {
+          "role": "user",
+          "content": "I have a fixed term lease that ends in 5 months"
+        },
+        {
+          "role": "assistant",
+          "content": "Under ORS 90.427(4)\u2013(5) a fixed-term lease survives the sale.  Whoever buys the unit steps in as your new landlord and must honor every term\u2014rent, rules and the remaining 5 months\u2014unless you agree in writing to leave earlier.\n\nOnly three ways you could be forced out sooner:\n1.  You breach the lease and the landlord (old or new) proves a valid \u201cfor-cause\u201d ground (ORS 90.392-.398).  \n2.  The fixed term\u2019s ending date falls inside your first year of occupancy and you get a 30-day notice (\u00a7 90.427(4)(b)).  \n3.  You accept cash-for-keys or another voluntary agreement (get it in writing).\n\nOtherwise, when the 5 months expire the tenancy either ends or rolls into month-to-month\u2014then a new owner who wants to move in could give the 90-day \u201cbuyer-move-in\u201d notice plus one-month relocation payment (ORS 90.427(5)-(6)).\n\nAre you in your first year of living there, or have you been there longer?"
+        },
+        {
+          "role": "user",
+          "content": "this is my second 1 year lease"
+        },
+        {
+          "role": "assistant",
+          "content": "Because you\u2019re past your first year and have 5 months left on a fixed-term lease:\n\n1. ORS 90.427(4)(a) \u2013 The lease runs to its stated end date even if the unit sells.  The buyer simply becomes your new landlord.\n\n2. The seller or buyer cannot end the tenancy early unless you violate the lease or you voluntarily sign an early-move-out agreement.\n\n3. When the 5 months expire the tenancy turns into month-to-month unless you and the new owner sign a new fixed-term.  \n   \u2022 At that point a buyer who wants to move in could give a 90-day \u201cbuyer-move-in\u201d notice and pay you one month\u2019s rent (ORS 90.427(5)-(6)), unless the buyer owns four or fewer rentals.  \n\n4. Any termination notice you receive before the lease ends is invalid if it cites only the sale.\n\nHas the current owner asked you to move or to sign anything shortening your lease?"
+        },
+        {
+          "role": "user",
+          "content": "no, just mentioned that if it sells I may have to leave"
+        }
+      ],
+      "model_answer": "Under ORS 90.427(4)(c), because your fixed-term lease falls after the first year, the sale does not terminate your tenancy\u2014the buyer simply steps into the landlord\u2019s shoes and must honor the remaining five months of your lease .  \n\nOnce your lease expires, a buyer who intends to occupy the unit as their primary residence and who provides you written evidence of the accepted offer within 120 days may terminate with 90 days\u2019 written notice and must pay you one month\u2019s rent as relocation assistance (unless they own four or fewer units) .  \n\nAny attempt to evict you mid-lease based solely on the sale would be void.  \n\nDo you know whether the prospective buyer plans to move into the unit themselves?",
+      "ideal_answer": "You don\u2019t have to go.  ORS 90.427(4)(a) says a fixed-term lease survives a sale, and you\u2019re already past your first year in the unit.  The buyer simply becomes your new landlord and must honor every term until the lease ends in five months.\n\nAfter the lease ends:\n\u2022 It rolls into month-to-month unless you and the new owner sign another fixed term.  \n\u2022 If the new owner wants to move in, they must give you a written 90-day \u201cbuyer-move-in\u201d notice and pay you one month\u2019s rent with the notice (ORS 90.427(5)-(6)), unless the buyer owns four or fewer Oregon rentals.\n\nAny notice that tells you to leave before the lease expires\u2014just because of the sale\u2014is invalid.  You can refuse to sign an early-move-out agreement.",
+      "score": 9
+    },
+    {
+      "sample_index": 28,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "My son attacked me and a neighbor who tried to help, now we received a 24 hour eviction notice, is that legal?"
+        },
+        {
+          "role": "assistant",
+          "content": "Probably not: under ORS 90.396 a 24-hour notice is allowed only against the person who caused the violence. As the victim, you can\u2019t be forced out; the landlord should instead exclude only your son (see ORS 90.445 & 90.449).  \n\nAre you the sole tenant on the lease, with your son just living there?"
+        },
+        {
+          "role": "user",
+          "content": "he is 20 and also on the lease"
+        },
+        {
+          "role": "assistant",
+          "content": "Under ORS 90.445 a landlord faced with violence between tenants must give the 24-hour notice only to the person who committed the violence (your son). They may not terminate the tenancy of the victim tenants (you and any other household member) for that same act.  \n\nIf the landlord included you in the 24-hour termination, that part of the notice is invalid and can be challenged.  \n\nWould you like help on how to contest the notice so you can stay while your son is excluded?"
+        },
+        {
+          "role": "user",
+          "content": "yes please"
+        },
+        {
+          "role": "assistant",
+          "content": "Key step now: tell (and give) the landlord a written letter that:\n\n\u2022 you and the neighbor were victims,  \n\u2022 ORS 90.445 allows a 24-hour notice only to the perpetrator,  \n\u2022 the notice is invalid as to you, and  \n\u2022 you want to stay while your son moves out.\n\nDate it, keep a copy, and give it immediately (hand-deliver or email if lease allows).   \n\nHave you yet received any court summons (called a FED eviction complaint)?"
+        },
+        {
+          "role": "user",
+          "content": "no"
+        },
+        {
+          "role": "assistant",
+          "content": "Thanks. Next detail: does the 24-hour notice list both you and your son as tenants whose tenancy is being terminated, or does it single out your son?"
+        },
+        {
+          "role": "user",
+          "content": "it lists both"
+        },
+        {
+          "role": "assistant",
+          "content": "Do you have (or can you quickly get) any documentation of the assault\u2014such as a police report number or a restraining order\u2014that shows you were the victim?"
+        }
+      ],
+      "model_answer": "Do you have any official documentation\u2014like a police report number or a protective order\u2014showing you were the victim and your son the aggressor? (See ORS 90.445.)",
+      "ideal_answer": "yes\n\n</html>",
+      "score": 0
+    },
+    {
+      "sample_index": 29,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "My boyfriend assaulted me and I called the police and broke up with him. Now my landlord is trying to evict us both, cant he just evict my now ex boyfriend?"
+        },
+        {
+          "role": "assistant",
+          "content": "Under ORS 90.445 and 90.449, a landlord must NOT terminate or refuse to renew the tenancy of a victim of domestic violence; instead, the landlord may serve a 24-hour notice that removes only the perpetrator.  \n\nWas any written notice served on you, and if so, what does it say?"
+        },
+        {
+          "role": "user",
+          "content": "it said there was an eviction for violence"
+        },
+        {
+          "role": "assistant",
+          "content": "Under ORS 90.445 & 90.449, the landlord may issue a 24-hour notice that excludes only the person who committed the assault; the landlord may not terminate or refuse to renew the tenancy of the victim.  \n\nDoes the notice specifically tell YOU that you must leave, or does it just name your ex-boyfriend?"
+        },
+        {
+          "role": "user",
+          "content": "it lists us both"
+        },
+        {
+          "role": "assistant",
+          "content": "ORS 90.445 & 90.449 say the landlord may exclude the perpetrator with 24-hours\u2019 written notice but may NOT evict the victim. A notice that names you (the victim) is defective and can be challenged.\n\nDo you have a copy of the police report or other written proof that you were the victim which you can give the landlord right away?"
+        }
+      ],
+      "model_answer": "Under ORS 90.445, a landlord may serve a 24-hour exclusion notice only against the perpetrator of domestic violence\u2014naming you as well makes the notice defective. You can \u201ccure\u201d this by delivering written proof of your victim status to the landlord (e.g., police report or protective order) under ORS 90.445(2).  \n\nDo you have a copy of the police report or protective order showing you as the victim?",
+      "ideal_answer": "yes",
+      "score": 7
+    },
+    {
+      "sample_index": 30,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "My now ex husband attacked me and so I kicked him out and my landlord helped me evict him, but now she is saying I need to pay a tenant removal lease fee"
+        },
+        {
+          "role": "assistant",
+          "content": "Was your ex-husband listed as a tenant on the rental agreement before the landlord removed him?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        }
+      ],
+      "model_answer": "Does your written rental agreement (or any signed addendum) specifically describe and authorize a \u201ctenant removal lease fee\u201d? Under ORS 90.302(1), a landlord may not require any fee unless it is described in the written rental agreement .",
+      "ideal_answer": "ORS 90.445(2) says that when a landlord terminates the perpetrator\u2019s tenancy under the domestic-violence rules, the landlord \u201cmay not require the remaining tenants to pay additional rent or an additional deposit or fee\u201d because of the exclusion of the perpetrator.  \n\nSo:  \n\u2022 A separate \u201ctenant-removal lease fee\u201d is not allowed.  \n\u2022 Offer to show the landlord the statute in writing and state you won\u2019t pay the fee.  \n\u2022 If the landlord insists or threatens eviction, you can:  \n  \u2013 Send a short letter citing ORS 90.445(2) and asking that the charge be removed.  \n  \u2013 Call your local legal aid office; if it turns into an eviction issue you can reach Oregon Law Center at 513-123-4567.",
+      "score": 2
+    },
+    {
+      "sample_index": 31,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "My ex attacked me and in the process destroyed several cabinets and a door in the home. My landlord evicted him but now will I be responsible for the damages?"
+        }
+      ],
+      "model_answer": "Under ORS 90.325(3)(b), a tenant is not responsible for damage caused by a perpetrator of domestic violence, sexual assault, bias crime or stalking\u2014even if they\u2019re on the premises\u2014and a landlord may only require you to provide verification under ORS 90.453 to claim that exemption .  \n\nHave you provided your landlord with a victim verification statement under ORS 90.453?",
+      "ideal_answer": "Likely not.  Under ORS 90.325 (3)(b) a tenant isn\u2019t liable for damage that \u201cresults from conduct by a perpetrator relating to domestic violence.\u201d  Since your ex\u2019s assault qualifies, the landlord can\u2019t legally charge you for the broken cabinets or door.  If the landlord asks, be ready to give basic proof (e.g., police report or restraining-order paperwork).",
+      "score": 9
+    },
+    {
+      "sample_index": 32,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "My boyfriend assaulted me and I called the police and broke up with him. Now my landlord is trying to evict me, can he do that?"
+        },
+        {
+          "role": "assistant",
+          "content": "Oregon law (ORS 90.445 & 90.449) bars a landlord from ending your tenancy just because you were the victim of domestic violence; they may only remove the perpetrator.  \n\nWhat written notice\u2014if any\u2014did the landlord give you, and what reason is stated on it?"
+        },
+        {
+          "role": "user",
+          "content": "they said it was for violence I allowed onto the property after being warned"
+        },
+        {
+          "role": "assistant",
+          "content": "After the police incident, did your ex ever come back onto the premises with your permission after the landlord had given you (in writing) a warning that he must stay away?"
+        },
+        {
+          "role": "user",
+          "content": "yes, but he pressured me into it"
+        }
+      ],
+      "model_answer": "What deadline did the landlord\u2019s written notice specify for you to vacate the unit? Under ORS 90.392(3)(b), a cause-based notice in a month-to-month tenancy must designate a termination date at least 30 days after delivery, and under ORS 90.392(6)(a), a week-to-week tenancy requires at least seven days\u2019 notice ",
+      "ideal_answer": "In Oregon, a landlord must remove ONLY the perpetrator, not the victim.\n\n\u2022 ORS 90.445(1): after a domestic-violence assault, the landlord may terminate the boyfriend\u2019s tenancy but \u201cmay not terminate the rental agreement of the other tenants.\u201d  \n\u2022 ORS 90.449(1)(a) & (b): it is illegal to end, or try to end, your tenancy \u201cbecause a tenant \u2026 is a victim of domestic violence \u2026 or because of a violation that consists of an incident of domestic violence.\u201d\n\nThe landlord can evict you only if BOTH are true (ORS 90.445(3)):  \n1. You knowingly allowed the abuser back; AND  \n2. He was still \u201can actual and imminent threat\u201d to others.\n\nEven then, the landlord must still leave a valid written notice that complies with ORS 90.392/90.396 (facts, dates, right-to-cure if any). Most owners instead simply serve a generic \u201cfor cause\u201d notice, which is defective.\n\nWhat to do now\n1. Get copies of the police report or any restraining-order papers.  \n2. Write the landlord (keep a copy) citing ORS 90.445 & 90.449 and stating you are the victim, you rescind any consent for the ex to be on the property, and you will call police if he returns.  \n3. If you already received a termination notice, file an answer raising ORS 90.445/90.449 as defenses if the landlord files an eviction suit.  \n4. Bring the police report, your letter and any notice to court.  \n\nNeed help fast? Call Oregon Law Center at 503-123-4567.",
+      "score": 2
+    },
+    {
+      "sample_index": 33,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "I accidentally missed my first eviction hearing, what does that mean?"
+        },
+        {
+          "role": "assistant",
+          "content": "When a tenant misses the first FED (eviction) hearing, the judge usually grants the landlord a default judgment\u2014meaning the landlord legally wins possession and can get a writ of restitution (the sheriff\u2019s move-out order) within a few days.  You can still ask the court to set the judgment aside, but you must act fast (ideally within 4\u201310 days, and you may have to deposit any rent the court says is owed).  \n\nHave you checked the court\u2019s docket or received any paperwork showing that a judgment was entered?"
+        },
+        {
+          "role": "user",
+          "content": "not yet"
+        },
+        {
+          "role": "assistant",
+          "content": "Is the eviction based on non-payment of rent, or on a different reason stated in the landlord\u2019s notice?"
+        },
+        {
+          "role": "user",
+          "content": "non payment"
+        },
+        {
+          "role": "assistant",
+          "content": "First, let\u2019s check whether the landlord\u2019s original non-payment notice was valid.  How many days\u2019 notice did it give you, and how was the notice delivered (posted/mailed, handed to you, etc.)?"
+        },
+        {
+          "role": "user",
+          "content": "it was posted on my door and mailed as a 10 day notice I think 10 days after my rent was late?"
+        },
+        {
+          "role": "assistant",
+          "content": "Under ORS 90.394 a 10-day non-payment notice is valid only if:\n\n1.  It was served no earlier than the 8th day of the rental period (counting the 1st day rent was due as day 1); and  \n2.  It states the exact amount of rent that was past due (no late fees or utilities included) and gives you 10 full days to pay.\n\nDo you remember the rent-due date and the date printed on the notice?"
+        },
+        {
+          "role": "user",
+          "content": "it included all those things"
+        },
+        {
+          "role": "assistant",
+          "content": "If the notice looks valid, do you have the full rent (plus any court\u2010ordered amounts) available to pay right now, or would you need legal help to stop the eviction?"
+        },
+        {
+          "role": "user",
+          "content": "I could pay now but the date has passed"
+        }
+      ],
+      "model_answer": "Did you ask the court for a continuance by agreeing to pay your rent into court as it became due, under ORS 105.140(2) ?",
+      "ideal_answer": "Quick next steps:\n\n1. Call the circuit court clerk today and ask: \u201cHas a default judgment or writ of restitution been entered in my FED case?\u201d  \n   \u2022 If no judgment yet, immediately file an \u201cAnswer\u201d (use the court\u2019s FED Answer form) and go to the next scheduled appearance; bring the full rent.  \n   \u2022 If a default judgment was entered, file a \u201cMotion to Set Aside Default Judgment\u201d (ORS 105.145) right away.  Attach:  \n     \u2013 Your sworn statement that you can now pay all past-due rent plus landlord\u2019s filing fees; and  \n     \u2013 A receipt or money order (or bring the cash to the clerk) showing you\u2019re ready to deposit the total.  \n     The judge can vacate the judgment and reset the trial if you moved fast and pay everything.\n\n2. Act within 4 days of learning about the judgment (10 days max) or it gets much harder.\n\n3. Keep proof of any rent payments; pay only the rent and court-approved costs (no late fees unless the judge orders them).\n\nIf you discover a technical defect in the original 10-day notice (wrong dates, wrong amount, improper service), include that in the motion/answer\u2014it can void the eviction.",
+      "score": 2
+    },
+    {
+      "sample_index": 34,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "I accidentally missed my first court appearance for an eviction, I dont think my landlord has a good case, will the court consider both sides or only rule for him because hes there"
+        },
+        {
+          "role": "assistant",
+          "content": "In Oregon FED (eviction) cases, if the tenant does not appear at the first court date the judge normally enters a default judgment giving the landlord possession.  The court does not stop to weigh the landlord\u2019s evidence unless you are there to raise defenses.\n\nWhat you can still do:\n\n1. Call the court clerk today and ask:\n   \u2022 \u201cWas a judgment entered?\u201d  \n   \u2022 \u201cHas a writ of restitution issued yet?\u201d\n\n2. If judgment is already entered, you may file a \u201cmotion to set aside default judgment\u201d as soon as possible (ideally within a few days and definitely before the sheriff actually posts a writ).  Explain you missed the appearance by mistake and state any defenses you have\u2014e.g., defective notice under ORS 90.394 (wrong amounts, wrong dates), improper service under ORS 90.155, retaliation under ORS 90.385, etc.\n\n3. Bring copies of any defective notice or proof of rent payments when you file the motion.\n\n4. If the court has not yet entered judgment, ask the clerk whether you can file an \u201canswer\u201d and request a new trial date immediately.\n\nDeadlines are tight, so act today.  Have you already contacted the clerk to see if judgment was entered?"
+        },
+        {
+          "role": "user",
+          "content": "I can call right now"
+        }
+      ],
+      "model_answer": "Under ORS 105.137(1), if you missed your first appearance and your landlord appeared, the court automatically enters a default judgment for possession in the landlord\u2019s favor . When you call the clerk, please ask: \u201cHas a default judgment been entered in my eviction case?\u201d Let me know what they tell you.",
+      "ideal_answer": "Great\u2014when you call, please ask the clerk: \u201cHas the judge already entered a default judgment in my eviction case?\u201d",
+      "score": 8
+    },
+    {
+      "sample_index": 35,
+      "conversation": [
+        {
+          "role": "user",
+          "content": "my landlord didn't show up to my eviction hearing, what now?"
+        },
+        {
+          "role": "assistant",
+          "content": "Likely outcome  \n\u2022 When the landlord (plaintiff) misses a FED (eviction) hearing, the judge almost always dismisses the case. See ORS 105.137(6).\n\nWhat to do now  \n1. Call or visit the circuit-court clerk TODAY and ask: \u201cWas the FED case against me dismissed? May I get a copy of the judgment?\u201d  \n   \u2022 If it shows \u201cdismissed\u201d or \u201cjudgment for defendant,\u201d you keep possession and owe no court costs on this case.  \n2. Ask the clerk for a certified copy of the dismissal\u2014keep it with your lease paperwork.  \n3. If you spent money (filing fees, time off work) you may file for costs/fees within 14 days (ORS 90.255, ORCP 68).  \n4. Keep paying rent on time. A dismissal is usually \u201cwithout prejudice,\u201d so the landlord can restart the process with a new, properly served notice.\n\nOptional  \n\u2022 At the hearing you could have asked for dismissal \u201cwith prejudice,\u201d but many judges dismiss without prejudice by default.  \n\u2022 If the landlord re-files quickly and you believe the notice is defective, that new case can be challenged.\n\nNeed anything else about this case?"
+        },
+        {
+          "role": "user",
+          "content": "so I can stay?"
+        },
+        {
+          "role": "assistant",
+          "content": "Yes\u2014if the judge dismissed the case because the landlord was absent, you keep the unit. Have you picked up a copy of the dismissal from the court clerk?"
+        },
+        {
+          "role": "user",
+          "content": "no, should I?"
+        },
+        {
+          "role": "assistant",
+          "content": "Yes. Ask the circuit-court clerk for a certified copy of the dismissal/judgment so you have proof you\u2019re entitled to stay (ORS 105.137(6)). A few dollars now can prevent trouble if the landlord tries to re-serve notice or change the locks. Do you know what the clerk\u2019s docket says about the case?"
+        },
+        {
+          "role": "user",
+          "content": "no"
+        },
+        {
+          "role": "assistant",
+          "content": "Yes\u2014getting that record is simple. Do you want step-by-step instructions on how to check the docket and request the dismissal copy from the clerk?"
+        },
+        {
+          "role": "user",
+          "content": "yes please"
+        },
+        {
+          "role": "assistant",
+          "content": "Step-by-step to confirm the dismissal and get proof\n\n1. Find your case number  \n   \u2022 It\u2019s printed on the summons/complaint you were served (looks like \u201c22CV12345FED\u201d). Keep that paper handy.\n\n2. Call the circuit-court clerk (Housing/FED desk) in the county where the case was filed  \n   \u2022 Say: \u201cI need the docket result for my FED case, case no. ______. Was it dismissed? I\u2019d like a certified copy of the judgment.\u201d  \n   \u2022 Ask the clerk what it costs (usually about $5 for certification + copy fees) and how to pay (in person, mail or online).\n\n3. Alternatively, check online first (optional)  \n   \u2022 Go to OJD Records Search (https://webportal.courts.oregon.gov/portal) \u2192 \u201cSmart Search.\u201d  \n   \u2022 Enter the case number. If it says \u201cJudgment: Dismissed\u201d or \u201cJudgment for Defendant,\u201d you\u2019re good\u2014but you still want the certified copy.\n\n4. Pick up (or order) the certified copy  \n   \u2022 In person: bring ID, pay the fee, ask for a \u201ccertified judgment of dismissal.\u201d  \n   \u2022 By mail/email: follow the clerk\u2019s instructions and pay any fee.\n\n5. Keep the certified copy  \n   \u2022 Store it with your rental papers. Show it if the landlord claims you must move or tries to change locks.\n\n6. Keep paying rent on time  \n   \u2022 A dismissal is usually \u201cwithout prejudice,\u201d so the landlord could start over with a brand-new notice and filing.\n\nReady to call the clerk? Do you have the case number handy?"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        },
+        {
+          "role": "assistant",
+          "content": "Great. Would you like a quick phone script to use when you call the clerk?"
+        },
+        {
+          "role": "user",
+          "content": "yes please"
+        }
+      ],
+      "model_answer": "Here\u2019s a concise phone script:\n\n\u201cHello, my name is ______. I\u2019m calling about Forcible Entry and Detainer case no. ______. Could you please tell me the current docket status\u2014specifically whether the case was dismissed under ORS 105.137(6)? If it was, could you also let me know how to request and pay for a certified copy of the judgment of dismissal (fee amount and payment methods)? Thank you.\u201d\n\nUnder ORS 105.137(6), if the plaintiff (landlord) fails to appear, the court must dismiss the FED action. ORS 105.137(6)\n\nDoes that cover what you need?",
+      "ideal_answer": "Quick clerk-call script (fill in the blanks)\n\n\u201cHello. My name is _____ and I\u2019m the tenant-defendant in FED case number _____.  \n1. Could you please tell me the current status of the case?  \n2. If it shows \u2018dismissed\u2019 or \u2018judgment for defendant,\u2019 I\u2019d like a certified copy of that judgment.  \n   \u2022 How much is the certification/copy fee?  \n   \u2022 How do I pay and pick it up (or have it mailed/emailed)?  \nThank you for your help.\u201d\n\nKeep the certified copy with your lease papers.",
+      "score": 9
+    }
+  ]
+}
