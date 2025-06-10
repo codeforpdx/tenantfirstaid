@@ -15,7 +15,7 @@ OUTPUT_FILE = SCRIPT_DIR / f"combined_training_{MODEL.replace('.', '_')}.jsonl"
 
 def prepare_training_data():
     """
-    Process training data from chatlog.jsonl to create a clean combined_training.jsonl 
+    Process training data from chatlog.jsonl to create a clean combined_training.jsonl
     file suitable for model training.
 
     This script fixes several issues with the data format:
@@ -128,7 +128,6 @@ def prepare_training_data():
 
     # Convert sessions to training examples using sliding window approach
     for session_id, messages in sessions.items():
-
         # Only use examples with at least one exchange
         if len(messages) >= 3:  # system + user + assistant
             # Track whether we've added the full conversation already
@@ -154,7 +153,6 @@ def prepare_training_data():
             if not added_full:
                 processed_examples.append({"messages": messages})
 
-
     # Write the processed data to the output file
     print(f"Writing {len(processed_examples)} examples to {OUTPUT_FILE}")
     with jsonlines.open(OUTPUT_FILE, mode="w") as outf:
@@ -169,6 +167,4 @@ if __name__ == "__main__":
     output_file = prepare_training_data()
     print(f"\nSuccess! Your training file is ready at:\n{output_file}")
     print("\nTo use this file for training, run:")
-    print(
-        f"openai fine-tuning create -t {output_file} -m {MODEL} --suffix law_chat"
-    )
+    print(f"openai fine-tuning create -t {output_file} -m {MODEL} --suffix law_chat")

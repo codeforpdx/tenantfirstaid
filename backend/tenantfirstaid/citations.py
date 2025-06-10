@@ -6,6 +6,7 @@ DATA_PATH = pathlib.Path(__file__).with_name("sections.json")
 with DATA_PATH.open(encoding="utf-8") as f:
     SECTIONS = json.load(f)
 
+
 def get_citation():
     """
     GET /api/citation?section=90.101
