@@ -22,19 +22,9 @@ export default function MessageWindow({
   onStatuteClick,
 }: Props) {
   const [isLoading, setIsLoading] = useState(false);
-  const { setSessionId, handleNewSession } = useSession();
+  const { handleNewSession } = useSession();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
-
-  // Initialize session ID when component mounts
-  useEffect(() => {
-    const cachedSessionId = localStorage.getItem("sessionId");
-    if (cachedSessionId === null) {
-      handleNewSession();
-    } else {
-      setSessionId(cachedSessionId);
-    }
-  }, [handleNewSession, setSessionId]);
 
   const handleClearSession = () => {
     handleNewSession();

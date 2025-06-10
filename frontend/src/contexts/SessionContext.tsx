@@ -1,9 +1,6 @@
-import { createContext, useMemo, useState } from "react";
-import generateSessionId from "../pages/Chat/utils/sessionHelper";
+import { createContext, useMemo } from "react";
 
 interface ISessionContextType {
-  sessionId: string;
-  setSessionId: React.Dispatch<React.SetStateAction<string>>;
   handleNewSession: () => Promise<void>;
 }
 
@@ -16,17 +13,25 @@ interface Props {
 }
 
 export default function SessionContextProvider({ children }: Props) {
-  const [sessionId, setSessionId] = useState("");
-
   const handleNewSession = async () => {
-    const newSessionId = generateSessionId();
-    localStorage.setItem("sessionId", newSessionId);
-    setSessionId(newSessionId);
+    // Clear the session by making a request to clear server-side session
+    try {
+      await fetch('/api/clear-session', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      // Refresh the page to start fresh
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to clear session:', error);
+      // Fallback: just refresh the page
+      window.location.reload();
+    }
   };
 
   const sessionContextObject = useMemo(
-    () => ({ sessionId, setSessionId, handleNewSession }),
-    [sessionId]
+    () => ({ handleNewSession }),
+    []
   );
 
   return (
