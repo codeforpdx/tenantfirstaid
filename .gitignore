@@ -17,6 +17,8 @@ venv/
 # Python tooling
 pip-log.txt
 poetry.lock
+.pytest_cache/
+.ruff_cache/
 
 # Vite / Node
 node_modules/
