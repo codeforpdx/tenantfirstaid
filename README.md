@@ -62,11 +62,11 @@ Live at https://tenantfirstaid.com/
        ```sh
        % make test
        ```
-1. or run the above checks in one-shot
-   ```sh
-   % make --keep-going check
-   ```
-   `--keep-going` will continue to run checks, even if previous `make` rule fail.  Omit if you want to stop after the first `make` rule fails.
+  - or run the above checks in one-shot
+    ```sh
+    % make --keep-going check
+    ```
+    `--keep-going` will continue to run checks, even if previous `make` rule fail.  Omit if you want to stop after the first `make` rule fails.
 
 ## Contributing
 
