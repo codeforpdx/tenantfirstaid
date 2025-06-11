@@ -37,7 +37,7 @@ async function addNewMessage(userMessage: string) {
 
 export default function useMessages() {
   const [messages, setMessages] = useState<IMessage[]>([]);
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["messages"],
     queryFn: async () => await fetchChatHistory(),
   });
@@ -61,6 +61,5 @@ export default function useMessages() {
     addMessage: addMessage.mutateAsync,
     isLoading,
     isError,
-    refetch,
   };
 }
