@@ -1,0 +1,67 @@
+name: Generate Conversations
+
+on:
+  workflow_dispatch:
+    inputs:
+      num_turns:
+        description: 'Number of conversation turns'
+        required: true
+        default: '5'
+        type: string
+      num_rows:
+        description: 'Number of rows to process'
+        required: true
+        default: '1'
+        type: string
+      reasoning_effort:
+        description: 'Model reasoning effort'
+        required: true
+        default: 'medium'
+        type: choice
+        options:
+          - low
+          - medium
+          - high
+      model:
+        description: 'Model to use'
+        required: true
+        default: 'o3'
+        type: string
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    
+    env:
+      BACKEND_DIR: backend
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install openai pandas
+
+      - name: Generate conversations
+        working-directory: ${{ env.BACKEND_DIR }}/scripts/generate_conversation
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          MODEL_NAME: ${{ inputs.model }}
+          MODEL_REASONING_EFFORT: ${{ inputs.reasoning_effort }}
+          MODEL_ENDPOINT: ${{ secrets.MODEL_ENDPOINT }}
+          VECTOR_STORE_ID: ${{ secrets.VECTOR_STORE_ID }}
+        run: |
+          python chat.py --num-turns ${{ inputs.num_turns }} --num-rows ${{ inputs.num_rows }}
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'GitHub Actions Bot'
+          git config --global user.email 'actions@github.com'
+          git add ${{ env.BACKEND_DIR }}/scripts/generate_conversation/tenant_questions_facts_with_new_conversations.csv
+          git commit -m "Generated new conversations with turns=${{ inputs.num_turns }}, rows=${{ inputs.num_rows }}, effort=${{ inputs.reasoning_effort }}, model=${{ inputs.model }}"
+          git push origin main
