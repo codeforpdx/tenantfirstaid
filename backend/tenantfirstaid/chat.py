@@ -50,10 +50,10 @@ class ChatView(View):
         user_msg = data["message"]
 
         # Get or create session ID using Flask sessions
-        session_id = session.get('session_id')
+        session_id = session.get("session_id")
         if not session_id:
             session_id = str(uuid.uuid4())
-            session['session_id'] = session_id
+            session["session_id"] = session_id
 
         current_session = self.session.get(session_id)
 

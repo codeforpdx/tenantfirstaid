@@ -17,17 +17,17 @@ from .citations import get_citation
 app = Flask(__name__)
 
 # Configure Flask sessions
-app.secret_key = os.getenv('FLASK_SECRET_KEY', secrets.token_hex(32))
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.secret_key = os.getenv("FLASK_SECRET_KEY", secrets.token_hex(32))
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SECURE"] = False  # Set to True in production with HTTPS
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 tenant_session = TenantSession()
 
 
 @app.get("/api/history")
 def history():
-    session_id = session.get('session_id')
+    session_id = session.get("session_id")
     if not session_id:
         return jsonify([])
     return jsonify(tenant_session.get(session_id))
