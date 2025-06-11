@@ -18,7 +18,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-dependency-glob: "uv.lock"
+          cache-dependency-glob: "backend/uv.lock"
           # Install a specific version of uv.
           version: "0.7.12"
 
