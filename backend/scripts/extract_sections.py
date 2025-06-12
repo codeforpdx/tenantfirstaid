@@ -1,8 +1,7 @@
 import json
 import pathlib
 import re
-import sys
-from . import shared
+from tenantfirstaid.shared import LONG_PROMPT_TEXT
 
 SECTION_RE = re.compile(r"^\s{2,}(\d+\.\d+)\s+(.*)$")
 
@@ -13,7 +12,7 @@ def parse_sections() -> dict[str, str]:
     current_key: str | None = None
     buffer: list[str] = []
 
-    for line in shared.LONG_PROMPT_TEXT.split("\n"):
+    for line in LONG_PROMPT_TEXT.split("\n"):
         # print(line)
         m = SECTION_RE.match(line)
 
