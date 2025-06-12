@@ -31,6 +31,12 @@ jobs:
       - name: Run formatter checks
         run: uv run ruff format --check
 
+      - name: Run lint checks
+        run: uv run ruff check
+
+      - name: Run type checks
+        run: uv run ty check
+
       - name: Run tests
         env:
           OPENAI_API_KEY: XXXX
