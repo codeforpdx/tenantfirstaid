@@ -23,9 +23,50 @@ Live at https://tenantfirstaid.com/
 1. Go to http://localhost:5173
 1. Start chatting
 
-### Run backend tests
+### Backend Development & Checks
 
-In the `backend/` directory, run `uv run pytest`
+1. change to the `backend/` directory
+   ```sh
+   % cd backend
+   ```
+  - run individual checks
+    1. *format* Python code with `ruff`
+       ```sh
+       % uv run ruff format
+       ```
+       or
+       ```sh
+       % make fmt
+       ```
+    1. *lint* Python code with `ruff`
+       ```sh
+       % uv run ruff check
+       ```
+       or
+       ```sh
+       % make lint
+       ```
+    1. *typecheck* Python code with `ty`
+       ```sh
+       % uv run ty check
+       ```
+       or
+       ```sh
+       % make typecheck
+       ```
+    1. *test* Python code with `pytest`
+       ```sh
+       % uv run pytest
+       ```
+       or
+       ```sh
+       % make test
+       ```
+  - or run the above checks in one-shot
+    ```sh
+    % make --keep-going check
+    ```
+    `--keep-going` will continue to run checks, even if previous `make` rule fail.  Omit if you want to stop after the first `make` rule fails.
 
 ## Contributing
 

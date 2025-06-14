@@ -1,4 +1,6 @@
-import textwrap, pathlib, json
+import textwrap
+import pathlib
+import json
 
 # Build the two eval samples as Python dicts
 samples = [
