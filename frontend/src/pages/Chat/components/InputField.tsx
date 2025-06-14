@@ -69,9 +69,9 @@ export default function InputField({
         prev.map((msg) =>
           msg.messageId === botMessageId
             ? {
-                ...msg,
-                content: "Sorry, I encountered an error. Please try again.",
-              }
+              ...msg,
+              content: "Sorry, I encountered an error. Please try again.",
+            }
             : msg
         )
       );

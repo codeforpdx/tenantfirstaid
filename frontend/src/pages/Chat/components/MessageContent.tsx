@@ -1,5 +1,12 @@
 import type { IMessage } from "../../../hooks/useMessages";
 
+
+/* This was commented out because with new laws added (e.g. ORS Ch. 105)
+ * and different municipal codes (e.g. Portland's code),
+ * citation hightlighting was becoming too complex. We should revisit this
+ * in the future, but for now the LLM returns links to the relevant statutes
+ * and we use "dangerouslySetInnerHTML" to render them.
+ * 
 const orsRegex =
   /(?:ORS\s*)?\d{2,3}\.\d+[A-Za-z]?(?:\(\d+\)(?:\([a-zA-Z0-9]+\))*)?(?:[-&](?:ORS\s*)?\d{2,3}\.\d+[A-Za-z]?(?:\(\d+\)(?:\([a-zA-Z0-9]+\))*)?)?/g;
 
@@ -38,6 +45,7 @@ function HighlightORS({ text, onStatuteClick }: ORSProps) {
 
   return <>{parts}</>;
 }
+*/
 
 interface Props {
   message: IMessage;
@@ -48,7 +56,6 @@ interface Props {
 export default function MessageContent({
   message,
   isLoading,
-  onStatuteClick,
 }: Props) {
   return (
     <>
@@ -56,12 +63,7 @@ export default function MessageContent({
       {message.role === "assistant" && message.content === "" && isLoading ? (
         <span className="animate-dot-pulse">...</span>
       ) : (
-        <span className="whitespace-pre-wrap">
-          <HighlightORS
-            text={message.content}
-            onStatuteClick={onStatuteClick}
-          />
-        </span>
+        <span className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: message.content }}></span>
       )}
     </>
   );

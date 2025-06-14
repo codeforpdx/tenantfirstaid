@@ -12,24 +12,22 @@ API_KEY = os.getenv("OPENAI_API_KEY", os.getenv("GITHUB_API_KEY"))
 
 client = OpenAI(api_key=API_KEY)
 
-# Note: we exit if the vector store already exists because
-# OpenAI does not return the filenames of files in a vector store,
-# meaning we cannot check if the files we want to upload
-# already exist in the vector store.
-# If you want to update the vector store, delete it first
-# and then run this script again.
 # TODO: Would be nice to have a better way to check for the vector store than just the name.
 vector_stores = client.vector_stores.list()
 if any(store.name == "Oregon Housing Law" for store in vector_stores):
     vector_store = next(
         store for store in vector_stores if store.name == "Oregon Housing Law"
     )
-    print(
-        f"Vector store 'Oregon Housing Law' already exists.\n"
-        f"Add the following to your .env file to use this vector store:\n"
-        f"VECTOR_STORE_ID={vector_store.id}\n"
+    # Delete all files in the vector store
+    vector_store_files = client.vector_stores.files.list(
+        vector_store_id=vector_store.id
     )
-    exit(1)
+    for file in vector_store_files:
+        print(f"Deleting file {file.id} from vector store '{vector_store.name}'.")
+        client.vector_stores.files.delete(
+            vector_store_id=vector_store.id, file_id=file.id
+        )
+        client.files.delete(file_id=file.id)
 
 else:
     print("Creating vector store 'Oregon Housing Law'.")
@@ -37,29 +35,49 @@ else:
     # Create a new vector store
     vector_store = client.vector_stores.create(name="Oregon Housing Law")
 
-    # Get all the files in ./documents
-    documents_path = Path("./scripts/documents")
-    file_paths = [
-        f
-        for f in os.listdir(documents_path)
-        if os.path.isfile(os.path.join(documents_path, f))
-    ]
+# Get list of all directories in ./scripts/documents
+documents_path = Path(__file__).parent / "documents"
+for dirpath, dirnames, filenames in os.walk(documents_path):
+    subdir = dirpath.replace(str(documents_path), "").strip(os.sep)
+    if len(filenames) > 0:
+        subdirs = (
+            subdir.split(os.sep) + [None] * 2
+        )  # Ensure we have at least two subdirs
 
-    if not file_paths:
-        print("No text files found in the documents directory.")
-        exit(1)
+        attributes = {}
+        # Openai doesn't allow querying by empty attributes, so we set them to "null"
+        if subdirs[1]:
+            attributes["city"] = subdirs[1]
+        else:
+            attributes["city"] = "null"
+        if subdirs[0]:
+            attributes["state"] = subdirs[0]
 
-    print("Uploading files to vector store...")
-    file_streams = [
-        open(os.path.join(documents_path, path), "rb") for path in file_paths
-    ]
-    # Add the files to the vector store
-    file_batch = client.vector_stores.file_batches.upload_and_poll(
-        vector_store_id=vector_store.id, files=file_streams
-    )
+        file_ids = []
+        for filename in filenames:
+            file_path = Path(dirpath) / filename
 
-    print(f"Uploaded files to vector store '{vector_store.name}'.")
-    print(
-        f"Add the following to your .env file to use this vector store:\n"
-        f"VECTOR_STORE_ID={vector_store.id}\n"
-    )
+            # Ensure the file is UTF-8 encoded
+            # OpenAI rejects the file if not
+            path = Path(file_path)
+            path.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+
+            print(f"Uploading {file_path} to vector store '{vector_store.name}'.")
+            file = client.files.create(
+                file=open(file_path, "rb"),
+                purpose="assistants",
+            )
+            file_ids.append(file.id)
+
+        # Add files to the vector store
+        batch_upload = client.vector_stores.file_batches.create(
+            vector_store_id=vector_store.id,
+            file_ids=file_ids,
+            attributes=attributes,  # Only take the first two subdirs
+        )
+
+print(f"Uploaded files to vector store '{vector_store.name}'.")
+print(
+    f"Add the following to your .env file to use this vector store:\n"
+    f"VECTOR_STORE_ID={vector_store.id}\n"
+)

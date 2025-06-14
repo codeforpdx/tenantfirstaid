@@ -13,9 +13,11 @@ body {
   0% {
     opacity: 0.2;
   }
+
   20% {
     opacity: 1;
   }
+
   100% {
     opacity: 0.2;
   }
@@ -25,4 +27,8 @@ body {
   display: inline-block;
   position: relative;
   animation: dotPulse 1.5s infinite linear;
+}
+
+.message-bubble a {
+  @apply inline text-blue-600 underline cursor-pointer transition-colors hover:bg-blue-200 rounded
 }
