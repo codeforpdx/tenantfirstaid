@@ -1,57 +1,62 @@
 Original conversation,first_question,facts,New Conversation
 "You: I just moved into a new apartment and it is so hot in the summer
-Bot: Has your landlord told you that you can’t install a portable air-conditioning (or other cooling) unit, or placed any restrictions on it?
+Bot: Has your landlord told you that you canâ€™t install a portable air-conditioning (or other cooling) unit, or placed any restrictions on it?
 You: no, but shouldn't the apartment have ac?
-Bot: Oregon only obligates landlords to supply built-in cooling if the building permits for your unit were issued on or after April 1, 2024 (ORS 90.320 (1)(m)). Otherwise, you’re entitled to bring in a portable A/C (or similar device) and, with narrow safety-related exceptions, the landlord can’t stop you (ORS 90.355). 
+Bot: Oregon only obligates landlords to supply built-in cooling if the building permits for your unit were issued on or after April 1, 2024 (ORS 90.320 (1)(m)). Otherwise, youâ€™re entitled to bring in a portable A/C (or similar device) and, with narrow safety-related exceptions, the landlord canâ€™t stop you (ORS 90.355). 
 
 Do you know roughly when the building was constructed or last permitted?
 You: its brand new, so they started accepting tenants in feb of 2025
-Bot: Do you know when the city issued the building’s certificate of occupancy (or final building permits)?
+Bot: Do you know when the city issued the buildingâ€™s certificate of occupancy (or final building permits)?
 You: no, how would I know that? why does that matter?
-Bot: It matters because ORS 90.320 (1)(m) now says: if the building permits for a dwelling were issued on or after April 1, 2024, the landlord must supply “adequate cooling facilities … maintained in good working order.” If the permits are older, built-in A/C is optional and your right is mainly to use a portable unit under ORS 90.355.
+Bot: It matters because ORS 90.320 (1)(m) now says: if the building permits for a dwelling were issued on or after April 1, 2024, the landlord must supply â€œadequate cooling facilities â€¦ maintained in good working order.â€ If the permits are older, built-in A/C is optional and your right is mainly to use a portable unit under ORS 90.355.
 
 Two quick ways to learn the permit date:
 1. Ask the manager or owner (they have the paperwork). 
-2. Look it up online or call the city/county building department and request the “certificate of occupancy” date for your address (it’s public record).
+2. Look it up online or call the city/county building department and request the â€œcertificate of occupancyâ€ date for your address (itâ€™s public record).
 
-If the permits are post-4/1/24 and the landlord hasn’t provided working cooling, you can give written notice demanding they fix the problem; if they don’t, you can use the habitability remedies in ORS 90.360 and 90.365.
+If the permits are post-4/1/24 and the landlord hasnâ€™t provided working cooling, you can give written notice demanding they fix the problem; if they donâ€™t, you can use the habitability remedies in ORS 90.360 and 90.365.
 
 Would you be willing to email the manager today and simply ask what date the final certificate of occupancy was issued?
 You: how can I find out without contacting my landlord?
-Bot: You can usually pull the permit history yourself (it’s public): most Oregon cities/counties have an online “building permits” or e-permitting search—type in the street address and the system shows the issue dates for permits and the certificate of occupancy. If there’s no web portal, you can phone or email the city/county building department and ask for the “final building permit / C of O date” for the address. 
+Bot: You can usually pull the permit history yourself (itâ€™s public): most Oregon cities/counties have an online â€œbuilding permitsâ€ or e-permitting searchâ€”type in the street address and the system shows the issue dates for permits and the certificate of occupancy. If thereâ€™s no web portal, you can phone or email the city/county building department and ask for the â€œfinal building permit / C of O dateâ€ for the address. 
 
 Which city (or county) is your apartment in?
 You: Oregon City in clackamas county
-Bot: Use Oregon City’s public permit site (Search: “Oregon City eTRAKiT permits”) ? enter your address ? look for the “Certificate of Occupancy” or final building-permit issue date. 
+Bot: Use Oregon Cityâ€™s public permit site (Search: â€œOregon City eTRAKiT permitsâ€) ? enter your address ? look for the â€œCertificate of Occupancyâ€ or final building-permit issue date. 
 Or phone the Oregon City Building Division (503-722-3789) and ask for the final permit date for your address.
 
 Would you like the direct web link?
 You: yes please
-Bot: Here’s the portal: https://etrakit.orcity.org/etrakit/ (Use “Permit Search,” enter your street address and look for the “Certificate of Occupancy” or “Final” permit date.)",I just moved into a new apartment and it is so hot in the summer,"[""Tenant recently moved into a new apartment."", ""Tenant finds the apartment very hot during summer."", ""Tenant’s landlord has not restricted the installation of a portable air-conditioning unit."", ""The apartment building is brand new and began accepting tenants in February 2025."", ""Tenant does not know the date the city issued the building’s certificate of occupancy or final permits."", ""Tenant wants to learn the permit date without contacting the landlord."", ""Tenant’s apartment is located in Oregon City, Clackamas County, Oregon.""]","BOT: Sorry the place is so uncomfortable. To see what legal remedies you might have, can you tell me whether your lease says the landlord must provide air-conditioning or maintain the unit below a certain temperature? (ORS 90.320(1) lists what habitability standards a landlord must meet.)
-USER: I just checked my lease, and it doesn't say anything about the landlord providing air-conditioning or keeping the apartment below a certain temperature.
-BOT: Under Oregon law a landlord has to keep the unit “safe, sanitary and in good repair,” but air-conditioning is not listed as required habitability equipment. ORS 90.320(1). Unless your lease promises A/C or the heat level is so extreme that the place is unsafe (e.g., creating a health hazard), the landlord generally has no duty to install or run A/C.
+Bot: Hereâ€™s the portal: https://etrakit.orcity.org/etrakit/ (Use â€œPermit Search,â€ enter your street address and look for the â€œCertificate of Occupancyâ€ or â€œFinalâ€ permit date.)",I just moved into a new apartment and it is so hot in the summer,"[""Tenant recently moved into a new apartment."", ""Tenant finds the apartment very hot during summer."", ""Tenantâ€™s landlord has not restricted the installation of a portable air-conditioning unit."", ""The apartment building is brand new and began accepting tenants in February 2025."", ""Tenant does not know the date the city issued the buildingâ€™s certificate of occupancy or final permits."", ""Tenant wants to learn the permit date without contacting the landlord."", ""Tenantâ€™s apartment is located in Oregon City, Clackamas County, Oregon.""]","BOT: Oregon habitability law gives you a few tools: 
 
-What you can do:
-1. Put your concern in writing and ask the landlord to approve a tenant-supplied window unit or other cooling device.
-2. If you believe the temperature makes the unit unsafe, give written notice describing the condition and asking for correction within a reasonable time (usually 30 days). If they don’t act, ORS 90.360(1) lets you terminate the rental or, for smaller fixes, repair and deduct.
+â€¢ If the buildingâ€™s permits were issued on or after April 1 2024, your landlord must provide â€œadequate cooling facilitiesâ€ in at least one room and keep them working.  
+â€¢ Even in older buildings, any air-conditioning or ventilation equipment the landlord already supplied has to be kept â€œin good repairâ€.  
+â€¢ You are allowed to install and use your own portable air-conditioner or evaporative cooler unless it breaks specific safety rules, and any landlord limits on that must be in writing.  
 
-If you’re in Portland, you may also request a free cooling device grant under Portland City Code 30.01.
-USER: Thanks for the information! My landlord hasn’t restricted the installation of a portable A/C unit, so I might go ahead and get one. But I’m wondering if there are any building rules that might limit things like that. How can I identify when this new building received its final permits or certificate of occupancy? I think knowing that might help me learn more about the building's rules.
-BOT: To pull the permit or certificate-of-occupancy file you’ll need to search the local building department’s database, and the exact site depends on where the property sits.  
-Which city (or county if you’re outside a city) is the building located in?  (Under ORS 90.320(1)(a) the landlord must comply with “applicable building codes,” so the permit record will show what rules apply.)
-USER: The apartment building is located in Oregon City, which is in Clackamas County, Oregon.
-BOT: Try Oregon City’s public permit portal first:
+First step is usually to send the landlord a short dated letter (keep a copy) describing the heat problem and what you want fixed or allowed. If nothing happens, remedies such as rent reduction or repairing at the landlordâ€™s cost may be available under ORS 90.360 or 90.365.
 
-1. Go to eTRAKiT: https://etrakit.orcity.org  
-2. In the “Search” box choose “Permits,” enter the street number and name, and hit “Search.”  
-3. Look for a record type labeled “CO” (Certificate of Occupancy) or “BLD-Final.” The issue date on that line is the final approval date.  
+Question: Did your lease include an air-conditioner or other cooling device that has stopped working?
+USER: No, my lease didnâ€™t include any air-conditioner or cooling device.
+BOT: Because no cooling was included, the landlordâ€™s duty depends on the buildingâ€™s age:
 
-If nothing comes up, call Oregon City Building Division (503-722-3789, option 6) and ask staff to email you the certificate-of-occupancy or final inspection card; they can also search by tax lot if the address has changed.
+â€¢ If the buildingâ€™s permits were issued on/after Apr 1 2024, the landlord must supply and maintain â€œadequate cooling facilitiesâ€ in at least one room â€” itâ€™s a basic habitability duty under ORS 90.320(1)(m).  
+â€¢ In any building, the landlord cannot forbid a tenant-supplied portable A/C or evaporative cooler unless the written lease lists a specific safety/code reason under ORS 90.355(2)â€“(3).
 
-Why it matters: Under ORS 90.320(1)(a) a landlord must keep the unit in compliance with the building code that was in force when that final approval issued, so the permit file shows what standards apply.  
+Next question: Do you know whether your buildingâ€™s construction permits were issued before or after April 1 2024?
+USER: I donâ€™t know the exact date the permits were issued, but the building is brand new and just started renting to tenants in February 2025. Can I find out the permit date without contacting the landlord?
+BOT: Yes. Most Oregon cities and counties publish building-permit data online; you can search by street address to see the issue date. If you tell me which city or county the building is in, I can point you to the right website. ORS 90.320(1)(m).
+USER: The apartment is in Oregon City, Clackamas County, Oregon. Where should I look to find the permit date?
+BOT: Use Oregon Cityâ€™s public permit site first:
 
-Let me know if you need help reading the permit record.
-USER: Thank you for the detailed instructions! I’ll check out the eTRAKiT system and see what I can find about the permits or certificate of occupancy. If I get confused or need help understanding the records, I’ll reach out again. Thanks for your help so far!
-BOT: You’re welcome—happy to help. Would you like a quick guide to the key fields you’ll see in an Oregon City permit record (issue date, inspection status, code edition, etc.) so you can tell whether the unit meets ORS 90.320(1)(a) habitability standards?
-USER: That sounds like it would be really helpful! Please share the guide so I’ll know what to look for when I check the permit records.
+1. Go to https://permits.oregoncity.gov/etrakit3/  
+2. Click â€œPermit Search,â€ enter the street address, and open the newest building-permit recordâ€”the â€œIssuedâ€ date is the one that matters.
+
+If nothing shows up there (some very recent permits are still routed through the county), try Clackamas Countyâ€™s â€œDevelopment Directâ€ portal at https://developmentdirect.clackamas.us/ and run the same address search; the issue date is listed in the permit details.
+
+Knowing whether that date is on or after April 1 2024 will tell us if the landlord must supply cooling under ORS 90.320(1)(m).  
+
+Please check one of those portals and let me know the permitâ€™s â€œIssuedâ€ date.
+USER: OK, Iâ€™ll go check one of those sites! Thanks for pointing me in the right direction.
+BOT: Youâ€™re welcome! Once you find the permitâ€™s â€œIssuedâ€ date, please tell me what it is so we can see if the cooling-equipment rule in ORS 90.320(1)(m) applies.
+USER: Got it! Iâ€™ll check the permit date and let you know if itâ€™s before or after April 1, 2024. Thanks again!
 "
