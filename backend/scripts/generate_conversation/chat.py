@@ -1,9 +1,17 @@
+# /// script
+# requires-python = "~=3.11"
+# dependencies = [
+#     "openai",
+#     "pandas",
+# ]
+# ///
 from openai import OpenAI
 import os
 import ast
 import argparse
 from pathlib import Path
 import pandas as pd
+from typing import Self
 
 
 BOT_INSTRUCTIONS = """Pretend you're a legal expert who giving advice about eviction notices in Oregon. 
@@ -36,12 +44,13 @@ USER_MODEL = os.getenv("USER_MODEL_NAME", "gpt-4o-2024-11-20")
 
 
 class ChatView:
-    client = OpenAI(
-        api_key=API_KEY,
-        base_url=BASE_URL,
-    )
+    client: Self
 
     def __init__(self, starting_message, user_facts):
+        self.client = OpenAI(
+            api_key=API_KEY,
+            base_url=BASE_URL,
+        )
         VECTOR_STORE_ID = os.getenv("VECTOR_STORE_ID")
         NUM_FILE_SEARCH_RESULTS = os.getenv("NUM_FILE_SEARCH_RESULTS", 10)
         self.input_messages = [{"role": "user", "content": starting_message}]
