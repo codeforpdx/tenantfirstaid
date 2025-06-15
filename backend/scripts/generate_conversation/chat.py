@@ -197,7 +197,7 @@ def process_csv(input_file=None, output_file=None, num_turns=5, num_rows=None):
 
     # Save the results with the same encoding as input
     print(f"\nWriting results to {output_file}")
-    df.to_csv(output_file, index=False, encoding="cp1252")
+    df.to_csv(output_file, index=False, encoding="utf-8")
 
     print(f"\nAll conversations generated and saved to {output_file}")
     return output_file
