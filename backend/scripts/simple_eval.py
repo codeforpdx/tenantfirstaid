@@ -6,11 +6,6 @@ from openai import OpenAI
 
 from tenantfirstaid.shared import CONFIG, DEFAULT_INSTRUCTIONS
 
-# API_KEY = os.getenv("OPENAI_API_KEY", os.getenv("GITHUB_API_KEY"))
-# BASE_URL = os.getenv("MODEL_ENDPOINT", "https://api.openai.com/v1")
-# MODEL = os.getenv("MODEL_NAME", "o3")
-# MODEL_REASONING_EFFORT = os.getenv("MODEL_REASONING_EFFORT", "medium")
-
 client = OpenAI(
     api_key=CONFIG.openai_api_key or CONFIG.github_api_key,
     base_url=CONFIG.model_endpoint,
