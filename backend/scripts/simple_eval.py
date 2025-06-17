@@ -14,7 +14,9 @@ client = OpenAI(
 openai_tools = []
 
 if CONFIG.vector_store_id is not None:
-    openai_tools.append({"type": "file_search", "vector_store_ids": [CONFIG.vector_store_id]})
+    openai_tools.append(
+        {"type": "file_search", "vector_store_ids": [CONFIG.vector_store_id]}
+    )
 
 # 1. Load the dataset - updated to use path relative to this script
 script_dir = os.path.dirname(os.path.abspath(__file__))
