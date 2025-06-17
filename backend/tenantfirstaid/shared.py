@@ -31,6 +31,13 @@ class Config:
     db_username: Optional[str] = field(default=None)
     db_password: Optional[str] = field(default=None)
 
+    def __post_init__(self):
+        """Post-initialization to ensure one of the API KEYs is not None."""
+        if self.github_api_key is None and self.openai_api_key is None:
+            raise ValueError(
+                "Either GITHUB_API_KEY or OPENAI_API_KEY must be set in the environment variables."
+            )
+
 
 # For development purposes, we expect the .env file to be in the backend directory
 __shared_py_path = Path(__file__).resolve()
