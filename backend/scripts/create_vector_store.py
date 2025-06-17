@@ -1,16 +1,8 @@
-import os
 from pathlib import Path
 from openai import OpenAI
+from tenantfirstaid.shared import CONFIG
 
-
-if Path(".env").exists():
-    from dotenv import load_dotenv
-
-    load_dotenv(override=True)
-
-API_KEY = os.getenv("OPENAI_API_KEY", os.getenv("GITHUB_API_KEY"))
-
-client = OpenAI(api_key=API_KEY)
+client = OpenAI(api_key=CONFIG.openai_api_key or CONFIG.github_api_key)
 
 # Note: we exit if the vector store already exists because
 # OpenAI does not return the filenames of files in a vector store,
@@ -38,11 +30,11 @@ else:
     vector_store = client.vector_stores.create(name="Oregon Housing Law")
 
     # Get all the files in ./documents
-    documents_path = Path("./scripts/documents")
+    documents_path = Path(__file__).parent / "scripts/documents"
     file_paths = [
         f
-        for f in os.listdir(documents_path)
-        if os.path.isfile(os.path.join(documents_path, f))
+        for f in documents_path.iterdir()
+        if f.is_file() and f.suffix.lower() in [".txt"]
     ]
 
     if not file_paths:
@@ -50,9 +42,7 @@ else:
         exit(1)
 
     print("Uploading files to vector store...")
-    file_streams = [
-        open(os.path.join(documents_path, path), "rb") for path in file_paths
-    ]
+    file_streams = [path.open("rb") for path in file_paths]
     # Add the files to the vector store
     file_batch = client.vector_stores.file_batches.upload_and_poll(
         vector_store_id=vector_store.id, files=file_streams
