@@ -4,16 +4,16 @@ import re
 import os
 from openai import OpenAI
 
-from tenantfirstaid.shared import DEFAULT_INSTRUCTIONS
+from tenantfirstaid.shared import CONFIG, DEFAULT_INSTRUCTIONS
 
-API_KEY = os.getenv("OPENAI_API_KEY", os.getenv("GITHUB_API_KEY"))
-BASE_URL = os.getenv("MODEL_ENDPOINT", "https://api.openai.com/v1")
-MODEL = os.getenv("MODEL_NAME", "o3")
-MODEL_REASONING_EFFORT = os.getenv("MODEL_REASONING_EFFORT", "medium")
+# API_KEY = os.getenv("OPENAI_API_KEY", os.getenv("GITHUB_API_KEY"))
+# BASE_URL = os.getenv("MODEL_ENDPOINT", "https://api.openai.com/v1")
+# MODEL = os.getenv("MODEL_NAME", "o3")
+# MODEL_REASONING_EFFORT = os.getenv("MODEL_REASONING_EFFORT", "medium")
 
 client = OpenAI(
-    api_key=API_KEY,
-    base_url=BASE_URL,
+    api_key=CONFIG.openai_api_key or CONFIG.github_api_key,
+    base_url=CONFIG.model_endpoint,
 )
 
 
@@ -47,10 +47,10 @@ for i, sample in enumerate(samples):
 
     # Use the Responses API with streaming
     response = client.responses.create(
-        model=MODEL,
+        model=CONFIG.model_name,
         input=input_messages,
         instructions=DEFAULT_INSTRUCTIONS,
-        reasoning={"effort": MODEL_REASONING_EFFORT},
+        reasoning={"effort": CONFIG.model_reasoning_effort},
         tools=openai_tools,
     )
 
@@ -115,7 +115,7 @@ average_time = sum(times) / len(times) if times else 0
 
 # 4. Print summary
 print("\n===== EVALUATION SUMMARY =====")
-print(f"Model evaluated: {MODEL}")
+print(f"Model evaluated: {CONFIG.model_name}")
 print(f"Number of samples: {len(samples)}")
 print(f"Average score: {average_score:.2f}/10")
 print(f"Average response time: {average_time:.2f} seconds")
@@ -129,8 +129,8 @@ results_path = os.path.join(script_dir, "eval_results.json")
 with open(results_path, "w") as f:
     json.dump(
         {
-            "model": MODEL,
-            "reasoning_effort": MODEL_REASONING_EFFORT,
+            "model": CONFIG.model_name,
+            "reasoning_effort": CONFIG.model_reasoning_effort,
             "average_score": average_score,
             "samples": results,
         },

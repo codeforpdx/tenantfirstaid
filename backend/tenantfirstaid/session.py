@@ -1,25 +1,23 @@
-import os
 from valkey import Valkey
 import simplejson as json
+from .shared import CONFIG
+from ipaddress import IPv4Address
 
 
 class TenantSession:
     def __init__(self):
+        _valkey_args = {
+            "host": IPv4Address(CONFIG.db_host),
+            "port": CONFIG.db_port,
+            "password": CONFIG.db_password,
+            "ssl": CONFIG.db_use_ssl,
+        }
+
         print(
-            "Connecting to Valkey:",
-            {
-                "host": os.getenv("DB_HOST"),
-                "port": os.getenv("DB_PORT"),
-                "ssl": os.getenv("DB_USE_SSL"),
-            },
+            f"Connecting to Valkey: {_valkey_args}",
         )
         try:
-            self.db_con = Valkey(
-                host=os.getenv("DB_HOST", "127.0.0.1"),
-                port=os.getenv("DB_PORT", 6379),
-                password=os.getenv("DB_PASSWORD"),
-                ssl=False if os.getenv("DB_USE_SSL") == "false" else True,
-            )
+            self.db_con = Valkey(**_valkey_args)
             self.db_con.ping()
 
         except Exception as e:

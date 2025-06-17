@@ -1,13 +1,6 @@
-from pathlib import Path
-from flask import Flask, jsonify, session
+from flask import Flask, jsonify, session as flask_session
 import os
 import secrets
-
-
-if Path(".env").exists():
-    from dotenv import load_dotenv
-
-    load_dotenv(override=True)
 
 from .chat import ChatView
 
@@ -27,7 +20,7 @@ tenant_session = TenantSession()
 
 @app.get("/api/history")
 def history():
-    session_id = session.get("session_id")
+    session_id = flask_session.get("session_id")
     if not session_id:
         return jsonify([])
     return jsonify(tenant_session.get(session_id))
@@ -35,7 +28,7 @@ def history():
 
 @app.post("/api/clear-session")
 def clear_session():
-    session.clear()
+    flask_session.clear()
     return jsonify({"success": True})
 
 

@@ -1,16 +1,70 @@
 from collections import defaultdict
 import os
 from pathlib import Path
+from warnings import warn
+from dataclasses import dataclass, field
+from typing import Optional
 
 CACHE = defaultdict(list)
 
-# Create a dedicated directory for persistent data in root's home directory
-if Path(".env").exists():
+
+# configuration and secrets are layered in a dataclass.  From lowest to highest priority:
+# 1. Dataclass defaults
+# 2. Environment variables -- typically used by the Docker container
+# 3. .env file in the backend directory (if it exists) -- typically used in local development
+# TODO: generate/update .env.example from this dataclass
+@dataclass(frozen=True)
+class Config:
+    """Configuration for the Oregon Tenant First Aid application."""
+
+    model_name: str = field(default="o3")
+    model_reasoning_effort: str = field(default="medium")
+    vector_store_id: Optional[str] = field(default=None)
+    feedback_password: Optional[str] = field(default=None)
+    github_api_key: Optional[str] = field(default=None)
+    openai_api_key: Optional[str] = field(default=None)
+    model_endpoint: str = field(default="https://api.openai.com/v1")
+    use_short_prompts: bool = field(default=True)
+    db_host: str = field(default="127.0.0.1")
+    db_port: int = field(default=6379)
+    db_use_ssl: bool = field(default=True)
+    db_username: Optional[str] = field(default=None)
+    db_password: Optional[str] = field(default=None)
+
+
+# For development purposes, we expect the .env file to be in the backend directory
+__shared_py_path = Path(__file__).resolve()
+__backend_path = __shared_py_path.parent.parent
+__dotenv_path = __backend_path / ".env"
+
+if Path(__dotenv_path).exists():
     from dotenv import load_dotenv
 
-    load_dotenv(override=True)
+    print(f"Loading environment variables from {__dotenv_path}")
+    load_dotenv(dotenv_path=__dotenv_path, override=True)
+else:
+    warn(
+        f"No .env file found at {__dotenv_path.parent}. Using environment variables from the system."
+    )
 
+# Load environment variables into the Config dataclass
+CONFIG = Config(
+    **{
+        field.lower(): val
+        for field, val in os.environ.items()
+        if field.lower() in Config.__dataclass_fields__
+    }
+)
+
+# Create a dedicated directory for persistent data relative to the backend
+# directory with a fallback to `/root/tenantfirstaid_data`
 DATA_DIR = Path(os.getenv("PERSISTENT_STORAGE_DIR", "/root/tenantfirstaid_data"))
+if not DATA_DIR.is_absolute():
+    new_data_dir = (__backend_path / DATA_DIR).resolve()
+    warn(
+        f"DATA_DIR {DATA_DIR} is not an absolute path. It will be relative to the backend directory ({new_data_dir})."
+    )
+    DATA_DIR = new_data_dir
 DATA_DIR.mkdir(exist_ok=True)
 
 
