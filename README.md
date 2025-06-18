@@ -80,7 +80,3 @@ On DO, we:
 1. added our ssh public keys
 2. install nginx
 3. Kent got the tls cert (just ask chatgpt?)
-
-## Additional features
-
-go to the route `/feedback` for extra features. You will need to provide the password defined in your `.env` file.

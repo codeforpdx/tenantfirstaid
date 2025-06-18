@@ -83,7 +83,6 @@ jobs:
             cat > /etc/tenantfirstaid/env <<EOF
             ENV=prod
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-            FEEDBACK_PASSWORD=${{ secrets.FEEDBACK_PASSWORD }}
             FLASK_SECRET_KEY=${{ secrets.FLASK_SECRET_KEY }}
             DB_HOST=${{secrets.DB_HOST}}
             DB_PASSWORD=${{secrets.DB_PASSWORD}}

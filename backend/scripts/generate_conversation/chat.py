@@ -13,20 +13,14 @@ from pathlib import Path
 import pandas as pd
 from typing import Self
 
+if Path("../../.env").exists():
+    from dotenv import load_dotenv
 
-BOT_INSTRUCTIONS = """Pretend you're a legal expert who giving advice about eviction notices in Oregon. 
-Please give shorter answers. 
-Please only ask one question at a time so that the user isn't confused. 
-If the user is being evicted for non-payment of rent and they are too poor to pay the rent and you have confirmed in various ways that the notice is valid and there is a valid court hearing date, then tell them to call Oregon Law Center at 5131234567. 
-Focus on finding technicalities that would legally prevent someone getting evicted, such as deficiencies in notice.
-Make sure to inclue a citation to the relevant law in your answer.
+    load_dotenv(override=True)
 
-Only reference the laws below.
-Oregon Chapter 90 - Residential Landlord and Tenant
-Oregon Chapter 91 - Tenancy
-Oregon Chapter 105 - Property Rights
-Portland City Code Chapter 30.01 - Affordable Housing Preservation and Portland Renter Protections
-"""
+from tenantfirstaid.chat import API_KEY, BASE_URL, DEFAULT_INSTRUCTIONS, ChatManager
+
+BOT_INSTRUCTIONS = DEFAULT_INSTRUCTIONS
 
 USER_INSTRUCTIONS_BASE = """You are a user of the Oregon Tenant First Aid chatbot. 
 You are seeking legal advice about tenant rights in Oregon. 
@@ -35,24 +29,21 @@ You have a list of facts about your situation that you can reference to respond 
 If the bot asks you a question, you should answer it to the best of your ability, if you do not know the answer you should make something up that is plausible.
 """
 
-API_KEY = os.getenv("OPENAI_API_KEY", os.getenv("GITHUB_API_KEY"))
-BASE_URL = os.getenv("MODEL_ENDPOINT", "https://api.openai.com/v1")
-
-MODEL = os.getenv("MODEL_NAME", "o3")
-MODEL_REASONING_EFFORT = os.getenv("MODEL_REASONING_EFFORT", "medium")
 USER_MODEL = os.getenv("USER_MODEL_NAME", "gpt-4o-2024-11-20")
 
 
 class ChatView:
     client: Self
 
-    def __init__(self, starting_message, user_facts):
+    def __init__(self, starting_message, user_facts, city, state):
         self.client = OpenAI(
             api_key=API_KEY,
             base_url=BASE_URL,
         )
-        VECTOR_STORE_ID = os.getenv("VECTOR_STORE_ID")
-        NUM_FILE_SEARCH_RESULTS = os.getenv("NUM_FILE_SEARCH_RESULTS", 10)
+        self.chat_manager = ChatManager()
+        self.city = city
+        self.state = state
+
         self.input_messages = [{"role": "user", "content": starting_message}]
         self.starting_message = starting_message  # Store the starting message
 
@@ -60,15 +51,6 @@ class ChatView:
         self.USER_INSTRUCTIONS = (
             USER_INSTRUCTIONS_BASE + "\n" + "Facts: " + "\n".join(user_facts)
         )
-
-        if VECTOR_STORE_ID:
-            self.openai_tools.append(
-                {
-                    "type": "file_search",
-                    "vector_store_ids": [VECTOR_STORE_ID],
-                    "max_num_results": NUM_FILE_SEARCH_RESULTS,
-                }
-            )
 
     # Prompt iteration idea
     # If the user starts off by saying something unclear, start off by asking me \"What are you here for?\"
@@ -93,13 +75,12 @@ class ChatView:
         tries = 0
         while tries < 3:
             try:
-                response = self.client.responses.create(
-                    model=MODEL,
-                    input=self.input_messages,
-                    instructions=BOT_INSTRUCTIONS,
-                    reasoning={"effort": MODEL_REASONING_EFFORT},
+                # Use the BOT_INSTRUCTIONS for bot responses
+                response = self.chat_manager.generate_chat_response(
+                    self.input_messages,
+                    city=self.city,
+                    state=self.state,
                     stream=False,
-                    tools=self.openai_tools,
                 )
                 self.input_messages.append(
                     {"role": "assistant", "content": response.output_text}
@@ -163,9 +144,12 @@ def process_conversation(row, num_turns=5):
 
     # Convert string representation of list to actual list
     facts = ast.literal_eval(row["facts"])
+    # if row["city"] is NaN, set it to "null"
+    if pd.isna(row["city"]):
+        row["city"] = "null"
 
     # Create chat view with the starting question and facts
-    chat = ChatView(row["first_question"], facts)
+    chat = ChatView(row["first_question"], facts, row["city"], row["state"])
 
     # Generate a new conversation
     return chat.generate_conversation(num_turns)

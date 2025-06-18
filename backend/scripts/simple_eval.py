@@ -4,7 +4,7 @@ import re
 import os
 from openai import OpenAI
 
-from tenantfirstaid.shared import DEFAULT_INSTRUCTIONS
+from tenantfirstaid.chat import DEFAULT_INSTRUCTIONS
 
 API_KEY = os.getenv("OPENAI_API_KEY", os.getenv("GITHUB_API_KEY"))
 BASE_URL = os.getenv("MODEL_ENDPOINT", "https://api.openai.com/v1")
