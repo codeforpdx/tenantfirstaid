@@ -1,6 +1,8 @@
+#!/usr/bin/env -S uv run --script
 # /// script
-# requires-python = "~=3.11"
+# requires-python = "~=3.12"
 # dependencies = [
+#     "dotenv",
 #     "openai",
 #     "pandas",
 # ]
@@ -12,6 +14,7 @@ import argparse
 from pathlib import Path
 import pandas as pd
 from typing import Self
+# import shared
 
 
 BOT_INSTRUCTIONS = """Pretend you're a legal expert who giving advice about eviction notices in Oregon. 

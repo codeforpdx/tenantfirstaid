@@ -7,28 +7,21 @@ from flask import request, stream_with_context, Response, session, after_this_re
 from flask.views import View
 import os
 
-from .shared import DEFAULT_INSTRUCTIONS, DATA_DIR
-
-DATA_FILE = DATA_DIR / "chatlog.jsonl"
-
-API_KEY = os.getenv("OPENAI_API_KEY", os.getenv("GITHUB_API_KEY"))
-BASE_URL = os.getenv("MODEL_ENDPOINT", "https://api.openai.com/v1")
-MODEL = os.getenv("MODEL_NAME", "o3")
-MODEL_REASONING_EFFORT = os.getenv("MODEL_REASONING_EFFORT", "medium")
+from .shared import DEFAULT_INSTRUCTIONS, DATA_DIR, CONFIG
 
 
 class ChatView(View):
     DATA_FILE = DATA_DIR / "chatlog.jsonl"
 
     client = OpenAI(
-        api_key=API_KEY,
-        base_url=BASE_URL,
+        api_key=CONFIG.openai_api_key or CONFIG.github_api_key,
+        base_url=CONFIG.model_endpoint,
     )
 
     def __init__(self, session):
         self.session = session
 
-        VECTOR_STORE_ID = os.getenv("VECTOR_STORE_ID")
+        VECTOR_STORE_ID = CONFIG.vector_store_id
         NUM_FILE_SEARCH_RESULTS = os.getenv("NUM_FILE_SEARCH_RESULTS", 10)
 
         self.openai_tools = []
@@ -79,10 +72,10 @@ class ChatView(View):
             try:
                 # Use the new Responses API with streaming
                 response_stream = self.client.responses.create(
-                    model=MODEL,
+                    model=CONFIG.model_name,
                     input=input_messages,
                     instructions=DEFAULT_INSTRUCTIONS,
-                    reasoning={"effort": MODEL_REASONING_EFFORT},
+                    reasoning={"effort": CONFIG.model_reasoning_effort},
                     stream=True,
                     tools=self.openai_tools,
                 )

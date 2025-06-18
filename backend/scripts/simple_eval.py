@@ -4,24 +4,19 @@ import re
 import os
 from openai import OpenAI
 
-from tenantfirstaid.shared import DEFAULT_INSTRUCTIONS
-
-API_KEY = os.getenv("OPENAI_API_KEY", os.getenv("GITHUB_API_KEY"))
-BASE_URL = os.getenv("MODEL_ENDPOINT", "https://api.openai.com/v1")
-MODEL = os.getenv("MODEL_NAME", "o3")
-MODEL_REASONING_EFFORT = os.getenv("MODEL_REASONING_EFFORT", "medium")
+from tenantfirstaid.shared import CONFIG, DEFAULT_INSTRUCTIONS
 
 client = OpenAI(
-    api_key=API_KEY,
-    base_url=BASE_URL,
+    api_key=CONFIG.openai_api_key or CONFIG.github_api_key,
+    base_url=CONFIG.model_endpoint,
 )
 
-
-VECTOR_STORE_ID = os.getenv("VECTOR_STORE_ID")
 openai_tools = []
 
-if VECTOR_STORE_ID:
-    openai_tools.append({"type": "file_search", "vector_store_ids": [VECTOR_STORE_ID]})
+if CONFIG.vector_store_id is not None:
+    openai_tools.append(
+        {"type": "file_search", "vector_store_ids": [CONFIG.vector_store_id]}
+    )
 
 # 1. Load the dataset - updated to use path relative to this script
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -47,10 +42,10 @@ for i, sample in enumerate(samples):
 
     # Use the Responses API with streaming
     response = client.responses.create(
-        model=MODEL,
+        model=CONFIG.model_name,
         input=input_messages,
         instructions=DEFAULT_INSTRUCTIONS,
-        reasoning={"effort": MODEL_REASONING_EFFORT},
+        reasoning={"effort": CONFIG.model_reasoning_effort},
         tools=openai_tools,
     )
 
@@ -115,7 +110,7 @@ average_time = sum(times) / len(times) if times else 0
 
 # 4. Print summary
 print("\n===== EVALUATION SUMMARY =====")
-print(f"Model evaluated: {MODEL}")
+print(f"Model evaluated: {CONFIG.model_name}")
 print(f"Number of samples: {len(samples)}")
 print(f"Average score: {average_score:.2f}/10")
 print(f"Average response time: {average_time:.2f} seconds")
@@ -129,8 +124,8 @@ results_path = os.path.join(script_dir, "eval_results.json")
 with open(results_path, "w") as f:
     json.dump(
         {
-            "model": MODEL,
-            "reasoning_effort": MODEL_REASONING_EFFORT,
+            "model": CONFIG.model_name,
+            "reasoning_effort": CONFIG.model_reasoning_effort,
             "average_score": average_score,
             "samples": results,
         },
