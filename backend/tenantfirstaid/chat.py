@@ -6,6 +6,7 @@ import jsonlines
 from flask import request, stream_with_context, Response, session, after_this_request
 from flask.views import View
 import os
+from typing import List
 
 from .shared import DEFAULT_INSTRUCTIONS, DATA_DIR
 
@@ -87,9 +88,13 @@ class ChatView(View):
                     tools=self.openai_tools,
                 )
 
+                chunk_times: List[datetime.datetime] = [
+                    datetime.datetime.now(datetime.timezone.utc)
+                ]
                 assistant_chunks = []
                 for chunk in response_stream:
                     if hasattr(chunk, "delta"):
+                        chunk_times.append(datetime.datetime.now(datetime.timezone.utc))
                         token = chunk.delta or ""
                         assistant_chunks.append(token)
                         yield token
@@ -99,7 +104,9 @@ class ChatView(View):
                 # print("assistant_msg", assistant_msg)
 
                 # Add this as a training example
-                self._append_training_example(session_id, user_msg, assistant_msg)
+                self._append_training_example(
+                    session_id, user_msg, assistant_msg, chunk_times
+                )
                 current_session.append({"role": "assistant", "content": assistant_msg})
 
             except Exception as e:
@@ -116,11 +123,14 @@ class ChatView(View):
             mimetype="text/plain",
         )
 
-    def _append_training_example(self, session_id, user_msg, assistant_msg):
+    def _append_training_example(
+        self, session_id, user_msg, assistant_msg, chunk_times: List[datetime.datetime]
+    ):
         # Ensure the parent directory exists
         self.DATA_FILE.parent.mkdir(exist_ok=True)
 
         with jsonlines.open(self.DATA_FILE, mode="a") as f:
+            now: datetime.datetime = datetime.datetime.now(datetime.timezone.utc)
             f.write(
                 {
                     "messages": [
@@ -129,7 +139,20 @@ class ChatView(View):
                     ],
                     "metadata": {
                         "session_id": session_id,
-                        "ts": datetime.datetime.utcnow().isoformat(),
+                        "model": MODEL,
+                        "model_reasoning_effort": MODEL_REASONING_EFFORT,
+                        "chunk_times": [
+                            t.isoformat(timespec="milliseconds") for t in chunk_times
+                        ],
+                        "ts": now.isoformat(timespec="milliseconds"),
                     },
                 }
+            )
+
+            # print interesting stats in the console
+            print(
+                f"{(len(chunk_times) - 1):1} chunks\n",
+                f"{(chunk_times[1] - chunk_times[0]).total_seconds():6.3f} first chunk time (seconds)\n",
+                f"{((now - chunk_times[1]).total_seconds()) / len(chunk_times[1:]):6.3f} average chunk time after first chunk (seconds)\n",
+                f"{(now - chunk_times[0]).total_seconds():6.3f} total seconds\n",
             )
