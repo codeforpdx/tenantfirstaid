@@ -4,6 +4,7 @@ from flask import Response, request, session
 from flask.views import View
 from valkey import Valkey
 import simplejson as json
+from typing import Any, Dict
 
 
 class TenantSession:
@@ -51,11 +52,11 @@ class TenantSession:
 
 
 class InitSessionView(View):
-    def __init__(self, session: TenantSession):
-        self.session = session
+    def __init__(self, tenant_session: TenantSession):
+        self.tenant_session = tenant_session
 
     def dispatch_request(self):
-        data = request.json
+        data: Dict[str, Any] = request.json
         session_id = session.get("session_id")
         if not session_id:
             session_id = str(uuid.uuid4())
@@ -65,7 +66,7 @@ class InitSessionView(View):
 
         # Initialize the session with city and state
         initial_data = {"city": city, "state": state, "messages": []}
-        self.session.set(session_id, initial_data)
+        self.tenant_session.set(session_id, initial_data)
 
         return Response(
             status=200,
