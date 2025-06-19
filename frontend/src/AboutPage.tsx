@@ -16,8 +16,8 @@ export default function AboutPage() {
                 Back
             </button>
             <h1 className="text-3xl font-bold mb-4 text-gray-800 mt-4 text-center">Tenant First Aid</h1>
-            <p className="mb-6 text-gray-700"><strong>Tenant First Aid</strong> is an AI-powered chatbot designed to help Oregon tenants navigate housing and eviction issues.</p>
-            <p>It is a volunteer-built program by <a href="https://www.codepdx.org/"className="text-blue-700 underline">Code PDX</a> and <a href="https://www.qiu-qiulaw.com/" className="text-blue-700 underline">Qiu Qiu Law</a>.</p>
+            <p className="mb-6 text-gray-700"><strong>Tenant First Aid</strong> is an AI-powered chatbot designed to help Oregon tenants navigate housing and eviction issues. It is a volunteer-built program by <a href="https://www.codepdx.org/"className="text-blue-700 underline">Code PDX</a> and <a href="https://www.qiu-qiulaw.com/" className="text-blue-700 underline">Qiu Qiu Law</a>.</p>
+            <p className="mb-6 text-gray-700">It&apos;s called "Tenant First Aid" because it&apos;s like emergency help for renters facing eviction—quick, clear, and focused on what to do right now. Just like medical first aid helps stabilize someone before they can see a doctor, Tenant First Aid gives Oregon tenants the essential legal info they need to understand an eviction notice, respond on time, and avoid mistakes that could cost them their home.</p>
             <h2 className="text-2xl font-semibold mt-6 mb-2 text-gray-800">Contact:</h2>
             <p>Michael Zhang</p>
             <p>Attorney, licensed in Oregon and Washington</p>
