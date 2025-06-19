@@ -75,29 +75,43 @@ export default function AboutPage() {
         Aid will provide helpful information or direct you to relevant
         resources.
       </p>
-      <h2 className="text-2xl font-semibold mt-6 mb-2 text-gray-800">Quick Facts:</h2>
+      <h2 className="text-2xl font-semibold mt-6 mb-2 text-gray-800">
+        Quick Facts:
+      </h2>
       <ul className="list-disc list-inside mb-6 text-gray-700">
         <li>Uses openAI ChatGPT o3 model</li>
         <li>
           Reference library:
           <ul className="list-none pl-6 mt-1">
             <li>
-              <a href="https://www.oregonlegislature.gov/bills_laws/ors/ors090.html" className="text-blue-700 underline">
+              <a
+                href="https://www.oregonlegislature.gov/bills_laws/ors/ors090.html"
+                className="text-blue-700 underline"
+              >
                 ORS 90 (as amended 2023)
               </a>
             </li>
             <li>
-              <a href="https://www.oregonlegislature.gov/bills_laws/ors/ors105.html" className="text-blue-700 underline">
+              <a
+                href="https://www.oregonlegislature.gov/bills_laws/ors/ors105.html"
+                className="text-blue-700 underline"
+              >
                 ORS 105
               </a>
             </li>
             <li>
-              <a href="https://eugene.municipal.codes/EC/8.425" className="text-blue-700 underline">
+              <a
+                href="https://eugene.municipal.codes/EC/8.425"
+                className="text-blue-700 underline"
+              >
                 Eugene Code Section 8.425
               </a>
             </li>
             <li>
-              <a href="https://www.portland.gov/code/30/all" className="text-blue-700 underline">
+              <a
+                href="https://www.portland.gov/code/30/all"
+                className="text-blue-700 underline"
+              >
                 Portland City Code Title 30
               </a>
             </li>
