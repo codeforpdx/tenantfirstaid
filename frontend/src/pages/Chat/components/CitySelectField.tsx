@@ -30,10 +30,12 @@ interface Props {
 
 export default function CitySelectField({ setMessages }: Props) {
   const [city, setCity] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { initChat } = useMessages();
 
   const handleCityChange = async (key: string | null) => {
     setCity(key);
+    setIsLoading(true);
     const selectedCity =
       CitySelectOptions[key as keyof typeof CitySelectOptions];
     if (selectedCity && selectedCity.state) {
@@ -53,6 +55,8 @@ export default function CitySelectField({ setMessages }: Props) {
         ]);
       } catch (error) {
         console.error("Error initializing session:", error);
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -60,7 +64,7 @@ export default function CitySelectField({ setMessages }: Props) {
   return (
     <div className="flex flex-col gap-2">
       <p className="text-center text-[#888] mb-10">
-        {city
+        {city && !isLoading
           ? "Unfortunately we can only answer questions about tenant rights in Oregon right now."
           : "Welcome to Tenant First Aid! I can answer your questions about tenant rights in Oregon. To get started, what city are you located in?"}
       </p>
