@@ -30,10 +30,12 @@ interface Props {
 
 export default function CitySelectField({ setMessages }: Props) {
   const [city, setCity] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const { initChat } = useMessages();
 
   const handleCityChange = async (key: string | null) => {
     setCity(key);
+    setIsInitialized(true);
     const selectedCity =
       CitySelectOptions[key as keyof typeof CitySelectOptions];
     if (selectedCity && selectedCity.state) {
@@ -60,8 +62,12 @@ export default function CitySelectField({ setMessages }: Props) {
   return (
     <div className="flex flex-col gap-2">
       <p className="text-center text-[#888] mb-10">
-        {city
+        {!isInitialized
+          ? "Welcome to Tenant First Aid! I can answer your questions about tenant rights in Oregon. To get started, what city are you located in?"
+          : city === "other"
           ? "Unfortunately we can only answer questions about tenant rights in Oregon right now."
+          : city && (city === "portland" || city === "eugene" || city === "oregon")
+          ? "Great! I can help you with Oregon tenant rights questions."
           : "Welcome to Tenant First Aid! I can answer your questions about tenant rights in Oregon. To get started, what city are you located in?"}
       </p>
       <select
