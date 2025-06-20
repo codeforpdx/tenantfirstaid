@@ -24,7 +24,7 @@ samples = [
             2. Dispute the item with the credit bureau(s) in writing and attach a copy of the statute and your letter to the landlord.
             3. If the item isn’t deleted within 30 days, you can sue the landlord for any actual damages plus your attorney fees (ORS 90.255). Small-claims court is an option.
 
-            If you need free legal help, call the Oregon Law Center: 1-800-673-0506.
+            If you need free legal help, call the Oregon Law Center: 888-585-9638.
             """),
     },
     {

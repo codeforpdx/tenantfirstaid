@@ -180,7 +180,7 @@ If the work really will cut off hot water or electricity, the landlord must keep
 
 Tell the landlord in writing you’ll stay and that any long shut-off violates ORS 90.365.  If the landlord insists on eviction without the required 90-day written notice plus one month’s rent under ORS 90.427(5)(b), refuse to leave and keep documentation.  If utilities are cut, call the local code-enforcement or an attorney.
 
-(If you want free legal help you can call Oregon Law Center: 513-123-4567.)",correct,no
+(If you want free legal help you can call Oregon Law Center: 888-585-9638.)",correct,no
 Retaliation,Reporting health code violation,90.385(a)(A)," 90.385 Retaliatory conduct by landlord; tenant remedies and defenses; action for possession in certain cases. (1) Except as provided in this section, a landlord may not retaliate by increasing rent or decreasing services, by serving a notice to terminate the tenancy or by bringing or threatening to bring an action for possession after:
       (a) The tenant has complained to, or expressed to the landlord in writing an intention to complain to, a governmental agency charged with responsibility for enforcement of any of the following concerning a violation applicable to the tenancy:
       (A) A building, health or housing code materially affecting health or safety;",5/22,"You: My landlord tried to raise our rent too high and when I pointed out the law now he says he won't renew our lease and we have to go month to month
@@ -233,7 +233,7 @@ Bot: Did the notice clearly state the exact dollar amount you must pay to cure t
 You: yes
 Bot: Is your rent normally due on the 1st of each month?
 You: yes
-Bot: Key technical point: • Under ORS 90.394 (2)(b) a 13-day non-payment notice can’t be served until the 5th day of the rental period. • Your landlord served it May 1 (the 1st day rent was due), so the notice is premature and void. What you can do: 1. Send the landlord a brief dated note (keep a copy) saying the May 1 notice is invalid under ORS 90.394 (2)(b) because it was served too early and that any eviction filing based on it will fail. 2. If the landlord files an eviction case anyway, appear and raise this defense; bring the notice and a copy of the statute. If a new, properly timed notice later arrives and you still can’t pay, call Oregon Law Center at 513-123-4567 right away.""",correct,yes
+Bot: Key technical point: • Under ORS 90.394 (2)(b) a 13-day non-payment notice can’t be served until the 5th day of the rental period. • Your landlord served it May 1 (the 1st day rent was due), so the notice is premature and void. What you can do: 1. Send the landlord a brief dated note (keep a copy) saying the May 1 notice is invalid under ORS 90.394 (2)(b) because it was served too early and that any eviction filing based on it will fail. 2. If the landlord files an eviction case anyway, appear and raise this defense; bring the notice and a copy of the statute. If a new, properly timed notice later arrives and you still can’t pay, call Oregon Law Center at 888-585-9638 right away.""",correct,yes
 Termination Notice,24 hour - substantial personal injury ,90.396(1)(a)-(c),"90.396 
 (1) Except as provided in subsection (2) of this section, after at least 24 hours’ written notice specifying the acts and omissions constituting the cause and specifying the date and time of the termination, the landlord may terminate the rental agreement and take possession as provided in ORS 105.100 to 105.168, if:
       (a) The tenant, someone in the tenant’s control or the tenant’s pet seriously threatens to inflict substantial personal injury, or inflicts any substantial personal injury, upon a person on the premises other than the tenant
@@ -447,7 +447,7 @@ What to do now
 
 • If the judge finds the notice invalid, the case is dismissed and you stay.
 
-Need help arguing the technicalities?  Call Oregon Law Center (503-123-4567).",correct,no
+Need help arguing the technicalities?  Call Oregon Law Center (888-585-9638).",correct,no
 Termination Notice,24 hour - outrageous and extreme,90.396(f),"      (f) The tenant, someone in the tenant’s control or the tenant’s pet commits any act that is outrageous in the extreme, on the premises or in the immediate vicinity of the premises. For purposes of this paragraph, an act is outrageous in the extreme if the act is not described in paragraphs (a) to (e) of this subsection, but is similar in degree and is one that a reasonable person in that community would consider to be so offensive as to warrant termination of the tenancy within 24 hours, considering the seriousness of the act or the risk to others. An act that is outrageous in the extreme is more extreme or serious than an act that warrants a 30-day termination under ORS 90.392. Acts that are “outrageous in the extreme” include, but are not limited to, the following acts by a person:
       (A) Prostitution, commercial sexual solicitation or promoting prostitution, as described in ORS 167.007, 167.008 and 167.012;
       (B) Unlawful manufacture, delivery or possession of a controlled substance, as defined in ORS 475.005;
@@ -485,7 +485,7 @@ Next steps fast:
 
 If the landlord re-issues a proper 30-day notice later, you still gain time and the right to cure.
 
-Need more help?  Call the Oregon Law Center tenant hotline quickly: 503-123-4567.",correct,no
+Need more help?  Call the Oregon Law Center tenant hotline quickly: 888-585-9638.",correct,no
 Partial Payment,Before giving notice,90.417(4)(a),"      (4) The acceptance of a partial payment of rent waives the right of the landlord to terminate the tenant’s rental agreement under ORS 90.394 for nonpayment of rent unless:
       (a)(A) The landlord accepted the partial payment of rent before the landlord gave a nonpayment of rent termination notice under ORS 90.394 based on the tenant’s agreement to pay the balance by a time certain and the tenant does not pay the balance of the rent as agreed;
       (B) The landlord’s notice of termination is served no earlier than it would have been permitted under ORS 90.394 had no rent been accepted; and
@@ -884,7 +884,7 @@ So:
 • Offer to show the landlord the statute in writing and state you won’t pay the fee.  
 • If the landlord insists or threatens eviction, you can:  
   – Send a short letter citing ORS 90.445(2) and asking that the charge be removed.  
-  – Call your local legal aid office; if it turns into an eviction issue you can reach Oregon Law Center at 513-123-4567.",correct,no
+  – Call your local legal aid office; if it turns into an eviction issue you can reach Oregon Law Center at 888-585-9638.",correct,no
 DV Rules,property damage joint liability,90.445(3),  (3) The perpetrator is jointly liable with any other tenants of the dwelling unit for rent or damages to the premises incurred prior to the later of the date the perpetrator vacates the premises or the termination date specified in the notice.,5/22,"You: My ex attacked me and in the process destroyed several cabinets and a door in the home. My landlord evicted him but now will I be responsible for the damages?
 Bot: Likely not.  Under ORS 90.325 (3)(b) a tenant isn’t liable for damage that “results from conduct by a perpetrator relating to domestic violence.”  Since your ex’s assault qualifies, the landlord can’t legally charge you for the broken cabinets or door.  If the landlord asks, be ready to give basic proof (e.g., police report or restraining-order paperwork).",correct,yes
 DV Rules,When removal allowed,90.449(3),"(3) Notwithstanding subsections (1) and (2) of this section, a landlord may terminate the tenancy of a victim of domestic violence, sexual assault, bias crime or stalking if the landlord has previously given the tenant a written warning regarding the conduct of the perpetrator relating to domestic violence, sexual assault, bias crime or stalking and:
@@ -913,7 +913,7 @@ What to do now
 3. If you already received a termination notice, file an answer raising ORS 90.445/90.449 as defenses if the landlord files an eviction suit.  
 4. Bring the police report, your letter and any notice to court.  
 
-Need help fast? Call Oregon Law Center at 503-123-4567.",correct,no
+Need help fast? Call Oregon Law Center at 888-585-9638.",correct,no
 Default Judgment,Tenant non-appearance req,105.137(1)(a)-(b),"      105.137 Effect of failure of party to appear; attorney fees; judgment of dismissal; scheduling of trial; unrepresented defendant. In the case of a dwelling unit to which ORS chapter 90 applies:
       (1) A default judgment shall be entered in favor of the plaintiff for possession of the premises and costs and disbursements only if:
       (a) The plaintiff appears and the defendant fails to appear at the first appearance;
