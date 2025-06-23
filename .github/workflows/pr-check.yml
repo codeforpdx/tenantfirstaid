@@ -4,6 +4,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
 
+  push:
+    branches:
+      - main
+      - 'releases/*'
+
 jobs:
   backend-test:
     # skip this check for closed PRs that are not merged
