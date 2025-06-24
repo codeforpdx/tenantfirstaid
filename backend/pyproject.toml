@@ -6,7 +6,7 @@ dependencies = [
   "flask",
   "valkey",
   "gunicorn",
-  "openai",
+  "openai==1.89",
   "jsonlines",
   "simplejson",
   "python-dotenv",
