@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 
-export default function AboutPage() {
+export default function About() {
   const navigate = useNavigate();
 
   return (
@@ -25,20 +25,17 @@ export default function AboutPage() {
         </svg>
         Back
       </button>
-      <h1 className="text-3xl font-bold mb-4 text-gray-800 mt-4 text-center">
-        Tenant First Aid
-      </h1>
       <p className="mb-6 text-gray-700">
         <strong>Tenant First Aid</strong> is an AI-powered chatbot designed to
         help Oregon tenants navigate housing and eviction issues. It is a
         volunteer-built program by{" "}
-        <a href="https://www.codepdx.org/" className="text-blue-700 underline">
+        <a href="https://www.codepdx.org/" className="text-blue-600 underline">
           Code PDX
         </a>{" "}
         and{" "}
         <a
           href="https://www.qiu-qiulaw.com/"
-          className="text-blue-700 underline"
+          className="text-blue-600 underline"
         >
           Qiu Qiu Law
         </a>
@@ -86,7 +83,7 @@ export default function AboutPage() {
             <li>
               <a
                 href="https://www.oregonlegislature.gov/bills_laws/ors/ors090.html"
-                className="text-blue-700 underline"
+                className="text-blue-600 underline"
               >
                 ORS 90 (as amended 2023)
               </a>
@@ -94,7 +91,7 @@ export default function AboutPage() {
             <li>
               <a
                 href="https://www.oregonlegislature.gov/bills_laws/ors/ors105.html"
-                className="text-blue-700 underline"
+                className="text-blue-600 underline"
               >
                 ORS 105
               </a>
@@ -102,7 +99,7 @@ export default function AboutPage() {
             <li>
               <a
                 href="https://eugene.municipal.codes/EC/8.425"
-                className="text-blue-700 underline"
+                className="text-blue-600 underline"
               >
                 Eugene Code Section 8.425
               </a>
@@ -110,7 +107,7 @@ export default function AboutPage() {
             <li>
               <a
                 href="https://www.portland.gov/code/30/all"
-                className="text-blue-700 underline"
+                className="text-blue-600 underline"
               >
                 Portland City Code Title 30
               </a>
