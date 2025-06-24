@@ -15,18 +15,13 @@ def mock_valkey_ping_nop(mocker):
 
 @pytest.fixture
 def mock_valkey(mock_valkey_ping_nop, mocker):
-    # mock_valkey_dbcon_client = mocker.Mock()
-    # mocker.patch("tenantfirstaid.session.Valkey", mock_valkey_dbcon_client)
-
-    _data: Dict[str, Any] = {}
+    _data: Dict[str, str] = {}
 
     mock_valkey_ping_nop.set = mocker.Mock(
         side_effect=lambda key, value: _data.update({key: value})
     )
 
-    mock_valkey_ping_nop.get = mocker.Mock(
-        return_value=lambda key: _data.get(key, None)
-    )
+    mock_valkey_ping_nop.get = mocker.Mock(side_effect=lambda key: _data[key])
 
     return mock_valkey_ping_nop
 
@@ -81,10 +76,7 @@ def test_session_init_ping_exception(mocker, capsys):
 
 
 def test_session_get_unknown_session_id(mocker, mock_environ):
-    test_data = {
-        "city": "Test City",
-        "state": "Test State",
-    }
+    test_data = {"city": "Test City", "state": "Test State", "messages": []}
 
     mock_valkey_client = mocker.Mock()
     mocker.patch("tenantfirstaid.session.Valkey", return_value=mock_valkey_client)
@@ -110,30 +102,62 @@ def test_session_get_unknown_session_id(mocker, mock_environ):
         }
 
 
-# def test_session_set_and_get(mocker, mock_environ, mock_valkey):
-#     test_data: Dict[str, Any] = {
-#         "city": "Test City",
-#         "state": "Test State",
-#         "messages": ["this is message 1", "this is message 2"],
-#     }
+def test_session_set_and_get(mocker, mock_environ, mock_valkey):
+    test_data_obj: Dict[str, Any] = {
+        "city": "Test City",
+        "state": "Test State",
+        "messages": ["this is message 1", "this is message 2"],
+    }
 
-#     mock_valkey_client = mocker.Mock()
-#     mocker.patch("tenantfirstaid.session.Valkey", return_value=mock_valkey_client)
-#     mock_valkey_client.ping = mocker.Mock()
+    tenant_session = TenantSession()
+    app = Flask(__name__)
+    app.add_url_rule(
+        "/api/init",
+        view_func=InitSessionView.as_view("init", tenant_session),
+        methods=["POST"],
+    )
+    app.secret_key = "test_secret_key"  # Set a secret key for session management
 
-#     tenant_session = TenantSession()
-#     app = Flask(__name__)
-#     app.add_url_rule(
-#         "/api/init",
-#         view_func=InitSessionView.as_view("init", tenant_session),
-#         methods=["POST"],
-#     )
-#     app.secret_key = "test_secret_key"  # Set a secret key for session management
+    with app.test_request_context("/api/init", method="POST", json=test_data_obj):
+        response = app.full_dispatch_request()
+        assert response.status_code == 200  # Ensure the response is successful
+        session_id = response.json["session_id"]
+        assert session_id is not None  # Ensure session_id is set
+        assert isinstance(session_id, str)  # Ensure session_id is a string
 
-#     with app.test_request_context("/api/init", method="POST", json=test_data):
-#         response = app.full_dispatch_request()
-#         assert response.status_code == 200  # Ensure the response is successful
-#         session_id = response.json["session_id"]
+        tenant_session.set(session_id, test_data_obj)
+        assert tenant_session.get() == test_data_obj
 
-#         tenant_session.set(session_id, test_data)
-#         assert tenant_session.get() == test_data
+
+def test_session_set_some_and_get_none(mocker, mock_environ, mock_valkey):
+    test_data_obj: Dict[str, Any] = {
+        "city": "Test City",
+        "state": "Test State",
+        "messages": ["this is message 1", "this is message 2"],
+    }
+
+    tenant_session = TenantSession()
+    app = Flask(__name__)
+    app.add_url_rule(
+        "/api/init",
+        view_func=InitSessionView.as_view("init", tenant_session),
+        methods=["POST"],
+    )
+    app.secret_key = "test_secret_key"  # Set a secret key for session management
+
+    # Simulate no data for the session (i.e. network error or similar)
+    mock_valkey.get.side_effect = lambda key: None
+
+    with app.test_request_context("/api/init", method="POST", json=test_data_obj):
+        response = app.full_dispatch_request()
+        assert response.status_code == 200  # Ensure the response is successful
+        session_id = response.json["session_id"]
+        assert session_id is not None  # Ensure session_id is set
+        assert isinstance(session_id, str)  # Ensure session_id is a string
+
+        tenant_session.set(session_id, test_data_obj)
+        assert tenant_session.get() == {
+            "city": "",
+            "state": "",
+            "messages": [],
+        }
