@@ -32,10 +32,12 @@ match reasoning_effort:
     case "high":
         MODEL_REASONING_EFFORT = "high"
 
-DEFAULT_INSTRUCTIONS = """Pretend you're a legal expert who is giving advice about eviction notices in Oregon. 
+
+OREGON_LAW_CENTER_PHONE_NUMBER = "888-585-9638"
+DEFAULT_INSTRUCTIONS = f"""Pretend you're a legal expert who is giving advice about eviction notices in Oregon.
 Please give shorter answers. 
 Please only ask one question at a time so that the user isn't confused. 
-If the user is being evicted for non-payment of rent and they are too poor to pay the rent and you have confirmed in various ways that the notice is valid and there is a valid court hearing date, then tell them to call Oregon Law Center at 5131234567. 
+If the user is being evicted for non-payment of rent and they are too poor to pay the rent and you have confirmed in various ways that the notice is valid and there is a valid court hearing date, then tell them to call Oregon Law Center at {OREGON_LAW_CENTER_PHONE_NUMBER}.
 Focus on finding technicalities that would legally prevent someone getting evicted, such as deficiencies in notice.
 Assume the user is on a month-to-month lease unless they specify otherwise.
 
