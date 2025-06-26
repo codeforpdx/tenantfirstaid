@@ -27,16 +27,20 @@ build-backend = "setuptools.build_meta"
 
 [dependency-groups]
 dev = [
-  "ipdb>=0.13.13",
-  "mypy>=1.16.1",
-  "pyrefly>=0.21.0",
-  "pytest>=8.4.0",
-  "pytest-cov>=6.1.1",
-  "pytest-mock>=3.14.1",
-  "ruff>=0.12.0",
-  "ty>=0.0.1a11",
-  "types-Flask>=1.1.6",
-  "types-simplejson>=3.20.0.20250326",
+    "ipdb>=0.13.13",
+    "mypy>=1.16.1",
+    "pandas-stubs>=2.2.3.250527",
+    "pyrefly>=0.21.0",
+    "pytest>=8.4.0",
+    "pytest-cov>=6.1.1",
+    "pytest-mock>=3.14.1",
+    "ruff>=0.12.0",
+    "ty>=0.0.1a11",
+    "types-Flask>=1.1.6",
+    "types-simplejson>=3.20.0.20250326",
 ]
 
-gen_convo = ["pandas", "openai"]
+gen_convo = [
+      "pandas",
+      "openai",
+]
