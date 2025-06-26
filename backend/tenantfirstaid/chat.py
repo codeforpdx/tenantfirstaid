@@ -135,7 +135,7 @@ class ChatManager:
     ) -> Union[Iterator[ResponseStreamEvent], ResponseEvent]:
         instructions = self.prepare_developer_instructions(city, state)
         tools = self.prepare_openai_tools(city, state)
-        param_includes: list[ResponseIncludable] = ["file_search_call.results"]
+        param_includes: List[ResponseIncludable] = ["file_search_call.results"]
 
         # Use the OpenAI client to generate a response
         response_stream = self.client.responses.create(
@@ -189,7 +189,7 @@ class ChatView(View):
             assistant_msg = "".join(assistant_chunks)
 
             current_session["messages"].append(
-                {"role": "system", "content": assistant_msg}
+                EasyInputMessageParam(role="system", content=assistant_msg)
             )
 
             self.tenant_session.set(current_session)
