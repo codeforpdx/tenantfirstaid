@@ -56,7 +56,7 @@ class ChatManager:
             system_instruction=DEFAULT_INSTRUCTIONS,
         )
 
-    def prepare_developer_instructions(self, city: str, state: str):
+    def prepare_developer_instructions(self, city: str, state: str) -> str:
         # Add city and state filters if they are set
         instructions = DEFAULT_INSTRUCTIONS
         instructions += (
@@ -117,18 +117,18 @@ class ChatManager:
 
 
 class ChatView(View):
-    def __init__(self, tenant_session):
+    def __init__(self, tenant_session: TenantSession) -> None:
         self.tenant_session = tenant_session
         self.chat_manager = ChatManager()
 
-    def dispatch_request(self, *args, **kwargs):
+    def dispatch_request(self, *args, **kwargs) -> Response:
         data = request.json
         user_msg = data["message"]
 
         current_session = self.tenant_session.get()
         current_session["messages"].append(dict(role="user", content=user_msg))
 
-        def generate():
+        def generate() -> Iterator[str]:
             # Use the new Responses API with streaming
             response_stream = self.chat_manager.generate_gemini_chat_response(
                 current_session["messages"],
