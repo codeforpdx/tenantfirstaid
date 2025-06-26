@@ -12,7 +12,7 @@ from typing import Any, Dict, Optional, Literal
 class TenantSessionData(TypedDict):
     city: str
     state: str
-    messages: ResponseInputParam  # List of messages with role and content
+    messages: ResponseInputParam  # List of messages (of various types e.g. EasyMessageInputParam) with role and content
 
 
 NEW_SESSION_DATA = TenantSessionData(city="null", state="or", messages=[])
