@@ -1,4 +1,4 @@
-from openai.types.responses.easy_input_message import EasyInputMessage
+from openai.types.responses import ResponseInputParam
 import os
 import uuid
 from flask import Response, after_this_request, request, session
@@ -12,7 +12,7 @@ from typing import Any, Dict, Optional, Literal
 class TenantSessionData(TypedDict):
     city: str
     state: str
-    messages: list[EasyInputMessage]  # List of messages with role and content
+    messages: ResponseInputParam  # List of messages with role and content
 
 
 NEW_SESSION_DATA = TenantSessionData(city="null", state="or", messages=[])
@@ -20,7 +20,7 @@ NEW_SESSION_DATA = TenantSessionData(city="null", state="or", messages=[])
 
 # The class to manage tenant sessions using Valkey and Flask sessions
 class TenantSession:
-    def __init__(self):
+    def __init__(self) -> None:
         print(
             "Connecting to Valkey:",
             {
@@ -43,13 +43,13 @@ class TenantSession:
 
     # Retrieves the session ID from Flask session or creates a new one
     def get_flask_session_id(self) -> str:
-        session_id = session.get("session_id")
+        session_id: str | None = session.get("session_id")
         if not session_id:
             session_id = str(uuid.uuid4())
             session["session_id"] = session_id
 
             @after_this_request
-            def save_session(response):
+            def save_session(response: Response) -> Response:
                 session.modified = True
                 return response
 
@@ -62,9 +62,12 @@ class TenantSession:
         if not saved_session:
             return self.getNewSessionData()
 
-        return json.loads(s=saved_session)
+        obj = json.loads(s=saved_session)
+        return TenantSessionData(
+            city=obj["city"], state=obj["state"], messages=obj["messages"]
+        )
 
-    def set(self, value: TenantSessionData):
+    def set(self, value: TenantSessionData) -> None:
         session_id = self.get_flask_session_id()
         self.db_con.set(session_id, json.dumps(value))
 
@@ -77,7 +80,7 @@ class InitSessionView(View):
     def __init__(self, tenant_session: TenantSession):
         self.tenant_session = tenant_session
 
-    def dispatch_request(self, *args, **kwargs):
+    def dispatch_request(self, *args, **kwargs) -> Response:
         data: Dict[str, Any] = request.json
         session_id: Optional[str] = self.tenant_session.get_flask_session_id()
 

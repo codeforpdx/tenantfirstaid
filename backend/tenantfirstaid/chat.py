@@ -17,7 +17,9 @@ from openai.types.responses import (
 from flask import request, stream_with_context, Response
 from flask.views import View
 import os
-from typing_extensions import Literal, overload
+from tenantfirstaid.session import TenantSession
+from typing_extensions import List, Literal, overload
+from typing import Iterator, Union
 
 API_KEY = os.getenv("OPENAI_API_KEY", os.getenv("GITHUB_API_KEY"))
 BASE_URL = os.getenv("MODEL_ENDPOINT", "https://api.openai.com/v1")
@@ -57,22 +59,24 @@ Include the links inline in your answer, with the attribute target="_blank" so t
 
 
 class ChatManager:
-    def __init__(self):
+    def __init__(self) -> None:
         self.client = OpenAI(
             api_key=API_KEY,
             base_url=BASE_URL,
         )
 
-    def get_client(self):
+    def get_client(self) -> OpenAI:
         return self.client
 
-    def prepare_developer_instructions(self, city: str, state: str):
+    def prepare_developer_instructions(self, city: str, state: str) -> str:
         # Add city and state filters if they are set
         instructions = DEFAULT_INSTRUCTIONS
         instructions += f"\nThe user is in {city} {state.upper()}.\n"
         return instructions
 
-    def prepare_openai_tools(self, city: str, state: str) -> list | None:
+    def prepare_openai_tools(
+        self, city: str, state: str
+    ) -> List[FileSearchToolParam] | None:
         VECTOR_STORE_ID = os.getenv("VECTOR_STORE_ID")
         if not VECTOR_STORE_ID:
             return None
@@ -110,8 +114,6 @@ class ChatManager:
             )
         ]
 
-    from typing import Iterator, Union
-
     # With streaming response
     @overload
     def generate_chat_response(
@@ -130,7 +132,7 @@ class ChatManager:
 
     def generate_chat_response(
         self, messages: ResponseInputParam, city: str, state: str, stream: bool
-    ):
+    ) -> Union[Iterator[ResponseStreamEvent], ResponseEvent]:
         instructions = self.prepare_developer_instructions(city, state)
         tools = self.prepare_openai_tools(city, state)
         param_includes: list[ResponseIncludable] = ["file_search_call.results"]
@@ -150,11 +152,11 @@ class ChatManager:
 
 
 class ChatView(View):
-    def __init__(self, tenant_session):
+    def __init__(self, tenant_session: TenantSession) -> None:
         self.tenant_session = tenant_session
         self.chat_manager = ChatManager()
 
-    def dispatch_request(self, *args, **kwargs):
+    def dispatch_request(self, *args, **kwargs) -> Response:
         data = request.json
         user_msg = data["message"]
 
@@ -163,7 +165,7 @@ class ChatView(View):
             EasyInputMessageParam(role="user", content=user_msg)
         )
 
-        def generate():
+        def generate() -> Iterator[str]:
             # Use the new Responses API with streaming
             response_stream = self.chat_manager.generate_chat_response(
                 current_session["messages"],
@@ -178,6 +180,10 @@ class ChatView(View):
                     # Append the content of the assistant message chunk
                     assistant_chunks.append(event.delta)
                     yield event.delta
+                else:
+                    Warning(
+                        f"Unexpected event type: {type(event)}. Expected ResponseTextDeltaEvent."
+                    )
 
             # Join the complete response
             assistant_msg = "".join(assistant_chunks)
