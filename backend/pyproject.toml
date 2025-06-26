@@ -25,6 +25,7 @@ build-backend = "setuptools.build_meta"
 dev = [
     "ipdb>=0.13.13",
     "mypy>=1.16.1",
+    "pandas-stubs>=2.2.3.250527",
     "pyrefly>=0.21.0",
     "pytest>=8.4.0",
     "pytest-cov>=6.1.1",
