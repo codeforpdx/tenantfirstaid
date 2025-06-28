@@ -30,7 +30,7 @@ export default function MessageWindow({
 
   const handleClearSession = () => {
     handleNewSession();
-    setMessages([]);
+    window.location.reload();
   };
 
   useEffect(() => {
