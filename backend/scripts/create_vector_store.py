@@ -2,11 +2,11 @@ import os
 from pathlib import Path
 from openai import OpenAI
 
-
-if Path(".env").exists():
+dotenv_path = Path(__file__).parent.parent / ".env"
+if dotenv_path.exists():
     from dotenv import load_dotenv
 
-    load_dotenv(override=True)
+    load_dotenv(dotenv_path=dotenv_path, override=True)
 
 API_KEY = os.getenv("OPENAI_API_KEY", os.getenv("GITHUB_API_KEY"))
 
@@ -64,11 +64,11 @@ for dirpath, dirnames, filenames in os.walk(documents_path):
             path.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
 
             print(f"Uploading {file_path} to vector store '{vector_store.name}'.")
-            file = client.files.create(
+            file_obj = client.files.create(
                 file=open(file_path, "rb"),
                 purpose="assistants",
             )
-            file_ids.append(file.id)
+            file_ids.append(file_obj.id)
 
         # Add files to the vector store
         batch_upload = client.vector_stores.file_batches.create(
