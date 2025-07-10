@@ -20,8 +20,16 @@ lint: uv.lock
 typecheck: uv.lock
 	$(PYTHON) run ty check $(TYPECHECK_OPTIONS)
 
-typecheck-mypy: uv.lock
-	$(PYTHON) run mypy $(TYPECHECK_OPTIONS) -p tenantfirstaid --python-executable .venv/bin/python3 --check-untyped-defs
+MYPY_CMD := $(PYTHON) run mypy $(TYPECHECK_OPTIONS)
+MYPY_ARGS :=  --python-executable .venv/bin/python3 --pretty --check-untyped-defs
+
+typecheck-mypy-scripts: uv.lock
+	$(MYPY_CMD) -p scripts $(MYPY_ARGS)
+
+typecheck-mypy-tenantfirstaid: uv.lock
+	$(MYPY_CMD) -p tenantfirstaid $(MYPY_ARGS)
+
+typecheck-mypy: typecheck-mypy-tenantfirstaid typecheck-mypy-scripts
 
 typecheck-pyrefly: uv.lock
 	$(PYTHON) run pyrefly check $(TYPECHECK_OPTIONS) --python-interpreter .venv/bin/python3
