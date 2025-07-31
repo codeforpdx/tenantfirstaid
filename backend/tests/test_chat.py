@@ -1,28 +1,44 @@
 import pytest
+import vertexai
 from tenantfirstaid.chat import (
     ChatManager,
     DEFAULT_INSTRUCTIONS,
     OREGON_LAW_CENTER_PHONE_NUMBER,
 )
-import os
-from unittest import mock
 from flask import Flask
 from tenantfirstaid.chat import ChatView
 from tenantfirstaid.session import TenantSession, TenantSessionData, InitSessionView
-from openai import OpenAI
-from openai.types.responses import ResponseTextDeltaEvent
+from vertexai.generative_models import (
+    GenerationConfig,
+    GenerationResponse,
+    GenerativeModel,
+)
 from typing import Dict
 
 
 @pytest.fixture
-def mock_openai(mocker):
-    mock_openai_client = mocker.Mock(spec=OpenAI)
-    mocker.patch("tenantfirstaid.chat.OpenAI", return_value=mock_openai_client)
-    return mock_openai_client
+def mock_vertexai(mocker):
+    mock_vertexai_init = mocker.Mock(spec=vertexai)
+    mocker.patch("tenantfirstaid.chat.vertexai", return_value=mock_vertexai_init)
+    return mock_vertexai_init
 
 
 @pytest.fixture
-def chat_manager(mocker, mock_openai):
+def mock_vertexai_generative_model(mocker):
+    mock_model = mocker.Mock(spec=GenerativeModel)
+    mocker.patch("tenantfirstaid.chat.GenerativeModel", return_value=mock_model)
+    return mock_model
+
+
+@pytest.fixture
+def mock_vertexai_generation_config(mocker):
+    mock_gen_config = mocker.Mock(spec=GenerationConfig)
+    mocker.patch("tenantfirstaid.chat.GenerationConfig", return_value=mock_gen_config)
+    return mock_gen_config
+
+
+@pytest.fixture
+def chat_manager(mocker, mock_vertexai):
     return ChatManager()
 
 
@@ -31,41 +47,6 @@ def test_prepare_developer_instructions_includes_city_state(chat_manager):
     state = "or"
     instructions = chat_manager.prepare_developer_instructions(city, state)
     assert f"The user is in {city} {state.upper()}." in instructions
-
-
-def test_prepare_openai_tools_returns_none_if_no_vector_store_id(chat_manager):
-    with mock.patch.dict(os.environ, {}, clear=True):
-        assert chat_manager.prepare_openai_tools("Portland", "or") is None
-
-
-def test_prepare_openai_tools_returns_tools_with_vector_store_id(chat_manager):
-    with mock.patch.dict(os.environ, {"VECTOR_STORE_ID": "abc123"}):
-        tools = chat_manager.prepare_openai_tools("Portland", "or")
-        assert tools is not None
-        assert type(tools) is list
-        assert len(tools) == 1
-        assert tools[0].get("vector_store_ids") == ["abc123"]
-
-
-def test_prepare_openai_tools_city_null(chat_manager):
-    with mock.patch.dict(os.environ, {"VECTOR_STORE_ID": "abc123"}):
-        tools = chat_manager.prepare_openai_tools("null", "or")
-        assert tools is not None
-        assert tools[0].get("filters").get("type") == "and"
-
-
-def test_generate_chat_response_streaming(chat_manager):
-    with mock.patch.object(chat_manager.client.responses, "create") as mock_create:
-        mock_create.return_value = iter([])
-        result = chat_manager.generate_chat_response([], "Portland", "or", stream=True)
-        assert hasattr(result, "__iter__")
-
-
-def test_generate_chat_response_non_streaming(chat_manager):
-    with mock.patch.object(chat_manager.client.responses, "create") as mock_create:
-        mock_create.return_value = "response"
-        result = chat_manager.generate_chat_response([], "Portland", "or", stream=False)
-        assert result == "response"
 
 
 def test_default_instructions_contains_oregon_law_center_phone():
@@ -114,7 +95,9 @@ def app(mock_valkey):
     return app
 
 
-def test_chat_view_dispatch_request_streams_response(app, mocker, mock_openai):
+def test_chat_view_dispatch_request_streams_response(
+    app, mocker, mock_vertexai_generative_model
+):
     tenant_session = TenantSession()
 
     app.add_url_rule(
@@ -160,22 +143,20 @@ def test_chat_view_dispatch_request_streams_response(app, mocker, mock_openai):
         assert chat_response.status_code == 200  # Ensure the response is successful
         assert chat_response.mimetype == "text/plain"
 
-        mock_openai.responses.create = mocker.Mock(
-            side_effect=lambda model,
-            input,
-            instructions,
-            reasoning,
-            stream,
-            include,
-            tools: iter(
+        mock_vertexai_generative_model.generate_content = mocker.Mock(
+            return_value=iter(
                 [
-                    ResponseTextDeltaEvent(
-                        type="response.output_text.delta",
-                        delta="Greetings, test prompt!",
-                        content_index=-1,
-                        item_id="item-id",
-                        output_index=0,
-                        sequence_number=-1,
+                    GenerationResponse.from_dict(
+                        response_dict=dict(
+                            candidates=[
+                                dict(
+                                    content=dict(
+                                        role="model",
+                                        parts=[dict(text="Greetings, test prompt!")],
+                                    )
+                                )
+                            ]
+                        )
                     )
                 ]
             )

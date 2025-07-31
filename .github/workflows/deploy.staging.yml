@@ -74,16 +74,20 @@ jobs:
             sudo chown root:root /etc/tenantfirstaid
             cat > /etc/tenantfirstaid/env <<EOF
             ENV=${{ vars.ENV }}
-            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             FLASK_SECRET_KEY=${{ secrets.FLASK_SECRET_KEY }}
             DB_HOST=${{secrets.DB_HOST}}
             DB_PASSWORD=${{secrets.DB_PASSWORD}}
             DB_PORT=${{vars.DB_PORT}}
             DB_USER=default
-            MODEL_REASONING_EFFORT=high
-            VECTOR_STORE_ID=${{secrets.VECTOR_STORE_ID}}
+            GEMINI_RAG_CORPUS=${{secrets.GEMINI_RAG_CORPUS}}
+            GOOGLE_SERVICE_ACCOUNT_CREDENTIALS_FILE=/etc/tenantfirstaid/google-service-account.json
             EOF
             chmod 640 /etc/tenantfirstaid/env
+
+            cat > /etc/tenantfirstaid/google-service-account.json <<EOF
+            ${{ secrets.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS}}
+            EOF
+            chmod 640 /etc/tenantfirstaid/google-service-account.json
             
             # Ownership, restart, reload
             sudo chown -R $USER:www-data ${{ vars.REMOTE_APP_DIR }}

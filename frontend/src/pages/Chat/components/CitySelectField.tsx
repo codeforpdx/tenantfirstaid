@@ -46,7 +46,7 @@ export default function CitySelectField({ setMessages }: Props) {
         setMessages((prev) => [
           ...prev,
           {
-            role: "assistant",
+            role: "model",
             content:
               "Ask me anything about Oregon tenant rights and assistance.",
             messageId: botMessageId,

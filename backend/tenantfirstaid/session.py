@@ -1,4 +1,3 @@
-from openai.types.responses.easy_input_message import EasyInputMessage
 import os
 import uuid
 from flask import Response, after_this_request, request, session
@@ -12,7 +11,7 @@ from typing import Any, Dict, Optional, Literal
 class TenantSessionData(TypedDict):
     city: str
     state: str
-    messages: list[EasyInputMessage]  # List of messages with role and content
+    messages: list  # List of messages with role and content
 
 
 NEW_SESSION_DATA = TenantSessionData(city="null", state="or", messages=[])

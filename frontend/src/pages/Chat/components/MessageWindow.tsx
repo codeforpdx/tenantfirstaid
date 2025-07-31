@@ -57,9 +57,8 @@ export default function MessageWindow({
   return (
     <>
       <div
-        className={`flex-1 ${
-          isOngoing ? "overflow-y-scroll" : "overflow-y-none"
-        }`}
+        className={`flex-1 ${isOngoing ? "overflow-y-scroll" : "overflow-y-none"
+          }`}
         ref={messagesRef}
       >
         {isError ? (
@@ -72,19 +71,17 @@ export default function MessageWindow({
               <div className="flex flex-col gap-4">
                 {messages.map((message) => (
                   <div
-                    className={`flex w-full ${
-                      message.role === "assistant"
+                    className={`flex w-full ${message.role === "model"
                         ? "justify-start"
                         : "justify-end"
-                    }`}
+                      }`}
                     key={message.messageId}
                   >
                     <div
-                      className={`message-bubble p-3 rounded-2xl max-w-[95%] ${
-                        message.role === "assistant"
+                      className={`message-bubble p-3 rounded-2xl max-w-[95%] ${message.role === "model"
                           ? "bg-slate-200 rounded-tl-sm"
                           : "bg-[#1F584F] text-white rounded-tr-sm"
-                      }`}
+                        }`}
                     >
                       <MessageContent
                         message={message}

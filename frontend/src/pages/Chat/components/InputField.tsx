@@ -42,7 +42,7 @@ export default function InputField({
     setMessages((prev) => [
       ...prev,
       {
-        role: "assistant",
+        role: "model",
         content: "",
         messageId: botMessageId,
       },

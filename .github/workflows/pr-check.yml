@@ -43,9 +43,6 @@ jobs:
         run: uv run ty check
 
       - name: Run tests
-        env:
-          OPENAI_API_KEY: XXXX
-          PERSISTENT_STORAGE_DIR: /tmp/tenantfirstaid_data
         run: uv run pytest -v -s
 
   frontend-build:

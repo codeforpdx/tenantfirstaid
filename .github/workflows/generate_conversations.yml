@@ -25,7 +25,7 @@ on:
       model:
         description: 'Model to use'
         required: true
-        default: 'o3'
+        default: 'gpt-2.5-flash'
         type: string
 
 jobs:

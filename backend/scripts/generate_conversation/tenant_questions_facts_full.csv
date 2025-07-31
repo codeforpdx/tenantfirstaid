@@ -705,7 +705,7 @@ Repairs count only if BOTH are true:
 
 If any of those pieces are missing, the notice is defective and you can treat it as invalid, raise it as a defense in an eviction case and sue for three months� rent plus actual damages (ORS 90.427 (9)). A fixed-term lease can�t be cut short for this reason.
 
-Ask for proof the work makes the unit unsafe and check whether the landlord owns more than four rentals. If the notice or payment is wrong, put your objection in writing right away.","My landlord wants to evict me with 90 day notice because the foundation needs to be repaired, can she do that?","[""Tenant has lived in the unit for more than one year."", ""Landlord issued a 90-day notice claiming the foundation needs repair."",]"
+Ask for proof the work makes the unit unsafe and check whether the landlord owns more than four rentals. If the notice or payment is wrong, put your objection in writing right away.","My landlord wants to evict me with 90 day notice because the foundation needs to be repaired, can she do that?","[""Tenant has lived in the unit for more than one year."", ""Landlord issued a 90-day notice claiming the foundation needs repair."",]",,"OR"
 "You: My landlord wants to evict me out of the duplex she lives in the other half of so her uncle can move in, can she do that?
 Bot: To sort this out, I need one detail: How long have you lived in the duplex, and is your agreement month-to-month or a fixed-term lease?
 You: I have lived there for 14 months and am month to month
@@ -888,3 +888,9 @@ What you can still do:
 Deadlines are tight, so act today. Have you already contacted the clerk to see if judgment was entered?
 You: I can call right now
 Bot: Great�when you call, please ask the clerk: �Has the judge already entered a default judgment in my eviction case?�","I accidentally missed my first court appearance for an eviction, I dont think my landlord has a good case, will the court consider both sides or only rule for him because hes there","[""Tenant accidentally missed their first court appearance for an eviction."", ""Tenant believes the landlord does not have a strong case."", ""Tenant has not yet called the court clerk but is about to.""]",,"OR"
+"You: If my landlord put my security deposit in an interest-bearing account, are they required to give me the interest when I move out?
+Bot: Yes. In Portland, if your landlord puts your security deposit in an interest-bearing account, the interest accrues to you. The landlord must return the interest with your deposit, though they can deduct up to 5% of the interest for administrative costs.
+
+According to Portland City Code 30.01.087(B), your rental agreement must state the name and address of the bank where the deposit is held and whether the account is interest-bearing.
+
+Does your written rental agreement mention an interest-bearing account?","If my landlord put my security deposit in an interest-bearing account, are they required to give me the interest when I move out?","[""Tenant recently moved out of their apartment"", ""Tenant only received the full amount of their security deposit back and not any interest accrued"", ""Tenants lease says that the landlord placed the deposit in an account at IQ Credit Union that does not accrue interest""]","Portland","OR"

@@ -55,8 +55,8 @@ interface Props {
 export default function MessageContent({ message, isLoading }: Props) {
   return (
     <>
-      <strong>{message.role === "assistant" ? "Bot: " : "You: "}</strong>
-      {message.role === "assistant" && message.content === "" && isLoading ? (
+      <strong>{message.role === "model" ? "Bot: " : "You: "}</strong>
+      {message.role === "model" && message.content === "" && isLoading ? (
         <span className="animate-dot-pulse">...</span>
       ) : (
         <span

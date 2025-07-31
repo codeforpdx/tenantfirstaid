@@ -51,7 +51,7 @@ export default function About() {
         </p>
         <h2 className="text-2xl font-semibold mt-6 mb-2">Quick Facts:</h2>
         <ul className="list-disc list-inside mb-6">
-          <li>Uses openAI ChatGPT o3 model</li>
+          <li>Uses Google's `gemini-2.5-pro` model</li>
           <li>
             Reference library:
             <ul className="list-none pl-6 mt-1">
