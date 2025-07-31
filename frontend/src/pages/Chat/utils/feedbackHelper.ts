@@ -12,10 +12,12 @@ function sanitizeText(str: string) {
     .replace(/'/g, "&#039;");
 }
 
-export default function exportMessages(messages: IMessage[]) {
+export default async function sendFeedback(
+  messages: IMessage[],
+  userFeedback: string,
+) {
   if (messages.length < 2) return;
 
-  const newDocument = window.open("", "", "height=800,width=600");
   const messageChain = messages
     .map(
       ({ role, content }) =>
@@ -25,7 +27,7 @@ export default function exportMessages(messages: IMessage[]) {
     )
     .join("");
 
-  newDocument?.document.writeln(`
+  const htmlContent = `
     <html>
     <head>
       <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'none'; object-src 'none'; base-uri 'none'; style-src 'self'; img-src 'self' data:; font-src 'self'; form-action 'none';">
@@ -47,9 +49,16 @@ export default function exportMessages(messages: IMessage[]) {
       ${messageChain}
     </body>
     </html>
-  `);
+  `;
 
-  newDocument?.document.close();
-  newDocument?.focus();
-  newDocument?.print();
+  const blob = new Blob([htmlContent], { type: "text/html" });
+  const formData = new FormData();
+
+  formData.append("feedback", userFeedback);
+  formData.append("transcript", blob, "transcript.html");
+
+  await fetch("/api/feedback", {
+    method: "POST",
+    body: formData,
+  });
 }

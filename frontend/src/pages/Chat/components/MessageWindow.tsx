@@ -6,6 +6,7 @@ import useSession from "../../../hooks/useSession";
 import ExportMessagesButton from "./ExportMessagesButton";
 import CitySelectField from "./CitySelectField";
 import SuggestedPrompts from "./SuggestedPrompts";
+import FeedbackModal from "./FeedbackModal";
 
 interface Props {
   messages: IMessage[];
@@ -24,6 +25,7 @@ export default function MessageWindow({
 }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
+  const [openFeedback, setOpenFeedback] = useState(false);
   const { handleNewSession } = useSession();
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
@@ -99,6 +101,9 @@ export default function MessageWindow({
           </div>
         )}
       </div>
+      {openFeedback && (
+        <FeedbackModal messages={messages} setOpenFeedback={setOpenFeedback} />
+      )}
       <div>
         {messages.length > 0 ? (
           <>
@@ -121,9 +126,15 @@ export default function MessageWindow({
               >
                 Clear Chat
               </button>
-              <div className="">
-                <ExportMessagesButton messages={messages} />
-              </div>
+              <ExportMessagesButton messages={messages} />
+              <button
+                className="py-2 px-4 border rounded-md font-semibold hover:bg-gray-200 transition-colors cursor-pointer opacity-70"
+                onClick={() => {
+                  setOpenFeedback(true);
+                }}
+              >
+                Feedback
+              </button>
             </div>
           </>
         ) : (

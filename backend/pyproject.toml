@@ -4,6 +4,10 @@ version = "0.2.0"
 requires-python = ">=3.12"
 dependencies = [
   "flask",
+  "flask-mailman",
+  "Flask_Limiter",
+  "xhtml2pdf",
+  "redis",
   "valkey",
   "gunicorn",
   "openai==1.89",
