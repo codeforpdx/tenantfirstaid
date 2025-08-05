@@ -117,7 +117,7 @@ class ChatManager:
 
 
 class ChatView(View):
-    def __init__(self, tenant_session: TenantSession) -> None:
+    def __init__(self, tenant_session) -> None:
         self.tenant_session = tenant_session
         self.chat_manager = ChatManager()
 
@@ -128,7 +128,7 @@ class ChatView(View):
         current_session = self.tenant_session.get()
         current_session["messages"].append(dict(role="user", content=user_msg))
 
-        def generate() -> Iterator[str]:
+        def generate():
             # Use the new Responses API with streaming
             response_stream = self.chat_manager.generate_gemini_chat_response(
                 current_session["messages"],
