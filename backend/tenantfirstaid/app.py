@@ -1,8 +1,9 @@
-from pathlib import Path
-from flask import Flask, jsonify, session
-from flask_cors import CORS
 import os
 import secrets
+from pathlib import Path
+
+from flask import Flask, jsonify, session
+from flask_cors import CORS
 
 
 if Path(".env").exists():
