@@ -45,12 +45,11 @@ jobs:
           
       - name: Install dependencies
         run: |
-          pip install openai pandas
+          pip install pandas
 
       - name: Generate conversations
         working-directory: ${{ env.BACKEND_DIR }}/scripts/generate_conversation
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           MODEL_NAME: ${{ inputs.model }}
           MODEL_REASONING_EFFORT: ${{ inputs.reasoning_effort }}
           VECTOR_STORE_ID: ${{ secrets.VECTOR_STORE_ID }}

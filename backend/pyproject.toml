@@ -9,7 +9,6 @@ dependencies = [
   "google-auth>=2.40.3",
   "google-genai>=1.28.0",
   "google-cloud-aiplatform>=1.106.0",
-  "openai==1.89",
   "jsonlines",
   "simplejson",
   "python-dotenv",
@@ -42,5 +41,4 @@ dev = [
 
 gen_convo = [
       "pandas",
-      "openai",
 ]
