@@ -1,7 +1,9 @@
-from pathlib import Path
-from flask import Flask, jsonify, session
 import os
 import secrets
+from pathlib import Path
+
+from flask import Flask, jsonify, session
+from flask_cors import CORS
 
 
 if Path(".env").exists():
@@ -15,6 +17,23 @@ from .session import InitSessionView, TenantSession
 from .citations import get_citation
 
 app = Flask(__name__)
+
+# Configure CORS with strict origin validation
+ALLOWED_ORIGINS = [
+    "https://tenantfirstaid.com",
+    "https://www.tenantfirstaid.com",
+]
+
+# Add localhost origins for development
+if os.getenv("ENV", "dev") == "dev":
+    ALLOWED_ORIGINS.extend([
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",  # Vite default
+        "http://127.0.0.1:5173",
+    ])
+
+CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
 
 # Configure Flask sessions
 app.secret_key = os.getenv("FLASK_SECRET_KEY", secrets.token_hex(32))
