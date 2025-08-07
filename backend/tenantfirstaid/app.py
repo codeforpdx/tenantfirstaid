@@ -97,11 +97,18 @@ def clear_session():
 @app.get("/api/version")
 def get_version():
     try:
+        # Try the package name as defined in pyproject.toml
         app_version = version("tenant-first-aid")
         return jsonify({"version": app_version})
-    except Exception as e:
-        # Fallback if setuptools-scm isn't working or in development
-        return jsonify({"version": "development", "error": str(e)})
+    except Exception:
+        try:
+            # Try alternative package name format
+            app_version = version("tenant_first_aid")
+            return jsonify({"version": app_version})
+        except Exception:
+            # Fallback for development or when setuptools-scm can't determine version
+            # This happens when there are no git tags yet
+            return jsonify({"version": "0.1.0-dev"})
 
 
 app.add_url_rule(
