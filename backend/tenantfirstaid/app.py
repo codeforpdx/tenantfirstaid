@@ -3,6 +3,7 @@ from flask import Flask, jsonify, session, abort
 from flask_mailman import Mail
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_cors import CORS
 import os
 import secrets
 
@@ -38,6 +39,24 @@ limiter = Limiter(
     app=app,
     storage_uri=build_valkey_uri(),
 )
+# Configure CORS with strict origin validation
+ALLOWED_ORIGINS = [
+    "https://tenantfirstaid.com",
+    "https://www.tenantfirstaid.com",
+]
+
+# Add localhost origins for development
+if os.getenv("ENV", "dev") == "dev":
+    ALLOWED_ORIGINS.extend(
+        [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:5173",  # Vite default
+            "http://127.0.0.1:5173",
+        ]
+    )
+
+CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
 
 # Configure Flask sessions
 app.secret_key = os.getenv("FLASK_SECRET_KEY", secrets.token_hex(32))
