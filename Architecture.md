@@ -83,6 +83,14 @@ backend/
 
 ### RAG (Retrieval-Augmented Generation)
 
+The system uses **Vertex AI RAG (Retrieval-Augmented Generation)**, which combines Google's Vertex AI vector search capabilities with the Gemini 2.5 Pro language model. This is specifically a **grounded generation** approach where the LLM has access to a tool-based retrieval system that searches through a curated corpus of Oregon housing law documents.
+
+**RAG Type and Category:**
+- **Architecture Type**: Tool-augmented RAG with function calling
+- **Implementation**: Vertex AI managed RAG service
+- **Retrieval Method**: Dense vector similarity search with semantic matching
+- **Grounding**: Tool-based retrieval integrated directly into Gemini's generation process
+
 #### Data Ingestion Pipeline
 
 The RAG system processes legal documents to create a searchable knowledge base:
@@ -159,6 +167,174 @@ sequenceDiagram
 3. **Response Generation**: Gemini 2.5 Pro generates contextual responses using retrieved documents
 4. **Streaming Response**: Response is streamed back to the client in real-time
 5. **Session Update**: Conversation state is persisted for continuity
+
+## Multi-Turn Conversation Management
+
+The system maintains conversational context across multiple interactions through a sophisticated session management approach that preserves conversation history while enabling contextual responses.
+
+### Session Architecture
+
+```mermaid
+graph TB
+    subgraph "Client Session"
+        Browser[Browser Session<br/>Flask Session Cookie]
+        SessionID[Unique Session ID<br/>UUID v4]
+    end
+    
+    subgraph "Server Session Management"
+        SessionManager[TenantSession<br/>Manager]
+        Valkey[(Valkey Database<br/>Session Storage)]
+    end
+    
+    subgraph "Conversation State"
+        Messages[Message History<br/>Array]
+        Context[User Context<br/>City, State]
+        Metadata[Session Metadata<br/>Timestamps, IDs]
+    end
+    
+    Browser --> SessionID
+    SessionID --> SessionManager
+    SessionManager --> Valkey
+    Valkey --> Messages
+    Valkey --> Context
+    Valkey --> Metadata
+```
+
+### Conversation Persistence
+
+**Session Data Structure:**
+```typescript
+interface TenantSessionData {
+  city: string;           // User's city (e.g., "portland", "eugene", "null")
+  state: string;          // User's state (default: "or")
+  messages: Array<{       // Complete conversation history
+    role: "user" | "model";
+    content: string;
+  }>;
+}
+```
+
+**Multi-Turn Implementation Details:**
+
+1. **Session Initialization** (`/api/init`):
+   - Creates UUID v4 session identifier
+   - Initializes empty message array
+   - Stores user location context (city/state)
+   - Uses Flask secure session cookies
+
+2. **Conversation Flow**:
+   - Each message exchange appends to `messages` array
+   - Complete conversation history sent to Gemini for context
+   - Location metadata enables jurisdiction-specific legal advice
+   - Session state persisted to Valkey after each interaction
+
+3. **Context Preservation**:
+   - Full message history passed to Gemini API on each request
+   - System instructions include location-specific context
+   - Previous legal advice references maintained across turns
+   - Citation links and legal precedents remain accessible
+
+4. **Session Management**:
+   - **Storage**: Valkey (Redis-compatible) for high-performance session data
+   - **Persistence**: Sessions survive server restarts
+   - **Security**: HttpOnly, SameSite cookies with secure flag in production
+   - **Cleanup**: Sessions can be cleared via `/api/clear-session`
+
+## Streaming Response Implementation
+
+The application implements real-time response streaming to provide immediate feedback as the AI generates responses, creating a natural chat experience.
+
+### Streaming Architecture
+
+```mermaid
+sequenceDiagram
+    participant UI as React Frontend
+    participant API as Flask API
+    participant Gemini as Gemini 2.5 Pro
+    participant RAG as Vertex AI RAG
+    
+    UI->>API: POST /api/query with user message
+    API->>API: Add user message to session
+    API->>Gemini: Generate with stream=True + conversation history
+    Gemini->>RAG: Tool call: retrieve relevant documents
+    RAG-->>Gemini: Return legal passages
+    
+    loop Streaming Response
+        Gemini-->>API: Yield text chunk
+        API-->>UI: Stream chunk via Response
+        UI->>UI: Update message content incrementally
+    end
+    
+    API->>API: Concatenate full response & update session
+```
+
+### Backend Streaming Implementation
+
+**Stream Generation** (`chat.py:131-157`):
+```python
+def generate():
+    response_stream = self.chat_manager.generate_gemini_chat_response(
+        current_session["messages"],
+        current_session["city"], 
+        current_session["state"],
+        stream=True,  # Enable streaming
+    )
+    
+    assistant_chunks = []
+    for event in response_stream:
+        # Extract text chunk from Gemini response
+        chunk = event.candidates[0].content.parts[0].text
+        assistant_chunks.append(chunk)
+        yield chunk  # Stream to client
+    
+    # Persist complete response
+    assistant_msg = "".join(assistant_chunks)
+    current_session["messages"].append({
+        "role": "model", 
+        "content": assistant_msg
+    })
+    
+return Response(stream_with_context(generate()), mimetype="text/plain")
+```
+
+### Frontend Streaming Implementation
+
+**Stream Processing** (`InputField.tsx:52-71`):
+```typescript
+const reader = await addMessage(userMessage);
+const decoder = new TextDecoder();
+let fullText = "";
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  
+  const chunk = decoder.decode(value);
+  fullText += chunk;
+  
+  // Real-time UI update
+  setMessages((prev) =>
+    prev.map((msg) =>
+      msg.messageId === botMessageId
+        ? { ...msg, content: fullText }
+        : msg,
+    ),
+  );
+}
+```
+
+**Streaming Features:**
+- **Real-time Display**: Text appears character-by-character as generated
+- **Fetch Streams API**: Uses native browser `ReadableStream` via `response.body.getReader()`
+- **Error Handling**: Graceful fallback to error message if streaming fails
+- **UI Responsiveness**: Loading states and disabled inputs during generation
+- **Session Persistence**: Complete response saved to session storage after streaming
+
+**Performance Benefits:**
+- **Reduced Perceived Latency**: Users see responses immediately as they're generated
+- **Better UX**: Natural conversation flow without waiting for complete responses
+- **Scalability**: Server can handle multiple concurrent streaming connections
+- **Memory Efficiency**: Chunks are processed incrementally rather than buffering entire responses
 
 ### Framework
 
