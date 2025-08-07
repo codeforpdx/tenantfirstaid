@@ -1,7 +1,6 @@
 # /// script
 # requires-python = "~=3.11"
 # dependencies = [
-#     "openai",
 #     "pandas",
 #     "python-dotenv",
 # ]
@@ -68,7 +67,7 @@ class ChatView:
         return reversed_messages
 
     def bot_response(self):
-        """Generates a response from the bot using the OpenAI API."""
+        """Generates a response from the bot using the Gemini API."""
         tries = 0
         while tries < 3:
             # Use the BOT_INSTRUCTIONS for bot responses
@@ -90,7 +89,7 @@ class ChatView:
         return failure_message, None
 
     def user_response(self):
-        """Generates a response from the user using the OpenAI API."""
+        """Generates a response from the user using the Gemini API."""
         tries = 0
         while tries < 3:
             try:
@@ -217,4 +216,4 @@ if __name__ == "__main__":
     process_csv(
         num_turns=args.num_turns, num_rows=args.num_rows, output_file=args.output_file
     )
-# This script generates conversations between a user and a bot using the OpenAI API.
+# This script generates conversations between a user and a bot using the Gemini API.

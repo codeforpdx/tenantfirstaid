@@ -77,19 +77,19 @@ export default function PrivacyPolicy() {
           <li>
             Other Venders: Our Services connect with other technology platforms
             and anonymously shared/stored data is governed by their policies
-            (OpenAI:{" "}
+            (Google:{" "}
             <Link
-              to="https://openai.com/policies/privacy-policy"
+              to="https://policies.google.com/privacy"
               className="underline text-blue-600"
             >
               Privacy Policy
             </Link>{" "}
             and{" "}
             <Link
-              to="https://openai.com/policies/terms-of-use"
+              to="https://policies.google.com/terms"
               className="underline text-blue-600"
             >
-              Terms of Use
+              Terms of Service
             </Link>
             )
           </li>
