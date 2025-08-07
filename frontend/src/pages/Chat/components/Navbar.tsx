@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import TenantFirstAidLogo from "../../../shared/components/TenatFirstAidLogo";
+import { useVersion } from "../../../hooks/useVersion";
 
 export default function Navbar() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { version, loading, error } = useVersion();
 
   return (
     <nav className="fixed top-0 left-0 w-full bg-[#1F584F] shadow-md py-3 px-6 z-50">
@@ -44,7 +46,7 @@ export default function Navbar() {
           sidebarOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex flex-col p-8 gap-6 mt-10">
+        <div className="flex flex-col h-full p-8 gap-6 mt-10">
           <Link
             to="/"
             className="block px-3 py-2 rounded text-gray-700 font-medium transition-colors hover:bg-[#4F8B82] hover:text-[#F4F4F2]"
@@ -74,6 +76,17 @@ export default function Navbar() {
             Privacy Policy
           </Link>
           <hr className="my-2 border-t border-gray-300" />
+          <div className="mt-auto pb-4">
+            <div className="text-xs text-gray-500 text-center">
+              {loading ? (
+                "Loading version..."
+              ) : error ? (
+                "Version unavailable"
+              ) : (
+                `v${version}`
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

@@ -7,6 +7,11 @@ from flask_cors import CORS
 import os
 import secrets
 
+try:
+    from importlib.metadata import version
+except ImportError:
+    from importlib_metadata import version
+
 
 if Path(".env").exists():
     from dotenv import load_dotenv
@@ -87,6 +92,16 @@ def history():
 def clear_session():
     session.clear()
     return jsonify({"success": True})
+
+
+@app.get("/api/version")
+def get_version():
+    try:
+        app_version = version("tenant-first-aid")
+        return jsonify({"version": app_version})
+    except Exception as e:
+        # Fallback if setuptools-scm isn't working or in development
+        return jsonify({"version": "development", "error": str(e)})
 
 
 app.add_url_rule(
