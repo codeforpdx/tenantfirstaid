@@ -12,20 +12,40 @@ function sanitizeText(str: string) {
     .replace(/'/g, "&#039;");
 }
 
-export default function exportMessages(messages: IMessage[]) {
+function redactText(message: string, wordsToRedact: string) {
+  let redactedMessage = message;
+  const redactList = wordsToRedact.split(/\s*,\s*/).map((s) => s.trim());
+  redactList.forEach((word) => {
+    const regex = new RegExp(`\\b${word.replace(/\s+/g, "\\s+")}\\b`, "gi");
+    redactedMessage = redactedMessage.replace(regex, () => {
+      return `<span style="
+        background-color: black;
+        color:transparent;
+        white-space: nowrap;
+        user-select: none;
+      ">${"_".repeat(10)}</span>`;
+    });
+  });
+  return redactedMessage;
+}
+
+export default async function sendFeedback(
+  messages: IMessage[],
+  userFeedback: string,
+  wordsToRedact: string,
+) {
   if (messages.length < 2) return;
 
-  const newDocument = window.open("", "", "height=800,width=600");
   const messageChain = messages
     .map(
       ({ role, content }) =>
         `<p><strong>${
           role.charAt(0).toUpperCase() + role.slice(1)
-        }</strong>: ${sanitizeText(content)}</p>`,
+        }</strong>: ${redactText(sanitizeText(content), wordsToRedact)}</p>`,
     )
     .join("");
 
-  newDocument?.document.writeln(`
+  const htmlContent = `
     <html>
     <head>
       <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'none'; object-src 'none'; base-uri 'none'; style-src 'self'; img-src 'self' data:; font-src 'self'; form-action 'none';">
@@ -47,9 +67,16 @@ export default function exportMessages(messages: IMessage[]) {
       ${messageChain}
     </body>
     </html>
-  `);
+  `;
 
-  newDocument?.document.close();
-  newDocument?.focus();
-  newDocument?.print();
+  const blob = new Blob([htmlContent], { type: "text/html" });
+  const formData = new FormData();
+
+  formData.append("feedback", userFeedback);
+  formData.append("transcript", blob, "transcript.html");
+
+  await fetch("/api/feedback", {
+    method: "POST",
+    body: formData,
+  });
 }

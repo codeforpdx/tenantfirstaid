@@ -46,6 +46,7 @@ class TenantSession:
         if not session_id:
             session_id = str(uuid.uuid4())
             session["session_id"] = session_id
+            session["site_user"] = True
 
             @after_this_request
             def save_session(response: Response) -> Response:
