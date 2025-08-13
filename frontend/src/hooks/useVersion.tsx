@@ -15,7 +15,7 @@ export function useVersion() {
       try {
         const response = await fetch("/api/version");
         const data: VersionResponse = await response.json();
-        
+
         if (response.ok) {
           setVersion(data.version);
         } else {

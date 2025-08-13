@@ -78,13 +78,11 @@ export default function Navbar() {
           <hr className="my-2 border-t border-gray-300" />
           <div className="mt-auto pb-4">
             <div className="text-xs text-gray-500 text-center">
-              {loading ? (
-                "Loading version..."
-              ) : error ? (
-                "Version unavailable"
-              ) : (
-                `v${version}`
-              )}
+              {loading
+                ? "Loading version..."
+                : error
+                  ? "Version unavailable"
+                  : `v${version}`}
             </div>
           </div>
         </div>

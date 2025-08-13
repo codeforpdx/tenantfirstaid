@@ -19,7 +19,7 @@ import { useVersion } from "./hooks/useVersion";
 
 function MyComponent() {
   const { version, loading, error } = useVersion();
-  
+
   return (
     <div>
       {loading ? "Loading..." : error ? "Version unavailable" : `v${version}`}
