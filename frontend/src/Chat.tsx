@@ -1,27 +1,11 @@
-import { useState } from "react";
 import MessageWindow from "./pages/Chat/components/MessageWindow";
-import StatuteDrawer from "./pages/Chat/components/StatuteDrawer";
 import useMessages from "./hooks/useMessages";
+import useLocation from "./hooks/useLocation";
 
 export default function Chat() {
-  const { messages, setMessages, isLoading, isError } = useMessages();
+  const { addMessage, messages, setMessages } = useMessages();
+  const { location, setLocation } = useLocation();
   const isOngoing = messages.length > 0;
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedStatute, setSelectedStatute] = useState<string | null>(null);
-
-  const handleStatuteClick = (statute: string) => {
-    if (statute === selectedStatute && drawerOpen) {
-      closeDrawer();
-    } else {
-      setSelectedStatute(statute);
-      setDrawerOpen(true);
-    }
-  };
-
-  const closeDrawer = () => {
-    setDrawerOpen(false);
-    setSelectedStatute(null);
-  };
 
   return (
     <div className="h-dvh pt-16 flex items-center">
@@ -35,21 +19,14 @@ export default function Chat() {
                   : "justify-center max-w-[600px]"
               }`}
           >
-            {isLoading ? (
-              <div
-                className={`${isLoading && "animate-dot-pulse"} text-center`}
-              >
-                Loading...
-              </div>
-            ) : (
-              <MessageWindow
-                messages={messages}
-                setMessages={setMessages}
-                isOngoing={isOngoing}
-                isError={isError}
-                onStatuteClick={handleStatuteClick}
-              />
-            )}
+            <MessageWindow
+              messages={messages}
+              addMessage={addMessage}
+              location={location}
+              setLocation={setLocation}
+              setMessages={setMessages}
+              isOngoing={isOngoing}
+            />
           </div>
           <div
             className={`container mx-auto text-xs px-4 text-center ${isOngoing ? "max-w-auto my-2" : "max-w-[600px] my-4"}`}
@@ -62,11 +39,6 @@ export default function Chat() {
             <p>For questions, contact michael@qiu-qiulaw.com</p>
           </div>
         </div>
-        <StatuteDrawer
-          open={drawerOpen}
-          statute={selectedStatute}
-          onClose={closeDrawer}
-        />
       </div>
     </div>
   );

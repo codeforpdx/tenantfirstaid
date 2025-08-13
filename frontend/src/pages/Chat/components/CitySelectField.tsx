@@ -1,6 +1,7 @@
-import { useState } from "react";
-import useMessages, { IMessage } from "../../../hooks/useMessages";
+import { IMessage } from "../../../hooks/useMessages";
 import BeaverIcon from "../../../shared/components/BeaverIcon";
+import { ILocation } from "../../../hooks/useLocation";
+import { useState } from "react";
 
 const CitySelectOptions = {
   portland: {
@@ -27,34 +28,33 @@ const CitySelectOptions = {
 
 interface Props {
   setMessages: React.Dispatch<React.SetStateAction<IMessage[]>>;
+  setLocation: React.Dispatch<React.SetStateAction<ILocation>>;
 }
 
-export default function CitySelectField({ setMessages }: Props) {
+export default function CitySelectField({ setMessages, setLocation }: Props) {
   const [city, setCity] = useState<string | null>(null);
-  const { initChat } = useMessages();
-
   const handleCityChange = async (key: string | null) => {
     setCity(key);
-    const selectedCity =
-      CitySelectOptions[key as keyof typeof CitySelectOptions];
-    if (selectedCity && selectedCity.state) {
-      try {
-        await initChat({ city: selectedCity.city, state: selectedCity.state });
+    setLocation((prev) => ({
+      ...prev,
+      city: key,
+      state:
+        CitySelectOptions[key as keyof typeof CitySelectOptions]?.state || null,
+    }));
 
-        // Initial bot message that's not included in history
-        const botMessageId = (Date.now() + 1).toString();
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "model",
-            content:
-              "Ask me anything about Oregon tenant rights and assistance.",
-            messageId: botMessageId,
-          },
-        ]);
-      } catch (error) {
-        console.error("Error initializing session:", error);
-      }
+    try {
+      // Initial bot message
+      const botMessageId = (Date.now() + 1).toString();
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "model",
+          content: "Ask me anything about Oregon tenant rights and assistance.",
+          messageId: botMessageId,
+        },
+      ]);
+    } catch (error) {
+      console.error("Error initializing session:", error);
     }
   };
 

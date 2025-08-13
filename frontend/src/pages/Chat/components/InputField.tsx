@@ -1,9 +1,15 @@
 import { useCallback, useEffect } from "react";
-import useMessages, { type IMessage } from "../../../hooks/useMessages";
+import { type IMessage } from "../../../hooks/useMessages";
+import { ILocation } from "../../../hooks/useLocation";
 
 interface Props {
+  addMessage: (args: {
+    city: string | null;
+    state: string;
+  }) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
   setMessages: React.Dispatch<React.SetStateAction<IMessage[]>>;
   isLoading: boolean;
+  location: ILocation;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   value: string;
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -11,15 +17,15 @@ interface Props {
 }
 
 export default function InputField({
+  addMessage,
   setMessages,
   isLoading,
+  location,
   setIsLoading,
   inputRef,
   value,
   onChange,
 }: Props) {
-  const { addMessage } = useMessages();
-
   const handleSend = async () => {
     if (!value.trim()) return;
 
@@ -49,7 +55,10 @@ export default function InputField({
     ]);
 
     try {
-      const reader = await addMessage(userMessage);
+      const reader = await addMessage({
+        city: location?.city,
+        state: location?.state || "",
+      });
       if (!reader) return;
       const decoder = new TextDecoder();
       let fullText = "";

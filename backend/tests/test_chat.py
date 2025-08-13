@@ -7,12 +7,10 @@ from tenantfirstaid.chat import (
 )
 from flask import Flask
 from tenantfirstaid.chat import ChatView
-from tenantfirstaid.session import TenantSession, TenantSessionData, InitSessionView
 from vertexai.generative_models import (
     GenerativeModel,
     Tool,
 )
-from typing import Dict
 
 
 @pytest.fixture
@@ -57,44 +55,15 @@ def test_default_instructions_contains_citation_links():
 
 
 @pytest.fixture
-def mock_valkey_ping_nop(mocker, monkeypatch):
-    """Mock the Valkey class with the db_con.ping() method."""
-
-    monkeypatch.setenv("DB_HOST", "8.8.8.8")
-    monkeypatch.setenv("DB_PORT", "8888")
-    monkeypatch.setenv("DB_PASSWORD", "test_password")
-    monkeypatch.setenv("DB_USE_SSL", "false")
-
-    mock_valkey_client = mocker.Mock()
-    mocker.patch("tenantfirstaid.session.Valkey", return_value=mock_valkey_client)
-    mock_valkey_client.ping = ()
-    return mock_valkey_client
-
-
-@pytest.fixture
-def mock_valkey(mock_valkey_ping_nop, mocker):
-    _data: Dict[str, str] = {}
-
-    mock_valkey_ping_nop.set = mocker.Mock(
-        side_effect=lambda key, value: _data.update({key: value})
-    )
-
-    mock_valkey_ping_nop.get = mocker.Mock(side_effect=lambda key: _data[key])
-
-    return mock_valkey_ping_nop
-
-
-@pytest.fixture
-def app(mock_valkey):
+def app():
     app = Flask(__name__)
     app.testing = True  # propagate exceptions to the test client
-    app.secret_key = "test_secret_key"  # Set a secret key for session management
 
     return app
 
 
 def test_chat_view_dispatch_request_streams_response(
-    app, mocker, mock_vertexai_generative_model, mock_valkey
+    app, mocker, mock_vertexai_generative_model
 ):
     """Test that sends a message to the API, mocks vertexai response, and validates output."""
 
@@ -116,31 +85,11 @@ def test_chat_view_dispatch_request_streams_response(
     mocker.patch("tenantfirstaid.chat.rag.Retrieval", return_value=mock_retrieval)
     mocker.patch("tenantfirstaid.chat.Tool.from_retrieval", return_value=mock_rag_tool)
 
-    tenant_session = TenantSession()
-
-    app.add_url_rule(
-        "/api/init",
-        view_func=InitSessionView.as_view("init", tenant_session),
-        methods=["POST"],
-    )
-
     app.add_url_rule(
         "/api/query",
-        view_func=ChatView.as_view("chat", tenant_session),
+        view_func=ChatView.as_view("chat"),
         methods=["POST"],
     )
-
-    test_data_obj = TenantSessionData(
-        city="Portland",
-        state="or",
-        messages=[],
-    )
-
-    # Initialize the session
-    with app.test_request_context("/api/init", method="POST", json=test_data_obj):
-        init_response = app.full_dispatch_request()
-        assert init_response.status_code == 200
-        session_id = init_response.json["session_id"]
 
     # Mock the GenerativeModel's generate_content method
     mock_response_text = "This is a mocked response about tenant rights in Oregon. You should contact <a href='https://oregon.public.law/statutes/ORS_90.427' target='_blank'>ORS 90.427</a> for more information."
@@ -160,10 +109,14 @@ def test_chat_view_dispatch_request_streams_response(
     test_message = "What are my rights as a tenant in Portland?"
 
     with app.test_request_context(
-        "/api/query", method="POST", json={"message": test_message}
+        "/api/query",
+        method="POST",
+        json={
+            "messages": [{"role": "user", "content": test_message}],
+            "city": "Portland",
+            "state": "or",
+        },
     ) as chat_ctx:
-        chat_ctx.session["session_id"] = session_id
-
         # Execute the request
         chat_response = chat_ctx.app.full_dispatch_request()
 
@@ -190,11 +143,3 @@ def test_chat_view_dispatch_request_streams_response(
 
         # Check that streaming was enabled
         assert call_args[1]["stream"] is True
-
-        # Verify the session was updated with both user and assistant messages
-        updated_session = tenant_session.get()
-        assert len(updated_session["messages"]) == 2
-        assert updated_session["messages"][0]["role"] == "user"
-        assert updated_session["messages"][0]["content"] == test_message
-        assert updated_session["messages"][1]["role"] == "model"
-        assert updated_session["messages"][1]["content"] == mock_response_text

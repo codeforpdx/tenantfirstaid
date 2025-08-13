@@ -4,7 +4,6 @@ version = "0.2.0"
 requires-python = ">=3.12"
 dependencies = [
   "flask>=3.1.1",
-  "valkey>=6.1.0",
   "gunicorn>=23.0.0",
   "google-auth>=2.40.3",
   "google-genai>=1.28.0",

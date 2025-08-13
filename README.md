@@ -11,11 +11,9 @@ Live at https://tenantfirstaid.com/
 
 ### Prerequisites
  - [uv](https://docs.astral.sh/uv/getting-started/installation/)
- - [docker](https://www.docker.com/)
 
 1. copy `backend/.env.example` to a new file named `.env` in the same directory and populate it with your `OPENAI_API_KEY`. You can set an invalid key, in which case the bot will return error messages. This may still be useful for developing other features.
 1. `cd backend`
-1. `docker-compose up` (use `-d` if you want to run this in the background, otherwise open a new terminal)
 1. `uv sync`
 1. If you have not uploaded the Oregon Housing Law documents to a vector store in OpenAI, run `uv run scripts/create_vector_store.py` and follow the instructions to add the vector store ID to your `.env`.
 1. `uv run python -m tenantfirstaid.app`

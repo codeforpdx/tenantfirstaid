@@ -49,6 +49,11 @@ export default function About() {
           Aid will provide helpful information or direct you to relevant
           resources.
         </p>
+        <h2 className="text-2xl font-semibold mt-6 mb-2">Data Usage</h2>
+        <p className="mb-6">
+          Tenant First Aid does not store any personal data. All interactions
+          are processed in real-time and not saved for future use.
+        </p>
         <h2 className="text-2xl font-semibold mt-6 mb-2">Quick Facts:</h2>
         <ul className="list-disc list-inside mb-6">
           <li>Uses Google's `gemini-2.5-pro` model</li>

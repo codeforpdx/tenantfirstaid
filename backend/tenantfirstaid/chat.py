@@ -74,6 +74,7 @@ class ChatManager:
         instructions=None,
         model_name=MODEL,
     ):
+        print(f"Generating response for messages: {messages}")
         instructions = (
             instructions
             if instructions
@@ -112,28 +113,26 @@ class ChatManager:
             generation_config=GenerationConfig(temperature=0.2),
             tools=[rag_retrieval_tool] if use_tools else None,
         )
+        print(f"Response: {response}")
 
         return response
 
 
 class ChatView(View):
-    def __init__(self, tenant_session) -> None:
-        self.tenant_session = tenant_session
+    def __init__(self) -> None:
         self.chat_manager = ChatManager()
 
     def dispatch_request(self, *args, **kwargs) -> Response:
         data = request.json
-        user_msg = data["message"]
-
-        current_session = self.tenant_session.get()
-        current_session["messages"].append(dict(role="user", content=user_msg))
+        messages = data["messages"]
+        print(f"Received messages: {messages}")
 
         def generate():
             # Use the new Responses API with streaming
             response_stream = self.chat_manager.generate_gemini_chat_response(
-                current_session["messages"],
-                current_session["city"],
-                current_session["state"],
+                messages,
+                data["city"],
+                data["state"],
                 stream=True,
             )
 
@@ -141,15 +140,6 @@ class ChatView(View):
             for event in response_stream:
                 assistant_chunks.append(event.candidates[0].content.parts[0].text)
                 yield event.candidates[0].content.parts[0].text
-
-            # Join the complete response
-            assistant_msg = "".join(assistant_chunks)
-
-            current_session["messages"].append(
-                {"role": "model", "content": assistant_msg}
-            )
-
-            self.tenant_session.set(current_session)
 
         return Response(
             stream_with_context(generate()),
