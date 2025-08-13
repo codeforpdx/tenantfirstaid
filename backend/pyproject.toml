@@ -29,12 +29,8 @@ where = ["."]
 exclude = ["data*"]
 
 [build-system]
-requires = ["setuptools>=61", "setuptools-scm>=8"]
+requires = ["setuptools>=80", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
-
-[tool.setuptools_scm]
-version_scheme = "guess-next-dev"
-local_scheme = "no-local-version"
 
 [dependency-groups]
 dev = [
