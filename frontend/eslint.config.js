@@ -29,7 +29,7 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
       // rando answer from https://github.com/eslint/eslint/discussions/18685
-      '@typescript-eslint/no-unused-vars': ['warn', { caughtErrors: 'none' }]
+      "@typescript-eslint/no-unused-vars": ["warn", { caughtErrors: "none" }],
     },
   },
 );
