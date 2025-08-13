@@ -36,4 +36,8 @@ images for UI changes._
       have not been included_
 - [ ] I need help with writing tests
 
+## Documentation
+
+- [ ] If this PR changes the system architecture, `Architecture.md` has been updated
+
 ## [optional] Are there any post deployment tasks we need to perform?
