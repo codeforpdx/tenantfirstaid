@@ -8,7 +8,6 @@ import os
 import secrets
 
 
-
 if Path(".env").exists():
     from dotenv import load_dotenv
 
