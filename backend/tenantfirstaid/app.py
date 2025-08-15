@@ -7,6 +7,11 @@ from flask_cors import CORS
 import os
 import secrets
 
+try:
+    from importlib.metadata import version
+except ImportError:
+    from importlib_metadata import version
+
 
 if Path(".env").exists():
     from dotenv import load_dotenv
@@ -87,6 +92,23 @@ def history():
 def clear_session():
     session.clear()
     return jsonify({"success": True})
+
+
+@app.get("/api/version")
+def get_version():
+    try:
+        # Try the package name as defined in pyproject.toml
+        app_version = version("tenant-first-aid")
+        return jsonify({"version": app_version})
+    except Exception:
+        try:
+            # Try alternative package name format
+            app_version = version("tenant_first_aid")
+            return jsonify({"version": app_version})
+        except Exception:
+            # Fallback for development or when setuptools-scm can't determine version
+            # This happens when there are no git tags yet
+            return jsonify({"version": "0.1.0-dev"})
 
 
 app.add_url_rule(

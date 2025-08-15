@@ -28,6 +28,8 @@ export default tseslint.config(
         "warn",
         { allowConstantExport: true },
       ],
+      // rando answer from https://github.com/eslint/eslint/discussions/18685
+      "@typescript-eslint/no-unused-vars": ["warn", { caughtErrors: "none" }],
     },
   },
 );
