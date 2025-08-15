@@ -14,7 +14,7 @@ if Path(".env").exists():
     load_dotenv(override=True)
 
 from .chat import ChatView
-
+from .upload import UploadView
 from .session import InitSessionView, TenantSession
 from .citations import get_citation
 from .feedback import send_feedback
@@ -97,6 +97,10 @@ app.add_url_rule(
 
 app.add_url_rule(
     "/api/query", view_func=ChatView.as_view("chat", tenant_session), methods=["POST"]
+)
+
+app.add_url_rule(
+    "/api/upload", view_func=UploadView.as_view("upload", tenant_session), methods=["POST"]
 )
 
 app.add_url_rule(
