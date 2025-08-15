@@ -35,7 +35,7 @@ typecheck-pyrefly: uv.lock
 	$(PYTHON) run pyrefly check $(TYPECHECK_OPTIONS) --python-interpreter .venv/bin/python3
 
 test: uv.lock
-	uv run pytest -v -s $(TEST_OPTIONS)
+	uv run pytest -v -s $(TEST_OPTIONS) --cov
 
 clean:
 	find . -type d -name '__pycache__' -exec rm -r {} +

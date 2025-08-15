@@ -43,7 +43,7 @@ jobs:
         run: uv run ty check
 
       - name: Run tests
-        run: uv run pytest -v -s
+        run: uv run pytest -v -s --cov
 
   frontend-build:
     runs-on: ubuntu-latest
