@@ -32,10 +32,12 @@ Use the following websites for citation links:
 https://oregon.public.law/statutes
 https://www.portland.gov/code/30/01
 https://eugene.municipal.codes/EC/8.425
-Include the links inline in your answer, with the attribute target="_blank" so that they open in a new tab, likethis:
+Include the links inline in your answer, with the attribute target="_blank" so that they open in a new tab, like this:
 <a href="https://oregon.public.law/statutes/ORS_90.427" target="_blank">ORS 90.427</a>.
 
 If the user asks questions about Section 8 or the HomeForward program, search the web for the correct answer and provide a link to the page you used, using the same format as above.
+
+If the user asks to create, write, or compose a letter, compose the letter for the user based on what was discussed.
 """
 
 
@@ -90,9 +92,11 @@ class ChatManager:
         for message in messages:
             formatted_messages.append(
                 {
-                    "role": "model"
-                    if message["role"] == "assistant" or message["role"] == "model"
-                    else "user",
+                    "role": (
+                        "model"
+                        if message["role"] == "assistant" or message["role"] == "model"
+                        else "user"
+                    ),
                     "parts": [{"text": message["content"]}],
                 }
             )

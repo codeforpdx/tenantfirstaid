@@ -8,6 +8,11 @@ import CitySelectField from "./CitySelectField";
 import SuggestedPrompts from "./SuggestedPrompts";
 import FeedbackModal from "./FeedbackModal";
 
+const tabs = [
+  { id: 0, title: "Chat" },
+  { id: 1, title: "Create Letter" },
+];
+
 interface Props {
   messages: IMessage[];
   setMessages: React.Dispatch<React.SetStateAction<IMessage[]>>;
@@ -26,9 +31,36 @@ export default function MessageWindow({
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [openFeedback, setOpenFeedback] = useState(false);
+  const [tabWidth, setTabWidth] = useState(0);
+  const [currentTab, setCurrentTab] = useState(0);
   const { handleNewSession } = useSession();
+  const tabRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
+
+  const handleTabsWidth = () => {
+    if (tabRef.current !== null) {
+      const parentWidth = tabRef.current.getBoundingClientRect().width;
+      const numberOfTabs = tabs.length;
+      const newTabWidth = parentWidth / numberOfTabs;
+      setTabWidth(newTabWidth);
+    }
+  };
+
+  useEffect(() => {
+    const resizeObserver = new ResizeObserver(handleTabsWidth);
+    const tabComponent = tabRef.current;
+
+    if (tabComponent !== null) {
+      resizeObserver.observe(tabComponent);
+    }
+
+    return () => {
+      if (tabComponent !== null) {
+        resizeObserver.unobserve(tabComponent);
+      }
+    };
+  }, []);
 
   const handleClearSession = () => {
     handleNewSession();
@@ -70,6 +102,33 @@ export default function MessageWindow({
           </div>
         ) : (
           <div className="max-h-[calc(100dvh-240px)] sm:max-h-[calc(100dvh-20rem)] mx-auto max-w-[700px]">
+            <div
+              className="items-center justify-center mx-auto w-[280px] mb-4 bg-gray-200 rounded-full relative"
+              style={{ display: isOngoing ? "flex" : "none" }}
+              ref={tabRef}
+            >
+              {tabs.map((tab, index) => {
+                return (
+                  <button
+                    className="py-1 text-sm relative cursor-pointer"
+                    style={{ width: tabWidth * tabs.length }}
+                    key={index}
+                    onClick={() => {
+                      setCurrentTab(tab.id);
+                    }}
+                  >
+                    {tab.title}
+                  </button>
+                );
+              })}
+              <div
+                className="bg-white inset-0 absolute rounded-full mix-blend-exclusion transition-all duration-300"
+                style={{
+                  width: tabWidth,
+                  translate: `${currentTab * tabWidth}px`,
+                }}
+              />
+            </div>
             {isOngoing ? (
               <div className="flex flex-col gap-4">
                 {messages.map((message) => (
@@ -109,6 +168,9 @@ export default function MessageWindow({
               <SuggestedPrompts onPromptClick={handlePromptClick} />
             )}
             <InputField
+              mode={currentTab}
+              setCurrentTab={setCurrentTab}
+              messages={messages}
               setMessages={setMessages}
               isLoading={isLoading}
               setIsLoading={setIsLoading}

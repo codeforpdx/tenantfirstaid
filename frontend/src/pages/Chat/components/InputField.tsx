@@ -1,7 +1,10 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import useMessages, { type IMessage } from "../../../hooks/useMessages";
 
 interface Props {
+  mode: number;
+  setCurrentTab: React.Dispatch<React.SetStateAction<number>>;
+  messages: IMessage[];
   setMessages: React.Dispatch<React.SetStateAction<IMessage[]>>;
   isLoading: boolean;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
@@ -11,6 +14,9 @@ interface Props {
 }
 
 export default function InputField({
+  mode,
+  setCurrentTab,
+  messages,
   setMessages,
   isLoading,
   setIsLoading,
@@ -19,11 +25,16 @@ export default function InputField({
   onChange,
 }: Props) {
   const { addMessage } = useMessages();
+  const hasTriggeredCreateLetter = useRef(false);
 
-  const handleSend = async () => {
-    if (!value.trim()) return;
+  const handleSend = useCallback(async () => {
+    let valueToSet = value;
+    if (mode === 1) {
+      valueToSet = "Create a letter for me based on to what was discussed.";
+    }
+    if (!valueToSet.trim()) return;
 
-    const userMessage = value;
+    const userMessage = valueToSet;
     const userMessageId = Date.now().toString();
     const botMessageId = (Date.now() + 1).toString();
 
@@ -63,10 +74,8 @@ export default function InputField({
         // Update only the bot's message
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.messageId === botMessageId
-              ? { ...msg, content: fullText }
-              : msg,
-          ),
+            msg.messageId === botMessageId ? { ...msg, content: fullText } : msg
+          )
         );
       }
     } catch (error) {
@@ -78,13 +87,32 @@ export default function InputField({
                 ...msg,
                 content: "Sorry, I encountered an error. Please try again.",
               }
-            : msg,
-        ),
+            : msg
+        )
       );
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [addMessage, onChange, setIsLoading, setMessages, value, mode]);
+
+  useEffect(() => {
+    async function createLetter() {
+      if (mode === 1) {
+        const latestMessage = messages[messages.length - 1];
+        if (
+          latestMessage.role === "model" &&
+          hasTriggeredCreateLetter.current === false
+        ) {
+          hasTriggeredCreateLetter.current = true;
+          await handleSend();
+          setTimeout(() => {
+            setCurrentTab(0);
+          }, 1000);
+        }
+      }
+    }
+    createLetter();
+  }, [mode, messages, handleSend, setCurrentTab]);
 
   const resizeTextArea = useCallback(() => {
     const inputElement = inputRef.current;
@@ -97,6 +125,10 @@ export default function InputField({
   useEffect(() => {
     resizeTextArea();
   }, [value, resizeTextArea]);
+
+  useEffect(() => {
+    hasTriggeredCreateLetter.current = false;
+  }, [mode]);
 
   return (
     <div className="flex gap-2 mt-4 justify-center items-center mx-auto max-w-[700px]">
