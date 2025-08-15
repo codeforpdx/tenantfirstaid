@@ -75,14 +75,14 @@ class DocumentAnalyzer:
     def analyze_document(self, file_path: str, stream: bool = False):
         """Analyze a document using Google Gemini Vision API."""
         file_path_obj = Path(file_path)
-        
+
         if not file_path_obj.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
-        
+
         # Read the file
         with open(file_path, "rb") as f:
             file_data = f.read()
-        
+
         # Determine the MIME type based on file extension
         file_extension = file_path_obj.suffix.lower()
         mime_type_map = {
@@ -92,13 +92,13 @@ class DocumentAnalyzer:
             ".pdf": "application/pdf",
         }
         mime_type = mime_type_map.get(file_extension, "application/octet-stream")
-        
+
         # Create the part for the multimodal input
         file_part = Part.from_data(file_data, mime_type=mime_type)
-        
+
         # Generate content with the document
         response = self.model.generate_content([file_part], stream=stream)
-        
+
         return response
 
 
@@ -128,7 +128,7 @@ class UploadView(View):
         file.seek(0, os.SEEK_END)
         file_size = file.tell()
         file.seek(0)  # Reset file pointer
-        
+
         if file_size > MAX_FILE_SIZE:
             abort(400, "File size exceeds 10MB limit")
 
@@ -145,8 +145,10 @@ class UploadView(View):
             # Analyze the document and stream the response
             def generate():
                 try:
-                    response_stream = self.analyzer.analyze_document(str(file_path), stream=True)
-                    
+                    response_stream = self.analyzer.analyze_document(
+                        str(file_path), stream=True
+                    )
+
                     assistant_chunks = []
                     for event in response_stream:
                         chunk_text = event.candidates[0].content.parts[0].text
@@ -171,7 +173,9 @@ class UploadView(View):
                         if file_path.exists():
                             file_path.unlink()
                     except Exception as cleanup_error:
-                        print(f"Warning: Could not delete uploaded file: {cleanup_error}")
+                        print(
+                            f"Warning: Could not delete uploaded file: {cleanup_error}"
+                        )
 
             return Response(
                 stream_with_context(generate()),
@@ -181,8 +185,8 @@ class UploadView(View):
         except Exception as e:
             # Clean up file if it was saved
             try:
-                if 'file_path' in locals() and file_path.exists():
+                if "file_path" in locals() and file_path.exists():
                     file_path.unlink()
-            except:
+            except Exception as _cleanup_error:
                 pass
             abort(500, f"Upload processing failed: {str(e)}")

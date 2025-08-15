@@ -100,7 +100,9 @@ app.add_url_rule(
 )
 
 app.add_url_rule(
-    "/api/upload", view_func=UploadView.as_view("upload", tenant_session), methods=["POST"]
+    "/api/upload",
+    view_func=UploadView.as_view("upload", tenant_session),
+    methods=["POST"],
 )
 
 app.add_url_rule(
