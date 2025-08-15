@@ -27,8 +27,16 @@ where = ["."]
 exclude = ["data*"]
 
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=80"]
 build-backend = "setuptools.build_meta"
+
+[tool.coverage.run]
+branch = true
+source = ["tenantfirstaid"]
+
+[tool.coverage.report]
+fail_under = 85.0  # percentage of overall coverage
+show_missing = true
 
 [dependency-groups]
 dev = [
