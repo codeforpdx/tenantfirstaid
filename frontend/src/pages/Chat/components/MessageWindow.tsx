@@ -7,6 +7,7 @@ import ExportMessagesButton from "./ExportMessagesButton";
 import CitySelectField from "./CitySelectField";
 import SuggestedPrompts from "./SuggestedPrompts";
 import FeedbackModal from "./FeedbackModal";
+import DocumentUpload from "./DocumentUpload";
 
 interface Props {
   messages: IMessage[];
@@ -115,6 +116,11 @@ export default function MessageWindow({
               inputRef={inputRef}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
+            />
+            <DocumentUpload
+              setMessages={setMessages}
+              isLoading={isLoading}
+              setIsLoading={setIsLoading}
             />
             <div className="flex justify-center gap-4 mt-4">
               <button
