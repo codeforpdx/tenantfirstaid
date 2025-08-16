@@ -12,6 +12,7 @@ import vertexai
 
 from tenantfirstaid.session import TenantSession
 
+
 @pytest.fixture
 def mock_environ(monkeypatch, tmpdir):
     monkeypatch.setenv("DATA_DIR", str(tmpdir))
@@ -22,8 +23,9 @@ def mock_environ(monkeypatch, tmpdir):
         UploadView,
         ALLOWED_EXTENSIONS,
         MAX_FILE_SIZE,
-        UPLOAD_FOLDER
+        UPLOAD_FOLDER,
     )
+
     my_dict = {
         "ALLOWED_EXTENSIONS": ALLOWED_EXTENSIONS,
         "MAX_FILE_SIZE": MAX_FILE_SIZE,
@@ -32,8 +34,7 @@ def mock_environ(monkeypatch, tmpdir):
         "UploadView": UploadView,
         "UPLOAD_FOLDER": UPLOAD_FOLDER,
     }
-    return namedtuple('DictAsObject', my_dict.keys())(**my_dict)
-
+    return namedtuple("DictAsObject", my_dict.keys())(**my_dict)
 
 
 class TestAllowedFile:
@@ -76,16 +77,16 @@ def mock_service_account():
     """Mock Google service account credentials."""
     with patch("tenantfirstaid.upload.service_account") as mock_sa:
         mock_credentials = Mock()
-        mock_sa.Credentials.from_service_account_file.return_value = (
-            mock_credentials
-        )
+        mock_sa.Credentials.from_service_account_file.return_value = mock_credentials
         yield mock_sa, mock_credentials
+
 
 @pytest.fixture
 def mock_vertexai(mocker, mock_environ):
     mock_vertexai_init = mocker.Mock(spec=vertexai)
     mocker.patch("tenantfirstaid.chat.vertexai.init", return_value=mock_vertexai_init)
     return mock_vertexai_init
+
 
 @pytest.fixture
 def mock_generative_model():
@@ -95,15 +96,24 @@ def mock_generative_model():
         mock_model_class.return_value = mock_model
         yield mock_model
 
+
 @pytest.fixture
 def document_analyzer(
-    mock_service_account, mock_vertexai, mock_generative_model, mock_environ, tmp_path, monkeypatch
+    mock_service_account,
+    mock_vertexai,
+    mock_generative_model,
+    mock_environ,
+    tmp_path,
+    monkeypatch,
 ):
     """Create a DocumentAnalyzer instance with mocked dependencies."""
     tmp_cred = tmp_path / "service_account.json"
-    tmp_cred.write_text(dumps({"client_email": "nonsense@nonsense.org", "token_uri": "abc123"}))  # Mock service account credentials
+    tmp_cred.write_text(
+        dumps({"client_email": "nonsense@nonsense.org", "token_uri": "abc123"})
+    )  # Mock service account credentials
     monkeypatch.setenv("GOOGLE_SERVICE_ACCOUNT_CREDENTIALS_FILE", str(tmp_cred))
     return mock_environ.DocumentAnalyzer()
+
 
 @pytest.fixture
 def mock_document_analyzer(mocker, mock_environ):
@@ -112,11 +122,16 @@ def mock_document_analyzer(mocker, mock_environ):
     mock_analyzer.analyze_document = mocker.Mock()
     return mock_analyzer
 
+
 class TestDocumentAnalyzer:
     """Test the DocumentAnalyzer class."""
 
     def test_document_analyzer_initialization(
-        document_analyzer, mock_service_account, mock_vertexai, mock_generative_model, mock_environ
+        document_analyzer,
+        mock_service_account,
+        mock_vertexai,
+        mock_generative_model,
+        mock_environ,
     ):
         """Test DocumentAnalyzer initialization."""
         analyzer = mock_environ.DocumentAnalyzer()
@@ -259,7 +274,9 @@ class TestUploadView:
             with pytest.raises(BadRequest, match="Invalid file type"):
                 upload_view.dispatch_request()
 
-    def test_upload_view_file_too_large_returns_400(self, app, upload_view, mock_environ):
+    def test_upload_view_file_too_large_returns_400(
+        self, app, upload_view, mock_environ
+    ):
         """Test that files exceeding size limit return 400."""
         # Create file larger than MAX_FILE_SIZE
         large_content = b"x" * (mock_environ.MAX_FILE_SIZE + 1)
@@ -397,7 +414,6 @@ class TestUploadView:
             assert len(updated_session["messages"]) == 1
             assert updated_session["messages"][0]["role"] == "model"
             assert updated_session["messages"][0]["content"] == "Complete analysis text"
-
 
 
 class TestUploadModule:
