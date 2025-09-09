@@ -1,7 +1,7 @@
 
 [project]
 name = "tenant-first-aid"
-version = "0.2.0"
+dynamic = ["version"]
 requires-python = ">=3.12"
 dependencies = [
   "flask>=3.1.1",
@@ -20,6 +20,8 @@ dependencies = [
   "python-dotenv",
   "pandas>=2.3.0",
   "vertexai>=1.43.0",
+  "setuptools-scm>=8",
+  "importlib-metadata>=8.7.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -27,7 +29,7 @@ where = ["."]
 exclude = ["data*"]
 
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=80", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [dependency-groups]

@@ -88,6 +88,40 @@ Live at https://tenantfirstaid.com/
     ```
     `--keep-going` will continue to run checks, even if previous `make` rule fail.  Omit if you want to stop after the first `make` rule fails.
 
+## Versioning and Releases
+
+This project uses [semantic versioning](https://semver.org/) with automated version management via `setuptools-scm`. The version is automatically derived from Git tags.
+
+### Creating a Release
+
+1. **Determine the version bump type:**
+   - **Patch release** (0.2.0 → 0.2.1): Bug fixes, minor improvements
+   - **Minor release** (0.2.0 → 0.3.0): New features, backward-compatible changes
+   - **Major release** (0.2.0 → 1.0.0): Breaking changes
+
+2. **Create and push a tag:**
+   ```bash
+   # For a patch release (default for regular PRs)
+   git tag v0.2.1
+   git push origin v0.2.1
+   
+   # For a minor release (feature additions)
+   git tag v0.3.0
+   git push origin v0.3.0
+   
+   # For a major release (breaking changes)
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+
+3. **The version will automatically be updated** in the backend API and displayed in the frontend UI.
+
+### Checking the Current Version
+
+- **Backend API**: Visit `/api/version` endpoint
+- **Frontend UI**: Check the sidebar navigation (bottom)
+- **Command line**: Run `uv run python -c "from importlib.metadata import version; print(version('tenant-first-aid'))"`
+
 ## Contributing
 
 We currently have regular project meetups: https://www.meetup.com/codepdx/ . Also check out https://www.codepdx.org/ to find our Discord server.
