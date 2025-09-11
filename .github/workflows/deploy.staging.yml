@@ -47,7 +47,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           source: ${{ vars.FRONTEND_DIR }}/dist
           target: ${{ vars.REMOTE_APP_DIR }}
-          rm: false  # Otherwise we wipe out the backend code
+          rm: false # Otherwise we wipe out the backend code
 
       - name: Bootstrap on droplet
         uses: appleboy/ssh-action@v0.1.7
@@ -58,16 +58,16 @@ jobs:
           script: |
             set -e
             cd ${{ vars.REMOTE_APP_DIR }}/backend/
-            
+
             # Install uv (fast installer from Astral) if it isn't there
             if ! command -v uv >/dev/null 2>&1; then
               curl -LsSf https://astral.sh/uv/install.sh | sh
               export PATH="$HOME/.local/bin:$PATH"
             fi
-            
+
             # Sync dependencies directly from pyproject.toml
             uv sync
-            
+
             # Inject environment secrets
             sudo mkdir -p /etc/tenantfirstaid
             sudo chmod 750 /etc/tenantfirstaid
@@ -79,6 +79,11 @@ jobs:
             DB_PASSWORD=${{secrets.DB_PASSWORD}}
             DB_PORT=${{vars.DB_PORT}}
             DB_USER=default
+            MAIL_PORT=${{vars.MAIL_PORT}}
+            MAIL_SERVER=${{vars.MAIL_SERVER}}
+            APP_PASSWORD=${{secrets.APP_PASSWORD}}
+            SENDER_EMAIL=${{vars.SENDER_EMAIL}}
+            RECIPIENT_EMAIL=${{vars.RECIPIENT_EMAIL}}
             GEMINI_RAG_CORPUS=${{vars.GEMINI_RAG_CORPUS}}
             GOOGLE_SERVICE_ACCOUNT_CREDENTIALS_FILE=/etc/tenantfirstaid/google-service-account.json
             EOF
@@ -88,7 +93,7 @@ jobs:
             ${{ secrets.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS}}
             EOF
             chmod 640 /etc/tenantfirstaid/google-service-account.json
-            
+
             # Ownership, restart, reload
             sudo chown -R $USER:www-data ${{ vars.REMOTE_APP_DIR }}
             sudo systemctl restart ${{ vars.SERVICE_NAME }}
