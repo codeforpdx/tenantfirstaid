@@ -513,6 +513,22 @@ wheels = [
 ]
 
 [[package]]
+name = "google-cloud-parametermanager"
+version = "0.1.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "google-api-core", extra = ["grpc"] },
+    { name = "google-auth" },
+    { name = "grpc-google-iam-v1" },
+    { name = "proto-plus" },
+    { name = "protobuf" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ad/67/7eb5ca35bc4aca145bd77c2e68fb5197f78bc3197bb1005cf10205f26fb7/google_cloud_parametermanager-0.1.5.tar.gz", hash = "sha256:8d6b88c047e75afbf6d9cc4e2744e5c0c939eaae31e5aea12cfd7a1344a20088", size = 81332, upload-time = "2025-06-25T12:23:24.567Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c8/9a/c443f145ab9820defd548c9b7175d9e31f3ec95ace926160b078736f2b96/google_cloud_parametermanager-0.1.5-py3-none-any.whl", hash = "sha256:0b6b8ddc4091dda25e25ac0c5232a31db6e35d8a49b8e4389e7b72079dd0d24d", size = 66353, upload-time = "2025-06-25T12:23:23.274Z" },
+]
+
+[[package]]
 name = "google-cloud-resource-manager"
 version = "1.14.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1843,6 +1859,7 @@ dependencies = [
     { name = "flask-mailman" },
     { name = "google-auth" },
     { name = "google-cloud-aiplatform" },
+    { name = "google-cloud-parametermanager" },
     { name = "google-genai" },
     { name = "gunicorn" },
     { name = "jsonlines" },
@@ -1881,6 +1898,7 @@ requires-dist = [
     { name = "flask-mailman", specifier = ">=1.1.1" },
     { name = "google-auth", specifier = ">=2.40.3" },
     { name = "google-cloud-aiplatform", specifier = ">=1.106.0" },
+    { name = "google-cloud-parametermanager", specifier = ">=0.1.5" },
     { name = "google-genai", specifier = ">=1.28.0" },
     { name = "gunicorn", specifier = ">=23.0.0" },
     { name = "jsonlines" },

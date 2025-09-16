@@ -66,6 +66,7 @@ backend/
 │   ├── convert_csv_to_jsonl.py     # Data conversion utilities
 │   └── documents/                  # Source legal documents
 │       └── or/                     # Oregon state laws
+│           ├── OAR54.txt           # Oregon Administrative Rules
 │           ├── ORS090.txt          # Oregon Revised Statutes
 │           ├── ORS091.txt
 │           ├── ORS105.txt
@@ -520,6 +521,7 @@ The application uses environment-based secrets management:
 - `FLASK_SECRET_KEY` - Session encryption key
 - `GOOGLE_SERVICE_ACCOUNT_CREDENTIALS_FILE` - Path to GCP service account JSON
 - `GEMINI_RAG_CORPUS` - Vertex AI RAG corpus identifier
+- `GEMINI_RAG_CORPUS_[CITY]` - Vertex AI RAG corpus identifier for a specific location (Optional)
 - `OPENAI_API_KEY` - OpenAI API key (used by data ingestion scripts)
 
 **Security Measures:**
