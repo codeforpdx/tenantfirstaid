@@ -5,7 +5,9 @@ export default function About() {
     <div className="flex items-center my-16 mb-0 sm:mt-26 sm:mb-10">
       <div className="relative max-w-2xl m-auto p-8 bg-[#F4F4F2] rounded-none sm:rounded-lg shadow-md">
         <BackLink />
-        <h2 className="text-2xl font-semibold mt-6 mb-2">About Tenant First Aid</h2>
+        <h2 className="text-2xl font-semibold mt-6 mb-2">
+          About Tenant First Aid
+        </h2>
         <p>
           <strong>Tenant First Aid</strong> is an AI-powered chatbot designed to
           help Oregon tenants navigate housing and eviction issues. It is a
