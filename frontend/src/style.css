@@ -44,7 +44,8 @@ body {
   animation: dotPulse 1.5s infinite linear;
 }
 
-.message-bubble a {
+.message-bubble a,
+.generated-letter a {
   @apply inline text-blue-600 underline cursor-pointer transition-colors hover:bg-blue-200 rounded;
 }
 

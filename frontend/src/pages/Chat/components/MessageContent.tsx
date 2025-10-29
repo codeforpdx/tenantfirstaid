@@ -1,4 +1,5 @@
 import type { IMessage } from "../../../hooks/useMessages";
+import DOMPurify, { SANITIZE_SETTINGS } from "../../../shared/utils/dompurify";
 
 interface Props {
   message: IMessage;
@@ -14,7 +15,11 @@ export default function MessageContent({ message, isLoading }: Props) {
       ) : (
         <span
           className="whitespace-pre-wrap"
-          dangerouslySetInnerHTML={{ __html: message.content }}
+          dangerouslySetInnerHTML={{
+            __html: DOMPurify.sanitize(message.content, SANITIZE_SETTINGS)
+              .split("-----generate letter-----")[0]
+              .trim(),
+          }}
         ></span>
       )}
     </>
