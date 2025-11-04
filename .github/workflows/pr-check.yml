@@ -25,7 +25,7 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "backend/uv.lock"
           # Install a specific version of uv.
-          version: "0.7.13"
+          version: "0.8.11"
 
       - name: Set up Python
         run: uv python install
@@ -43,7 +43,7 @@ jobs:
         run: uv run ty check
 
       - name: Run tests
-        run: uv run pytest -v -s
+        run: uv run pytest -v -s --cov
 
   frontend-build:
     runs-on: ubuntu-latest
