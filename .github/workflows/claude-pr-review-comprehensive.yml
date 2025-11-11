@@ -35,7 +35,7 @@ jobs:
 
           # Your custom review instructions
           prompt: |
-            REPO: ${{ github.repository }}
+            REPO: ${{ github.event.pull_request.head.repo.full_name }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
             Perform a comprehensive code review with the following focus areas:
