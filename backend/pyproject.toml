@@ -15,6 +15,7 @@ dependencies = [
   "google-cloud-aiplatform>=1.106.0",
   "jsonlines",
   "simplejson",
+  "svglib<1.6", # holding version back because 1.6.0 now requires manual platform installation of https://www.cairographics.org/download/
   "python-dotenv",
   "pandas>=2.3.0",
   "vertexai>=1.43.0",
