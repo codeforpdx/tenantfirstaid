@@ -14,7 +14,6 @@ graph TB
     
     subgraph "Backend Services"
         API[Flask API Server<br/>Python]
-        Session[Session Management<br/>Valkey/Redis]
     end
     
     subgraph "AI/ML Services"
@@ -78,7 +77,6 @@ backend/
 │               └── EHC8.425.txt
 ├── tests/                          # Test suite
 ├── pyproject.toml                  # Python dependencies and config
-├── docker-compose.yml              # Local development setup
 └── Makefile                        # Development commands
 ```
 
@@ -184,7 +182,6 @@ graph TB
     
     subgraph "Server Session Management"
         SessionManager[TenantSession<br/>Manager]
-        Valkey[(Valkey Database<br/>Session Storage)]
     end
     
     subgraph "Conversation State"
@@ -195,10 +192,6 @@ graph TB
     
     Browser --> SessionID
     SessionID --> SessionManager
-    SessionManager --> Valkey
-    Valkey --> Messages
-    Valkey --> Context
-    Valkey --> Metadata
 ```
 
 ### Conversation Persistence
@@ -227,7 +220,6 @@ interface TenantSessionData {
    - Each message exchange appends to `messages` array
    - Complete conversation history sent to Gemini for context
    - Location metadata enables jurisdiction-specific legal advice
-   - Session state persisted to Valkey after each interaction
 
 3. **Context Preservation**:
    - Full message history passed to Gemini API on each request
@@ -236,7 +228,6 @@ interface TenantSessionData {
    - Citation links and legal precedents remain accessible
 
 4. **Session Management**:
-   - **Storage**: Valkey (Redis-compatible) for high-performance session data
    - **Persistence**: Sessions survive server restarts
    - **Security**: HttpOnly, SameSite cookies with secure flag in production
    - **Cleanup**: Sessions can be cleared via `/api/clear-session`
@@ -342,7 +333,6 @@ while (true) {
 **Core Technologies:**
 - **Flask 3.1.1**: Web framework for API endpoints
 - **Vertex AI**: Google Cloud AI platform for LLM and RAG
-- **Valkey 6.1.0**: Redis-compatible session storage
 - **Gunicorn 23.0.0**: WSGI HTTP server for production
 
 **AI/ML Stack:**
@@ -490,7 +480,6 @@ graph TB
         Systemd[Systemd<br/>Process Manager]
         Gunicorn[Gunicorn<br/>WSGI Server]
         Flask[Flask Application]
-        Valkey[Valkey<br/>Session Storage]
     end
     
     Users --> Nginx
@@ -499,7 +488,6 @@ graph TB
     Nginx --> Gunicorn
     Systemd --> Gunicorn
     Gunicorn --> Flask
-    Flask --> Valkey
     Flask --> GCP
 ```
 
@@ -507,7 +495,6 @@ graph TB
 - **Web Server**: Nginx as reverse proxy with SSL termination
 - **Application Server**: Gunicorn with 10 worker processes
 - **Process Management**: Systemd service for automatic restart and monitoring
-- **Session Storage**: Valkey (Redis-compatible) for session persistence
 
 ### Secrets Management
 
@@ -545,7 +532,6 @@ graph LR
     subgraph "Digital Ocean"
         LB[Nginx<br/>Port 443/80]
         App[Gunicorn + Flask<br/>Unix Socket]
-        DB[Valkey<br/>Session Store]
         Files[Config Files<br/>/etc/tenantfirstaid/]
     end
     

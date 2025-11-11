@@ -9,7 +9,6 @@ dependencies = [
   "Flask_Limiter>=3.12",
   "xhtml2pdf>=0.2.17",
   "flask-cors>=4.0.0",
-  "valkey>=6.1.0",
   "gunicorn>=23.0.0",
   "google-auth>=2.40.3",
   "google-genai>=1.38.0",
