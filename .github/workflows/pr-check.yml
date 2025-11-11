@@ -7,7 +7,7 @@ on:
   push:
     branches:
       - main
-      - 'releases/*'
+      - "releases/*"
 
 jobs:
   backend-test:
@@ -68,6 +68,9 @@ jobs:
         run: npm run lint
       - name: Run format checks
         run: npx prettier --check .
+
+      - name: Run frontend tests
+        run: npm run test
 
       - name: Build frontend
         run: npm run build
