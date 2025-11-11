@@ -19,11 +19,16 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 1
+          repository: ${{ github.event.pull_request.head.repo.full_name }}  # Fix 1
+          ref: ${{ github.event.pull_request.head.ref }}
+
 
       - name: PR Review with Progress Tracking
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}      # Fix 2: Bypass OIDC
+          allowed_non_write_users: '*'                    # Fix 3: Allow fork contributors
 
           # Enable progress tracking
           track_progress: true
