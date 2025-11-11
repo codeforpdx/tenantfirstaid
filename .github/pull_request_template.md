@@ -5,6 +5,7 @@
 - [ ] Bug Fix
 - [ ] Optimization
 - [ ] Documentation Update
+- [ ] Infrastructure
 - [ ] Maintenance
 
 ## Description
