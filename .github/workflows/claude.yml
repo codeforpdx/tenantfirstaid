@@ -37,7 +37,7 @@ jobs:
         with:
           repository: ${{ github.event.issue.pull_request && steps.pr-info.outputs.is_fork == 'true' && format('{0}/{1}', steps.pr-info.outputs.pr_head_owner, steps.pr-info.outputs.pr_head_repo) || github.repository }}
           ref: ${{ github.event.issue.pull_request && steps.pr-info.outputs.pr_head_ref || github.ref }}
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Run Claude Code
         id: claude
@@ -45,4 +45,4 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
-           --allowTools Read,Edit,Write,WebFetch
+           --allowedTools Read,Edit,Write,WebFetch
