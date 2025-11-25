@@ -7,7 +7,7 @@ automated quality evaluation.
 import argparse
 
 from langsmith import Client
-from langsmith.evaluation import evaluate
+from langsmith.evaluation import evaluate, ExperimentationResults
 
 from tenantfirstaid.langchain_chat import LangChainChatManager
 from scripts.langsmith_evaluators import (
@@ -53,7 +53,7 @@ def agent_wrapper(inputs):
 def run_evaluation(
     dataset_name="tenant-legal-qa-scenarios",
     experiment_prefix="langchain-agent",
-    num_samples=None,
+    num_samples: int = 1,
 ):
     """Run automated evaluation on LangSmith dataset.
 
@@ -74,7 +74,7 @@ def run_evaluation(
     print(f"Total examples: {dataset.example_count}")
 
     # Run evaluation with all evaluators.
-    results = evaluate(
+    results: ExperimentationResults = evaluate(
         agent_wrapper,
         data=dataset_name,
         evaluators=[
@@ -88,18 +88,18 @@ def run_evaluation(
         ],
         experiment_prefix=experiment_prefix,
         max_concurrency=5,  # Run 5 evaluations in parallel.
-        num_samples=num_samples,
+        num_repetitions=num_samples,
     )
 
     # Print summary.
     print("\n=== Evaluation Results ===")
     print(f"Experiment: {results.experiment_name}")
-    print(f"Examples evaluated: {results.example_count}")
+    # print(f"Examples evaluated: {results.example_count}")
     print("\nAggregate Scores:")
-    for metric, score in results.aggregate_metrics.items():
-        print(f"  {metric}: {score:.2f}")
+    # for metric, score in results.aggregate_metrics.items():
+    #     print(f"  {metric}: {score:.2f}")
 
-    print(f"\nView full results at: {results.experiment_url}")
+    # print(f"\nView full results at: {results.experiment_url}")
 
     return results
 
