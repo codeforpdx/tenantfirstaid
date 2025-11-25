@@ -5,22 +5,45 @@ Google Gemini API calls with a standardized agent-based architecture.
 """
 
 import os
-from typing import Any
+from typing import Any, Optional
 
-from langchain.agents import AgentExecutor, create_tool_calling_agent
-from langchain_core.messages import AIMessage, HumanMessage
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.agents import create_agent, AgentState
+from langgraph.graph.state import CompiledStateGraph
+from langgraph.checkpoint.memory import InMemorySaver
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+
+# from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.tools import tool
 from langchain_google_vertexai import ChatVertexAI
-from vertexai.preview import rag
+from langchain_google_vertexai.vectorstores.vectorstores import (
+    VectorSearchVectorStoreDatastore,
+)
 
 from tenantfirstaid.chat import DEFAULT_INSTRUCTIONS
 
 MODEL = os.getenv("MODEL_NAME", "gemini-2.5-pro")
 VERTEX_AI_DATASTORE = os.getenv("VERTEX_AI_DATASTORE")
+GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT")
+GOOGLE_CLOUD_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-west1-c")
+
+if VERTEX_AI_DATASTORE is None:
+    raise ValueError("VERTEX_AI_DATASTORE environment variable is not set.")
+
+if GOOGLE_CLOUD_PROJECT is None:
+    raise ValueError("GOOGLE_CLOUD_PROJECT environment variable is not set.")
+
+if GOOGLE_CLOUD_LOCATION is None:
+    raise ValueError("GOOGLE_CLOUD_LOCATION environment variable is not set.")
+
+vector_store = VectorSearchVectorStoreDatastore.from_components(
+    project_id=GOOGLE_CLOUD_PROJECT,
+    region=GOOGLE_CLOUD_LOCATION,
+    index_id=VERTEX_AI_DATASTORE,
+    endpoint_id="fix-me-later",
+)
 
 
-@tool
+@tool(parse_docstring=True)
 def retrieve_city_law(query: str, city: str, state: str) -> str:
     """Retrieve city-specific housing laws from the RAG corpus.
 
@@ -34,18 +57,17 @@ def retrieve_city_law(query: str, city: str, state: str) -> str:
     Returns:
         Relevant legal passages from city-specific laws
     """
-    retrieval_query = rag.RagQuery(
-        text=query,
+
+    rag = vector_store.as_retriever(
+        search_kwargs={"k": 5},
         filter=f'city: ANY("{city.lower()}") AND state: ANY("{state.lower()}")',
     )
 
-    response = rag.retrieve(
-        datastore=VERTEX_AI_DATASTORE,
-        query=retrieval_query,
-        max_results=5,
+    docs = rag.invoke(
+        input=query,
     )
 
-    return "\n\n".join([doc.text for doc in response.documents])
+    return "\n\n".join([doc.page_content for doc in docs])
 
 
 @tool
@@ -61,18 +83,22 @@ def retrieve_state_law(query: str, state: str) -> str:
     Returns:
         Relevant legal passages from state laws
     """
-    retrieval_query = rag.RagQuery(
-        text=query,
+
+    rag = vector_store.as_retriever(
+        search_kwargs={"k": 5},
         filter=f'city: ANY("null") AND state: ANY("{state.lower()}")',
     )
 
-    response = rag.retrieve(
-        datastore=VERTEX_AI_DATASTORE,
-        query=retrieval_query,
-        max_results=5,
+    docs = rag.invoke(
+        input=query,
     )
 
-    return "\n\n".join([doc.text for doc in response.documents])
+    return "\n\n".join([doc.page_content for doc in docs])
+
+
+class TFAAgentState(AgentState):
+    state: Optional[str]
+    city: Optional[str]
 
 
 class LangChainChatManager:
@@ -95,14 +121,13 @@ class LangChainChatManager:
                 "HARM_CATEGORY_HARASSMENT": "OFF",
             },
             # Thinking config for Gemini 2.5 Pro.
-            enable_thinking=os.getenv("SHOW_MODEL_THINKING", "false").lower()
-            == "true",
+            enable_thinking=os.getenv("SHOW_MODEL_THINKING", "false").lower() == "true",
         )
 
         # Create tools for RAG retrieval.
         self.tools = [retrieve_city_law, retrieve_state_law]
 
-    def create_agent_for_session(self, city: str, state: str) -> AgentExecutor:
+    def create_agent_for_session(self, city: str, state: str) -> CompiledStateGraph:
         """Create an agent instance configured for the user's location.
 
         Args:
@@ -112,30 +137,26 @@ class LangChainChatManager:
         Returns:
             AgentExecutor configured with tools and system prompt
         """
-        system_prompt = self.prepare_system_prompt(city, state)
+        system_prompt = SystemMessage(self.prepare_system_prompt(city, state))
 
-        # Create prompt template with system message and conversation history.
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", system_prompt),
-                MessagesPlaceholder(variable_name="chat_history", optional=True),
-                ("human", "{input}"),
-                MessagesPlaceholder(variable_name="agent_scratchpad"),
-            ]
-        )
+        # # Create prompt template with system message and conversation history.
+        # prompt = ChatPromptTemplate.from_messages(
+        #     [
+        #         ("system", system_prompt.text()),
+        #         MessagesPlaceholder(variable_name="chat_history", optional=True),
+        #         ("human", "{input}"),
+        #         MessagesPlaceholder(variable_name="agent_scratchpad"),
+        #     ]
+        # )
 
         # Create agent with tools.
-        agent = create_tool_calling_agent(self.llm, self.tools, prompt)
-
-        # Create agent executor.
-        agent_executor = AgentExecutor(
-            agent=agent,
-            tools=self.tools,
-            verbose=True,
-            handle_parsing_errors=True,
+        return create_agent(
+            self.llm,
+            self.tools,
+            system_prompt=system_prompt,
+            state_schema=TFAAgentState,
+            checkpointer=InMemorySaver(),
         )
-
-        return agent_executor
 
     def prepare_system_prompt(self, city: str, state: str) -> str:
         """Prepare detailed system instructions for the agent.
@@ -177,11 +198,12 @@ class LangChainChatManager:
         # Stream the agent response.
         for chunk in agent.stream(
             {
-                "input": current_query,
-                "chat_history": conversation_history,
+                "messages": current_query,
+                "context": conversation_history,
                 "city": city,
                 "state": state,
-            }
+            },
+            stream_mode="messages",
         ):
             # Extract output from chunk.
             if "output" in chunk:
