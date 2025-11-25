@@ -1,7 +1,7 @@
 
 [project]
 name = "tenant-first-aid"
-version = "0.2.0"
+version = "0.3.0"
 requires-python = ">=3.12"
 dependencies = [
   "flask>=3.1.1",
@@ -19,9 +19,10 @@ dependencies = [
   "python-dotenv",
   "pandas>=2.3.0",
   "vertexai>=1.43.0",
-  "langchain>=1.0.8",
-  "langchain-google-vertexai>=3.0.3",
-  "langsmith>=0.1.129",
+  "langchain>=1.1.0",
+  "langchain-google-vertexai>=3.1.0",
+  "langsmith>=0.4.47",
+  "langchain-core>=1.1.0",
 ]
 
 [tool.setuptools.packages.find]
