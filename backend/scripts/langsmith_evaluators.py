@@ -6,81 +6,149 @@ advice responses across multiple dimensions.
 
 import re
 
-from langchain.evaluation import LangChainStringEvaluator
-from langchain_google_vertexai import ChatVertexAI
+from langsmith.evaluation import Evaluator
+from openevals import create_llm_as_judge
+from openevals.prompts import CORRECTNESS_PROMPT
+
+EVALUATOR_MODEL_NAME = "gemini-2.5-pro"
 
 # Evaluator 1: Citation Accuracy (LLM-as-Judge).
-citation_accuracy_evaluator = LangChainStringEvaluator(
-    evaluator_type="labeled_criteria",
-    criteria={
-        "citation_accuracy": """
-        Does the response include proper citations to Oregon laws?
-        - Must cite specific ORS (Oregon Revised Statutes) numbers
-        - Must use HTML anchor tags with target="_blank"
-        - Citations should link to oregon.public.law or city code websites
-        - Score 1.0 if citations are present and properly formatted
-        - Score 0.5 if citations present but formatting issues
-        - Score 0.0 if no citations or incorrect citations
-        """
-    },
-    llm=ChatVertexAI(model_name="gemini-2.5-pro", temperature=0),
+CITATION_PROMPT = """
+You are an expert data labeler evaluating model outputs for correctness. Your task is to assign a score based on the following rubric:
+<Rubric>
+  A correct answer:
+  - Include proper citations to applicable state and local laws
+  - Must cite specific ORS (Oregon Revised Statutes) numbers
+  - Must use HTML anchor tags with target="_blank"
+  - Citations should link to oregon.public.law or city code websites
+  - Provides accurate and complete information
+  - Contains no factual errors
+  - Addresses all parts of the question
+  - Is logically consistent
+  - Uses precise and accurate terminology
+
+  When scoring, you should penalize:
+  - Factual errors or inaccuracies
+  - Incomplete or partial answers
+  - Misleading or ambiguous statements
+  - Incorrect terminology
+  - Logical inconsistencies
+  - Missing key information
+
+  Scoring Guidelines:
+  - Score 1.0 if citations are present and properly formatted
+  - Score 0.5 if citations present but formatting issues
+  - Score 0.0 if no citations or incorrect citations  
+</Rubric>
+
+<Instructions>
+  - Carefully read the input and output
+  - Check for factual accuracy and completeness
+  - Focus on correctness of information rather than style or verbosity
+</Instructions>
+
+<Reminders>
+  The goal is to evaluate citation accuracy, formatting and completeness of the citations.
+</Reminders>
+"""
+
+citation_accuracy_evaluator: Evaluator = create_llm_as_judge(
+    model=EVALUATOR_MODEL_NAME,
+    prompt=CITATION_PROMPT,
 )
 
 # Evaluator 2: Legal Correctness (LLM-as-Judge).
-legal_correctness_evaluator = LangChainStringEvaluator(
-    evaluator_type="qa",
-    criteria={
-        "legal_correctness": """
-        Is the legal advice correct based on Oregon tenant law?
-        - Check if advice aligns with ORS 90 (Landlord-Tenant)
-        - Verify city-specific rules are correctly applied
-        - Ensure no false statements about tenant rights
-        - Score 1.0 if legally accurate
-        - Score 0.5 if partially accurate or incomplete
-        - Score 0.0 if legally incorrect or misleading
-        """
-    },
-    llm=ChatVertexAI(model_name="gemini-2.5-pro", temperature=0),
+LEGAL_CORRECTNESS_PROMPT = """
+You are an expert data labeler evaluating model outputs for correctness. Your task is to assign a score based on the following rubric:
+<Rubric>
+  A correct answer:
+  - legal advice correctly based on Oregon tenant law
+  - Check if advice aligns with ORS 90 (Landlord-Tenant)
+  - Verify city-specific rules are correctly applied
+  - Ensure no false statements about tenant rights
+  - Provides accurate and complete information
+  - Contains no factual errors
+  - Addresses all parts of the question
+  - Is logically consistent
+  - Uses precise and accurate terminology
+
+  When scoring, you should penalize:
+  - Factual errors or inaccuracies
+  - Incomplete or partial answers
+  - Misleading or ambiguous statements
+  - Incorrect terminology
+  - Logical inconsistencies
+  - Missing key information
+
+  Scoring Guidelines:
+  - Score 1.0 if response is legally correct and complete
+  - Score 0.5 if response has minor inaccuracies or omissions
+  - Score 0.0 if response is legally incorrect or significantly incomplete  
+</Rubric>
+
+<Instructions>
+  - Carefully read the input and output
+  - Check for factual accuracy and completeness
+  - Focus on correctness of information rather than style or verbosity
+</Instructions>
+
+<Reminders>
+  The goal is to evaluate factual correctness and completeness of the response.
+</Reminders>
+"""
+
+legal_correctness_evaluator: Evaluator = create_llm_as_judge(
+    model=EVALUATOR_MODEL_NAME,
+    prompt=LEGAL_CORRECTNESS_PROMPT,
 )
 
+
 # Evaluator 3: Response Completeness (LLM-as-Judge).
-completeness_evaluator = LangChainStringEvaluator(
-    evaluator_type="criteria",
-    criteria={
-        "completeness": """
-        Does the response fully address the user's question?
-        - Answers the core legal question
-        - Provides relevant context and next steps
-        - Includes important caveats or exceptions
-        - Score 1.0 if comprehensive answer
-        - Score 0.5 if partial answer
-        - Score 0.0 if off-topic or unhelpful
-        """
-    },
-    llm=ChatVertexAI(model_name="gemini-2.5-pro", temperature=0),
+completeness_evaluator: Evaluator = create_llm_as_judge(
+    model=EVALUATOR_MODEL_NAME,
+    prompt=CORRECTNESS_PROMPT,
 )
 
 # Evaluator 4: Tone & Professionalism (LLM-as-Judge).
-tone_evaluator = LangChainStringEvaluator(
-    evaluator_type="criteria",
-    criteria={
-        "tone": """
-        Is the tone appropriate for legal advice?
-        - Professional but accessible language
-        - Empathetic to tenant's situation
-        - Not overly formal or robotic
-        - Doesn't start with "As a legal expert..."
-        - Score 1.0 if tone is excellent
-        - Score 0.5 if tone issues (too formal/casual)
-        - Score 0.0 if inappropriate tone
-        """
-    },
-    llm=ChatVertexAI(model_name="gemini-2.5-pro", temperature=0),
+TONE_PROMPT = """
+You are an expert data labeler evaluating model outputs for correctness. Your task is to assign a score based on the following rubric:
+<Rubric>
+  A good answer:
+  - has a tone appropriate for legal advice
+  - Professional but accessible language
+  - Empathetic to tenant's situation
+  - Not overly formal or robotic
+  - Doesn't start with "As a legal expert..."
+
+  When scoring, you should penalize:
+  - uncommon legal jargon
+  - overly casual language
+
+  Scoring Guidelines:
+  - Score 1.0 if citations are present and properly formatted
+  - Score 0.5 if citations present but formatting issues
+  - Score 0.0 if no citations or incorrect citations  
+</Rubric>
+
+<Instructions>
+  - Carefully read the input and output
+  - Check for inappropriate tone or style
+  - Focus on tone, style and verbosity rather than correctness of information
+</Instructions>
+
+<Reminders>
+  The goal is to evaluate the tone of the response.
+</Reminders>
+"""
+
+tone_evaluator: Evaluator = create_llm_as_judge(
+    model=EVALUATOR_MODEL_NAME,
+    prompt=TONE_PROMPT,
 )
 
 
 # Evaluator 5: Citation Format (Heuristic).
-def citation_format_evaluator(run, example):
+def citation_format_evaluator(run, example) -> Evaluator:
     """Check if citations use proper HTML anchor tag format.
 
     Args:
@@ -120,7 +188,7 @@ def citation_format_evaluator(run, example):
 
 
 # Evaluator 6: Tool Usage (Heuristic).
-def tool_usage_evaluator(run, example):
+def tool_usage_evaluator(run, example) -> Evaluator:
     """Check if agent used RAG tools appropriately.
 
     Args:
@@ -151,7 +219,7 @@ def tool_usage_evaluator(run, example):
 
 
 # Evaluator 7: Performance Metrics (Heuristic).
-def performance_evaluator(run, example):
+def performance_evaluator(run, example) -> Evaluator:
     """Track latency and token usage.
 
     Args:
