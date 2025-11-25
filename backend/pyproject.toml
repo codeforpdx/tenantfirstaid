@@ -23,6 +23,7 @@ dependencies = [
   "langchain-google-vertexai>=3.1.0",
   "langsmith>=0.4.47",
   "langchain-core>=1.1.0",
+  "openevals>=0.1.2",
 ]
 
 [tool.setuptools.packages.find]
