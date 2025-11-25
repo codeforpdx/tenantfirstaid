@@ -16,7 +16,11 @@ def create_langsmith_dataset():
     client = Client()
 
     # Read existing test scenarios.
-    csv_path = Path(__file__).parent / "generate_conversation" / "tenant_questions_facts_full.csv"
+    csv_path = (
+        Path(__file__).parent
+        / "generate_conversation"
+        / "tenant_questions_facts_full.csv"
+    )
     df = pd.read_csv(csv_path, encoding="cp1252")
 
     # Create dataset in LangSmith.
@@ -51,9 +55,7 @@ def create_langsmith_dataset():
                 "tags": ["tenant-rights", f"city-{city}", f"state-{row['state']}"],
             },
             # Optionally include reference conversation for comparison.
-            outputs={
-                "reference_conversation": row.get("Original conversation", None)
-            },
+            outputs={"reference_conversation": row.get("Original conversation", None)},
         )
 
     print(f"Created dataset '{dataset.name}' with {len(df)} scenarios")
