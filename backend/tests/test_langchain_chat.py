@@ -1,13 +1,15 @@
 """Tests for LangChain-based chat manager."""
 
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch
 
 from tenantfirstaid.langchain_chat import (
     LangChainChatManager,
     retrieve_city_law,
     retrieve_state_law,
 )
+
+from typing import Dict
 
 
 @pytest.fixture
@@ -23,16 +25,20 @@ def mock_vertex_ai():
 @pytest.fixture
 def chat_manager():
     """Create LangChainChatManager with mocked LLM."""
-    with patch("tenantfirstaid.langchain_chat.ChatVertexAI") as mock_llm:
+    with patch("tenantfirstaid.langchain_chat.ChatVertexAI"):
         manager = LangChainChatManager()
         yield manager
 
 
 def test_retrieve_city_law_filters_correctly(mock_vertex_ai):
     """Test that city law retrieval uses correct filter."""
-    result = retrieve_city_law.invoke(
-        {"query": "eviction notice requirements", "city": "portland", "state": "or"}
-    )
+    d: Dict[str, str] = {
+        "query": "eviction notice requirements",
+        "city": "portland",
+        "state": "or",
+    }
+
+    result = retrieve_city_law.invoke(d)
 
     # Verify filter was constructed correctly.
     call_args = mock_vertex_ai.call_args
@@ -43,7 +49,8 @@ def test_retrieve_city_law_filters_correctly(mock_vertex_ai):
 
 def test_retrieve_state_law_filters_correctly(mock_vertex_ai):
     """Test that state law retrieval uses correct filter."""
-    result = retrieve_state_law.invoke({"query": "tenant rights", "state": "or"})
+    d: Dict[str, str] = {"query": "tenant rights", "state": "or"}
+    result = retrieve_state_law.invoke(d)
 
     # Verify filter was constructed correctly.
     call_args = mock_vertex_ai.call_args
@@ -80,7 +87,7 @@ def test_message_format_conversion(chat_manager):
 
 def test_agent_creation(chat_manager):
     """Test that agent is created with correct configuration."""
-    with patch.object(chat_manager, "llm") as mock_llm:
+    with patch.object(chat_manager, "llm"):
         agent = chat_manager.create_agent_for_session("Portland", "or")
 
         # Verify agent executor was created.
