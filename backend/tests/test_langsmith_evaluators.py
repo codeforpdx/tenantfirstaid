@@ -1,6 +1,5 @@
 """Tests for LangSmith evaluators."""
 
-import pytest
 from unittest.mock import Mock
 
 from scripts.langsmith_evaluators import (
