@@ -10,7 +10,8 @@ export default function ChatDisclaimer({ isOngoing }: Props) {
     <span>
       Tenant First Aid offers general information about Oregon housing law and
       creates letters based on information provided by the user. Information and
-      letters provided here are not legal advice - for more information, see our{" "}
+      letters provided here are not legal advice - for more information, see
+      our&nbsp;
       <Link className="underline" to="/about">
         About page
       </Link>

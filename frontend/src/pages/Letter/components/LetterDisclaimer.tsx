@@ -10,7 +10,7 @@ export default function LetterDisclaimer({ isOngoing }: Props) {
     <span>
       This tool provides general information and drafts letters based solely on
       what you enter. It is not legal advice and does not create an
-      attorney–client relationship. As explained further in the{" "}
+      attorney–client relationship. As explained further in the&nbsp;
       <Link to="/privacy-policy" target="_blank" className="underline">
         Privacy Policy
       </Link>
