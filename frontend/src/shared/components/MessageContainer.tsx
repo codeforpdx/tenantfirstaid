@@ -1,9 +1,9 @@
-import { ReactNode } from "react";
+import React from "react";
 
 interface Props {
   isOngoing: boolean;
   letterContent: string;
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 export default function MessageContainer({

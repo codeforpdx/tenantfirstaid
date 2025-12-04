@@ -12,7 +12,12 @@ export default function ChatDisclaimer({ isOngoing }: Props) {
       creates letters based on information provided by the user. Information and
       letters provided here are not legal advice - for more information, see
       our&nbsp;
-      <Link className="underline" to="/about">
+      <Link
+        to="/about"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline"
+      >
         About page
       </Link>
       . For help with your specific situation, contact a qualified attorney. For

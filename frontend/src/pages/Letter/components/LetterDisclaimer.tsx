@@ -11,7 +11,12 @@ export default function LetterDisclaimer({ isOngoing }: Props) {
       This tool provides general information and drafts letters based solely on
       what you enter. It is not legal advice and does not create an
       attorney–client relationship. As explained further in the&nbsp;
-      <Link to="/privacy-policy" target="_blank" className="underline">
+      <Link
+        to="/privacy-policy"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline"
+      >
         Privacy Policy
       </Link>
       , we do not save any data from these conversations, but you can enter your
