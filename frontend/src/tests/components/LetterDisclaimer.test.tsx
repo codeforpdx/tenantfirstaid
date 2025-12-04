@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
-import { describe, it } from "vitest";
+import { describe, it, afterEach } from "vitest";
 
 const renderLetterDisclaimer = async (isOngoing: boolean) => {
   const { default: LetterDisclaimer } = await import(
