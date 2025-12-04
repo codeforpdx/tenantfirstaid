@@ -16,7 +16,12 @@ export default function LetterDisclaimer({ isOngoing }: Props) {
       </Link>
       , we do not save any data from these conversations, but you can enter your
       personal information into the chatbox and it will appear in the
-      corresponding brackets of the letter.
+      corresponding brackets of the letter. For questions regarding Tenant First
+      Aid or any information provided or discussed, you can contact&nbsp;
+      <a href="mailto:michael@qiu-qiulaw.com" className="underline">
+        michael@qiu-qiulaw.com
+      </a>
+      &nbsp;using the Feedback button.
     </span>
   ) : (
     <span>
@@ -25,7 +30,12 @@ export default function LetterDisclaimer({ isOngoing }: Props) {
       the content accurate and up to date, completeness and accuracy is not
       guaranteed. If you have a specific legal issue or question, consider
       contacting a qualified attorney or a local legal aid clinic for
-      personalized assistance.
+      personalized assistance. For questions related to Tenant First Aid,
+      contact&nbsp;
+      <a href="mailto:michael@qiu-qiulaw.com" className="underline">
+        michael@qiu-qiulaw.com
+      </a>
+      .
     </span>
   );
 
