@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import BackLink from "./shared/components/BackLink";
 import { useEffect } from "react";
+import { CONTACT_EMAIL } from "./shared/constants/constants";
 
 export default function PrivacyPolicy() {
   useEffect(() => {
@@ -202,10 +203,11 @@ export default function PrivacyPolicy() {
           You may update, correct or delete information about you at any time by
           interacting with the Services, or emailing us at{" "}
           <Link
-            to="mailto:michael@qiu-qiulaw.com"
+            to={`mailto:${CONTACT_EMAIL}`}
             className="underline text-blue-600"
+            aria-label="contact-email"
           >
-            michael@qiu-qiulaw.com
+            {CONTACT_EMAIL}
           </Link>
           . We may also retain cached or archived copies of information about
           you for a certain period of time.
@@ -226,10 +228,11 @@ export default function PrivacyPolicy() {
           If you have any questions about this Privacy Policy, please contact us
           at:{" "}
           <Link
-            to="mailto:michael@qiu-qiulaw.com"
+            to={`mailto:${CONTACT_EMAIL}`}
             className="underline text-blue-600"
+            aria-label="contact-email"
           >
-            michael@qiu-qiulaw.com
+            {CONTACT_EMAIL}
           </Link>
         </p>
       </div>

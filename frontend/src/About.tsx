@@ -1,4 +1,5 @@
 import BackLink from "./shared/components/BackLink";
+import { CONTACT_EMAIL } from "./shared/constants/constants";
 
 export default function About() {
   return (
@@ -38,7 +39,7 @@ export default function About() {
         <h2 className="text-2xl font-semibold mt-6 mb-2">Contact:</h2>
         <p>Michael Zhang</p>
         <p>Attorney, licensed in Oregon and Washington</p>
-        <p>michael@qiu-qiulaw.com</p>
+        <p>{CONTACT_EMAIL}</p>
         <h2 className="text-2xl font-semibold mt-6 mb-2">Features</h2>
         <ul className="list-disc list-inside">
           <li>Instant answers to common rental questions</li>

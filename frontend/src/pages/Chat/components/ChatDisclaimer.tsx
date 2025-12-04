@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import DisclaimerLayout from "../../../shared/components/DisclaimerLayout";
+import { CONTACT_EMAIL } from "../../../shared/constants/constants";
 
 interface Props {
   isOngoing: boolean;
@@ -23,9 +24,13 @@ export default function ChatDisclaimer({ isOngoing }: Props) {
       . For help with your specific situation, contact a qualified attorney. For
       questions regarding Tenant First Aid or any information provided or
       discussed, you can contact&nbsp;
-      <a href="mailto:michael@qiu-qiulaw.com" className="underline">
-        michael@qiu-qiulaw.com
-      </a>
+      <Link
+        to={`mailto:${CONTACT_EMAIL}`}
+        className="underline"
+        aria-label="contact-email"
+      >
+        {CONTACT_EMAIL}
+      </Link>
       &nbsp;using the Feedback button.
     </span>
   ) : (
@@ -37,9 +42,13 @@ export default function ChatDisclaimer({ isOngoing }: Props) {
       contacting a qualified attorney or a local legal aid clinic for
       personalized assistance. For questions related to Tenant First Aid,
       contact&nbsp;
-      <a href="mailto:michael@qiu-qiulaw.com" className="underline">
-        michael@qiu-qiulaw.com
-      </a>
+      <Link
+        to={`mailto:${CONTACT_EMAIL}`}
+        className="underline"
+        aria-label="contact-email"
+      >
+        {CONTACT_EMAIL}
+      </Link>
       .
     </span>
   );

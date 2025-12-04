@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import BackLink from "./shared/components/BackLink";
 import { useEffect } from "react";
+import { CONTACT_EMAIL } from "./shared/constants/constants";
 
 export default function Disclaimer() {
   useEffect(() => {
@@ -28,10 +29,11 @@ export default function Disclaimer() {
           If you have any questions about these Terms or our Services, please
           contact us at{" "}
           <Link
-            to="mailto:michael@qiu-qiulaw.com"
+            to={`mailto:${CONTACT_EMAIL}`}
             className="underline text-blue-600"
+            aria-label="contact-email"
           >
-            michael@qiu-qiulaw.com
+            {CONTACT_EMAIL}
           </Link>
           .
         </p>
@@ -405,10 +407,11 @@ export default function Disclaimer() {
           (30) days of the date you first accepted the terms of this Section 14
           by sending an email to{" "}
           <Link
-            to="mailto:michael@qiu-qiulaw.com"
+            to={`mailto:${CONTACT_EMAIL}`}
             className="underline text-blue-600"
+            aria-label="contact-email"
           >
-            michael@qiu-qiulaw.com
+            {CONTACT_EMAIL}
           </Link>{" "}
           in order to be effective, the opt out notice must include your full
           name and clearly indicate your intent to opt out of binding
