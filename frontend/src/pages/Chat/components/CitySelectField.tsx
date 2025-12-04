@@ -85,7 +85,7 @@ export default function CitySelectField({ setMessages, setLocation }: Props) {
         name="city"
         value={city || ""}
         onChange={(e) => handleCityChange(e.target.value)}
-        className="p-3 border-1 border-[#ddd] rounded-md box-border transition-colors duration-300 focus:outline-0 focus:border-[#4a90e2] focus:shadow-[0_0_0_2px_rgba(74,144,226,0.2)]"
+        className="p-3 border border-[#ddd] rounded-md box-border transition-colors duration-300 focus:outline-0 focus:border-[#4a90e2] focus:shadow-[0_0_0_2px_rgba(74,144,226,0.2)]"
       >
         <option value="" disabled>
           Select a city

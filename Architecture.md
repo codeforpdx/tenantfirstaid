@@ -449,7 +449,6 @@ frontend/
 │   │   │   ├── FeedbackModal.tsx   # Feedback modal
 │   │   │   ├── MessageContent.tsx  # Message display
 │   │   │   ├── MessageWindow.tsx   # Chat window
-│   │   │   ├── Navbar.tsx          # Navigation
 │   │   │   └── SuggestedPrompts.tsx # Prompt suggestions
 │   │   └── utils/
 │   │       ├── exportHelper.ts     # Export functionality
@@ -459,6 +458,9 @@ frontend/
 │   │   ├── components/
 │   │   │   ├── BackLink.tsx        # Navigation component
 │   │   │   ├── BeaverIcon.tsx      # Oregon-themed icon
+│   │   │   ├── DisclaimerLayout.tsx  # Layout for disclaimer components
+│   │   │   ├── MessageContainer.tsx  # Layout for main UI component
+│   │   │   ├── Navbar.tsx            # Navigation
 │   │   │   └── TenatFirstAidLogo.tsx # Application logo
 │   │   └── utils/
 │   │       └── dompurify.ts        # Helper function for sanitizing text

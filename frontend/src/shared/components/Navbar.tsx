@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import TenantFirstAidLogo from "../../../shared/components/TenatFirstAidLogo";
+import TenantFirstAidLogo from "./TenatFirstAidLogo";
 
 export default function Navbar() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 w-full bg-[#1F584F] shadow-md py-3 px-6 z-50">
+    <nav className="fixed w-full bg-[#1F584F] shadow-md py-3 px-6 z-50">
       <div className="mx-auto flex items-center justify-between">
         <div className="flex items-center">
           <Link to="/">
@@ -14,7 +14,7 @@ export default function Navbar() {
           </Link>
         </div>
         <button
-          className="flex flex-col justify-center items-center w-10 h-10 relative z-60 cursor-pointer"
+          className="flex flex-col justify-center items-center w-10 h-10 relative z-60"
           onClick={() => setSidebarOpen(!sidebarOpen)}
           aria-label="Open menu"
         >

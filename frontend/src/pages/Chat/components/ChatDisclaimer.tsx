@@ -1,22 +1,14 @@
-import { Link } from "react-router-dom";
 import DisclaimerLayout from "../../../shared/components/DisclaimerLayout";
 
 interface Props {
   isOngoing: boolean;
 }
 
-export default function LetterDisclaimer({ isOngoing }: Props) {
+export default function ChatDisclaimer({ isOngoing }: Props) {
   const disclaimer = isOngoing ? (
     <span>
-      This tool provides general information and drafts letters based solely on
-      what you enter. It is not legal advice and does not create an
-      attorney–client relationship. As explained further in the{" "}
-      <Link to="/privacy-policy" target="_blank" className="underline">
-        Privacy Policy
-      </Link>
-      , we do not save any data from these conversations, but you can enter your
-      personal information into the chatbox and it will appear in the
-      corresponding brackets of the letter.
+      This chatbot offers general housing law info and is not legal advice. For
+      help with your situation, contact a lawyer.
     </span>
   ) : (
     <span>

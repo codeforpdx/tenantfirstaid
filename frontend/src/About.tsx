@@ -2,7 +2,7 @@ import BackLink from "./shared/components/BackLink";
 
 export default function About() {
   return (
-    <div className="flex items-center my-16 mb-0 sm:mt-26 sm:mb-10">
+    <div className="flex items-center pt-16 sm:pt-32 sm:pb-16">
       <div className="relative max-w-2xl m-auto p-8 bg-[#F4F4F2] rounded-none sm:rounded-lg shadow-md">
         <BackLink />
         <h2 className="text-2xl font-semibold mt-6 mb-2">

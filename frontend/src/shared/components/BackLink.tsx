@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 export default function BackLink() {
   return (
     <Link
-      className="absolute top-4 left-4 flex text-[#4a90e2] hover:text-[#3a7bc8] font-semibold cursor-pointer"
+      className="absolute top-4 left-4 flex text-[#4a90e2] hover:text-[#3a7bc8] font-semibold"
       to="/"
       aria-label="Go back"
     >

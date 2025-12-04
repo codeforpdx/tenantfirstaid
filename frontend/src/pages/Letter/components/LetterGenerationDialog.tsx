@@ -35,7 +35,7 @@ export default function LetterGenerationDialog({ ref }: Props) {
         </p>
         <button
           onClick={() => ref.current?.close()}
-          className="cursor-pointer underline text-blue-600 hover:text-blue-500 text-sm"
+          className="underline text-blue-600 hover:text-blue-500 text-sm"
           aria-label="close-dialog"
         >
           Close
