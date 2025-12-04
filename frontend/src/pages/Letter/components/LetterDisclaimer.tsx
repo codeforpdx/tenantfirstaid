@@ -17,6 +17,7 @@ export default function LetterDisclaimer({ isOngoing }: Props) {
         target="_blank"
         rel="noopener noreferrer"
         className="underline"
+        aria-label="to privacy policy"
       >
         Privacy Policy
       </Link>

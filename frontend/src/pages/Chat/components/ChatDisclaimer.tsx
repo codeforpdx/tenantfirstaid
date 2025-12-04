@@ -18,6 +18,7 @@ export default function ChatDisclaimer({ isOngoing }: Props) {
         target="_blank"
         rel="noopener noreferrer"
         className="underline"
+        aria-label="to about page"
       >
         About page
       </Link>
