@@ -8,6 +8,7 @@ import { streamText } from "./pages/Chat/utils/streamHelper";
 import LetterGenerationDialog from "./pages/Letter/components/LetterGenerationDialog";
 import { buildLetterUserMessage } from "./pages/Letter/utils/letterHelper";
 import LetterDisclaimer from "./pages/Letter/components/LetterDisclaimer";
+import MessageContainer from "./shared/components/MessageContainer";
 
 export default function Letter() {
   const { addMessage, messages, setMessages } = useMessages();
@@ -95,58 +96,30 @@ export default function Letter() {
 
   return (
     <>
-      <div className="h-dvh pt-16 flex items-center">
+      <div className="absolute top-16 md:top-32 w-full flex items-center">
         <LetterGenerationDialog ref={dialogRef} />
-        <div className="flex w-full items-center">
-          <div className="flex-1 transition-all duration-300 relative">
+        <div className="flex-1 h-full sm:h-auto items-center transition-all duration-300">
+          <MessageContainer isOngoing={isOngoing} letterContent={letterContent}>
             <div
-              className={`container relative flex flex-col sm:flex-row gap-4 mx-auto p-6 bg-[#F4F4F2] rounded-lg shadow-[0_4px_6px_rgba(0,0,0,0.1)]
-              ${
-                isOngoing
-                  ? "justify-between h-[calc(100dvh-4rem-64px)] max-h-[calc(100dvh-4rem-64px)] sm:h-[calc(100dvh-10rem-64px)]"
-                  : "justify-center max-w-[600px]"
-              }`}
+              className={`flex flex-col ${letterContent === "" ? "flex-1" : "flex-1/3"}`}
             >
-              {letterContent !== "" ? (
-                <div className="flex flex-col gap-4 items-center flex-2/3 h-[40%] sm:h-full">
-                  <div className="overflow-y-scroll pr-4 w-full">
-                    <span
-                      className="whitespace-pre-wrap generated-letter"
-                      dangerouslySetInnerHTML={{
-                        __html: letterContent,
-                      }}
-                    />
-                  </div>
+              {isLoading ? (
+                <div className="flex flex-1 items-center justify-center animate-pulse text-lg">
+                  Generating letter...
                 </div>
-              ) : null}
-              <div
-                className={`flex flex-col ${letterContent === "" ? "flex-1" : "flex-1/3"} h-[60%] sm:h-full`}
-              >
-                {isLoading ? (
-                  <div className="flex flex-1 items-center justify-center animate-pulse text-lg">
-                    Generating letter...
-                  </div>
-                ) : (
-                  <MessageWindow
-                    messages={messages}
-                    addMessage={addMessage}
-                    location={location}
-                    setLocation={setLocation}
-                    setMessages={setMessages}
-                    isOngoing={isOngoing}
-                  />
-                )}
-              </div>
+              ) : (
+                <MessageWindow
+                  messages={messages}
+                  addMessage={addMessage}
+                  location={location}
+                  setLocation={setLocation}
+                  setMessages={setMessages}
+                  isOngoing={isOngoing}
+                />
+              )}
             </div>
-            <div
-              className={`container mx-auto text-xs px-4 text-center ${isOngoing ? "max-w-auto my-2" : "max-w-[600px] my-4"}`}
-            >
-              <p className={`${isOngoing ? "mb-0" : "mb-2"}`}>
-                <LetterDisclaimer isOngoing={isOngoing} />
-              </p>
-              <p>For questions, contact michael@qiu-qiulaw.com</p>
-            </div>
-          </div>
+          </MessageContainer>
+          <LetterDisclaimer isOngoing={isOngoing} />
         </div>
       </div>
     </>

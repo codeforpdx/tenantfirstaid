@@ -1,7 +1,7 @@
 import { render, cleanup, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, afterEach, beforeAll } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import Chat from "../../Chat";
+import { BrowserRouter } from "react-router-dom";
 
 beforeAll(() => {
   if (!("scrollTo" in HTMLElement.prototype)) {
@@ -46,6 +46,18 @@ const mockMessages2 = [
   },
 ];
 
+const renderChat = async () => {
+  const { default: Chat } = await import("../../Chat");
+  const queryClient = new QueryClient();
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Chat />
+      </BrowserRouter>
+    </QueryClientProvider>,
+  );
+};
+
 describe("Chat generated-letter block", () => {
   afterEach(() => {
     cleanup();
@@ -62,16 +74,13 @@ describe("Chat generated-letter block", () => {
       setLocation: vi.fn(),
     };
 
-    const queryClient = new QueryClient();
-    render(
-      <QueryClientProvider client={queryClient}>
-        <Chat />
-      </QueryClientProvider>,
-    );
+    await renderChat();
 
     await waitFor(() =>
       expect(document.querySelector(".generated-letter")).not.toBeNull(),
     );
+
+    console.log(document.querySelector(".generated-letter")?.innerHTML);
   });
 
   it("does not render .generated-letter when no message contains the separator", async () => {
@@ -85,15 +94,12 @@ describe("Chat generated-letter block", () => {
       setLocation: vi.fn(),
     };
 
-    const queryClient = new QueryClient();
-    render(
-      <QueryClientProvider client={queryClient}>
-        <Chat />
-      </QueryClientProvider>,
-    );
+    await renderChat();
 
     await waitFor(() =>
       expect(document.querySelector(".generated-letter")).toBeNull(),
     );
+
+    console.log(document.querySelector(".generated-letter")?.innerHTML);
   });
 });

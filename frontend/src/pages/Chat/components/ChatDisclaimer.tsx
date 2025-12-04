@@ -6,25 +6,25 @@ interface Props {
   isOngoing: boolean;
 }
 
-export default function LetterDisclaimer({ isOngoing }: Props) {
+export default function ChatDisclaimer({ isOngoing }: Props) {
   const disclaimer = isOngoing ? (
     <span>
-      This tool provides general information and drafts letters based solely on
-      what you enter. It is not legal advice and does not create an
-      attorney–client relationship. As explained further in the&nbsp;
+      Tenant First Aid offers general information about Oregon housing law and
+      creates letters based on information provided by the user. Information and
+      letters provided here are not legal advice - for more information, see
+      our&nbsp;
       <Link
-        to="/privacy-policy"
+        to="/about"
         target="_blank"
         rel="noopener noreferrer"
         className="underline"
-        aria-label="to privacy policy"
+        aria-label="to about page"
       >
-        Privacy Policy
+        About page
       </Link>
-      , we do not save any data from these conversations, but you can enter your
-      personal information into the chatbox and it will appear in the
-      corresponding brackets of the letter. For questions regarding Tenant First
-      Aid or any information provided or discussed, you can contact&nbsp;
+      . For help with your specific situation, contact a qualified attorney. For
+      questions regarding Tenant First Aid or any information provided or
+      discussed, you can contact&nbsp;
       <a
         href={`mailto:${CONTACT_EMAIL}`}
         className="underline"

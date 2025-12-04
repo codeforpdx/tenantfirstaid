@@ -80,7 +80,7 @@ export default function InputField({
         ref={inputRef}
       />
       <button
-        className={`px-6 h-10 bg-[#1F584F] hover:bg-[#4F8B82] text-white rounded-md transition-color duration-300 ${isLoading ? "cursor-progress" : "cursor-pointer"}`}
+        className={`px-6 h-10 text-sm sm:text-base bg-[#1F584F] hover:bg-[#4F8B82] text-white rounded-md transition-color duration-300 ${isLoading ? "cursor-progress" : "cursor-pointer"}`}
         onClick={handleSend}
         disabled={isLoading || !value.trim()}
       >

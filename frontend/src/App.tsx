@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Chat from "./Chat";
 import About from "./About";
-import Navbar from "./pages/Chat/components/Navbar";
+import Navbar from "./shared/components/Navbar";
 import Disclaimer from "./Disclaimer";
 import PrivacyPolicy from "./PrivacyPolicy";
 import Letter from "./Letter";
