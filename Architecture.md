@@ -462,6 +462,8 @@ frontend/
 │   │   │   ├── MessageContainer.tsx  # Layout for main UI component
 │   │   │   ├── Navbar.tsx            # Navigation
 │   │   │   └── TenatFirstAidLogo.tsx # Application logo
+│   │   ├── constants/
+│   │   │   └── constants.ts        # File of constants
 │   │   └── utils/
 │   │       └── dompurify.ts        # Helper function for sanitizing text
 │   └── tests/
