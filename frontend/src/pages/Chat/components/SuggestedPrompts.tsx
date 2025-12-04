@@ -14,7 +14,7 @@ export default function SuggestedPrompts({
   onPromptClick,
 }: SuggestedPromptsProps) {
   return (
-    <div className="items-center m-auto max-w-[650px]">
+    <div className="items-center m-auto max-w-[650px]" role="region" aria-label="Suggested questions">
       <div className="flex flex-col gap-4 fade-in-up items-center">
         {prompts.map((prompt, idx) => (
           <button
@@ -24,6 +24,7 @@ export default function SuggestedPrompts({
               onPromptClick(Array.isArray(prompt) ? prompt.join(" ") : prompt)
             }
             type="button"
+            aria-label={`Use suggested prompt: ${prompt}`}
           >
             {prompt}
           </button>

@@ -16,7 +16,9 @@ export default function Navbar() {
         <button
           className="flex flex-col justify-center items-center w-10 h-10 relative z-60 cursor-pointer"
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          aria-label="Open menu"
+          aria-label={sidebarOpen ? "Close menu" : "Open menu"}
+          aria-expanded={sidebarOpen}
+          aria-controls="mobile-menu"
         >
           <span
             className={`block w-7 h-1 rounded transition-all duration-300 ${
@@ -40,9 +42,13 @@ export default function Navbar() {
         </button>
       </div>
       <div
+        id="mobile-menu"
         className={`fixed top-0 right-0 h-full w-64 bg-[#F4F4F2] shadow-lg z-50 transition-transform duration-300 ${
           sidebarOpen ? "translate-x-0" : "translate-x-full"
         }`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation menu"
       >
         <div className="flex flex-col p-8 gap-6 mt-10">
           <Link
@@ -88,6 +94,7 @@ export default function Navbar() {
         <div
           className="fixed inset-0 z-30"
           onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
         />
       )}
     </nav>

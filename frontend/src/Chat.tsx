@@ -10,7 +10,7 @@ export default function Chat() {
   const { letterContent } = useLetterContent(messages);
 
   return (
-    <div className="h-dvh pt-16 flex items-center">
+    <main className="h-dvh pt-16 flex items-center">
       <div className="flex w-full items-center ">
         <div className="flex-1 transition-all duration-300">
           <div
@@ -58,6 +58,6 @@ export default function Chat() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

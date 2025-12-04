@@ -63,7 +63,11 @@ export default function InputField({
 
   return (
     <div className="flex gap-2 mt-4 justify-center items-center mx-auto max-w-[700px]">
+      <label htmlFor="chat-input" className="sr-only">
+        Type your message
+      </label>
       <textarea
+        id="chat-input"
         value={value}
         onChange={onChange}
         onInput={resizeTextArea}
@@ -78,14 +82,22 @@ export default function InputField({
         placeholder="Type your message here..."
         disabled={isLoading}
         ref={inputRef}
+        aria-label="Chat message input"
+        aria-describedby={isLoading ? "loading-status" : undefined}
       />
       <button
         className={`px-6 h-10 bg-[#1F584F] hover:bg-[#4F8B82] text-white rounded-md transition-color duration-300 ${isLoading ? "cursor-progress" : "cursor-pointer"}`}
         onClick={handleSend}
         disabled={isLoading || !value.trim()}
+        aria-label={isLoading ? "Sending message..." : "Send message"}
       >
         {isLoading ? "..." : "Send"}
       </button>
+      {isLoading && (
+        <span id="loading-status" className="sr-only" aria-live="polite">
+          Sending message and waiting for response...
+        </span>
+      )}
     </div>
   );
 }

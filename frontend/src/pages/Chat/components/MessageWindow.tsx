@@ -74,6 +74,10 @@ export default function MessageWindow({
           isOngoing ? "overflow-y-scroll" : "overflow-y-none"
         }`}
         ref={messagesRef}
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+        aria-label="Chat messages"
       >
         <div className="max-h-[calc(100dvh-240px)] sm:max-h-[calc(100dvh-20rem)] mx-auto max-w-[700px]">
           {isOngoing ? (
@@ -126,6 +130,7 @@ export default function MessageWindow({
                 className="flex items-center gap-2 px-4 py-2 rounded-md border border-gray-300 text-[#E3574B] font-semibold shadow-sm hover:bg-[#fff0ee] hover:border-[#E3574B] transition-colors cursor-pointer"
                 onClick={handleClearSession}
                 title="Clear Chat"
+                aria-label="Clear chat history and start new conversation"
               >
                 Clear Chat
               </button>
@@ -135,6 +140,7 @@ export default function MessageWindow({
                 onClick={() => {
                   setOpenFeedback(true);
                 }}
+                aria-label="Open feedback form"
               >
                 Feedback
               </button>

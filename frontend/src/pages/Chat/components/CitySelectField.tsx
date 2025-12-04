@@ -74,18 +74,23 @@ export default function CitySelectField({ setMessages, setLocation }: Props) {
           <BeaverIcon />
         </div>
         <div>
-          <p className="text-center text-[#888]">
+          <p className="text-center text-[#555]">
             {city === "other"
               ? "Unfortunately we can only answer questions about tenant rights in Oregon right now."
               : "Welcome to Tenant First Aid! I can answer your questions about tenant rights in Oregon. To get started, what city are you located in?"}
           </p>
         </div>
       </div>
+      <label htmlFor="city-select" className="sr-only">
+        Select your city
+      </label>
       <select
+        id="city-select"
         name="city"
         value={city || ""}
         onChange={(e) => handleCityChange(e.target.value)}
         className="p-3 border-1 border-[#ddd] rounded-md box-border transition-colors duration-300 focus:outline-0 focus:border-[#4a90e2] focus:shadow-[0_0_0_2px_rgba(74,144,226,0.2)]"
+        aria-label="Select your city in Oregon"
       >
         <option value="" disabled>
           Select a city

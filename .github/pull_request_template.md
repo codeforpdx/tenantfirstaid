@@ -36,4 +36,18 @@ _Please replace this line with instructions on how to test your changes, a note 
 
 - [ ] If this PR changes the system architecture, `Architecture.md` has been updated
 
+## Accessibility
+
+For UI changes, please verify:
+
+- [ ] Keyboard navigation works for all interactive elements
+- [ ] Screen reader compatibility tested (VoiceOver, NVDA, or JAWS)
+- [ ] Color contrast meets WCAG AA standards (4.5:1 for normal text, 3:1 for large text)
+- [ ] Focus indicators are visible and logical
+- [ ] Dynamic content changes are announced to screen readers
+- [ ] Forms have proper labels and error messages
+- [ ] Page structure uses semantic HTML and proper heading hierarchy
+- [ ] Interactive elements have appropriate ARIA labels
+- [ ] Modal dialogs trap focus and restore it on close
+
 ## [optional] Are there any post deployment tasks we need to perform?
