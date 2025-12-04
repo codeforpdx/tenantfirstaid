@@ -25,13 +25,13 @@ export default function ChatDisclaimer({ isOngoing }: Props) {
       . For help with your specific situation, contact a qualified attorney. For
       questions regarding Tenant First Aid or any information provided or
       discussed, you can contact&nbsp;
-      <Link
-        to={`mailto:${CONTACT_EMAIL}`}
+      <a
+        href={`mailto:${CONTACT_EMAIL}`}
         className="underline"
         aria-label="contact-email"
       >
         {CONTACT_EMAIL}
-      </Link>
+      </a>
       &nbsp;using the Feedback button.
     </span>
   ) : (
@@ -43,13 +43,13 @@ export default function ChatDisclaimer({ isOngoing }: Props) {
       contacting a qualified attorney or a local legal aid clinic for
       personalized assistance. For questions related to Tenant First Aid,
       contact&nbsp;
-      <Link
-        to={`mailto:${CONTACT_EMAIL}`}
+      <a
+        href={`mailto:${CONTACT_EMAIL}`}
         className="underline"
         aria-label="contact-email"
       >
         {CONTACT_EMAIL}
-      </Link>
+      </a>
       .
     </span>
   );

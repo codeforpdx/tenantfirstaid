@@ -28,13 +28,13 @@ export default function Disclaimer() {
         <p className="my-4">
           If you have any questions about these Terms or our Services, please
           contact us at{" "}
-          <Link
-            to={`mailto:${CONTACT_EMAIL}`}
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
             className="underline text-blue-600"
             aria-label="contact-email"
           >
             {CONTACT_EMAIL}
-          </Link>
+          </a>
           .
         </p>
         <h3 className="text-xl font-semibold my-4">1. Eligibility</h3>
@@ -406,13 +406,13 @@ export default function Disclaimer() {
           You have the right to opt out of binding arbitration within thirty
           (30) days of the date you first accepted the terms of this Section 14
           by sending an email to{" "}
-          <Link
-            to={`mailto:${CONTACT_EMAIL}`}
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
             className="underline text-blue-600"
             aria-label="contact-email"
           >
             {CONTACT_EMAIL}
-          </Link>{" "}
+          </a>{" "}
           in order to be effective, the opt out notice must include your full
           name and clearly indicate your intent to opt out of binding
           arbitration. By opting out of binding arbitration, you are agreeing to

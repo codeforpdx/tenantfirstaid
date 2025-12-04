@@ -12,7 +12,7 @@ export default function Chat() {
   const { letterContent } = useLetterContent(messages);
 
   return (
-    // Chat layout are adjusted before and after session starts to account for CitySelectField
+    // Chat layout is adjusted before and after session starts to account for CitySelectField
     <div
       className={`absolute ${isOngoing ? "top-16 md:top-32" : "top-1/2 -translate-y-1/2"} w-full flex items-center`}
     >

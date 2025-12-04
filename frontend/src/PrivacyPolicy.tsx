@@ -202,13 +202,13 @@ export default function PrivacyPolicy() {
         <p>
           You may update, correct or delete information about you at any time by
           interacting with the Services, or emailing us at{" "}
-          <Link
-            to={`mailto:${CONTACT_EMAIL}`}
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
             className="underline text-blue-600"
             aria-label="contact-email"
           >
             {CONTACT_EMAIL}
-          </Link>
+          </a>
           . We may also retain cached or archived copies of information about
           you for a certain period of time.
         </p>
@@ -227,13 +227,13 @@ export default function PrivacyPolicy() {
         <p>
           If you have any questions about this Privacy Policy, please contact us
           at:{" "}
-          <Link
-            to={`mailto:${CONTACT_EMAIL}`}
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
             className="underline text-blue-600"
             aria-label="contact-email"
           >
             {CONTACT_EMAIL}
-          </Link>
+          </a>
         </p>
       </div>
     </div>
