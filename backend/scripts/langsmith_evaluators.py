@@ -5,7 +5,7 @@ advice responses across multiple dimensions.
 """
 
 import re
-from typing import List, Dict
+from typing import List, Dict, Any
 
 # from langsmith import SimpleEvaluator as Evaluator
 from openevals import create_llm_as_judge
@@ -107,7 +107,7 @@ legal_correctness_evaluator: SimpleEvaluator = create_llm_as_judge(
 
 # Evaluator 3: Response Completeness (LLM-as-Judge).
 def completeness_evaluator(
-    inputs: dict, outputs: dict, reference_outputs: List[Dict[str,str]]
+    inputs: dict, outputs: dict, reference_outputs: List[Dict[str, str]]
 ) -> EvaluatorResult | List[EvaluatorResult]:
     tmp = create_llm_as_judge(
         model=EVALUATOR_MODEL_NAME,
@@ -156,7 +156,7 @@ tone_evaluator: SimpleEvaluator = create_llm_as_judge(
 
 
 # Evaluator 5: Citation Format (Heuristic).
-def citation_format_evaluator(run, example) -> SimpleEvaluator:
+def citation_format_evaluator(run, example) -> Any:
     """Check if citations use proper HTML anchor tag format.
 
     Args:
@@ -196,7 +196,7 @@ def citation_format_evaluator(run, example) -> SimpleEvaluator:
 
 
 # Evaluator 6: Tool Usage (Heuristic).
-def tool_usage_evaluator(run, example) -> SimpleEvaluator:
+def tool_usage_evaluator(run, example) -> Any:
     """Check if agent used RAG tools appropriately.
 
     Args:
@@ -227,7 +227,7 @@ def tool_usage_evaluator(run, example) -> SimpleEvaluator:
 
 
 # Evaluator 7: Performance Metrics (Heuristic).
-def performance_evaluator(run, example) -> SimpleEvaluator:
+def performance_evaluator(run, example) -> Any:
     """Track latency and token usage.
 
     Args:

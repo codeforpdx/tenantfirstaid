@@ -16,17 +16,18 @@ from langsmith import evaluate
 
 from tenantfirstaid.langchain_chat import LangChainChatManager
 from scripts.langsmith_evaluators import (
-    citation_accuracy_evaluator,
-    citation_format_evaluator,
+    # citation_accuracy_evaluator,
+    # citation_format_evaluator,
     completeness_evaluator,
-    legal_correctness_evaluator,
-    performance_evaluator,
-    tone_evaluator,
-    tool_usage_evaluator,
+    # legal_correctness_evaluator,
+    # performance_evaluator,
+    # tone_evaluator,
+    # tool_usage_evaluator,
 )
 
 if Path("../.env").exists():
     from dotenv import load_dotenv
+
     load_dotenv(override=True)
 
 
@@ -57,7 +58,7 @@ def agent_wrapper(inputs) -> Any:
 
     # pprint(response)
 
-    return {"output": response['messages'][-1].content_blocks}
+    return {"output": response["messages"][-1].content_blocks}
 
 
 def run_evaluation(
@@ -107,8 +108,8 @@ def run_evaluation(
     # print(f"Examples evaluated: {results}")
     pprint(results)
     print("\nAggregate Scores:")
-    for metric, score in results.aggregate_metrics.items():
-        print(f"  {metric}: {score:.2f}")
+    # for metric, score in results.aggregate_metrics.items():
+    #     print(f"  {metric}: {score:.2f}")
 
     # print(f"\nView full results at: {results.experiment_url}")
 
