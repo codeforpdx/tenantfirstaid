@@ -30,7 +30,9 @@ def create_langsmith_dataset(
     dataset_exists = client.has_dataset(dataset_name=dataset_name)
     if dataset_exists:
         if overwrite_dataset:
-            print(f"-INFO- Dataset '{dataset_name}' already exists. Deleting for overwrite.")
+            print(
+                f"-INFO- Dataset '{dataset_name}' already exists. Deleting for overwrite."
+            )
             client.delete_dataset(dataset_name=dataset_name)
         else:
             raise RuntimeError(
@@ -57,13 +59,12 @@ def create_langsmith_dataset(
 
     # Convert each row to LangSmith example.
     for idx, row in enumerate(df.rows(named=True)):
-
         facts = (
             ast.literal_eval(row["facts"])
             if isinstance(row["facts"], str)
             else row["facts"]
         )
-        city = row["city"] # if not pd.is_null(row["city"]) else "null"
+        city = row["city"]  # if not pd.is_null(row["city"]) else "null"
 
         reference_conversation: List[Dict[str, str]] = []
         if row.get("Original conversation") is not None:
@@ -74,13 +75,15 @@ def create_langsmith_dataset(
                     )
                 elif line.startswith("Bot:"):
                     reference_conversation.append(
-                        {"role": "assistant", "content": line.replace("Bot:", "").strip()}
+                        {
+                            "role": "assistant",
+                            "content": line.replace("Bot:", "").strip(),
+                        }
                     )
                 else:
                     if line.strip() == "":
                         continue
                     reference_conversation[-1]["content"] += "\n" + line.strip()
-                
 
         # Each example has inputs and expected metadata.
         client.create_example(

@@ -10,12 +10,14 @@ from pathlib import Path
 
 from langchain.agents import create_agent, AgentState
 from langgraph.graph.state import CompiledStateGraph
-from langgraph.checkpoint.memory import InMemorySaver
+
+# from langgraph.checkpoint.memory import InMemorySaver
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 # from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.tools import tool
 from langchain_google_vertexai import ChatVertexAI
+
 # from langchain_google_vertexai.vectorstores.vectorstores import (
 #     VectorSearchVectorStoreDatastore,
 # )
@@ -28,6 +30,7 @@ from tenantfirstaid.chat import DEFAULT_INSTRUCTIONS
 
 if Path("../.env").exists():
     from dotenv import load_dotenv
+
     load_dotenv(override=True)
 
 MODEL = os.getenv("MODEL_NAME", "gemini-2.5-pro")
@@ -41,9 +44,11 @@ if (GOOGLE_CLOUD_LOCATION := os.getenv("GOOGLE_CLOUD_LOCATION")) is None:
 if (VERTEX_AI_DATASTORE := os.getenv("VERTEX_AI_DATASTORE")) is None:
     raise ValueError("VERTEX_AI_DATASTORE environment variable is not set.")
 
+
 class TFAAgentState(AgentState):
     state: Optional[str]
     city: Optional[str]
+
 
 # vector_store = VectorSearchVectorStoreDatastore.from_components(
 #     project_id=GOOGLE_CLOUD_PROJECT,
@@ -51,7 +56,6 @@ class TFAAgentState(AgentState):
 #     index_id=VERTEX_AI_DATASTORE,
 #     endpoint_id="fix-me-later",
 # )
-
 
 
 @tool(parse_docstring=True)
@@ -135,7 +139,6 @@ def retrieve_state_law(query: str, state: str) -> str:
     return "\n\n".join([doc.page_content for doc in docs])
 
 
-
 class LangChainChatManager:
     """Manages chat interactions using LangChain agent architecture."""
 
@@ -149,13 +152,13 @@ class LangChainChatManager:
             project=os.getenv("GOOGLE_CLOUD_PROJECT"),
             location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
             # Safety settings to match current implementation.
-            safety_settings = {                
+            safety_settings={
                 HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.OFF,
                 HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.OFF,
                 HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.OFF,
                 HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.OFF,
                 HarmCategory.HARM_CATEGORY_UNSPECIFIED: HarmBlockThreshold.OFF,
-            }
+            },
             # Thinking config for Gemini 2.5 Pro.
             # enable_thinking=os.getenv("SHOW_MODEL_THINKING", "false").lower() == "true",
         )
@@ -245,7 +248,7 @@ class LangChainChatManager:
             if "messages" in chunk:
                 messages = chunk["messages"]
                 if messages and isinstance(messages[-1], AIMessage):
-                    yield messages[-1].content  
+                    yield messages[-1].content
 
     def _format_messages(
         self, messages: list[dict[str, Any]]
