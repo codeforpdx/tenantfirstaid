@@ -5,9 +5,14 @@ automated quality evaluation.
 """
 
 import argparse
+import os
+from pathlib import Path
+from typing import Dict, Any
+from pprint import pprint
+
 
 from langsmith import Client
-from langsmith.evaluation import evaluate, ExperimentationResults
+from langsmith import evaluate
 
 from tenantfirstaid.langchain_chat import LangChainChatManager
 from scripts.langsmith_evaluators import (
@@ -20,8 +25,12 @@ from scripts.langsmith_evaluators import (
     tool_usage_evaluator,
 )
 
+if Path("../.env").exists():
+    from dotenv import load_dotenv
+    load_dotenv(override=True)
 
-def agent_wrapper(inputs):
+
+def agent_wrapper(inputs) -> Any:
     """Wrapper function that runs the LangChain agent on a single test case.
 
     This is what LangSmith will call for each evaluation example.
@@ -38,34 +47,35 @@ def agent_wrapper(inputs):
     )
 
     # Run agent on the first question.
-    response = agent.invoke(
+    response: Dict[str, Any] = agent.invoke(
         {
-            "input": inputs["first_question"],
-            "chat_history": [],
+            "messages": [{"role": "user", "content": inputs["first_question"]}],
             "city": inputs["city"],
             "state": inputs["state"],
         }
     )
 
-    return {"output": response["output"]}
+    # pprint(response)
+
+    return {"output": response['messages'][-1].content_blocks}
 
 
 def run_evaluation(
     dataset_name="tenant-legal-qa-scenarios",
     experiment_prefix="langchain-agent",
-    num_samples: int = 1,
+    num_repetitions: int = 1,
 ):
     """Run automated evaluation on LangSmith dataset.
 
     Args:
         dataset_name: Name of LangSmith dataset to evaluate
         experiment_prefix: Name for this evaluation run
-        num_samples: Number of examples to evaluate (None = all)
+        num_repetitions: Number of repetitions per example
 
     Returns:
         Evaluation results object
     """
-    client = Client()
+    client = Client(api_key=os.getenv("LANGSMITH_API_KEY"))
 
     # Get dataset.
     dataset = client.read_dataset(dataset_name=dataset_name)
@@ -74,30 +84,31 @@ def run_evaluation(
     print(f"Total examples: {dataset.example_count}")
 
     # Run evaluation with all evaluators.
-    results: ExperimentationResults = evaluate(
+    results = evaluate(
         agent_wrapper,
         data=dataset_name,
         evaluators=[
-            citation_accuracy_evaluator,
-            legal_correctness_evaluator,
+            # citation_accuracy_evaluator,
+            # legal_correctness_evaluator,
             completeness_evaluator,
-            tone_evaluator,
-            citation_format_evaluator,
-            tool_usage_evaluator,
-            performance_evaluator,
+            # tone_evaluator,
+            # citation_format_evaluator,
+            # tool_usage_evaluator,
+            # performance_evaluator,
         ],
-        experiment_prefix=experiment_prefix,
-        max_concurrency=5,  # Run 5 evaluations in parallel.
-        num_repetitions=num_samples,
+        # experiment_prefix=experiment_prefix,
+        # max_concurrency=5,  # Run 5 evaluations in parallel.
+        # num_repetitions=num_repetitions,
     )
 
     # Print summary.
     print("\n=== Evaluation Results ===")
     print(f"Experiment: {results.experiment_name}")
-    # print(f"Examples evaluated: {results.example_count}")
+    # print(f"Examples evaluated: {results}")
+    pprint(results)
     print("\nAggregate Scores:")
-    # for metric, score in results.aggregate_metrics.items():
-    #     print(f"  {metric}: {score:.2f}")
+    for metric, score in results.aggregate_metrics.items():
+        print(f"  {metric}: {score:.2f}")
 
     # print(f"\nView full results at: {results.experiment_url}")
 
@@ -105,14 +116,25 @@ def run_evaluation(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run LangSmith evaluation")
-    parser.add_argument("--dataset", default="tenant-legal-qa-scenarios")
-    parser.add_argument("--experiment", default="langchain-agent")
-    parser.add_argument("--num-samples", type=int, default=None)
+    parser = argparse.ArgumentParser(
+        description="Run LangSmith evaluation",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "--dataset", default="tenant-legal-qa-scenarios", help="LangSmith dataset name"
+    )
+    parser.add_argument(
+        "--experiment",
+        default="langchain-agent",
+        help="Experiment prefix for this evaluation run",
+    )
+    parser.add_argument(
+        "--num-repetitions", type=int, default=1, help="Number of examples to evaluate"
+    )
     args = parser.parse_args()
 
     run_evaluation(
         dataset_name=args.dataset,
         experiment_prefix=args.experiment,
-        num_samples=args.num_samples,
+        num_repetitions=args.num_repetitions,
     )

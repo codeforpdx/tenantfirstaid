@@ -19,11 +19,13 @@ dependencies = [
   "python-dotenv",
   "pandas>=2.3.0",
   "vertexai>=1.43.0",
-  "langchain>=1.1.0",
-  "langchain-google-vertexai>=3.1.0",
-  "langsmith>=0.4.47",
+  "langchain>=1.1.0,<2.0.0",
+  "langchain-google-vertexai>=3.1.0,<4.0.0",
+  "langsmith>=0.4.47,<0.5.0",
   "langchain-core>=1.1.0",
   "openevals>=0.1.2",
+  "langchain-google-community>=3.0.1",
+  "polars>=1.35.2",
 ]
 
 [tool.setuptools.packages.find]
@@ -49,6 +51,7 @@ dev = [
     "types-Flask>=1.1.6",
     "types-simplejson>=3.20.0.20250326",
     "httpx>=0.27.0",
+    "google-cloud-discoveryengine>=0.15.0",
 ]
 
 gen_convo = [
