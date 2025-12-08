@@ -5,9 +5,11 @@ advice responses across multiple dimensions.
 """
 
 import re
+from typing import List, Dict
 
-from langsmith.evaluation import Evaluator
+# from langsmith import SimpleEvaluator as Evaluator
 from openevals import create_llm_as_judge
+from openevals.types import SimpleEvaluator, EvaluatorResult
 from openevals.prompts import CORRECTNESS_PROMPT
 
 EVALUATOR_MODEL_NAME = "gemini-2.5-pro"
@@ -52,7 +54,7 @@ You are an expert data labeler evaluating model outputs for correctness. Your ta
 </Reminders>
 """
 
-citation_accuracy_evaluator: Evaluator = create_llm_as_judge(
+citation_accuracy_evaluator: SimpleEvaluator = create_llm_as_judge(
     model=EVALUATOR_MODEL_NAME,
     prompt=CITATION_PROMPT,
 )
@@ -97,17 +99,23 @@ You are an expert data labeler evaluating model outputs for correctness. Your ta
 </Reminders>
 """
 
-legal_correctness_evaluator: Evaluator = create_llm_as_judge(
+legal_correctness_evaluator: SimpleEvaluator = create_llm_as_judge(
     model=EVALUATOR_MODEL_NAME,
     prompt=LEGAL_CORRECTNESS_PROMPT,
 )
 
 
 # Evaluator 3: Response Completeness (LLM-as-Judge).
-completeness_evaluator: Evaluator = create_llm_as_judge(
-    model=EVALUATOR_MODEL_NAME,
-    prompt=CORRECTNESS_PROMPT,
-)
+def completeness_evaluator(
+    inputs: dict, outputs: dict, reference_outputs: List[Dict[str,str]]
+) -> EvaluatorResult | List[EvaluatorResult]:
+    tmp = create_llm_as_judge(
+        model=EVALUATOR_MODEL_NAME,
+        prompt=CORRECTNESS_PROMPT,
+        feedback_key="completeness",
+    )
+    return tmp(inputs=inputs, outputs=outputs, reference_outputs=reference_outputs)
+
 
 # Evaluator 4: Tone & Professionalism (LLM-as-Judge).
 TONE_PROMPT = """
@@ -141,14 +149,14 @@ You are an expert data labeler evaluating model outputs for correctness. Your ta
 </Reminders>
 """
 
-tone_evaluator: Evaluator = create_llm_as_judge(
+tone_evaluator: SimpleEvaluator = create_llm_as_judge(
     model=EVALUATOR_MODEL_NAME,
     prompt=TONE_PROMPT,
 )
 
 
 # Evaluator 5: Citation Format (Heuristic).
-def citation_format_evaluator(run, example) -> Evaluator:
+def citation_format_evaluator(run, example) -> SimpleEvaluator:
     """Check if citations use proper HTML anchor tag format.
 
     Args:
@@ -188,7 +196,7 @@ def citation_format_evaluator(run, example) -> Evaluator:
 
 
 # Evaluator 6: Tool Usage (Heuristic).
-def tool_usage_evaluator(run, example) -> Evaluator:
+def tool_usage_evaluator(run, example) -> SimpleEvaluator:
     """Check if agent used RAG tools appropriately.
 
     Args:
@@ -219,7 +227,7 @@ def tool_usage_evaluator(run, example) -> Evaluator:
 
 
 # Evaluator 7: Performance Metrics (Heuristic).
-def performance_evaluator(run, example) -> Evaluator:
+def performance_evaluator(run, example) -> SimpleEvaluator:
     """Track latency and token usage.
 
     Args:
