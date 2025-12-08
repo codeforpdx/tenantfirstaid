@@ -22,15 +22,13 @@ from langchain_google_vertexai import ChatVertexAI
 #     VectorSearchVectorStoreDatastore,
 # )
 from langchain_google_community import VertexAISearchRetriever
-
 from langchain_google_vertexai import HarmBlockThreshold, HarmCategory
 
 
-from tenantfirstaid.chat import DEFAULT_INSTRUCTIONS
+from .chat import DEFAULT_INSTRUCTIONS, UsaState, OregonCity
 
 if Path("../.env").exists():
     from dotenv import load_dotenv
-
     load_dotenv(override=True)
 
 MODEL = os.getenv("MODEL_NAME", "gemini-2.5-pro")
@@ -82,7 +80,7 @@ def retrieve_city_law(query: str, city: str, state: str) -> str:
         raise ValueError("VERTEX_AI_DATASTORE environment variable is not set.")
 
     rag = VertexAISearchRetriever(
-        name=str(Path(VERTEX_AI_DATASTORE).parts[-2:-1]),
+        name=str(Path(VERTEX_AI_DATASTORE).parts[-1]),
         project_id=GOOGLE_CLOUD_PROJECT,
         location_id=GOOGLE_CLOUD_LOCATION,
         data_store_id=VERTEX_AI_DATASTORE,
@@ -209,11 +207,23 @@ class LangChainChatManager:
         Returns:
             System prompt string with instructions and location context
         """
+        VALID_CITIES = {"Portland", "Eugene", "null", None}
+        VALID_STATES = {"OR"}
+
+        # Validate and sanitize inputs
+        city_clean = city.title() if city else "null"
+        state_upper = state.upper() if state else "OR"
+
+        if city_clean not in VALID_CITIES:
+            city_clean = "null"
+        if state_upper not in VALID_STATES:
+            raise ValueError(f"Invalid state: {state}")
+
+        # Add city and state filters if they are set
         instructions = DEFAULT_INSTRUCTIONS
-        instructions += (
-            f"\nThe user is in {city if city != 'null' else ''} {state.upper()}.\n"
-        )
+        instructions += f"\nThe user is in {city_clean if city_clean != 'null' else ''} {state_upper}.\n"
         return instructions
+
 
     def generate_streaming_response(
         self, messages: list[dict[str, Any]], city: str, state: str

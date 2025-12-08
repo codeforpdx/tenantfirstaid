@@ -3,6 +3,9 @@ from google.genai import types
 from flask import current_app, request, stream_with_context, Response
 from flask.views import View
 import os
+from enum import Enum
+from typing import Optional
+from .langchain_chat import LangChainChatManager
 
 MODEL = os.getenv("MODEL_NAME", "gemini-2.5-pro")
 
@@ -71,135 +74,162 @@ Sincerely,
 [Your Name]
 """
 
+# TODO: move these classes to separate file or langchain_chat.py
+class _InnerOregonCity(Enum):
+    PORTLAND = "portland"
+    EUGENE = "eugene"
 
-class ChatManager:
-    def __init__(self):
-        self.client = genai.Client(vertexai=True)
+class OregonCity:
+    value: Optional[_InnerOregonCity]
 
-    def prepare_developer_instructions(self, city: str, state: str) -> str:
-        VALID_CITIES = {"Portland", "Eugene", "null", None}
-        VALID_STATES = {"OR"}
+    def __repr__(self) -> str:
+        return str(self.value) if self.value is not None else "null"
 
-        # Validate and sanitize inputs
-        city_clean = city.title() if city else "null"
-        state_upper = state.upper() if state else "OR"
+    def else_empty(self) -> str:
+        return str(self.value) if self.value is not None else ""
 
-        if city_clean not in VALID_CITIES:
-            city_clean = "null"
-        if state_upper not in VALID_STATES:
-            raise ValueError(f"Invalid state: {state}")
+    def lower(self) -> str:
+        return self.lower()
 
-        # Add city and state filters if they are set
-        instructions = DEFAULT_INSTRUCTIONS
-        instructions += f"\nThe user is in {city_clean if city_clean != 'null' else ''} {state_upper}.\n"
-        return instructions
+    def upper(self) -> str:
+        return self.upper()
 
-    def generate_gemini_chat_response(
-        self,
-        messages: list,
-        city: str,
-        state: str,
-        stream=False,
-        use_tools=True,
-        instructions=None,
-        model_name=MODEL,
-    ):
-        instructions = (
-            instructions
-            if instructions
-            else self.prepare_developer_instructions(city, state)
-        )
+class _InnerUsaState(Enum):
+    OREGON = "OR"
+    OTHER = "OTHER"
 
-        formatted_messages = []
+class UsaState:
+    value: Optional[_InnerUsaState]
 
-        for message in messages:
-            formatted_messages.append(
-                {
-                    "role": (
-                        "model"
-                        if message["role"] == "assistant" or message["role"] == "model"
-                        else "user"
-                    ),
-                    "parts": [{"text": message["content"]}],
-                }
-            )
+    def __repr__(self) -> str:
+        return str(self.value) if self.value is not None else "null"
 
-        city = city.lower() if city is not None else None
-        state = state.lower() if state is not None else None
+    def else_empty(self) -> str:
+        return str(self.value) if self.value is not None else ""
 
-        generate_content_config = types.GenerateContentConfig(
-            temperature=0,
-            top_p=0,
-            max_output_tokens=65535,
-            safety_settings=[
-                types.SafetySetting(
-                    category=types.HarmCategory("HARM_CATEGORY_HATE_SPEECH"),
-                    threshold=types.HarmBlockThreshold("OFF"),
-                ),
-                types.SafetySetting(
-                    category=types.HarmCategory("HARM_CATEGORY_DANGEROUS_CONTENT"),
-                    threshold=types.HarmBlockThreshold("OFF"),
-                ),
-                types.SafetySetting(
-                    category=types.HarmCategory("HARM_CATEGORY_SEXUALLY_EXPLICIT"),
-                    threshold=types.HarmBlockThreshold("OFF"),
-                ),
-                types.SafetySetting(
-                    category=types.HarmCategory("HARM_CATEGORY_HARASSMENT"),
-                    threshold=types.HarmBlockThreshold("OFF"),
-                ),
-            ],
-            system_instruction=[instructions],
-            thinking_config=types.ThinkingConfig(
-                include_thoughts=os.getenv("SHOW_MODEL_THINKING", "false").lower()
-                == "true",
-                thinking_budget=-1,
-            ),
-            tools=[
-                types.Tool(
-                    retrieval=types.Retrieval(
-                        vertex_ai_search=types.VertexAISearch(
-                            datastore=os.getenv("VERTEX_AI_DATASTORE"),
-                            filter=f'city: ANY("{city}") AND state: ANY("{state}")',
-                            max_results=5,
-                        )
-                    )
-                ),
-                types.Tool(
-                    retrieval=types.Retrieval(
-                        vertex_ai_search=types.VertexAISearch(
-                            datastore=os.getenv("VERTEX_AI_DATASTORE"),
-                            filter=f'city: ANY("null") AND state: ANY("{state}")',
-                            max_results=5,
-                        )
-                    )
-                ),
-            ],
-        )
+    def lower(self) -> str:
+        return self.lower()
 
-        response = self.client.models.generate_content_stream(
-            model=MODEL,
-            contents=formatted_messages,
-            config=generate_content_config,
-        )
+    def upper(self) -> str:
+        return self.upper()
 
-        return response
+# class ChatManager:
+#     def __init__(self):
+#         self.client = genai.Client(vertexai=True)
+
+#     def prepare_developer_instructions(self, city: OregonCity, state: UsaState) -> str:
+#         # Add city and state filters if they are set
+#         instructions = DEFAULT_INSTRUCTIONS
+#         instructions += (
+#             f"\nThe user is in {city.else_empty()} {state.upper()}.\n"
+#         )
+#         return instructions
+
+#     def generate_gemini_chat_response(
+#         self,
+#         messages: list,
+#         city: OregonCity,
+#         state: UsaState,
+#         stream=False,
+#         use_tools=True,
+#         instructions=None,
+#         model_name=MODEL,
+#     ):
+#         instructions = (
+#             instructions
+#             if instructions
+#             else self.prepare_developer_instructions(city, state)
+#         )
+
+#         formatted_messages = []
+
+#         for message in messages:
+#             formatted_messages.append(
+#                 {
+#                     "role": (
+#                         "model"
+#                         if message["role"] == "assistant" or message["role"] == "model"
+#                         else "user"
+#                     ),
+#                     "parts": [{"text": message["content"]}],
+#                 }
+#             )
+
+#         generate_content_config = types.GenerateContentConfig(
+#             temperature=0,
+#             top_p=0,
+#             max_output_tokens=65535,
+#             safety_settings=[
+#                 types.SafetySetting(
+#                     category=types.HarmCategory("HARM_CATEGORY_HATE_SPEECH"),
+#                     threshold=types.HarmBlockThreshold("OFF"),
+#                 ),
+#                 types.SafetySetting(
+#                     category=types.HarmCategory("HARM_CATEGORY_DANGEROUS_CONTENT"),
+#                     threshold=types.HarmBlockThreshold("OFF"),
+#                 ),
+#                 types.SafetySetting(
+#                     category=types.HarmCategory("HARM_CATEGORY_SEXUALLY_EXPLICIT"),
+#                     threshold=types.HarmBlockThreshold("OFF"),
+#                 ),
+#                 types.SafetySetting(
+#                     category=types.HarmCategory("HARM_CATEGORY_HARASSMENT"),
+#                     threshold=types.HarmBlockThreshold("OFF"),
+#                 ),
+#             ],
+#             system_instruction=[instructions],
+#             thinking_config=types.ThinkingConfig(
+#                 include_thoughts=os.getenv("SHOW_MODEL_THINKING", "false").lower()
+#                 == "true",
+#                 thinking_budget=-1,
+#             ),
+#             tools=[
+#                 types.Tool(
+#                     retrieval=types.Retrieval(
+#                         vertex_ai_search=types.VertexAISearch(
+#                             datastore=os.getenv("VERTEX_AI_DATASTORE"),
+#                             filter=f'city: ANY("{city}") AND state: ANY("{state}")',
+#                             max_results=5,
+#                         )
+#                     )
+#                 ),
+#                 types.Tool(
+#                     retrieval=types.Retrieval(
+#                         vertex_ai_search=types.VertexAISearch(
+#                             datastore=os.getenv("VERTEX_AI_DATASTORE"),
+#                             filter=f'city: ANY("null") AND state: ANY("{state}")',
+#                             max_results=5,
+#                         )
+#                     )
+#                 ),
+#             ],
+#         )
+
+#         response = self.client.models.generate_content_stream(
+#             model=MODEL,
+#             contents=formatted_messages,
+#             config=generate_content_config,
+#         )
+
+#         return response
 
 
 class ChatView(View):
     def __init__(self) -> None:
-        self.chat_manager = ChatManager()
+        # self.chat_manager = ChatManager()
+        self.chat_manager = LangChainChatManager()
 
     def dispatch_request(self, *args, **kwargs) -> Response:
         data = request.json
         messages = data["messages"]
 
         def generate():
-            response_stream = self.chat_manager.generate_gemini_chat_response(
+            # response_stream = self.chat_manager.generate_gemini_chat_response(
+            response_stream = self.chat_manager.generate_streaming_response(
                 messages,
                 data["city"],
                 data["state"],
-                stream=True,
+                # stream=True,
             )
 
             assistant_chunks = []

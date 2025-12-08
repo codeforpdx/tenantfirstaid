@@ -10,7 +10,6 @@ import os
 
 if Path(".env").exists():
     from dotenv import load_dotenv
-
     load_dotenv(override=True)
 
 from .chat import ChatView
