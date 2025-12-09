@@ -7,14 +7,19 @@ automated quality evaluation.
 import argparse
 import os
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from pprint import pprint
 
 
 from langsmith import Client
 from langsmith import evaluate
 
-from tenantfirstaid.langchain_chat import LangChainChatManager
+from tenantfirstaid.langchain_chat_manager import (
+    LangChainChatManager,
+    # OregonCity,
+    # UsaState,
+    # _InnerUsaState
+)
 from scripts.langsmith_evaluators import (
     # citation_accuracy_evaluator,
     # citation_format_evaluator,
@@ -24,11 +29,6 @@ from scripts.langsmith_evaluators import (
     # tone_evaluator,
     # tool_usage_evaluator,
 )
-
-if Path("../.env").exists():
-    from dotenv import load_dotenv
-
-    load_dotenv(override=True)
 
 
 def agent_wrapper(inputs) -> Any:
@@ -43,16 +43,20 @@ def agent_wrapper(inputs) -> Any:
         Dictionary with agent output
     """
     chat_manager = LangChainChatManager()
+
+    context_state = str(inputs["state"])
+    context_city = str(inputs["city"])
+
     agent = chat_manager.create_agent_for_session(
-        city=inputs["city"], state=inputs["state"]
+        city=context_city, state=context_state
     )
 
     # Run agent on the first question.
     response: Dict[str, Any] = agent.invoke(
         {
             "messages": [{"role": "user", "content": inputs["first_question"]}],
-            "city": inputs["city"],
-            "state": inputs["state"],
+            "city": context_city,
+            "state": context_state,
         }
     )
 
@@ -132,6 +136,15 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num-repetitions", type=int, default=1, help="Number of examples to evaluate"
     )
+
+    env_path = Path(__file__).parent / "../.env"
+    if env_path.exists():
+        from dotenv import load_dotenv
+
+        load_dotenv(override=True)
+    else:
+        raise FileNotFoundError(f".env file not found at {env_path}")
+
     args = parser.parse_args()
 
     run_evaluation(
