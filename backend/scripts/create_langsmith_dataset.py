@@ -8,15 +8,13 @@ import argparse
 import ast
 import os
 from pathlib import Path
-from typing import List, Dict
+from typing import List
+from dotenv import load_dotenv
+
 
 import polars as pd
 from langsmith import Client
-
-if Path("../.env").exists():
-    from dotenv import load_dotenv
-
-    load_dotenv(override=True)
+from langchain_core.messages import HumanMessage, AIMessage, AnyMessage
 
 
 def create_langsmith_dataset(
@@ -64,26 +62,28 @@ def create_langsmith_dataset(
             if isinstance(row["facts"], str)
             else row["facts"]
         )
-        city = row["city"]  # if not pd.is_null(row["city"]) else "null"
+        city = row["city"]
 
-        reference_conversation: List[Dict[str, str]] = []
-        if row.get("Original conversation") is not None:
-            for line in row.get("Original conversation").splitlines():
+        reference_conversation: List[AnyMessage] = []
+        if row["Original conversation"] is not None:
+            for line in row["Original conversation"].splitlines():
+                if not isinstance(line, str):
+                    continue
+
                 if line.startswith("You:"):
                     reference_conversation.append(
-                        {"role": "user", "content": line.replace("You:", "").strip()}
+                        HumanMessage(content=line.removeprefix("You:").strip())
                     )
                 elif line.startswith("Bot:"):
                     reference_conversation.append(
-                        {
-                            "role": "assistant",
-                            "content": line.replace("Bot:", "").strip(),
-                        }
+                        AIMessage(content=line.removeprefix("Bot:").strip())
                     )
                 else:
-                    if line.strip() == "":
+                    stripped_line = line.strip()
+                    if stripped_line == "":
                         continue
-                    reference_conversation[-1]["content"] += "\n" + line.strip()
+                    # continue last message
+                    reference_conversation[-1].content += "\n" + stripped_line
 
         # Each example has inputs and expected metadata.
         client.create_example(
@@ -136,6 +136,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--overwrite", action="store_true", help="Overwrite existing dataset"
     )
+
+    # Load environment variables from .env file if it exists.
+    env_path = Path(__file__).parent / "../.env"
+    if env_path.exists():
+        load_dotenv(override=True)
+    else:
+        FileNotFoundError(f"[{env_path}] file not found.")
+
     args = parser.parse_args()
 
     create_langsmith_dataset(

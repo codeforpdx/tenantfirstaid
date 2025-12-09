@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 from pprint import pprint
 
+from langchain_core.messages import HumanMessage, AIMessage
 
 from langsmith import Client
 from langsmith import evaluate
@@ -54,7 +55,7 @@ def agent_wrapper(inputs) -> Any:
     # Run agent on the first question.
     response: Dict[str, Any] = agent.invoke(
         {
-            "messages": [{"role": "user", "content": inputs["first_question"]}],
+            "messages": [HumanMessage(content=inputs["first_question"])],
             "city": context_city,
             "state": context_state,
         }
