@@ -5,11 +5,11 @@ Google Gemini API calls with a standardized agent-based architecture.
 """
 
 import os
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 from pathlib import Path
-from enum import Enum, StrEnum
+
+# from enum import Enum, StrEnum
 from pprint import pprint
-from dataclasses import dataclass
 
 from langchain.agents import create_agent, AgentState
 from langgraph.graph.state import CompiledStateGraph
@@ -17,7 +17,7 @@ from langgraph.graph.state import CompiledStateGraph
 from langchain.tools import ToolRuntime
 
 # from langgraph.checkpoint.memory import InMemorySaver
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, SystemMessage, AnyMessage
 
 # from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.tools import tool, BaseTool
@@ -58,6 +58,60 @@ If the user asks questions about Section 8 or the HomeForward program, search th
 
 If the user asks to make/generate/create/draft a letter, you should return a formatted letter after your conversational response. Add a delimiter -----generate letter----- to separate the two content. You can include <a>, <em>, and <strong> tags for additional formatting.
 """
+
+
+def city_or_state_input_sanitizer(location: Optional[str], max_len: int = 9) -> str:
+    """Validate and sanitize city or state input."""
+    if location is None or not isinstance(location, str):
+        return ""
+    if not location.isalpha():
+        raise ValueError(f"Invalid city or state input: {location}")
+    if len(location) < 2 or len(location) > max_len:
+        raise ValueError(f"Invalid city or state input length: {location}")
+    return location.lower()
+
+
+class _GoogEnvAndPolicy:
+    """Validate and set Google Cloud variables from OS environment"""
+
+    # Note: these are Class variables, not instance variables.
+    __slots__ = (
+        "MODEL_NAME",
+        "GOOGLE_CLOUD_PROJECT",
+        "GOOGLE_CLOUD_LOCATION",
+        "VERTEX_AI_DATASTORE",
+        "GOOGLE_APPLICATION_CREDENTIALS",
+        "SAFETY_SETTINGS",
+        "MODEL_TEMPERATURE",
+        "MAX_TOKENS",
+    )
+
+    def __init__(self) -> None:
+        # read .env at object creation time
+        path_to_env = Path(__file__).parent / "../.env"
+        if path_to_env.exists():
+            from dotenv import load_dotenv
+
+            load_dotenv(override=True)
+        else:
+            raise FileNotFoundError(f"[{path_to_env}] file not found.")
+
+        for c in list(self.__slots__)[:5]:
+            if os.getenv(c) is not None:
+                self.__setattr__(c, os.getenv(c))
+            else:
+                raise ValueError(f"{c} environment variable is not set.")
+
+        self.SAFETY_SETTINGS = {
+            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.OFF,
+            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.OFF,
+            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.OFF,
+            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.OFF,
+            HarmCategory.HARM_CATEGORY_UNSPECIFIED: HarmBlockThreshold.OFF,
+        }
+
+        self.MODEL_TEMPERATURE = float(0)
+        self.MAX_TOKENS = 65535
 
 
 # class _InnerOregonCity(StrEnum):
@@ -149,7 +203,7 @@ If the user asks to make/generate/create/draft a letter, you should return a for
 #         return self.else_empty().upper()
 
 
-class TFAAgentState(AgentState):
+class TFAAgentStateSchema(AgentState):
     state: str
     city: Optional[str]
 
@@ -162,12 +216,13 @@ class TFAAgentState(AgentState):
 # )
 
 
-class StateLawInput(BaseModel, arbitrary_types_allowed=True):
+class StateLawInputSchema(BaseModel, arbitrary_types_allowed=True):
     query: str
     state: str
     runtime: ToolRuntime
 
-@tool(args_schema=StateLawInput)
+
+@tool(args_schema=StateLawInputSchema)
 def retrieve_state_law(query: str, state: str, runtime: ToolRuntime) -> str:
     """Retrieve state-wide housing laws from the RAG corpus.
 
@@ -184,6 +239,8 @@ def retrieve_state_law(query: str, state: str, runtime: ToolRuntime) -> str:
 
     SINGLETON = _GoogEnvAndPolicy()
 
+    safe_state: str = city_or_state_input_sanitizer(state, max_len=2).lower()
+
     pprint(runtime.context)
 
     # rag = vector_store.as_retriever(
@@ -192,12 +249,12 @@ def retrieve_state_law(query: str, state: str, runtime: ToolRuntime) -> str:
     # )
 
     rag = VertexAISearchRetriever(
-        name=str(Path(SINGLETON.VERTEX_AI_DATASTORE).parts[-1]),
-        project_id=SINGLETON.GOOGLE_CLOUD_PROJECT,
-        location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,
-        data_store_id=SINGLETON.VERTEX_AI_DATASTORE,
+        name=str(Path(SINGLETON.VERTEX_AI_DATASTORE).parts[-1]),  # type: ignore [unresolved-attribute]
+        project_id=SINGLETON.GOOGLE_CLOUD_PROJECT,  # type: ignore [unresolved-attribute]
+        location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,  # type: ignore [unresolved-attribute]
+        data_store_id=SINGLETON.VERTEX_AI_DATASTORE,  # type: ignore [unresolved-attribute]
         # max_results=5,
-        filter=f'city: ANY("null") AND state: ANY("{state.lower()}")',
+        filter=f'city: ANY("null") AND state: ANY("{safe_state}")',
     )
 
     docs = rag.invoke(
@@ -207,12 +264,14 @@ def retrieve_state_law(query: str, state: str, runtime: ToolRuntime) -> str:
 
     return "\n\n".join([doc.page_content for doc in docs])
 
-class CityLawInput(BaseModel, arbitrary_types_allowed=True):
+
+class CityLawInputSchema(BaseModel, arbitrary_types_allowed=True):
     query: str
     city: str
     state: str
 
-@tool(args_schema=CityLawInput)
+
+@tool(args_schema=CityLawInputSchema)
 def retrieve_city_law(query: str, city: str, state: str) -> str:
     """Retrieve city-specific housing laws from the RAG corpus.
 
@@ -228,6 +287,8 @@ def retrieve_city_law(query: str, city: str, state: str) -> str:
     """
 
     SINGLETON = _GoogEnvAndPolicy()
+    safe_city: str = city_or_state_input_sanitizer(city).lower()
+    safe_state: str = city_or_state_input_sanitizer(state, max_len=2).lower()
 
     # rag = vector_store.as_retriever(
     #     search_kwargs={"k": 5},
@@ -235,12 +296,12 @@ def retrieve_city_law(query: str, city: str, state: str) -> str:
     # )
 
     rag = VertexAISearchRetriever(
-        name=str(Path(SINGLETON.VERTEX_AI_DATASTORE).parts[-1]),
-        project_id=SINGLETON.GOOGLE_CLOUD_PROJECT,
-        location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,
-        data_store_id=SINGLETON.VERTEX_AI_DATASTORE,
+        name=str(Path(SINGLETON.VERTEX_AI_DATASTORE).parts[-1]),  # type: ignore [unresolved-attribute]
+        project_id=SINGLETON.GOOGLE_CLOUD_PROJECT,  # type: ignore [unresolved-attribute]
+        location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,  # type: ignore [unresolved-attribute]
+        data_store_id=SINGLETON.VERTEX_AI_DATASTORE,  # type: ignore [unresolved-attribute]
         # max_results=5,
-        filter=f'city: ANY("{city.lower()}") AND state: ANY("{state.lower()}")',
+        filter=f'city: ANY("{safe_city}") AND state: ANY("{safe_state}")',
     )
 
     docs = rag.invoke(
@@ -248,45 +309,6 @@ def retrieve_city_law(query: str, city: str, state: str) -> str:
     )
 
     return "\n\n".join([doc.page_content for doc in docs])
-
-
-
-class _GoogEnvAndPolicy():
-    """Validate and set Google Cloud variables from OS environment"""
-
-    # Note: these are Class variables, not instance variables.
-    __slots__ = (
-        "MODEL_NAME",
-        "GOOGLE_CLOUD_PROJECT",
-        "GOOGLE_CLOUD_LOCATION",
-        "VERTEX_AI_DATASTORE",
-        "GOOGLE_APPLICATION_CREDENTIALS",
-        "SAFETY_SETTINGS",
-    )
-
-    def __init__(self) -> None:
-        # read .env at object creation time
-        path_to_env = Path(__file__).parent / "../.env"
-        if path_to_env.exists():
-            from dotenv import load_dotenv
-            load_dotenv(override=True)
-        else:
-            raise FileNotFoundError(f"[{path_to_env}] file not found.")
-
-        for c in list(self.__slots__)[:5]:
-            if os.getenv(c) is not None:
-                self.__setattr__(c, os.getenv(c))
-            else:
-                raise ValueError(f"{c} environment variable is not set.")
-
-        self.SAFETY_SETTINGS = {
-            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.OFF,
-            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.OFF,
-            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.OFF,
-            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.OFF,
-            HarmCategory.HARM_CATEGORY_UNSPECIFIED: HarmBlockThreshold.OFF,
-        }
-
 
 
 class LangChainChatManager:
@@ -298,31 +320,29 @@ class LangChainChatManager:
 
         # Initialize ChatVertexAI with same config as current implementation.
         self.llm = ChatVertexAI(
-            model_name=self.SINGLETON.MODEL_NAME,
-            temperature=0,
-            max_tokens=65535,
-            project=self.SINGLETON.GOOGLE_CLOUD_PROJECT,
-            location=self.SINGLETON.GOOGLE_CLOUD_LOCATION,
-            safety_settings=self.SINGLETON.SAFETY_SETTINGS,
+            model_name=self.SINGLETON.MODEL_NAME,  # type: ignore [unresolved-attribute]
+            temperature=self.SINGLETON.MODEL_TEMPERATURE,  # type: ignore [unresolved-attribute]
+            max_tokens=self.SINGLETON.MAX_TOKENS,  # type: ignore [unresolved-attribute]
+            project=self.SINGLETON.GOOGLE_CLOUD_PROJECT,  # type: ignore [unresolved-attribute]
+            location=self.SINGLETON.GOOGLE_CLOUD_LOCATION,  # type: ignore [unresolved-attribute]
+            safety_settings=self.SINGLETON.SAFETY_SETTINGS,  # type: ignore [unresolved-attribute]
             # Thinking config for Gemini 2.5 Pro.
             # enable_thinking=os.getenv("SHOW_MODEL_THINKING", "false").lower() == "true",
         )
 
-        self.rag = VertexAISearchRetriever(
-            name=str(Path(self.SINGLETON.VERTEX_AI_DATASTORE).parts[-1]),
-            project_id=self.SINGLETON.GOOGLE_CLOUD_PROJECT,
-            location_id=self.SINGLETON.GOOGLE_CLOUD_LOCATION,
-            data_store_id=self.SINGLETON.VERTEX_AI_DATASTORE,
-            # max_results=5,
-        )
+        # self.rag = VertexAISearchRetriever(
+        #     name=str(Path(self.SINGLETON.VERTEX_AI_DATASTORE).parts[-1]),
+        #     project_id=self.SINGLETON.GOOGLE_CLOUD_PROJECT,
+        #     location_id=self.SINGLETON.GOOGLE_CLOUD_LOCATION,
+        #     data_store_id=self.SINGLETON.VERTEX_AI_DATASTORE,
+        #     # max_results=5,
+        # )
 
         # Create tools for RAG retrieval.
         # self.tools: List[BaseTool] = [retrieve_city_law, retrieve_state_law]
-        self.tools: List[BaseTool] = []
+        self.tools: List[BaseTool] = []  # FIXME!
 
-    def create_agent_for_session(
-        self, city: str, state: str
-    ) -> CompiledStateGraph:
+    def create_agent_for_session(self, city: str, state: str) -> CompiledStateGraph:
         """Create an agent instance configured for the user's location.
 
         Args:
@@ -332,7 +352,10 @@ class LangChainChatManager:
         Returns:
             AgentExecutor configured with tools and system prompt
         """
-        system_prompt = SystemMessage(self.prepare_system_prompt(city, state))
+
+        safe_city: str = city_or_state_input_sanitizer(city).lower()
+        safe_state: str = city_or_state_input_sanitizer(state, max_len=2).lower()
+        system_prompt = SystemMessage(self.prepare_system_prompt(safe_city, safe_state))
 
         # # Create prompt template with system message and conversation history.
         # prompt = ChatPromptTemplate.from_messages(
@@ -349,7 +372,7 @@ class LangChainChatManager:
             self.llm,
             self.tools,
             system_prompt=system_prompt,
-            state_schema=TFAAgentState,
+            state_schema=TFAAgentStateSchema,
             # checkpointer=InMemorySaver(),
         )
 
@@ -365,12 +388,16 @@ class LangChainChatManager:
         Returns:
             System prompt string with instructions and location context
         """
+
+        safe_city: str = city_or_state_input_sanitizer(city).lower()
+        safe_state: str = city_or_state_input_sanitizer(state, max_len=2).upper()
+
         VALID_CITIES = {"Portland", "Eugene", "null", None}
         VALID_STATES = {"OR"}
 
         # Validate and sanitize inputs
-        city_clean = city.title() if city else "null"
-        state_upper = state.upper() if state else "OR"
+        city_clean = safe_city.title() if safe_city else "null"
+        state_upper = safe_state.upper() if safe_state else "OR"
 
         if city_clean not in VALID_CITIES:
             city_clean = "null"
@@ -384,7 +411,7 @@ class LangChainChatManager:
 
 
     def generate_streaming_response(
-        self, messages: list[dict[str, Any]], city: str, state: str
+        self, messages: list[AnyMessage], city: str, state: str
     ):
         """Generate streaming response using LangChain agent.
 
@@ -396,11 +423,14 @@ class LangChainChatManager:
         Yields:
             Response chunks as they are generated
         """
-        agent = self.create_agent_for_session(city, state)
 
-        # Convert messages to LangChain format.
-        conversation_history = self._format_messages(messages[:-1])
-        current_query = messages[-1]["content"]
+        safe_city: str = city_or_state_input_sanitizer(city).lower()
+        safe_state: str = city_or_state_input_sanitizer(state, max_len=2).lower()
+
+        agent = self.create_agent_for_session(safe_city, safe_state)
+
+        # Split messages into conversation history and current query.
+        (conversation_history, current_query) = (messages[:-1], [messages[-1]])
 
         # Stream the agent response.
         for chunk in agent.stream(
@@ -410,7 +440,7 @@ class LangChainChatManager:
                 "city": city,
                 "state": state,
             },
-            stream_mode="values",
+            stream_mode="updates",
         ):
             # Extract messages from chunk.
             if "messages" in chunk:
@@ -418,21 +448,21 @@ class LangChainChatManager:
                 if messages and isinstance(messages[-1], AIMessage):
                     yield messages[-1].content
 
-    def _format_messages(
-        self, messages: list[dict[str, Any]]
-    ) -> list[HumanMessage | AIMessage]:
-        """Convert session messages to LangChain message format.
+    # def _format_messages(
+    #     self, messages: list[AnyMessage]
+    # ) -> list[HumanMessage | AIMessage]:
+    #     """Convert session messages to LangChain message format.
 
-        Args:
-            messages: List of message dictionaries with 'role' and 'content' keys
+    #     Args:
+    #         messages: List of message dictionaries with 'role' and 'content' keys
 
-        Returns:
-            List of LangChain message objects
-        """
-        formatted = []
-        for msg in messages:
-            if msg["role"] == "user":
-                formatted.append(HumanMessage(content=msg["content"]))
-            else:  # assistant/model
-                formatted.append(AIMessage(content=msg["content"]))
-        return formatted
+    #     Returns:
+    #         List of LangChain message objects
+    #     """
+    #     formatted = []
+    #     for msg in messages:
+    #         if msg["role"] == "user":
+    #             formatted.append(HumanMessage(content=msg.content))
+    #         else:  # assistant/model
+    #             formatted.append(AIMessage(content=msg.content))
+    #     return formatted
