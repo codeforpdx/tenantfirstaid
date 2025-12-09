@@ -229,7 +229,7 @@ def retrieve_state_law(query: str, state: str, runtime: ToolRuntime) -> str:
     # )
 
     rag = VertexAISearchRetriever(
-        name=str(Path(SINGLETON.VERTEX_AI_DATASTORE).parts[-2:-1]),
+        name=str(Path(SINGLETON.VERTEX_AI_DATASTORE).parts[-1]),
         project_id=SINGLETON.GOOGLE_CLOUD_PROJECT,
         location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,
         data_store_id=SINGLETON.VERTEX_AI_DATASTORE,
