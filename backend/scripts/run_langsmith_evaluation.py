@@ -7,10 +7,10 @@ automated quality evaluation.
 import argparse
 import os
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from pprint import pprint
 
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage
 
 from langsmith import Client
 from langsmith import evaluate
