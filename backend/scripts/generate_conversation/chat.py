@@ -12,7 +12,10 @@ import argparse
 from pathlib import Path
 import pandas as pd
 
-from tenantfirstaid.chat import DEFAULT_INSTRUCTIONS, ChatManager
+from tenantfirstaid.langchain_chat_manager import (
+    DEFAULT_INSTRUCTIONS,
+    LangChainChatManager as ChatManager,
+)
 
 dot_env_path = Path(__file__).parent.parent.parent / ".env"
 print(f"Loading environment variables from {dot_env_path}")

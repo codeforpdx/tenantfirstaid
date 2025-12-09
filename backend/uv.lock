@@ -3339,6 +3339,7 @@ dev = [
     { name = "ruff" },
     { name = "ty" },
     { name = "types-flask" },
+    { name = "types-flask-cors" },
     { name = "types-simplejson" },
 ]
 gen-convo = [
@@ -3386,6 +3387,7 @@ dev = [
     { name = "ruff", specifier = ">=0.12.0" },
     { name = "ty", specifier = ">=0.0.1a11" },
     { name = "types-flask", specifier = ">=1.1.6" },
+    { name = "types-flask-cors", specifier = ">=6.0.0.20250809" },
     { name = "types-simplejson", specifier = ">=3.20.0.20250326" },
 ]
 gen-convo = [{ name = "pandas" }]
@@ -3516,6 +3518,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/79/65/728a104973133a45fba50f3d1e1ee832287666ac74cfd47004cea8402ea3/types-Flask-1.1.6.tar.gz", hash = "sha256:aac777b3abfff9436e6b01f6d08171cf23ea6e5be71cbf773aaabb1c5763e9cf", size = 9829, upload-time = "2021-11-26T06:21:31.199Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/60/6c/a98a0c29c39d8a6283ac704f3d36f0d570d8dee931e9d46d6cc60d436bec/types_Flask-1.1.6-py3-none-any.whl", hash = "sha256:6ab8a9a5e258b76539d652f6341408867298550b19b81f0e41e916825fc39087", size = 13733, upload-time = "2021-11-26T06:21:30.365Z" },
+]
+
+[[package]]
+name = "types-flask-cors"
+version = "6.0.0.20250809"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "flask" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/45/e0/e5dd841bf475765fb61cb04c1e70d2fd0675a0d4ddfacd50a333eafe7267/types_flask_cors-6.0.0.20250809.tar.gz", hash = "sha256:24380a2b82548634c0931d50b9aafab214eea9f85dcc04f15ab1518752a7e6aa", size = 9951, upload-time = "2025-08-09T03:16:37.454Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9f/5e/1e60c29eb5796233d4d627ca4979c4ae8da962fd0aae0cdb6e3e6a807bbc/types_flask_cors-6.0.0.20250809-py3-none-any.whl", hash = "sha256:f6d660dddab946779f4263cb561bffe275d86cb8747ce02e9fec8d340780131b", size = 9971, upload-time = "2025-08-09T03:16:36.593Z" },
 ]
 
 [[package]]
