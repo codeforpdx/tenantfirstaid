@@ -1,8 +1,10 @@
 # from google import genai
 # from google.genai import types
-from flask import current_app, request, stream_with_context, Response
-from flask.views import View
 import os
+
+from flask import Response, current_app, request, stream_with_context
+from flask.views import View
+
 from .langchain_chat_manager import LangChainChatManager
 
 MODEL = os.getenv("MODEL_NAME", "gemini-2.5-pro")

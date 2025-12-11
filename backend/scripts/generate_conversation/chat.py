@@ -5,15 +5,19 @@
 #     "python-dotenv",
 # ]
 # ///
-from time import time
-import os
-import ast
 import argparse
+import ast
+import os
 from pathlib import Path
+from time import time
+from typing import List
+
 import pandas as pd
 
 from tenantfirstaid.langchain_chat_manager import (
     DEFAULT_INSTRUCTIONS,
+)
+from tenantfirstaid.langchain_chat_manager import (
     LangChainChatManager as ChatManager,
 )
 
@@ -122,7 +126,7 @@ class ChatView:
         chat_history = ""
         print("Starting conversation...")
         print(f"USER: {self.starting_message}")
-        times = []
+        times: List[float] = []
         for _ in range(num_turns):
             print(f"\n--- New Turn ({_ + 1}) ---")
             response, run_time = self.bot_response()

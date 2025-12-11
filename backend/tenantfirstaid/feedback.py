@@ -1,9 +1,10 @@
-from xhtml2pdf import pisa
+import os
 from io import BytesIO
+from typing import Optional, Tuple
+
 from flask import request
 from flask_mailman import EmailMessage
-import os
-from typing import Optional, Tuple
+from xhtml2pdf import pisa
 
 MAX_ATTACHMENT_SIZE: int = 2 * 1024 * 1024
 
