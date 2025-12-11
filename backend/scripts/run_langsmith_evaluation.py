@@ -7,20 +7,13 @@ automated quality evaluation.
 import argparse
 import os
 from pathlib import Path
-from typing import Dict, Any
 from pprint import pprint
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from langchain_core.messages import HumanMessage
+from langsmith import Client, evaluate
+from langsmith.evaluation import RunEvaluator, EvaluationResult, EvaluationResults
 
-from langsmith import Client
-from langsmith import evaluate
-
-from tenantfirstaid.langchain_chat_manager import (
-    LangChainChatManager,
-    # OregonCity,
-    # UsaState,
-    # _InnerUsaState
-)
 from scripts.langsmith_evaluators import (
     # citation_accuracy_evaluator,
     # citation_format_evaluator,
@@ -29,6 +22,12 @@ from scripts.langsmith_evaluators import (
     # performance_evaluator,
     # tone_evaluator,
     # tool_usage_evaluator,
+)
+from tenantfirstaid.langchain_chat_manager import (
+    LangChainChatManager,
+    # OregonCity,
+    # UsaState,
+    # _InnerUsaState
 )
 
 
@@ -89,11 +88,7 @@ def run_evaluation(
     print(f"Running evaluation on dataset: {dataset_name}")
     print(f"Total examples: {dataset.example_count}")
 
-    # Run evaluation with all evaluators.
-    results = evaluate(
-        agent_wrapper,
-        data=dataset_name,
-        evaluators=[
+    evaluators: List[Callable[..., Union[Dict[Any,Any], EvaluationResult, EvaluationResults]]] = [
             # citation_accuracy_evaluator,
             # legal_correctness_evaluator,
             completeness_evaluator,
@@ -101,7 +96,13 @@ def run_evaluation(
             # citation_format_evaluator,
             # tool_usage_evaluator,
             # performance_evaluator,
-        ],
+        ]
+
+    # Run evaluation with all evaluators.
+    results = evaluate(
+        agent_wrapper,
+        data=dataset_name,
+        evaluators=evaluators,
         # experiment_prefix=experiment_prefix,
         # max_concurrency=5,  # Run 5 evaluations in parallel.
         # num_repetitions=num_repetitions,

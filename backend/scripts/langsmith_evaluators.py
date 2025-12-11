@@ -5,12 +5,12 @@ advice responses across multiple dimensions.
 """
 
 import re
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
-# from langsmith import SimpleEvaluator as Evaluator
+from langsmith.evaluation.evaluator import EvaluationResult, EvaluationResults
 from openevals import create_llm_as_judge
-from openevals.types import SimpleEvaluator, EvaluatorResult
 from openevals.prompts import CORRECTNESS_PROMPT
+from openevals.types import SimpleEvaluator
 
 EVALUATOR_MODEL_NAME = "gemini-2.5-pro"
 
@@ -105,16 +105,29 @@ legal_correctness_evaluator: SimpleEvaluator = create_llm_as_judge(
 )
 
 
+# EVALUATOR_T = Union[
+#     RunEvaluator,
+#     Callable[
+#         [schemas.Run, Optional[schemas.Example]],
+#         Union[EvaluationResult, EvaluationResults],
+#     ],
+#     Callable[..., Union[dict, EvaluationResults, EvaluationResult]],
+# ]
+
+
 # Evaluator 3: Response Completeness (LLM-as-Judge).
 def completeness_evaluator(
     inputs: dict, outputs: dict, reference_outputs: List[Dict[str, str]]
-) -> EvaluatorResult | List[EvaluatorResult]:
+) -> EvaluationResult:
     tmp = create_llm_as_judge(
         model=EVALUATOR_MODEL_NAME,
         prompt=CORRECTNESS_PROMPT,
         feedback_key="completeness",
     )
-    return tmp(inputs=inputs, outputs=outputs, reference_outputs=reference_outputs)
+
+    return EvaluationResult(
+        tmp(inputs=inputs, outputs=outputs, reference_outputs=reference_outputs)
+    )
 
 
 # Evaluator 4: Tone & Professionalism (LLM-as-Judge).
