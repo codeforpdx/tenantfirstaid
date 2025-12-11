@@ -8,11 +8,11 @@ import argparse
 import os
 from pathlib import Path
 from pprint import pprint
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Union
 
 from langchain_core.messages import HumanMessage
 from langsmith import Client, evaluate
-from langsmith.evaluation import RunEvaluator, EvaluationResult, EvaluationResults
+from langsmith.evaluation import EvaluationResult, EvaluationResults
 
 from scripts.langsmith_evaluators import (
     # citation_accuracy_evaluator,
@@ -88,15 +88,17 @@ def run_evaluation(
     print(f"Running evaluation on dataset: {dataset_name}")
     print(f"Total examples: {dataset.example_count}")
 
-    evaluators: List[Callable[..., Union[Dict[Any,Any], EvaluationResult, EvaluationResults]]] = [
-            # citation_accuracy_evaluator,
-            # legal_correctness_evaluator,
-            completeness_evaluator,
-            # tone_evaluator,
-            # citation_format_evaluator,
-            # tool_usage_evaluator,
-            # performance_evaluator,
-        ]
+    evaluators: List[
+        Callable[..., Union[Dict[Any, Any], EvaluationResult, EvaluationResults]]
+    ] = [
+        # citation_accuracy_evaluator,
+        # legal_correctness_evaluator,
+        completeness_evaluator,
+        # tone_evaluator,
+        # citation_format_evaluator,
+        # tool_usage_evaluator,
+        # performance_evaluator,
+    ]
 
     # Run evaluation with all evaluators.
     results = evaluate(

@@ -332,7 +332,6 @@ class LangChainChatManager:
         instructions += f"\nThe user is in {city_clean if city_clean != 'null' else ''} {state_upper}.\n"
         return instructions
 
-
     def generate_streaming_response(
         self, messages: list[AnyMessage], city: str, state: str
     ):
