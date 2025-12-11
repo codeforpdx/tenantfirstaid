@@ -7,7 +7,7 @@ advice responses across multiple dimensions.
 import re
 from typing import Any, Dict, List
 
-from langsmith.evaluation.evaluator import EvaluationResult, EvaluationResults
+from langsmith.evaluation.evaluator import EvaluationResult
 from openevals import create_llm_as_judge
 from openevals.prompts import CORRECTNESS_PROMPT
 from openevals.types import SimpleEvaluator
