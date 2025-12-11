@@ -83,14 +83,22 @@ backend/
 
 ### RAG (Retrieval-Augmented Generation)
 
-The system uses **Vertex AI RAG (Retrieval-Augmented Generation)**, which combines Google's Vertex AI vector search capabilities with the Gemini 2.5 Pro language model. This is specifically a **grounded generation** approach where the LLM has access to a tool-based retrieval system that searches through a curated corpus of Oregon housing law documents.
+The system uses **LangChain agents** with **Vertex AI RAG** tools for document retrieval. This combines LangChain's agent orchestration with Google's Vertex AI vector search capabilities and Gemini 2.5 Pro language model.
 
-**RAG Type and Category:**
+**Architecture Type**: Agent-based RAG with tool calling
+- **Framework**: LangChain 1.0.8+ (monolithic package)
+- **LLM Integration**: ChatVertexAI (langchain-google-vertexai 3.0.3+)
+- **Agent Pattern**: `create_tool_calling_agent()` with custom RAG tools
+- **Retrieval Method**: Dense vector similarity search with metadata filtering
 
-- **Architecture Type**: Tool-augmented RAG with function calling
-- **Implementation**: Vertex AI managed RAG service
-- **Retrieval Method**: Dense vector similarity search with semantic matching
-- **Grounding**: Tool-based retrieval integrated directly into Gemini's generation process
+#### Tool-Based Retrieval
+
+The agent has access to two retrieval tools:
+
+1. **City-Specific Law Retrieval**: Searches documents filtered by city and state
+2. **State-Wide Law Retrieval**: Searches general Oregon laws
+
+The LLM decides which tool(s) to use based on the user's query and location context.
 
 #### Data Ingestion Pipeline
 

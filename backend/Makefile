@@ -12,6 +12,7 @@ install:
 	$(PIP) install .
 
 fmt: uv.lock
+	$(PYTHON) run ruff check --select I --fix
 	$(PYTHON) run ruff format
 
 lint: uv.lock
@@ -32,7 +33,7 @@ typecheck-mypy-tenantfirstaid: uv.lock
 typecheck-mypy: typecheck-mypy-tenantfirstaid typecheck-mypy-scripts
 
 typecheck-pyrefly: uv.lock
-	$(PYTHON) run pyrefly check $(TYPECHECK_OPTIONS) --python-interpreter .venv/bin/python3
+	$(PYTHON) run pyrefly check $(TYPECHECK_OPTIONS) --python-interpreter-path .venv/bin/python3
 
 test: uv.lock
 	uv run pytest -v -s $(TEST_OPTIONS)

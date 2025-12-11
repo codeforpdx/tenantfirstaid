@@ -5,14 +5,21 @@
 #     "python-dotenv",
 # ]
 # ///
-from time import time
-import os
-import ast
 import argparse
+import ast
+import os
 from pathlib import Path
+from time import time
+from typing import List
+
 import pandas as pd
 
-from tenantfirstaid.chat import DEFAULT_INSTRUCTIONS, ChatManager
+from tenantfirstaid.langchain_chat_manager import (
+    DEFAULT_INSTRUCTIONS,
+)
+from tenantfirstaid.langchain_chat_manager import (
+    LangChainChatManager as ChatManager,
+)
 
 dot_env_path = Path(__file__).parent.parent.parent / ".env"
 print(f"Loading environment variables from {dot_env_path}")
@@ -119,7 +126,7 @@ class ChatView:
         chat_history = ""
         print("Starting conversation...")
         print(f"USER: {self.starting_message}")
-        times = []
+        times: List[float] = []
         for _ in range(num_turns):
             print(f"\n--- New Turn ({_ + 1}) ---")
             response, run_time = self.bot_response()
