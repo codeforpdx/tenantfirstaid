@@ -585,6 +585,15 @@ wheels = [
 ]
 
 [[package]]
+name = "filetype"
+version = "1.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bb/29/745f7d30d47fe0f251d3ad3dc2978a23141917661998763bebb6da007eb1/filetype-1.2.0.tar.gz", hash = "sha256:66b56cd6474bf41d8c54660347d37afcc3f7d1970648de365c102ef77548aadb", size = 998020, upload-time = "2022-11-02T17:34:04.141Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/18/79/1b8fa1bb3568781e84c9200f951c735f3f157429f44be0495da55894d620/filetype-1.2.0-py2.py3-none-any.whl", hash = "sha256:7ce71b6880181241cf7ac8697a2f1eb6a8bd9b429f7ad6d27b8db9ba5f1c2d25", size = 19970, upload-time = "2022-11-02T17:34:01.425Z" },
+]
+
+[[package]]
 name = "flask"
 version = "3.1.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1468,6 +1477,26 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/2a/ac/6de073177565c5a7b19e74a790b6d34462599cfa8db504acb94b20ecdf4d/langchain_google_community-3.0.2.tar.gz", hash = "sha256:b3e299f2e07ba5fa2719d1f3d5933a7ea09834a37e53fbd148d687c9695c8515", size = 311535, upload-time = "2025-12-08T14:41:53.179Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/75/be/be67edb096ff2328a9e87d9817e5bcc372c7647a613c4c9f28c33d984af4/langchain_google_community-3.0.2-py3-none-any.whl", hash = "sha256:143d1dd0419ad020f84aa57c53e06db8558cb6eaaf899838236709f7baa4408a", size = 133054, upload-time = "2025-12-08T14:41:52.072Z" },
+]
+
+[package.optional-dependencies]
+vertexaisearch = [
+    { name = "google-cloud-discoveryengine" },
+]
+
+[[package]]
+name = "langchain-google-genai"
+version = "4.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "filetype" },
+    { name = "google-genai" },
+    { name = "langchain-core" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d9/76/acb0d8b33a69a97ebca89f237db3ff3484a5d253ae874bad84d790d8ca1f/langchain_google_genai-4.0.0.tar.gz", hash = "sha256:22b1546abe677ddea8daebf4be1de162266d278dd0643cdc2a24f45979e5cf8e", size = 271354, upload-time = "2025-12-08T16:14:46.793Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d5/d0/f05cb2ce4ad5b4f4c3addd5978e6b776479db68dcfe55d09e30a8974eda7/langchain_google_genai-4.0.0-py3-none-any.whl", hash = "sha256:42c592a222a075ce87f424d466ba6d39194eb58fbb9a84006c401d08034a4feb", size = 63553, upload-time = "2025-12-08T16:14:45.834Z" },
 ]
 
 [[package]]
@@ -3375,7 +3404,8 @@ dependencies = [
     { name = "jsonlines" },
     { name = "langchain" },
     { name = "langchain-core" },
-    { name = "langchain-google-community" },
+    { name = "langchain-google-community", extra = ["vertexaisearch"] },
+    { name = "langchain-google-genai" },
     { name = "langchain-google-vertexai" },
     { name = "langsmith" },
     { name = "openevals" },
@@ -3423,7 +3453,8 @@ requires-dist = [
     { name = "jsonlines" },
     { name = "langchain", specifier = ">=1.1.0,<2.0.0" },
     { name = "langchain-core", specifier = ">=1.1.0" },
-    { name = "langchain-google-community", specifier = ">=3.0.1" },
+    { name = "langchain-google-community", extras = ["vertexaisearch"], specifier = ">=3.0.1" },
+    { name = "langchain-google-genai", specifier = ">=4.0.0" },
     { name = "langchain-google-vertexai", specifier = ">=3.1.0,<4.0.0" },
     { name = "langsmith", specifier = ">=0.4.47,<0.5.0" },
     { name = "openevals", specifier = ">=0.1.2" },
