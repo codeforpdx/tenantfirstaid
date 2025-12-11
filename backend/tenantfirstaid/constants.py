@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 from langchain_google_genai import HarmBlockThreshold, HarmCategory
 
 
@@ -23,11 +24,7 @@ class _GoogEnvAndPolicy:
         # read .env at object creation time
         path_to_env = Path(__file__).parent / "../.env"
         if path_to_env.exists():
-            from dotenv import load_dotenv
-
             load_dotenv(override=True)
-        else:
-            raise FileNotFoundError(f"[{path_to_env}] file not found.")
 
         for c in list(self.__slots__)[:5]:
             if os.getenv(c) is not None:
@@ -35,6 +32,7 @@ class _GoogEnvAndPolicy:
             else:
                 raise ValueError(f"{c} environment variable is not set.")
 
+        # TODO: separate these from environment variables
         self.SAFETY_SETTINGS = {
             HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.OFF,
             HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.OFF,
@@ -48,6 +46,7 @@ class _GoogEnvAndPolicy:
 
 
 # Module singleton
+# TODO: rename to VERTEX_CONFIG?
 SINGLETON = _GoogEnvAndPolicy()
 
 OREGON_LAW_CENTER_PHONE_NUMBER = "888-585-9638"

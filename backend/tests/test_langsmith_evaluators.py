@@ -4,8 +4,8 @@ from unittest.mock import Mock
 
 from scripts.langsmith_evaluators import (
     citation_format_evaluator,
-    tool_usage_evaluator,
     performance_evaluator,
+    tool_usage_evaluator,
 )
 
 

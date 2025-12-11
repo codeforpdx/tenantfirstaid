@@ -88,7 +88,7 @@ The system uses **LangChain agents** with **Vertex AI RAG** tools for document r
 **Architecture Type**: Agent-based RAG with tool calling
 - **Framework**: LangChain 1.0.8+ (monolithic package)
 - **LLM Integration**: ChatVertexAI (langchain-google-vertexai 3.0.3+)
-- **Agent Pattern**: `create_tool_calling_agent()` with custom RAG tools
+- **Agent Pattern**: `create_agent()` with custom RAG tools
 - **Retrieval Method**: Dense vector similarity search with metadata filtering
 
 #### Tool-Based Retrieval

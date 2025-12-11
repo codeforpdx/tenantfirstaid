@@ -5,234 +5,19 @@ Google Gemini API calls with a standardized agent-based architecture.
 """
 
 from pathlib import Path
-
-# from enum import Enum, StrEnum
-from pprint import pprint
 from typing import List, Optional
 
-from langchain.agents import AgentState, create_agent
-from langchain.tools import ToolRuntime
+from langchain.agents import create_agent
 
 # from langgraph.checkpoint.memory import InMemorySaver
-from langchain_core.messages import AIMessage, AnyMessage, SystemMessage
-
-# from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.tools import BaseTool, tool
-
-# from langchain_google_vertexai.vectorstores.vectorstores import (
-#     VectorSearchVectorStoreDatastore,
-# )
-from langchain_google_community import VertexAISearchRetriever
+from langchain_core.messages import AIMessage, AnyMessage, SystemMessage, ToolMessage
+from langchain_core.tools import BaseTool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph.state import CompiledStateGraph
-from pydantic import BaseModel
 
 from .constants import DEFAULT_INSTRUCTIONS, SINGLETON
-
-
-def city_or_state_input_sanitizer(location: Optional[str], max_len: int = 9) -> str:
-    """Validate and sanitize city or state input."""
-    if location is None or not isinstance(location, str):
-        return ""
-    if not location.isalpha():
-        raise ValueError(f"Invalid city or state input: {location}")
-    if len(location) < 2 or len(location) > max_len:
-        raise ValueError(f"Invalid city or state input length: {location}")
-    return location.lower()
-
-
-# class _InnerOregonCity(StrEnum):
-#     PORTLAND = "portland"
-#     EUGENE = "eugene"
-
-
-# class OregonCity(BaseModel, arbitrary_types_allowed=True):
-#     value: Optional[_InnerOregonCity] = None
-
-#     @classmethod
-#     def from_str(cls, v: Optional[str]) -> "OregonCity":
-#         instance = cls()
-#         if v is None:
-#             instance.value = None
-#         else:
-#             try:
-#                 instance.value = _InnerOregonCity(v.lower())
-#             except ValueError:
-#                 instance.value = None
-#         return instance
-
-#     # def __init__(self, v: str):
-#     #     try:
-#     #         if v is None:
-#     #             self.value = None
-#     #         else:
-#     #             self.value = _InnerOregonCity(v.lower())
-#     #     except ValueError:
-#     #         self.value = None
-#     #     except Exception as e:
-#     #         raise e
-#     #     super().__init__()
-
-#     def __repr__(self) -> str:
-#         return str(self.value) if self.value is not None else "null"
-
-#     def else_empty(self) -> str:
-#         return str(self.value) if self.value is not None else ""
-
-#     def lower(self) -> str:
-#         return self.else_empty().lower()
-
-#     def upper(self) -> str:
-#         return self.else_empty().upper()
-
-
-# class _InnerUsaState(StrEnum):
-#     OREGON = "or"
-#     OTHER = "OTHER"
-
-# class UsaState(BaseModel, arbitrary_types_allowed=True):
-#     value: Optional[_InnerUsaState] = None
-
-#     # def __init__(self, v: str):
-#     #     try:
-#     #         if v is None:
-#     #             self.value = None
-#     #         else:
-#     #             self.value = _InnerUsaState(v.lower())
-#     #     except ValueError:
-#     #         self.value = None
-#     #     except Exception as e:
-#     #         raise e
-#     #     super().__init__()
-
-#     @classmethod
-#     def from_str(cls, v: Optional[str]) -> "UsaState":
-#         instance = cls()
-#         if v is None:
-#             instance.value = None
-#         else:
-#             try:
-#                 instance.value = _InnerUsaState(v.lower())
-#             except ValueError:
-#                 instance.value = None
-#         return instance
-
-#     def __repr__(self) -> str:
-#         return str(self.value) if self.value is not None else "null"
-
-#     def else_empty(self) -> str:
-#         return str(self.value) if self.value is not None else ""
-
-#     def lower(self) -> str:
-#         return self.else_empty().lower()
-
-#     def upper(self) -> str:
-#         return self.else_empty().upper()
-
-
-class TFAAgentStateSchema(AgentState):
-    state: str
-    city: Optional[str]
-
-
-# vector_store = VectorSearchVectorStoreDatastore.from_components(
-#     project_id=GOOGLE_CLOUD_PROJECT,
-#     region=GOOGLE_CLOUD_LOCATION,
-#     index_id=VERTEX_AI_DATASTORE,
-#     endpoint_id="fix-me-later",
-# )
-
-
-class StateLawInputSchema(BaseModel, arbitrary_types_allowed=True):
-    query: str
-    state: str
-    runtime: ToolRuntime
-
-
-@tool(args_schema=StateLawInputSchema)
-def retrieve_state_law(query: str, state: str, runtime: ToolRuntime) -> str:
-    """Retrieve state-wide housing laws from the RAG corpus.
-
-    Use this tool for general state law questions or when city is not specified.
-
-    Args:
-        query: The user's legal question
-        state: The user's state (e.g., "or")
-        runtime: Tool runtime context
-
-    Returns:
-        Relevant legal passages from state laws
-    """
-
-    safe_state: str = city_or_state_input_sanitizer(state, max_len=2).lower()
-
-    pprint(runtime.context)
-
-    # rag = vector_store.as_retriever(
-    #     search_kwargs={"k": 5},
-    #     filter=f'city: ANY("null") AND state: ANY("{state.lower()}")',
-    # )
-
-    rag = VertexAISearchRetriever(
-        name=str(Path(SINGLETON.VERTEX_AI_DATASTORE).parts[-1]),  # type: ignore [unresolved-attribute]
-        project_id=SINGLETON.GOOGLE_CLOUD_PROJECT,  # type: ignore [unresolved-attribute]
-        location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,  # type: ignore [unresolved-attribute]
-        data_store_id=SINGLETON.VERTEX_AI_DATASTORE,  # type: ignore [unresolved-attribute]
-        # max_results=5,
-        filter=f'city: ANY("null") AND state: ANY("{safe_state}")',
-    )
-
-    docs = rag.invoke(
-        input=query,
-        # filter=f'city: ANY("null") AND state: ANY("{state.lower()}")'
-    )
-
-    return "\n\n".join([doc.page_content for doc in docs])
-
-
-class CityLawInputSchema(BaseModel, arbitrary_types_allowed=True):
-    query: str
-    city: str
-    state: str
-
-
-@tool(args_schema=CityLawInputSchema)
-def retrieve_city_law(query: str, city: str, state: str) -> str:
-    """Retrieve city-specific housing laws from the RAG corpus.
-
-    Use this tool when the user has specified their city location.
-
-    Args:
-        query: The user's legal question
-        city: The user's city (e.g., "portland", "eugene")
-        state: The user's state (e.g., "or")
-
-    Returns:
-        Relevant legal passages from city-specific laws
-    """
-
-    safe_city: str = city_or_state_input_sanitizer(city).lower()
-    safe_state: str = city_or_state_input_sanitizer(state, max_len=2).lower()
-
-    # rag = vector_store.as_retriever(
-    #     search_kwargs={"k": 5},
-    #     filter=f'city: ANY("{city.lower()}") AND state: ANY("{state.lower()}")',
-    # )
-
-    rag = VertexAISearchRetriever(
-        name=str(Path(SINGLETON.VERTEX_AI_DATASTORE).parts[-1]),  # type: ignore [unresolved-attribute]
-        project_id=SINGLETON.GOOGLE_CLOUD_PROJECT,  # type: ignore [unresolved-attribute]
-        location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,  # type: ignore [unresolved-attribute]
-        data_store_id=SINGLETON.VERTEX_AI_DATASTORE,  # type: ignore [unresolved-attribute]
-        # max_results=5,
-        filter=f'city: ANY("{safe_city}") AND state: ANY("{safe_state}")',
-    )
-
-    docs = rag.invoke(
-        input=query,
-    )
-
-    return "\n\n".join([doc.page_content for doc in docs])
+from .langchain_tools import retrieve_city_law, retrieve_state_law
+from .location import TFAAgentStateSchema, city_or_state_input_sanitizer
 
 
 class LangChainChatManager:
@@ -252,14 +37,6 @@ class LangChainChatManager:
             # Thinking config for Gemini 2.5 Pro.
             # enable_thinking=os.getenv("SHOW_MODEL_THINKING", "false").lower() == "true",
         )
-
-        # self.rag = VertexAISearchRetriever(
-        #     name=str(Path(self.SINGLETON.VERTEX_AI_DATASTORE).parts[-1]),
-        #     project_id=self.SINGLETON.GOOGLE_CLOUD_PROJECT,
-        #     location_id=self.SINGLETON.GOOGLE_CLOUD_LOCATION,
-        #     data_store_id=self.SINGLETON.VERTEX_AI_DATASTORE,
-        #     # max_results=5,
-        # )
 
         # Create tools for RAG retrieval.
         # self.tools: List[BaseTool] = [retrieve_city_law, retrieve_state_law]
@@ -356,7 +133,7 @@ class LangChainChatManager:
 
         # Stream the agent response.
         for chunk in agent.stream(
-            {
+            input={
                 "messages": current_query,
                 "context": conversation_history,
                 "city": city,
@@ -364,27 +141,18 @@ class LangChainChatManager:
             },
             stream_mode="updates",
         ):
-            # Extract messages from chunk.
-            if "messages" in chunk:
-                messages = chunk["messages"]
-                if messages and isinstance(messages[-1], AIMessage):
-                    yield messages[-1].content
+            # outer dict key changes with internal messages (Model, Tool, ...)
+            chunk_k = list(chunk.keys())[0]
 
-    # def _format_messages(
-    #     self, messages: list[AnyMessage]
-    # ) -> list[HumanMessage | AIMessage]:
-    #     """Convert session messages to LangChain message format.
+            # Specialize handling/printing based on each message class/type
+            for m in chunk[chunk_k]["messages"]:
+                match m:
+                    # Send message content to chat client
+                    case AIMessage():
+                        yield m.content
 
-    #     Args:
-    #         messages: List of message dictionaries with 'role' and 'content' keys
-
-    #     Returns:
-    #         List of LangChain message objects
-    #     """
-    #     formatted = []
-    #     for msg in messages:
-    #         if msg["role"] == "user":
-    #             formatted.append(HumanMessage(content=msg.content))
-    #         else:  # assistant/model
-    #             formatted.append(AIMessage(content=msg.content))
-    #     return formatted
+                    case ToolMessage():
+                        print(f"      {m}")
+                    # Fall-through case
+                    case _:
+                        print(f"{type(m)}: {m}")
