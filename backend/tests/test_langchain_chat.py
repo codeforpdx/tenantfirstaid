@@ -1,15 +1,15 @@
 """Tests for LangChain-based chat manager."""
 
-import pytest
+from typing import Dict
 from unittest.mock import Mock, patch
 
-from tenantfirstaid.langchain_chat import (
+import pytest
+
+from tenantfirstaid.langchain_chat_manager import (
     LangChainChatManager,
     retrieve_city_law,
     retrieve_state_law,
 )
-
-from typing import Dict
 
 
 @pytest.fixture
@@ -70,7 +70,7 @@ def test_system_prompt_includes_location(chat_manager):
 
 def test_message_format_conversion(chat_manager):
     """Test conversion from session format to LangChain format."""
-    from langchain_core.messages import HumanMessage, AIMessage
+    from langchain_core.messages import AIMessage, HumanMessage
 
     session_messages = [
         {"role": "user", "content": "Hello"},

@@ -7,7 +7,7 @@ Command-line RAG chat app
     comments show sanity check curl command
 
 To run:
-  % uv run simple_langchain_example.py
+  % uv run simple_langchain_demo.py
 """
 
 from enum import StrEnum, auto
@@ -32,7 +32,6 @@ from langchain_google_community import VertexAISearchRetriever
 from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import BaseModel
 
-# NOTE: this import is slow!!! >8 seconds!
 from tenantfirstaid.constants import DEFAULT_INSTRUCTIONS, SINGLETON
 
 
@@ -132,6 +131,7 @@ def rag_tool(query: str, runtime: ToolRuntime) -> str:
     # reveal the query from the model onto the console (stderr)
     warn(query)
 
+    # TODO: can "filter" argument be used in invocation?
     try:
         docs: List[Document] = rag.invoke(input=query)
 
@@ -150,6 +150,7 @@ def create_and_query_agent():
 
     print("-" * 20)
 
+    # TODO: checkpointer=InMemorySaver()
     llm = ChatGoogleGenerativeAI(
         model=SINGLETON.MODEL_NAME,
         temperature=SINGLETON.MODEL_TEMPERATURE,

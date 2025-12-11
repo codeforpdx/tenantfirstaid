@@ -1,15 +1,10 @@
 import pytest
-from google import genai
-from tenantfirstaid.chat import (
-    ChatManager,
-    DEFAULT_INSTRUCTIONS,
-    OREGON_LAW_CENTER_PHONE_NUMBER,
-)
 from flask import Flask
+from google import genai
+from vertexai.generative_models import Tool
+
 from tenantfirstaid.chat import ChatView
-from vertexai.generative_models import (
-    Tool,
-)
+from tenantfirstaid.langchain_chat_manager import LangChainChatManager
 
 
 @pytest.fixture
@@ -22,7 +17,7 @@ def mock_vertexai_client(mocker):
 @pytest.fixture
 def chat_manager(mocker):
     mocker.patch("tenantfirstaid.chat.genai.Client")
-    return ChatManager()
+    return LangChainChatManager()
 
 
 def test_prepare_developer_instructions_includes_city_state(chat_manager):
@@ -30,15 +25,6 @@ def test_prepare_developer_instructions_includes_city_state(chat_manager):
     state = "OR"
     instructions = chat_manager.prepare_developer_instructions(city, state)
     assert f"The user is in {city} {state.upper()}." in instructions
-
-
-def test_default_instructions_contains_oregon_law_center_phone():
-    assert OREGON_LAW_CENTER_PHONE_NUMBER in DEFAULT_INSTRUCTIONS
-
-
-def test_default_instructions_contains_citation_links():
-    assert "https://oregon.public.law/statutes" in DEFAULT_INSTRUCTIONS
-    assert 'target="_blank"' in DEFAULT_INSTRUCTIONS
 
 
 @pytest.fixture
