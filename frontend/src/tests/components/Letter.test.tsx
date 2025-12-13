@@ -148,7 +148,7 @@ describe("Letter component - effect orchestration", () => {
 
     await renderLetter();
     await waitFor(() => {
-      expect(screen.queryByText("Generating letter...")).not.toBeNull();
+      expect(screen.queryByText("Generating Letter...")).not.toBeNull();
     });
   });
 

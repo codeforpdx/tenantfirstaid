@@ -20,7 +20,10 @@ export default function LetterGenerationDialog({ ref }: Props) {
       aria-label="letter-dialog-modal"
       aria-labelledby="letter-dialog-title"
       aria-describedby="letter-dialog-description"
-      className="rounded-lg p-6 min-w-[300px] max-w-[600px] fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+      className={`
+        rounded-lg
+        p-6 min-w-[300px] max-w-[600px]
+        fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}
     >
       <div className="flex flex-col items-end">
         <h2 id="letter-dialog-title" className="sr-only">
@@ -35,7 +38,7 @@ export default function LetterGenerationDialog({ ref }: Props) {
         </p>
         <button
           onClick={() => ref.current?.close()}
-          className="underline text-blue-600 hover:text-blue-500 text-sm"
+          className="underline text-blue-dark hover:text-blue-medium text-sm"
           aria-label="close-dialog"
         >
           Close

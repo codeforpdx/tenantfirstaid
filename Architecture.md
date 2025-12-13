@@ -452,8 +452,7 @@ frontend/
 │   │   │   ├── FeedbackModal.tsx   # Feedback modal
 │   │   │   ├── MessageContent.tsx  # Message display
 │   │   │   ├── MessageWindow.tsx   # Chat window
-│   │   │   ├── SelectField.tsx     # Initialization form select field
-│   │   │   └── SuggestedPrompts.tsx # Prompt suggestions
+│   │   │   └── SelectField.tsx     # Initialization form select field
 │   │   └── utils/
 │   │       ├── exportHelper.ts     # Export functionality
 │   │       ├── feedbackHelper.tsx  # Feedback functionality
@@ -467,11 +466,14 @@ frontend/
 │   │       └── letterHelper.tsx    # Letter generation functionality
 │   └── shared/                     # Shared components and utils
 │   │   ├── components/
+│   │   │   ├── Navbar/
+│   │   │   │   ├── Navbar.tsx      # Navigation
+│   │   │   │   └── NavbarMenuButton.tsx # Navigation component
 │   │   │   ├── BackLink.tsx        # Navigation component
 │   │   │   ├── BeaverIcon.tsx      # Oregon-themed icon
 │   │   │   ├── DisclaimerLayout.tsx  # Layout for disclaimer components
+│   │   │   ├── FeatureSnippet.tsx  # Features and references component
 │   │   │   ├── MessageContainer.tsx  # Layout for main UI component
-│   │   │   ├── Navbar.tsx            # Navigation
 │   │   │   └── TenantFirstAidLogo.tsx # Application logo
 │   │   ├── constants/
 │   │   │   └── constants.ts        # File of constants

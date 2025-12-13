@@ -16,8 +16,8 @@ export default function LetterDisclaimer({ isOngoing }: Props) {
         to="/privacy-policy"
         target="_blank"
         rel="noopener noreferrer"
-        className="underline"
         aria-label="to privacy policy"
+        className="hover:text-gray-dark"
       >
         Privacy Policy
       </Link>
@@ -27,8 +27,8 @@ export default function LetterDisclaimer({ isOngoing }: Props) {
       Aid or any information provided or discussed, you can contact&nbsp;
       <a
         href={`mailto:${CONTACT_EMAIL}`}
-        className="underline"
         aria-label="contact-email"
+        className="hover:text-gray-dark"
       >
         {CONTACT_EMAIL}
       </a>
@@ -45,8 +45,8 @@ export default function LetterDisclaimer({ isOngoing }: Props) {
       contact&nbsp;
       <a
         href={`mailto:${CONTACT_EMAIL}`}
-        className="underline"
         aria-label="contact-email"
+        className="hover:text-gray-dark"
       >
         {CONTACT_EMAIL}
       </a>

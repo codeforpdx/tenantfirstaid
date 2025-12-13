@@ -8,7 +8,10 @@ interface Props {
 export default function ExportMessagesButton({ messages }: Props) {
   return (
     <button
-      className="border text-sm sm:text-base shadow-sm border-[#4a90e2] text-[#4a90e2] hover:bg-[#E6F0FB] transition-colors"
+      className={`
+        text-sm sm:text-base text-blue-dark
+        border border-blue-medium hover:border-blue-dark
+        hover:bg-blue-light`}
       onClick={() => exportMessages(messages)}
     >
       Export

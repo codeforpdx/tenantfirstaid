@@ -8,10 +8,25 @@ DOMPurify.addHook("afterSanitizeAttributes", (node) => {
   }
 });
 
-export const SANITIZE_SETTINGS = {
+export const SANITIZE_AI_SETTINGS = {
   ALLOWED_TAGS: ["a", "em", "strong", "p"],
   ALLOWED_ATTR: ["href", "title", "target", "rel"],
   FORBID_TAGS: ["style", "script", "iframe", "object", "embed"],
+};
+
+export const SANITIZE_USER_SETTINGS = {
+  ALLOWED_TAGS: [],
+  ALLOWED_ATTR: [],
+  FORBID_TAGS: [
+    "style",
+    "script",
+    "iframe",
+    "object",
+    "embed",
+    "form",
+    "input",
+    "button",
+  ],
 };
 
 export default DOMPurify;

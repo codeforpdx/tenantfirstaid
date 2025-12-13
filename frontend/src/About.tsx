@@ -4,7 +4,7 @@ import { CONTACT_EMAIL } from "./shared/constants/constants";
 export default function About() {
   return (
     <div className="flex items-center pt-16 sm:pt-32 sm:pb-16">
-      <div className="relative max-w-2xl m-auto p-8 bg-[#F4F4F2] rounded-none sm:rounded-lg shadow-md">
+      <div className="relative max-w-2xl m-auto p-8 bg-paper-background rounded-none sm:rounded-lg shadow-md">
         <BackLink />
         <h2 className="text-2xl font-semibold mt-6 mb-2">
           About Tenant First Aid
@@ -15,20 +15,20 @@ export default function About() {
           volunteer-built program by{" "}
           <a
             href="https://www.codepdx.org/"
-            className="text-blue-600 underline"
+            className="text-blue-link hover:text-blue-dark"
           >
             Code PDX
           </a>{" "}
           and{" "}
           <a
             href="https://www.qiu-qiulaw.com/"
-            className="text-blue-600 underline"
+            className="text-blue-link hover:text-blue-dark"
           >
             Qiu Qiu Law
           </a>
           .
         </p>
-        <p className="mb-6 text-gray-700">
+        <p className="mb-6">
           It&apos;s called "Tenant First Aid" because it&apos;s like emergency
           help for renters facing eviction—quick, clear, and focused on what to
           do right now. Just like medical first aid helps stabilize someone
@@ -40,13 +40,6 @@ export default function About() {
         <p>Michael Zhang</p>
         <p>Attorney, licensed in Oregon and Washington</p>
         <p>{CONTACT_EMAIL}</p>
-        <h2 className="text-2xl font-semibold mt-6 mb-2">Features</h2>
-        <ul className="list-disc list-inside">
-          <li>Instant answers to common rental questions</li>
-          <li>Guidance on tenant rights and landlord obligations</li>
-          <li>Easy-to-use chat interface</li>
-          <li>Available 24/7</li>
-        </ul>
         <h2 className="text-2xl font-semibold mt-6 mb-2">How It Works</h2>
         <p className="mb-6">
           Simply type your question or describe your situation, and Tenant First
@@ -58,47 +51,6 @@ export default function About() {
           Tenant First Aid does not store any personal data. All interactions
           are processed in real-time and not saved for future use.
         </p>
-        <h2 className="text-2xl font-semibold mt-6 mb-2">Quick Facts:</h2>
-        <ul className="list-disc list-inside mb-6">
-          <li>Uses Google's `gemini-2.5-pro` model</li>
-          <li>
-            Reference library:
-            <ul className="list-none pl-6 mt-1">
-              <li>
-                <a
-                  href="https://www.oregonlegislature.gov/bills_laws/ors/ors090.html"
-                  className="text-blue-600 underline"
-                >
-                  ORS 90 (as amended 2023)
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://www.oregonlegislature.gov/bills_laws/ors/ors105.html"
-                  className="text-blue-600 underline"
-                >
-                  ORS 105
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://eugene.municipal.codes/EC/8.425"
-                  className="text-blue-600 underline"
-                >
-                  Eugene Code Section 8.425
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://www.portland.gov/code/30/all"
-                  className="text-blue-600 underline"
-                >
-                  Portland City Code Title 30
-                </a>
-              </li>
-            </ul>
-          </li>
-        </ul>
         <h2 className="text-2xl font-semibold mt-6 mb-2">
           Legal Disclaimer & Privacy Notice
         </h2>

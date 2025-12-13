@@ -6,7 +6,7 @@ interface Props {
 export default function DisclaimerLayout({ isOngoing, children }: Props) {
   return (
     <div
-      className={`container mx-auto text-xs px-4 text-center ${isOngoing ? "my-2" : "max-w-[600px] my-4"}`}
+      className={`container mx-auto text-xs ${isOngoing ? "" : "max-w-[600px]"}`}
     >
       <p>
         <strong>Disclaimer</strong>:&nbsp;

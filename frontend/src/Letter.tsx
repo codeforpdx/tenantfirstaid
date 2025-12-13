@@ -11,6 +11,7 @@ import MessageContainer from "./shared/components/MessageContainer";
 import useHousingContext from "./hooks/useHousingContext";
 import { buildChatUserMessage } from "./pages/Chat/utils/formHelper";
 import { ILocation } from "./contexts/HousingContext";
+import FeatureSnippet from "./shared/components/FeatureSnippet";
 
 export default function Letter() {
   const { addMessage, messages, setMessages } = useMessages();
@@ -19,7 +20,7 @@ export default function Letter() {
   const { org, loc } = useParams();
   const [startStreaming, setStartStreaming] = useState(false);
   const streamLocationRef = useRef<ILocation | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(true);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const LOADING_DISPLAY_DELAY_MS = 1000;
   const { housingLocation, housingType, tenantTopic, issueDescription } =
@@ -99,7 +100,7 @@ export default function Letter() {
     if (messages.length > 1 && messages[1]?.content !== "") {
       // Include 1s delay for smoother transition
       const timeoutId = setTimeout(
-        () => setIsLoading(false),
+        () => setIsGenerating(false),
         LOADING_DISPLAY_DELAY_MS,
       );
       return () => clearTimeout(timeoutId);
@@ -114,26 +115,38 @@ export default function Letter() {
     <>
       <div className="flex pt-16 h-screen items-center justify-center">
         <LetterGenerationDialog ref={dialogRef} />
-        <div className="flex-1 h-full sm:h-auto items-center transition-all duration-300">
-          <MessageContainer isOngoing={isOngoing} letterContent={letterContent}>
-            <div
-              className={`flex flex-col ${letterContent === "" ? "flex-1" : "flex-1/3"}`}
+        <div className="h-full w-full flex flex-col lg:flex-row gap-4 transition-all duration-300 sm:px-4 max-w-[1400px]">
+          <div className="my-auto w-full flex">
+            <MessageContainer
+              isOngoing={isOngoing}
+              letterContent={letterContent}
             >
-              {isLoading ? (
-                <div className="flex flex-1 items-center justify-center animate-pulse text-lg">
-                  Generating letter...
-                </div>
-              ) : (
-                <MessageWindow
-                  messages={messages}
-                  addMessage={addMessage}
-                  setMessages={setMessages}
-                  isOngoing={isOngoing}
-                />
-              )}
+              <div
+                className={`flex flex-col ${letterContent === "" ? "flex-1" : "flex-1/3"}`}
+              >
+                {isGenerating ? (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="animate-pulse text-lg">
+                      Generating Letter...
+                    </div>
+                  </div>
+                ) : (
+                  <MessageWindow
+                    messages={messages}
+                    addMessage={addMessage}
+                    setMessages={setMessages}
+                    isOngoing={isOngoing}
+                  />
+                )}
+              </div>
+            </MessageContainer>
+          </div>
+          <div className="flex flex-col m-auto lg:h-[620px] lg:max-w-[300px] rounded-lg bg-paper-background">
+            <FeatureSnippet />
+            <div className="p-4">
+              <LetterDisclaimer isOngoing={isOngoing} />
             </div>
-          </MessageContainer>
-          <LetterDisclaimer isOngoing={isOngoing} />
+          </div>
         </div>
       </div>
     </>

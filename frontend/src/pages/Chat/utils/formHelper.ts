@@ -27,7 +27,7 @@ function buildChatUserMessage(
   const promptParts = [
     `I'm in ${locationString ? `${locationString}` : ""}.`,
     `I live in ${housingType}.`,
-    `My issue is on ${tenantTopic}: ${issueDescription}`,
+    `My issue is on ${tenantTopic}: ${issueDescription === "" ? "Non-specific." : issueDescription}`,
   ];
 
   return {

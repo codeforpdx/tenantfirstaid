@@ -1,4 +1,4 @@
-import DOMPurify, { SANITIZE_SETTINGS } from "../../shared/utils/dompurify";
+import DOMPurify, { SANITIZE_AI_SETTINGS } from "../../shared/utils/dompurify";
 import { describe, it, expect } from "vitest";
 
 describe("DOMPurify sanitization", () => {
@@ -12,7 +12,7 @@ describe("DOMPurify sanitization", () => {
       <embed src="evil.mp4"></embed>
     `;
 
-    const clean = DOMPurify.sanitize(dirty, SANITIZE_SETTINGS).trim();
+    const clean = DOMPurify.sanitize(dirty, SANITIZE_AI_SETTINGS).trim();
 
     expect(clean).toBe("<p>safe</p>");
   });
@@ -29,7 +29,7 @@ describe("DOMPurify sanitization", () => {
       <u>underlined</u>
     `;
 
-    const clean = DOMPurify.sanitize(dirty, SANITIZE_SETTINGS);
+    const clean = DOMPurify.sanitize(dirty, SANITIZE_AI_SETTINGS);
 
     expect(clean).toContain("<p>");
     expect(clean).toContain("<em>");
@@ -45,7 +45,7 @@ describe("DOMPurify sanitization", () => {
   it("should add rel and target to <a> tags via hook", () => {
     const dirty = `<a href="https://example.com">Example</a>`;
 
-    const clean = DOMPurify.sanitize(dirty, SANITIZE_SETTINGS);
+    const clean = DOMPurify.sanitize(dirty, SANITIZE_AI_SETTINGS);
 
     const link = new DOMParser().parseFromString(clean, "text/html").body
       .firstChild as HTMLAnchorElement;
@@ -57,7 +57,7 @@ describe("DOMPurify sanitization", () => {
   it("should strip disallowed attributes", () => {
     const dirty = `<p onclick="alert('xss')">Click me</p>`;
 
-    const clean = DOMPurify.sanitize(dirty, SANITIZE_SETTINGS).trim();
+    const clean = DOMPurify.sanitize(dirty, SANITIZE_AI_SETTINGS).trim();
 
     expect(clean).toBe("<p>Click me</p>");
   });
