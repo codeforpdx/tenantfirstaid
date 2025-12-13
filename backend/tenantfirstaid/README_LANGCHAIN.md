@@ -6,8 +6,8 @@ This directory contains the LangChain-based implementation of the Tenant First A
 
 The system uses a LangChain agent-based architecture with two main components:
 
-1. **LangChainChatManager** (`langchain_chat.py`): Orchestrates the agent and manages conversations
-2. **RAG Tools**: Two specialized tools for retrieving legal documents from Vertex AI
+1. **LangChainChatManager** (`langchain_chat_manager.py`): Orchestrates the agent and manages conversations
+2. **RAG Tools** (`langchain_tools.py`): Two specialized tools for retrieving legal documents from Vertex AI
 
 ## Agent Flow
 
@@ -21,6 +21,7 @@ User Query → Agent → Tool Selection → RAG Retrieval → Response Generatio
 ## Key Files
 
 - `langchain_chat.py`: Main LangChain implementation
+- `langchain_tools.py`: LangChain Agent tools
 - `chat.py`: Original direct API implementation (to be deprecated)
 
 ## Usage
@@ -28,7 +29,7 @@ User Query → Agent → Tool Selection → RAG Retrieval → Response Generatio
 ### Initializing the Chat Manager
 
 ```python
-from tenantfirstaid.langchain_chat import LangChainChatManager
+from tenantfirstaid.langchain_chat_manager import LangChainChatManager
 
 manager = LangChainChatManager()
 ```
@@ -148,8 +149,9 @@ The LangChain implementation provides several advantages over direct API calls:
 ```bash
 export LANGSMITH_API_KEY=your-api-key
 export LANGSMITH_PROJECT=tenant-first-aid-dev
-export LANGSMITH_TRACING_V2=true
+export LANGSMITH_TRACING=true
 ```
+from [quickstart](https://docs.langchain.com/langsmith/trace-with-langchain#1-configure-your-environment)
 
 ### View Traces
 
