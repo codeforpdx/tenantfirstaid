@@ -50,20 +50,20 @@ class LangChainChatManager:
         # Specify tools for RAG retrieval.
         self.tools: List[BaseTool] = [retrieve_city_state_laws]
 
-    def create_agent_for_session(
+    def __create_agent_for_session(
         self, city: Optional[OregonCity], state: UsaState
     ) -> CompiledStateGraph:
         """Create an agent instance configured for the user's location.
 
         Args:
-            city: User's city (e.g., "portland", "null")
+            city: User's city (e.g., "portland", None)
             state: User's state (e.g., "or")
 
         Returns:
             AgentExecutor configured with tools and system prompt
         """
 
-        system_prompt = SystemMessage(self.prepare_system_prompt(city, state))
+        system_prompt = SystemMessage(self.__prepare_system_prompt(city, state))
 
         # # Create prompt template with system message and conversation history.
         # prompt = ChatPromptTemplate.from_messages(
@@ -84,7 +84,7 @@ class LangChainChatManager:
             # checkpointer=InMemorySaver(),
         )
 
-    def prepare_system_prompt(self, city: Optional[OregonCity], state: UsaState) -> str:
+    def __prepare_system_prompt(self, city: Optional[OregonCity], state: UsaState) -> str:
         """Prepare detailed system instructions for the agent.
 
         This matches the current DEFAULT_INSTRUCTIONS with location context.
@@ -102,6 +102,7 @@ class LangChainChatManager:
         instructions += f"\nThe user is in {city.title() if city is not None else ''} {state.upper()}.\n"
         return instructions
 
+    # TODO
     def generate_response(
         self, messages: list[AnyMessage], city: Optional[OregonCity], state: UsaState
     ):
@@ -121,7 +122,7 @@ class LangChainChatManager:
             Response chunks as they are generated
         """
 
-        agent = self.create_agent_for_session(city, state)
+        agent = self.__create_agent_for_session(city, state)
 
         # Split messages into conversation history and current query.
         (conversation_history, current_query) = (messages[:-1], [messages[-1]])
