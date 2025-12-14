@@ -4,7 +4,7 @@ and normalize inputs to enumerated values
 """
 
 from enum import StrEnum
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from langchain.agents import AgentState
 from pydantic import BaseModel
@@ -21,96 +21,58 @@ def city_or_state_input_sanitizer(location: Optional[str], max_len: int = 9) -> 
     return location.lower()
 
 
-class _InnerOregonCity(StrEnum):
+class OregonCity(StrEnum):
     PORTLAND = "portland"
     EUGENE = "eugene"
 
+# class OregonCity:
+#     value: Optional[_InnerOregonCity]
 
-class OregonCity(BaseModel, arbitrary_types_allowed=True):
-    value: Optional[_InnerOregonCity] = None
+#     def __init__(self, v: Optional[str]):
+#         try:
+#             if v is None:
+#                 self.value = None
+#             else:
+#                 self.value = _InnerOregonCity(city_or_state_input_sanitizer(v))
+#         except ValueError:
+#             self.value = None
+#         except Exception as e:
+#             raise e
+#         super().__init__()
 
-    @classmethod
-    def from_str(cls, v: Optional[str]) -> "OregonCity":
-        instance = cls()
-        if v is None:
-            instance.value = None
-        else:
-            try:
-                instance.value = _InnerOregonCity(v.lower())
-            except ValueError:
-                instance.value = None
-        return instance
+#     def __repr__(self) -> str:
+#         return str(self.value) if self.value is not None else "null"
 
-    # def __init__(self, v: str):
-    #     try:
-    #         if v is None:
-    #             self.value = None
-    #         else:
-    #             self.value = _InnerOregonCity(v.lower())
-    #     except ValueError:
-    #         self.value = None
-    #     except Exception as e:
-    #         raise e
-    #     super().__init__()
+#     def else_empty(self) -> str:
+#         return str(self.value) if self.value is not None else ""
 
-    def __repr__(self) -> str:
-        return str(self.value) if self.value is not None else "null"
+#     def lower(self) -> str:
+#         return self.else_empty().lower()
 
-    def else_empty(self) -> str:
-        return str(self.value) if self.value is not None else ""
-
-    def lower(self) -> str:
-        return self.else_empty().lower()
-
-    def upper(self) -> str:
-        return self.else_empty().upper()
+#     def upper(self) -> str:
+#         return self.else_empty().upper()
 
 
-class _InnerUsaState(StrEnum):
+class UsaState(StrEnum):
+    """
+    Enumeration that represents names in the set of States in the United States of America
+    """
     OREGON = "or"
-    OTHER = "OTHER"
+    OTHER = "other"
 
+    # def __repr__(self) -> str:
+    #     return str(self.value) if self.value is not None else "null"
 
-class UsaState(BaseModel, arbitrary_types_allowed=True):
-    value: Optional[_InnerUsaState] = None
+    # def else_empty(self) -> str:
+    #     return str(self.value) if self.value is not None else ""
 
-    # def __init__(self, v: str):
-    #     try:
-    #         if v is None:
-    #             self.value = None
-    #         else:
-    #             self.value = _InnerUsaState(v.lower())
-    #     except ValueError:
-    #         self.value = None
-    #     except Exception as e:
-    #         raise e
-    #     super().__init__()
+    # def lower(self) -> str:
+    #     return self.else_empty().lower()
 
-    @classmethod
-    def from_str(cls, v: Optional[str]) -> "UsaState":
-        instance = cls()
-        if v is None:
-            instance.value = None
-        else:
-            try:
-                instance.value = _InnerUsaState(v.lower())
-            except ValueError:
-                instance.value = None
-        return instance
-
-    def __repr__(self) -> str:
-        return str(self.value) if self.value is not None else "null"
-
-    def else_empty(self) -> str:
-        return str(self.value) if self.value is not None else ""
-
-    def lower(self) -> str:
-        return self.else_empty().lower()
-
-    def upper(self) -> str:
-        return self.else_empty().upper()
+    # def upper(self) -> str:
+    #     return self.else_empty().upper()
 
 
 class TFAAgentStateSchema(AgentState):
-    state: str
-    city: Optional[str]
+    state: UsaState
+    city: Optional[OregonCity]

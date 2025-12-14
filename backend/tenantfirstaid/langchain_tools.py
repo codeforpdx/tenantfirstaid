@@ -2,26 +2,74 @@
 This module defines Tools for an Agent to call
 """
 
-from pathlib import Path
-from pprint import pprint
+from typing import Optional
 
+from google.oauth2.credentials import Credentials
 from langchain.tools import ToolRuntime
-from langchain_core.tools import BaseTool, tool
+from langchain_core.tools import tool
 from langchain_google_community import VertexAISearchRetriever
 from pydantic import BaseModel
 
 from .constants import SINGLETON
-from .location import city_or_state_input_sanitizer
+from .location import OregonCity, UsaState
+
+
+class _Rag_Builder:
+    """
+    Helper class to construct a Rag tool from VertexAISearchRetriever
+    The helper class handles creds, project, location, datastore, etc.
+    """
+
+    credentials: Credentials
+    rag: VertexAISearchRetriever
+
+    def __init__(
+        self,
+        filter: str,
+        name: Optional[str] = "tfa-retriever",
+        max_documents: Optional[int] = 5,
+    ) -> None:
+        self.credentials = Credentials.from_authorized_user_file(
+            SINGLETON.GOOGLE_APPLICATION_CREDENTIALS
+        )
+
+        self.rag = VertexAISearchRetriever(
+            beta=True,  # required for this implementation
+            credentials=self.credentials,
+            project_id=SINGLETON.GOOGLE_CLOUD_PROJECT,  # tenantfirstaid
+            location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,  # global
+            data_store_id=SINGLETON.VERTEX_AI_DATASTORE,  # "tenantfirstaid-corpora_1758844059585",
+            engine_data_type=0,  # tenantfirstaid-corpora_1758844059585 is unstructured
+            get_extractive_answers=True,  # TODO: figure out if this is useful
+            name=name,
+            max_documents=max_documents,
+            filter=filter,
+        )
+
+    def search(self, query: str) -> str:
+        docs = self.rag.invoke(
+            input=query,
+        )
+
+        return "\n".join([doc.page_content for doc in docs])
+
+
+def _filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
+    if city is None:
+        city_or_null = "null"
+    else:
+        city_or_null = city.lower()
+
+    return f"""city: ANY("{city_or_null}") AND state: ANY("{state.lower()}")"""
 
 
 class _StateLawInputSchema(BaseModel, arbitrary_types_allowed=True):
     query: str
-    state: str
-    runtime: ToolRuntime
+    state: UsaState
 
 
 @tool(args_schema=_StateLawInputSchema)
-def retrieve_state_law(query: str, state: str, runtime: ToolRuntime) -> str:
+def retrieve_state_law(query: str, state: UsaState, runtime: ToolRuntime) -> str:
     """Retrieve state-wide housing laws from the RAG corpus.
 
     Use this tool for general state law questions or when city is not specified.
@@ -35,35 +83,25 @@ def retrieve_state_law(query: str, state: str, runtime: ToolRuntime) -> str:
         Relevant legal passages from state laws
     """
 
-    safe_state: str = city_or_state_input_sanitizer(state, max_len=2).lower()
-
-    pprint(runtime.context)
-
-    rag = VertexAISearchRetriever(
+    helper = _Rag_Builder(
         name="retrieve_state_law",
-        project_id=SINGLETON.GOOGLE_CLOUD_PROJECT,  # type: ignore [unresolved-attribute]
-        location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,  # type: ignore [unresolved-attribute]
-        data_store_id=SINGLETON.VERTEX_AI_DATASTORE,  # type: ignore [unresolved-attribute]
-        # max_results=5,
-        filter=f'city: ANY("null") AND state: ANY("{safe_state}")',
+        filter=_filter_builder(state=state),
+        max_documents=5,
     )
 
-    docs = rag.invoke(
-        input=query,
-        # filter=f'city: ANY("null") AND state: ANY("{state.lower()}")'
+    return helper.search(
+        query=query,
     )
 
-    return "\n\n".join([doc.page_content for doc in docs])
 
-
-class _CityLawInputSchema(BaseModel, arbitrary_types_allowed=True):
+class _CityLawInputSchema(BaseModel):
     query: str
-    city: str
-    state: str
+    city: Optional[OregonCity]
+    state: UsaState
 
 
 @tool(args_schema=_CityLawInputSchema)
-def retrieve_city_law(query: str, city: str, state: str) -> str:
+def retrieve_city_law(query: str, city: Optional[OregonCity], state: UsaState) -> str:
     """Retrieve city-specific housing laws from the RAG corpus.
 
     Use this tool when the user has specified their city location.
@@ -77,20 +115,12 @@ def retrieve_city_law(query: str, city: str, state: str) -> str:
         Relevant legal passages from city-specific laws
     """
 
-    safe_city: str = city_or_state_input_sanitizer(city).lower()
-    safe_state: str = city_or_state_input_sanitizer(state, max_len=2).lower()
-
-    rag = VertexAISearchRetriever(
+    helper = _Rag_Builder(
         name="retrieve_city_law",
-        project_id=SINGLETON.GOOGLE_CLOUD_PROJECT,  # type: ignore [unresolved-attribute]
-        location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,  # type: ignore [unresolved-attribute]
-        data_store_id=SINGLETON.VERTEX_AI_DATASTORE,  # type: ignore [unresolved-attribute]
-        # max_results=5,
-        filter=f'city: ANY("{safe_city}") AND state: ANY("{safe_state}")',
+        max_documents=5,
+        filter=_filter_builder(city=city, state=state),
     )
 
-    docs = rag.invoke(
-        input=query,
+    return helper.search(
+        query=query,
     )
-
-    return "\n\n".join([doc.page_content for doc in docs])
