@@ -84,7 +84,9 @@ class LangChainChatManager:
             # checkpointer=InMemorySaver(),
         )
 
-    def __prepare_system_prompt(self, city: Optional[OregonCity], state: UsaState) -> str:
+    def __prepare_system_prompt(
+        self, city: Optional[OregonCity], state: UsaState
+    ) -> str:
         """Prepare detailed system instructions for the agent.
 
         This matches the current DEFAULT_INSTRUCTIONS with location context.
