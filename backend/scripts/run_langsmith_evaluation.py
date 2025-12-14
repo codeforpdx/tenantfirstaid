@@ -62,7 +62,8 @@ def agent_wrapper(inputs) -> Any:
 
     # pprint(response)
 
-    return {"output": response["messages"][-1].content_blocks}
+    return {"output": response["messages"][-1].content}
+
 
 # TODO: https://docs.langchain.com/langsmith/multi-turn-simulation
 def run_evaluation(
