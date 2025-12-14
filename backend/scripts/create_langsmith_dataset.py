@@ -141,7 +141,7 @@ if __name__ == "__main__":
     if env_path.exists():
         load_dotenv(override=True)
     else:
-        FileNotFoundError(f"[{env_path}] file not found.")
+        raise FileNotFoundError(f"[{env_path}] file not found.")
 
     args = parser.parse_args()
 

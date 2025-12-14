@@ -231,7 +231,7 @@ if __name__ == "__main__":
     if env_path.exists():
         load_dotenv(env_path, override=True)
     else:
-        FileNotFoundError(f"could not load environment from [{env_path}]")
+        raise FileNotFoundError(f"could not load environment from [{env_path}]")
 
     # instantiate Pydantic BaseModel class and dump JSON to confirm
     # whether Pydantic is able to serialize the class (independent of LangChain)
