@@ -2,6 +2,8 @@
 Module for Flask Chat View
 """
 
+from typing import Any, Dict, List, Optional
+
 from flask import Response, current_app, request, stream_with_context
 from flask.views import View
 
@@ -14,23 +16,12 @@ class ChatView(View):
         self.chat_manager = LangChainChatManager()
 
     def dispatch_request(self, *args, **kwargs) -> Response:
-        data = request.json
-        messages = data["messages"]
+        data: Dict[str, Any] = request.json
+        messages: List[Any] = data["messages"]
 
         def generate():
-            match data["city"].lower():
-                case "eugene":
-                    city = OregonCity.EUGENE
-                case "portland":
-                    city = OregonCity.PORTLAND
-                case _:
-                    city = None
-
-            match data["state"].upper():
-                case "OR":
-                    state = UsaState.OREGON
-                case _:
-                    state = UsaState.OTHER
+            city: Optional[OregonCity] = OregonCity.from_maybe_str(data["city"])
+            state: UsaState = UsaState.from_maybe_str(data["state"])
 
             response_stream = self.chat_manager.generate_streaming_response(
                 messages,
