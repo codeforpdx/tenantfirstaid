@@ -1,22 +1,39 @@
 """
 Test location sanitization and other methods
 """
+
 from typing import Dict
-from tenantfirstaid.location import UsaState, OregonCity
-from tenantfirstaid.langchain_tools import _StateLawInputSchema, _CityLawInputSchema
 
-def test_usastate_json_serialization():
+from tenantfirstaid.langchain_tools import _CityStateLawsInputSchema
+from tenantfirstaid.location import OregonCity, UsaState
+
+
+def test_only_oregon_json_serialization():
+    city = None
     beaver_state = UsaState("or")
-    schema = _StateLawInputSchema(query="", state=beaver_state)
+    schema = _CityStateLawsInputSchema(query="", city=city, state=beaver_state)
     d: Dict[str, str] = schema.model_dump(mode="json")
-    assert d['state'] == "or"
+    assert d["city"] is None
+    assert d["state"] == "or"
 
-def test_oregoncity_json_serialization():
+
+def test_eugene_oregon_json_serialization():
+    city = OregonCity("eugene")
+    beaver_state = UsaState("or")
+    schema = _CityStateLawsInputSchema(query="", city=city, state=beaver_state)
+    d: Dict[str, str] = schema.model_dump(mode="json")
+    assert d["city"] == "eugene"
+    assert d["state"] == "or"
+
+
+def test_portland_oregon_json_serialization():
     rose_city = OregonCity("portland")
     beaver_state = UsaState("or")
-    schema = _CityLawInputSchema(query="", city=rose_city, state=beaver_state)
+    schema = _CityStateLawsInputSchema(query="", city=rose_city, state=beaver_state)
     d: Dict[str, str] = schema.model_dump(mode="json")
-    assert d['state'] == "or"
+    assert d["city"] == "portland"
+    assert d["state"] == "or"
+
 
 # TODO: negative tests for input validation
 

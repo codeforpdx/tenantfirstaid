@@ -63,52 +63,23 @@ def _filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
     return f"""city: ANY("{city_or_null}") AND state: ANY("{state.lower()}")"""
 
 
-class _StateLawInputSchema(BaseModel, arbitrary_types_allowed=True):
-    query: str
-    state: UsaState
-
-
-@tool(args_schema=_StateLawInputSchema)
-def retrieve_state_law(query: str, state: UsaState, runtime: ToolRuntime) -> str:
-    """Retrieve state-wide housing laws from the RAG corpus.
-
-    Use this tool for general state law questions or when city is not specified.
-
-    Args:
-        query: The user's legal question
-        state: The user's state (e.g., "or")
-        runtime: Tool runtime context
-
-    Returns:
-        Relevant legal passages from state laws
-    """
-
-    helper = _Rag_Builder(
-        name="retrieve_state_law",
-        filter=_filter_builder(state=state),
-        max_documents=5,
-    )
-
-    return helper.search(
-        query=query,
-    )
-
-
-class _CityLawInputSchema(BaseModel):
+class _CityStateLawsInputSchema(BaseModel):
     query: str
     city: Optional[OregonCity]
     state: UsaState
 
 
-@tool(args_schema=_CityLawInputSchema)
-def retrieve_city_law(query: str, city: Optional[OregonCity], state: UsaState) -> str:
-    """Retrieve city-specific housing laws from the RAG corpus.
-
-    Use this tool when the user has specified their city location.
+@tool(args_schema=_CityStateLawsInputSchema)
+def retrieve_city_state_laws(
+    query: str, city: Optional[OregonCity], state: UsaState, runtime: ToolRuntime
+) -> str:
+    """
+    Retrieve relevant state (and when specified, city) specific housing
+    laws from the RAG corpus.
 
     Args:
         query: The user's legal question
-        city: The user's city (e.g., "portland", "eugene")
+        city: The user's city (e.g., "portland", "eugene"), optional
         state: The user's state (e.g., "or")
 
     Returns:
