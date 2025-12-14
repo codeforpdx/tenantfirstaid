@@ -27,9 +27,12 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool, tool
 from langchain_google_community import VertexAISearchRetriever
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.types import Command
 from pydantic import BaseModel
 
 from tenantfirstaid.constants import DEFAULT_INSTRUCTIONS, SINGLETON
@@ -125,6 +128,7 @@ def rag_tool(query: str, runtime: ToolRuntime) -> str:
         engine_data_type=0,  # unstructured
         get_extractive_answers=True,
         credentials=credentials,
+        max_documents=5,
         filter=f'''city: ANY("{city}") AND state: ANY("{state}")''',
     )
 
@@ -170,9 +174,7 @@ def create_and_query_agent():
     print("-" * 20)
 
     agt = create_agent(
-        model=llm,
-        tools=tools,
-        system_prompt=sys_prompt,
+        model=llm, tools=tools, system_prompt=sys_prompt, checkpointer=InMemorySaver()
     )
 
     human_msg = list()
@@ -184,14 +186,21 @@ def create_and_query_agent():
 
     print("-" * 20)
 
+    # NOTE: thread_id, checkpoint_ns or checkpoint_id needed for checkpointer
+    config: RunnableConfig = RunnableConfig(configurable={"thread_id": 1})
+
     for idx, chunk in enumerate(
         # TODO: multi-turn over human_msg list
         agt.stream(
-            input={
-                "messages": human_msg,
-                "context": [],
-            },
+            input=Command(
+                update={
+                    "messages": human_msg,
+                    "context": [],
+                }
+            ),
+            config=config,
             stream_mode="updates",
+            durability="sync",
         )
     ):
         # outer dict key changes with internal messages (Model, Tool, ...)
