@@ -7,8 +7,7 @@ import pytest
 
 from tenantfirstaid.langchain_chat_manager import (
     LangChainChatManager,
-    retrieve_city_law,
-    retrieve_state_law,
+    retrieve_city_state_laws,
 )
 
 
@@ -38,7 +37,7 @@ def test_retrieve_city_law_filters_correctly(mock_vertex_ai):
         "state": "or",
     }
 
-    result = retrieve_city_law.invoke(d)
+    result = retrieve_city_state_laws.invoke(d)
 
     # Verify filter was constructed correctly.
     call_args = mock_vertex_ai.call_args
@@ -50,7 +49,7 @@ def test_retrieve_city_law_filters_correctly(mock_vertex_ai):
 def test_retrieve_state_law_filters_correctly(mock_vertex_ai):
     """Test that state law retrieval uses correct filter."""
     d: Dict[str, str] = {"query": "tenant rights", "state": "or"}
-    result = retrieve_state_law.invoke(d)
+    result = retrieve_city_state_laws.invoke(d)
 
     # Verify filter was constructed correctly.
     call_args = mock_vertex_ai.call_args
