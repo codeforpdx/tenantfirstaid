@@ -14,13 +14,13 @@ from .constants import SINGLETON
 from .location import OregonCity, UsaState
 
 
-class _Rag_Builder:
+class Rag_Builder:
     """
     Helper class to construct a Rag tool from VertexAISearchRetriever
     The helper class handles creds, project, location, datastore, etc.
     """
 
-    credentials: Credentials
+    __credentials: Credentials
     rag: VertexAISearchRetriever
 
     def __init__(
@@ -29,13 +29,13 @@ class _Rag_Builder:
         name: Optional[str] = "tfa-retriever",
         max_documents: Optional[int] = 5,
     ) -> None:
-        self.credentials = Credentials.from_authorized_user_file(
+        self.__credentials = Credentials.from_authorized_user_file(
             SINGLETON.GOOGLE_APPLICATION_CREDENTIALS
         )
 
         self.rag = VertexAISearchRetriever(
             beta=True,  # required for this implementation
-            credentials=self.credentials,
+            credentials=self.__credentials,
             project_id=SINGLETON.GOOGLE_CLOUD_PROJECT,  # tenantfirstaid
             location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,  # global
             data_store_id=SINGLETON.VERTEX_AI_DATASTORE,  # "tenantfirstaid-corpora_1758844059585",
@@ -54,7 +54,7 @@ class _Rag_Builder:
         return "\n".join([doc.page_content for doc in docs])
 
 
-def _filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
+def __filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
     if city is None:
         city_or_null = "null"
     else:
@@ -63,13 +63,13 @@ def _filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
     return f"""city: ANY("{city_or_null}") AND state: ANY("{state.lower()}")"""
 
 
-class _CityStateLawsInputSchema(BaseModel):
+class CityStateLawsInputSchema(BaseModel):
     query: str
     city: Optional[OregonCity]
     state: UsaState
 
 
-@tool(args_schema=_CityStateLawsInputSchema)
+@tool(args_schema=CityStateLawsInputSchema)
 def retrieve_city_state_laws(
     query: str, city: Optional[OregonCity], state: UsaState, runtime: ToolRuntime
 ) -> str:
@@ -86,10 +86,10 @@ def retrieve_city_state_laws(
         Relevant legal passages from city-specific laws
     """
 
-    helper = _Rag_Builder(
+    helper = Rag_Builder(
         name="retrieve_city_law",
         max_documents=5,
-        filter=_filter_builder(city=city, state=state),
+        filter=__filter_builder(city=city, state=state),
     )
 
     return helper.search(
