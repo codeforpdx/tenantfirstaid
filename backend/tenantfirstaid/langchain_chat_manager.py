@@ -67,6 +67,8 @@ class LangChainChatManager:
         # Specify tools for RAG retrieval.
         self.tools = [retrieve_city_state_laws]
 
+        self.message_history = {}
+
         # defer agent instantiation until 'generate_stream_response'
         self.agent = None
 
