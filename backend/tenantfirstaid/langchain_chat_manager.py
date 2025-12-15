@@ -4,6 +4,8 @@ This module provides a LangChain implementation that replaces the direct
 Google Gemini API calls with a standardized agent-based architecture.
 """
 
+import logging
+import sys
 from typing import Generator, List, Optional
 
 from langchain.agents import create_agent
@@ -32,8 +34,18 @@ def starting_message_helper(content: str) -> HumanMessage:
 class LangChainChatManager:
     """Manages chat interactions using LangChain agent architecture."""
 
+    logger: logging.Logger
+
     def __init__(self) -> None:
         """Initialize the LangChain chat manager with Vertex AI integration."""
+
+        # configure logging
+        logging.basicConfig(
+            level=logging.DEBUG,
+            stream=sys.stdout,
+            format="%(levelname)s: %(message)s (%(filename)s:%(lineno)d)",
+        )
+        self.logger = logging.getLogger("LangChainChatManager")
 
         # Initialize ChatVertexAI with same config as current implementation.
         self.llm = ChatGoogleGenerativeAI(
@@ -146,12 +158,33 @@ class LangChainChatManager:
             # Specialize handling/printing based on each message class/type
             for m in chunk[chunk_k]["messages"]:
                 match m:
-                    # Send message content to chat client
+                    # Messages sent by the Model
                     case AIMessage():
-                        yield m.content
+                        for b in m.content_blocks:
+                            match b["type"]:
+                                # text responses from the Model
+                                case "text":
+                                    yield b["text"]
+                                case "reasoning":
+                                    if "reasoning" in b:
+                                        yield b["reasoning"]
+                                # the Model calling a tool
+                                case "tool_call":
+                                    self.logger.info(b)
+                                case "server_tool_call":
+                                    self.logger.info(b)
 
+                    # Messages sent back by a tool
                     case ToolMessage():
-                        print(f"      {m}")
+                        for b in m.content_blocks:
+                            match b["type"]:
+                                case "text":
+                                    self.logger.info(b["text"])
+                                case "invalid_tool_call":
+                                    self.logger.error(b)
+                                case _:
+                                    self.logger.debug(f"ToolMessage: {m}")
+
                     # Fall-through case
                     case _:
-                        print(f"{type(m)}: {m}")
+                        self.logger.debug(f"{type(m)}: {m}")

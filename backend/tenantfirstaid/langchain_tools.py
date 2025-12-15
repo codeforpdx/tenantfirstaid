@@ -27,7 +27,7 @@ class Rag_Builder:
         self,
         filter: str,
         name: Optional[str] = "tfa-retriever",
-        max_documents: Optional[int] = 5,
+        max_documents: Optional[int] = 1,
     ) -> None:
         self.__credentials = Credentials.from_authorized_user_file(
             SINGLETON.GOOGLE_APPLICATION_CREDENTIALS
@@ -69,7 +69,7 @@ class CityStateLawsInputSchema(BaseModel):
     state: UsaState
 
 
-@tool(args_schema=CityStateLawsInputSchema)
+@tool(args_schema=CityStateLawsInputSchema, response_format="content")
 def retrieve_city_state_laws(
     query: str, city: Optional[OregonCity], state: UsaState, runtime: ToolRuntime
 ) -> str:
@@ -88,7 +88,7 @@ def retrieve_city_state_laws(
 
     helper = Rag_Builder(
         name="retrieve_city_law",
-        max_documents=5,
+        max_documents=1,
         filter=__filter_builder(city=city, state=state),
     )
 

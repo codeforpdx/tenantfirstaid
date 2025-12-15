@@ -10,9 +10,12 @@ To run:
   % uv run simple_langchain_demo.py
 """
 
+import logging
+import sys
 from enum import StrEnum, auto
 from pathlib import Path
 from pprint import pprint
+from textwrap import wrap
 from typing import List, Optional
 from warnings import warn
 
@@ -91,9 +94,11 @@ class RagToolInputSchema(BaseModel):
     query: str
 
 
-@tool(args_schema=RagToolInputSchema)
+@tool(args_schema=RagToolInputSchema, response_format="content")
 def rag_tool(query: str, runtime: ToolRuntime) -> str:
     """Tool to search through Vertex Datastore"""
+
+    logger = logging.getLogger("RAG-Tool")
 
     # gcloud auth login
     # gcloud config set account $GMAIL@gmail.com
@@ -128,12 +133,12 @@ def rag_tool(query: str, runtime: ToolRuntime) -> str:
         engine_data_type=0,  # unstructured
         get_extractive_answers=True,
         credentials=credentials,
-        max_documents=5,
+        max_documents=1,
         filter=f'''city: ANY("{city}") AND state: ANY("{state}")''',
     )
 
     # reveal the query from the model onto the console (stderr)
-    warn(query)
+    logger.debug(query)
 
     # TODO: can "filter" argument be used in invocation?
     try:
@@ -143,10 +148,18 @@ def rag_tool(query: str, runtime: ToolRuntime) -> str:
         docs: List[Document] = []
         warn(f"{e}")
 
-    return "\n".join(doc.page_content for doc in docs)
+    logger.debug(docs)
+
+    content: str = ""
+    for doc in docs:
+        content += doc.page_content
+
+    return content
 
 
 def create_and_query_agent():
+    _logger = logging.getLogger("create-and-query-agent")
+
     print("-" * 20)
 
     for s in SINGLETON.__slots__:
@@ -210,23 +223,107 @@ def create_and_query_agent():
         # Specialize handling/printing based on each message class/type
         for midx, m in enumerate(chunk[chunk_k]["messages"]):
             match m:
+                # Send message content to chat client
                 case AIMessage():
-                    print(f"    AIMessage {idx}.{midx}")
-                    print(
-                        f"      {type(m)}: {m.content}"
-                    )  # list(TypedDict('text', 'thought_signature'))
+                    for b in m.content_blocks:
+                        match b["type"]:
+                            case "text":
+                                print(
+                                    fmt(
+                                        header=f"AIMessage {idx}.{midx} {b['type']}",
+                                        content=f"{b['text']}",
+                                    )
+                                )
+                            case "reasoning":
+                                if "reasoning" in b:
+                                    print(b["reasoning"])
+                            case "tool_call":
+                                content: List[str] = []
+                                for k, v in b.items():
+                                    if isinstance(v, str):
+                                        content.append(f"{k} = {v}")
+                                    if k == "args":
+                                        content.append(
+                                            f"args.query = {b['args']['query']}"
+                                        )
 
-                    for k, v in m.response_metadata.items():
-                        print(f"      msg.response_metadata.{k} = {v}")
+                                print(
+                                    fmt(
+                                        header=f"AIMessage {idx}.{midx} {b['type']}",
+                                        content=content,
+                                        wrap_width=95,
+                                    )
+                                )
+                            case _:
+                                print(
+                                    fmt(
+                                        header=f"AIMessage {idx}.{midx} {b['type']}",
+                                        content=str(b),
+                                    )
+                                )
+
+                # case AIMessage():
+                #     print(f"    AIMessage {idx}.{midx}")
+                #     print(
+                #         f"      {type(m)}: {m.content}"
+                #     )  # list(TypedDict('text', 'thought_signature'))
+
+                #     for k, v in m.response_metadata.items():
+                #         print(f"      msg.response_metadata.{k} = {v}")
                 case ToolMessage():
                     print(f"    ToolMessage {idx}.{midx}")
-                    print(f"      {m}")
+                    for b in m.content_blocks:
+                        match b["type"]:
+                            case "text":
+                                print(fmt(header=b["type"], content=f"{b['text']}"))
+                            case _:
+                                print(fmt(header=b["type"], content=f"{b}"))
                 # Fall-through case
                 case _:
                     print(f"{type(m)}: {m}")
 
 
+def fmt(header: str, content: str | List[str], initial_indent=9, wrap_width=90):
+    first_indent = " " * initial_indent
+    other_indent = first_indent + " " * (len(header) + 3)
+
+    match content:
+        case str():
+            wrapped_content = wrap(
+                f"{header.upper()}: '{content}'",
+                width=wrap_width,
+                initial_indent=first_indent,
+                subsequent_indent=other_indent,
+                replace_whitespace=True,
+            )
+        case list():
+            wrapped_content: List[str] = []
+            wrapped_content = wrap(
+                f"{header.upper()}: '{content[0]}'",
+                width=wrap_width,
+                initial_indent=first_indent,
+                subsequent_indent=other_indent,
+                replace_whitespace=True,
+            )
+
+            for remainder in content[1:]:
+                wrapped_content.append(
+                    "\n".join(
+                        wrap(
+                            remainder,
+                            initial_indent=other_indent,
+                            subsequent_indent=other_indent,
+                            width=wrap_width,
+                        )
+                    )
+                )
+
+    return "\n".join(wrapped_content)
+
+
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+
     env_path: Path = Path(__file__).parent / "../.env"
     if env_path.exists():
         load_dotenv(env_path, override=True)
