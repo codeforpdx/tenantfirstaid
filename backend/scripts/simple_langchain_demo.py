@@ -317,6 +317,8 @@ def fmt(header: str, content: str | List[str], initial_indent=9, wrap_width=90):
                         )
                     )
                 )
+        case _:
+            wrapped_content: List[str] = []
 
     return "\n".join(wrapped_content)
 
