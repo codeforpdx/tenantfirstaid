@@ -6,7 +6,7 @@ Google Gemini API calls with a standardized agent-based architecture.
 
 import logging
 import sys
-from typing import Generator, List, Optional
+from typing import Dict, Generator, List, Optional
 
 from langchain.agents import create_agent
 
@@ -14,6 +14,7 @@ from langchain.agents import create_agent
 from langchain_core.messages import (
     AIMessage,
     AnyMessage,
+    ContentBlock,
     HumanMessage,
     SystemMessage,
     ToolMessage,
@@ -35,6 +36,10 @@ class LangChainChatManager:
     """Manages chat interactions using LangChain agent architecture."""
 
     logger: logging.Logger
+    llm: ChatGoogleGenerativeAI
+    tools: List[BaseTool]
+    agent: Optional[CompiledStateGraph] = None
+    message_history: Dict[str, List[AnyMessage]]
 
     def __init__(self) -> None:
         """Initialize the LangChain chat manager with Vertex AI integration."""
@@ -60,10 +65,13 @@ class LangChainChatManager:
         )
 
         # Specify tools for RAG retrieval.
-        self.tools: List[BaseTool] = [retrieve_city_state_laws]
+        self.tools = [retrieve_city_state_laws]
+
+        # defer agent instantiation until 'generate_stream_response'
+        self.agent = None
 
     def __create_agent_for_session(
-        self, city: Optional[OregonCity], state: UsaState
+        self, city: Optional[OregonCity], state: UsaState, thread_id: str
     ) -> CompiledStateGraph:
         """Create an agent instance configured for the user's location.
 
@@ -77,15 +85,9 @@ class LangChainChatManager:
 
         system_prompt = SystemMessage(self.__prepare_system_prompt(city, state))
 
-        # # Create prompt template with system message and conversation history.
-        # prompt = ChatPromptTemplate.from_messages(
-        #     [
-        #         ("system", system_prompt.text()),
-        #         MessagesPlaceholder(variable_name="chat_history", optional=True),
-        #         ("human", "{input}"),
-        #         MessagesPlaceholder(variable_name="agent_scratchpad"),
-        #     ]
-        # )
+        if thread_id not in self.message_history:
+            self.message_history[thread_id] = []
+        self.message_history[thread_id].append(system_prompt)
 
         # Create agent with tools.
         return create_agent(
@@ -118,13 +120,24 @@ class LangChainChatManager:
 
     # TODO
     def generate_response(
-        self, messages: list[AnyMessage], city: Optional[OregonCity], state: UsaState
+        self,
+        messages: list[AnyMessage],
+        city: Optional[OregonCity],
+        state: UsaState,
+        thread_id: str,
     ):
+        if self.agent is None:
+            self.agent = self.__create_agent_for_session(city, state, thread_id)
+
         raise NotImplementedError
 
     def generate_streaming_response(
-        self, messages: list[AnyMessage], city: Optional[OregonCity], state: UsaState
-    ) -> Generator:
+        self,
+        message: AnyMessage,
+        city: Optional[OregonCity],
+        state: UsaState,
+        thread_id: str,
+    ) -> Generator[ContentBlock]:
         """Generate streaming response using LangChain agent.
 
         Args:
@@ -136,16 +149,17 @@ class LangChainChatManager:
             Response chunks as they are generated
         """
 
-        agent = self.__create_agent_for_session(city, state)
+        if self.agent is None:
+            self.agent = self.__create_agent_for_session(city, state, thread_id)
 
-        # Split messages into conversation history and current query.
-        (conversation_history, current_query) = (messages[:-1], [messages[-1]])
+        if thread_id not in self.message_history:
+            self.message_history[thread_id] = []
+        self.message_history[thread_id].append(message)
 
         # Stream the agent response.
-        for chunk in agent.stream(
+        for chunk in self.agent.stream(
             input={
-                "messages": current_query,
-                "context": conversation_history,
+                "messages": self.message_history[thread_id],
                 "city": city,
                 "state": state,
             },
@@ -157,6 +171,8 @@ class LangChainChatManager:
             # TODO: refactor this match/yield into a function
             # Specialize handling/printing based on each message class/type
             for m in chunk[chunk_k]["messages"]:
+                self.message_history[thread_id].append(m)
+
                 match m:
                     # Messages sent by the Model
                     case AIMessage():
@@ -164,10 +180,10 @@ class LangChainChatManager:
                             match b["type"]:
                                 # text responses from the Model
                                 case "text":
-                                    yield b["text"]
+                                    yield b
                                 case "reasoning":
                                     if "reasoning" in b:
-                                        yield b["reasoning"]
+                                        yield b
                                 # the Model calling a tool
                                 case "tool_call":
                                     self.logger.info(b)
