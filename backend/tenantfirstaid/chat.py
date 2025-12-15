@@ -2,10 +2,14 @@
 Module for Flask Chat View
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Generator, List, Optional
 
 from flask import Response, current_app, request, stream_with_context
 from flask.views import View
+from langchain_core.messages import (
+    AnyMessage,
+    ContentBlock,
+)
 
 from .langchain_chat_manager import LangChainChatManager
 from .location import OregonCity, UsaState
@@ -17,30 +21,37 @@ class ChatView(View):
 
     def dispatch_request(self, *args, **kwargs) -> Response:
         data: Dict[str, Any] = request.json
-        messages: List[Any] = data["messages"]
+        message: AnyMessage = data["messages"]
+        tid: str = data["thread_id"]
 
-        def generate():
+        def generate() -> Generator[str]:
+            assistant_chunks: List[str] = []
+
             city: Optional[OregonCity] = OregonCity.from_maybe_str(data["city"])
             state: UsaState = UsaState.from_maybe_str(data["state"])
 
-            response_stream = self.chat_manager.generate_streaming_response(
-                messages,
-                city=city,
-                state=state,
-                # stream=True,
+            response_stream: Generator[ContentBlock] = (
+                self.chat_manager.generate_streaming_response(
+                    message=message,
+                    city=city,
+                    state=state,
+                    thread_id=tid,
+                )
             )
 
-            assistant_chunks = []
-            for event in response_stream:
-                current_app.logger.debug(f"Received event: {event}")
-                return_text = ""
+            for content_block in response_stream:
+                return_text: str = ""
 
-                if event.candidates is None:
-                    continue
+                current_app.logger.debug(f"Received content_block: {content_block}")
 
-                for candidate in event.candidates:
-                    for part in candidate.content.parts:
-                        return_text += f"{'<i>' if part.thought else ''}{part.text}{'</i>' if part.thought else ''}"
+                match content_block["type"]:
+                    case "reasoning":
+                        # reasoning-key is not required in the ReasoningContentBlock typed-dict
+                        if "reasoning" in content_block:
+                            return_text += f"<i>{content_block['reasoning']}</i>"
+                    case "text":
+                        # These are the Model messages back to the User
+                        return_text += f"{content_block['text']}\n"
 
                 assistant_chunks.append(return_text)
                 yield return_text

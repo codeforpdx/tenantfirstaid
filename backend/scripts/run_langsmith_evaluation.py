@@ -25,9 +25,8 @@ from scripts.langsmith_evaluators import (
 )
 from tenantfirstaid.langchain_chat_manager import (
     LangChainChatManager,
-    # OregonCity,
-    # UsaState,
-    # _InnerUsaState
+    OregonCity,
+    UsaState,
 )
 
 
@@ -44,11 +43,12 @@ def agent_wrapper(inputs) -> Any:
     """
     chat_manager = LangChainChatManager()
 
-    context_state = str(inputs["state"])
-    context_city = str(inputs["city"])
+    context_state = UsaState.from_maybe_str(inputs["state"])
+    context_city = OregonCity.from_maybe_str(inputs["city"])
+    tid: str = "some-thread-id"
 
-    agent = chat_manager.create_agent_for_session(
-        city=context_city, state=context_state
+    agent = chat_manager.__create_agent_for_session(
+        city=context_city, state=context_state, thread_id=tid
     )
 
     # Run agent on the first question.
@@ -81,10 +81,10 @@ def run_evaluation(
     Returns:
         Evaluation results object
     """
-    client = Client(api_key=os.getenv("LANGSMITH_API_KEY"))
+    ls_client = Client(api_key=os.getenv("LANGSMITH_API_KEY"))
 
     # Get dataset.
-    dataset = client.read_dataset(dataset_name=dataset_name)
+    dataset = ls_client.read_dataset(dataset_name=dataset_name)
 
     print(f"Running evaluation on dataset: {dataset_name}")
     print(f"Total examples: {dataset.example_count}")
