@@ -167,14 +167,16 @@ def create_and_query_agent():
 
     print("-" * 20)
 
-    # TODO: checkpointer=InMemorySaver()
     llm = ChatGoogleGenerativeAI(
         model=SINGLETON.MODEL_NAME,
         temperature=SINGLETON.MODEL_TEMPERATURE,
+        seed=0,
         max_tokens=SINGLETON.MAX_TOKENS,
         project=SINGLETON.GOOGLE_CLOUD_PROJECT,
         location=SINGLETON.GOOGLE_CLOUD_LOCATION,
         safety_settings=SINGLETON.SAFETY_SETTINGS,
+        thinking_budget=-1,
+        include_thoughts=SINGLETON.SHOW_MODEL_THINKING,
     )
 
     tools: List[BaseTool] = [simple_agent_tool, user_defined_enum_agent_tool, rag_tool]

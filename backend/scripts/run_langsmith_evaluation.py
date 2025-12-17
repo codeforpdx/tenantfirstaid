@@ -7,7 +7,7 @@ automated quality evaluation.
 import argparse
 import os
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from langchain_core.messages import HumanMessage
 from langsmith import Client, evaluate
@@ -67,6 +67,7 @@ def run_evaluation(
     dataset_name="tenant-legal-qa-scenarios",
     experiment_prefix="langchain-agent",
     num_repetitions: int = 1,
+    max_concurrency: Optional[int] = 1,
 ):
     """Run automated evaluation on LangSmith dataset.
 
@@ -111,6 +112,7 @@ def run_evaluation(
             "LLM model name": SINGLETON.MODEL_NAME,
             "LLM model temperature": SINGLETON.MODEL_TEMPERATURE,
         },
+        max_concurrency=max_concurrency,
     )
 
     # Print summary.
@@ -133,7 +135,13 @@ if __name__ == "__main__":
         help="Experiment prefix for this evaluation run",
     )
     parser.add_argument(
-        "--num-repetitions", type=int, default=1, help="Number of examples to evaluate"
+        "--num-repetitions", type=int, default=1, help="Number of runs for each example"
+    )
+    parser.add_argument(
+        "--max-concurrency",
+        type=int,
+        default=1,
+        help="Maximum number of concurrent runs",
     )
 
     env_path = Path(__file__).parent / "../.env"
@@ -150,4 +158,5 @@ if __name__ == "__main__":
         dataset_name=args.dataset,
         experiment_prefix=args.experiment,
         num_repetitions=args.num_repetitions,
+        max_concurrency=args.max_concurrency,
     )

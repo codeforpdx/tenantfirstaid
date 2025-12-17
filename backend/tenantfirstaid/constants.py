@@ -50,7 +50,7 @@ class _GoogEnvAndPolicy:
                 raise ValueError(f"[{c}] environment variable is not set.")
 
         # Assign slot attributes for optional environment variables
-        self.SHOW_MODEL_THINKING: Final = os.getenv("SHOW_MODEL_THINKING", "false")
+        self.SHOW_MODEL_THINKING: Final = bool(os.getenv("SHOW_MODEL_THINKING", False))
 
         # Assign slot attributes for hard-coded values
         # TODO: separate these from environment variables
