@@ -9,10 +9,11 @@ from xhtml2pdf.context import pisaContext
 
 MAX_ATTACHMENT_SIZE: int = 2 * 1024 * 1024
 
+
 def convert_html_to_pdf(html_content: str) -> Optional[bytes]:
     pdf_buffer = BytesIO()
 
-    pisa_status = pisa.CreatePDF(html_content, dest=pdf_buffer)    
+    pisa_status = pisa.CreatePDF(html_content, dest=pdf_buffer)
     if isinstance(pisa_status, pisaContext) and pisa_status.err != 0:
         return None
 
