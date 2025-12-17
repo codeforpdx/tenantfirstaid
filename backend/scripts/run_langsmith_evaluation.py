@@ -116,7 +116,6 @@ def run_evaluation(
     # Print summary.
     print("\n=== Evaluation Results ===")
     print(f"Experiment: {results.experiment_name}")
-    print(f"Results: {results._results}")
     return results
 
 
