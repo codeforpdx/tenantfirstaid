@@ -59,7 +59,7 @@ def test_chat_view_dispatch_request_streams_response(app, mocker, chat_manager):
         assert chat_response.mimetype == "text/plain"
 
         # Get the response data by consuming the stream
-        response_data = "".join(
+        _response_data = "".join(
             chunk.decode("utf-8") if isinstance(chunk, bytes) else chunk
             for chunk in chat_response.response
         )
