@@ -24,7 +24,7 @@ class ChatView(View):
         message: AnyMessage = data["messages"]
         tid: str = data["thread_id"]
 
-        def generate() -> Generator[str]:
+        def generate() -> Generator[str, Any, None]:
             assistant_chunks: List[str] = []
 
             city: Optional[OregonCity] = OregonCity.from_maybe_str(data["city"])
@@ -48,10 +48,10 @@ class ChatView(View):
                     case "reasoning":
                         # reasoning-key is not required in the ReasoningContentBlock typed-dict
                         if "reasoning" in content_block:
-                            return_text += f"<i>{content_block['reasoning']}</i>"
+                            return_text += f"<i>{content_block['reasoning']}</i>"  # ty: ignore[invalid-key]
                     case "text":
                         # These are the Model messages back to the User
-                        return_text += f"{content_block['text']}\n"
+                        return_text += f"{content_block['text']}\n"  # ty: ignore[invalid-key]
 
                 assistant_chunks.append(return_text)
                 yield return_text

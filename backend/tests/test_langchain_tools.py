@@ -4,7 +4,10 @@ Test location sanitization and other methods
 
 from typing import Dict
 
-from tenantfirstaid.langchain_tools import CityStateLawsInputSchema
+from tenantfirstaid.langchain_tools import (
+    CityStateLawsInputSchema,
+    __filter_builder,
+)
 from tenantfirstaid.location import OregonCity, UsaState
 
 
@@ -38,3 +41,27 @@ def test_portland_oregon_json_serialization():
 # TODO: negative tests for input validation
 
 # TODO: test _filter_builder
+
+
+def test_retrieve_city_law_filters_correctly():
+    """Test that city law retrieval uses correct filter."""
+    state = UsaState.from_maybe_str("or")
+    city = OregonCity.from_maybe_str("portland")
+
+    filter = __filter_builder(state, city)
+
+    # Verify filter was constructed correctly.
+    assert 'city: ANY("portland")' in str(filter)
+    assert 'state: ANY("or")' in str(filter)
+
+
+def test_retrieve_state_law_filters_correctly():
+    """Test that state law retrieval uses correct filter."""
+    state = UsaState.from_maybe_str("or")
+    city = None
+
+    filter = __filter_builder(state, city)
+
+    # Verify filter was constructed correctly.
+    assert 'city: ANY("null")' in str(filter)
+    assert 'state: ANY("or")' in str(filter)

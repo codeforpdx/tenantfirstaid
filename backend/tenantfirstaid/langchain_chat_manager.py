@@ -6,7 +6,7 @@ Google Gemini API calls with a standardized agent-based architecture.
 
 import logging
 import sys
-from typing import Dict, Generator, List, Optional
+from typing import Any, Dict, Generator, List, Optional
 
 from langchain.agents import create_agent
 
@@ -46,7 +46,7 @@ class LangChainChatManager:
 
         # configure logging
         logging.basicConfig(
-            level=logging.DEBUG,
+            level=logging.WARNING,
             stream=sys.stdout,
             format="%(levelname)s: %(message)s (%(filename)s:%(lineno)d)",
         )
@@ -85,7 +85,7 @@ class LangChainChatManager:
             AgentExecutor configured with tools and system prompt
         """
 
-        system_prompt = SystemMessage(self.__prepare_system_prompt(city, state))
+        system_prompt = SystemMessage(self._prepare_system_prompt(city, state))
 
         if thread_id not in self.message_history:
             self.message_history[thread_id] = []
@@ -100,7 +100,7 @@ class LangChainChatManager:
             # checkpointer=InMemorySaver(),
         )
 
-    def __prepare_system_prompt(
+    def _prepare_system_prompt(
         self, city: Optional[OregonCity], state: UsaState
     ) -> str:
         """Prepare detailed system instructions for the agent.
@@ -139,7 +139,7 @@ class LangChainChatManager:
         city: Optional[OregonCity],
         state: UsaState,
         thread_id: str,
-    ) -> Generator[ContentBlock]:
+    ) -> Generator[ContentBlock, Any, None]:
         """Generate streaming response using LangChain agent.
 
         Args:
