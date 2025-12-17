@@ -19,8 +19,10 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph.state import CompiledStateGraph
 
 from .constants import DEFAULT_INSTRUCTIONS, SINGLETON
@@ -54,14 +56,17 @@ class LangChainChatManager:
 
         # Initialize ChatVertexAI with same config as current implementation.
         self.llm = ChatGoogleGenerativeAI(
-            model=SINGLETON.MODEL_NAME,
-            temperature=SINGLETON.MODEL_TEMPERATURE,
-            max_tokens=SINGLETON.MAX_TOKENS,
+            model=SINGLETON.MODEL_NAME,  # main chat model
+            max_tokens=SINGLETON.MAX_TOKENS,  # budget
             project=SINGLETON.GOOGLE_CLOUD_PROJECT,
             location=SINGLETON.GOOGLE_CLOUD_LOCATION,
             safety_settings=SINGLETON.SAFETY_SETTINGS,
-            # Thinking config for Gemini 2.5 Pro.
-            # enable_thinking=os.getenv("SHOW_MODEL_THINKING", "false").lower() == "true",
+            # consistency
+            temperature=SINGLETON.MODEL_TEMPERATURE,
+            seed=0,
+            # reasoning
+            thinking_budget=-1,
+            include_thoughts=SINGLETON.SHOW_MODEL_THINKING,
         )
 
         # Specify tools for RAG retrieval.
@@ -97,7 +102,7 @@ class LangChainChatManager:
             self.tools,
             system_prompt=system_prompt,
             state_schema=TFAAgentStateSchema,
-            # checkpointer=InMemorySaver(),
+            checkpointer=InMemorySaver(),
         )
 
     def _prepare_system_prompt(
@@ -158,6 +163,8 @@ class LangChainChatManager:
             self.message_history[thread_id] = []
         self.message_history[thread_id].append(message)
 
+        config: RunnableConfig = RunnableConfig(configurable={"thread_id": thread_id})
+
         # Stream the agent response.
         for chunk in self.agent.stream(
             input={
@@ -166,6 +173,8 @@ class LangChainChatManager:
                 "state": state,
             },
             stream_mode="updates",
+            config=config,
+            durability="sync",
         ):
             # outer dict key changes with internal messages (Model, Tool, ...)
             chunk_k = list(chunk.keys())[0]

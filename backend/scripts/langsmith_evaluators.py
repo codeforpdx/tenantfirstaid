@@ -139,6 +139,8 @@ legal_correctness_evaluator: SimpleEvaluator = create_llm_as_judge(
     model=EVALUATOR_MODEL_NAME,
     prompt=LEGAL_CORRECTNESS_PROMPT_TEMPLATE,
     feedback_key="legal correctness",
+    continuous=True,
+    # choices=[0.0, 0.5, 1.0],
 )
 
 
@@ -186,6 +188,8 @@ tone_evaluator: SimpleEvaluator = create_llm_as_judge(
     model=EVALUATOR_MODEL_NAME,
     prompt=TONE_PROMPT_TEMPLATE,
     feedback_key="appropriate tone",
+    continuous=True,
+    # choices=[0.0, 0.5, 1.0],
 )
 
 
@@ -247,9 +251,7 @@ def tool_usage_evaluator(run, example) -> Any:
             tool_calls.append(step.get("name"))
 
     # Legal questions should use retrieval tools.
-    used_retrieval = any(
-        tool in ["retrieve_city_law", "retrieve_state_law"] for tool in tool_calls
-    )
+    used_retrieval = any(tool in ["retrieve_city_state_laws"] for tool in tool_calls)
 
     score = 1.0 if used_retrieval else 0.0
 
