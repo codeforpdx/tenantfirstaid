@@ -5,166 +5,187 @@ advice responses across multiple dimensions.
 """
 
 import re
-from typing import Any, Dict, List
+from textwrap import dedent
+from typing import Any, Final
 
-from langsmith.evaluation.evaluator import EvaluationResult
 from openevals import create_llm_as_judge
 from openevals.prompts import CORRECTNESS_PROMPT
 from openevals.types import SimpleEvaluator
 
-EVALUATOR_MODEL_NAME = "gemini-2.5-pro"
+# NOTE: can (should?) use different models for chatbot LLM & evaluator
+# EVALUATOR_MODEL_NAME: Final = "gemini-2.5-pro"
+EVALUATOR_MODEL_NAME: Final = "gemini-2.5-flash"
+
+SCORING_GUIDELINES: Final = dedent(
+    """
+    - Score 1.0 if response is legally correct and complete
+    - Score 0.5 if response has minor inaccuracies or omissions
+    - Score 0.0 if response is legally incorrect or significantly incomplete
+    """
+)
+
+# NOTE: this is a LITERAL not an f-string, because it is substituted as-is into
+#       an f-string which is then used as a template
+INPUT_OUTPUT: Final = dedent(
+    """
+    <input>
+    {inputs}
+    </input>
+
+    <output>
+    {outputs}
+    </output>
+
+    Use the reference outputs below to help you evaluate the correctness of the response:
+
+    <reference_outputs>
+    {reference_outputs}
+    </reference_outputs>
+    """
+)
+
 
 # Evaluator 1: Citation Accuracy (LLM-as-Judge).
-CITATION_PROMPT = """
-You are an expert data labeler evaluating model outputs for correctness. Your task is to assign a score based on the following rubric:
-<Rubric>
-  A correct answer:
-  - Include proper citations to applicable state and local laws
-  - Must cite specific ORS (Oregon Revised Statutes) numbers
-  - Must use HTML anchor tags with target="_blank"
-  - Citations should link to oregon.public.law or city code websites
-  - Provides accurate and complete information
-  - Contains no factual errors
-  - Addresses all parts of the question
-  - Is logically consistent
-  - Uses precise and accurate terminology
+CITATION_PROMPT = dedent(
+    f"""
+    You are an expert data labeler evaluating model outputs for correctness.
+    Your task is to assign a score based on the following rubric:
+    <Rubric>
+    A correct answer:
+    - Include proper citations to applicable state and local laws
+    - Must cite specific ORS (Oregon Revised Statutes) numbers
+    - Must use HTML anchor tags with target="_blank"
+    - Citations should link to oregon.public.law or city code websites
+    - Provides accurate and complete information
+    - Contains no factual errors
+    - Addresses all parts of the question
+    - Is logically consistent
+    - Uses precise and accurate terminology
 
-  When scoring, you should penalize:
-  - Factual errors or inaccuracies
-  - Incomplete or partial answers
-  - Misleading or ambiguous statements
-  - Incorrect terminology
-  - Logical inconsistencies
-  - Missing key information
+    When scoring, you should penalize:
+    - Factual errors or inaccuracies
+    - Incomplete or partial answers
+    - Misleading or ambiguous statements
+    - Incorrect terminology
+    - Logical inconsistencies
+    - Missing key information
 
-  Scoring Guidelines:
-  - Score 1.0 if citations are present and properly formatted
-  - Score 0.5 if citations present but formatting issues
-  - Score 0.0 if no citations or incorrect citations  
-</Rubric>
+    Scoring Guidelines:
+    {SCORING_GUIDELINES}
+    </Rubric>
 
-<Instructions>
-  - Carefully read the input and output
-  - Check for factual accuracy and completeness
-  - Focus on correctness of information rather than style or verbosity
-</Instructions>
+    <Instructions>
+    - Carefully read the input and output
+    - Check for factual accuracy and completeness
+    - Focus on correctness of information rather than style or verbosity
+    </Instructions>
 
-<Reminders>
-  The goal is to evaluate citation accuracy, formatting and completeness of the citations.
-</Reminders>
-"""
+    <Reminders>
+    The goal is to evaluate citation accuracy, formatting and completeness of the citations.
+    </Reminders>
+
+    {INPUT_OUTPUT}
+    """
+)
 
 citation_accuracy_evaluator: SimpleEvaluator = create_llm_as_judge(
-    model=EVALUATOR_MODEL_NAME,
-    prompt=CITATION_PROMPT,
+    model=EVALUATOR_MODEL_NAME, prompt=CITATION_PROMPT, feedback_key="citation accuracy"
 )
 
 # Evaluator 2: Legal Correctness (LLM-as-Judge).
-LEGAL_CORRECTNESS_PROMPT = """
-You are an expert data labeler evaluating model outputs for correctness. Your task is to assign a score based on the following rubric:
-<Rubric>
-  A correct answer:
-  - legal advice correctly based on Oregon tenant law
-  - Check if advice aligns with ORS 90 (Landlord-Tenant)
-  - Verify city-specific rules are correctly applied
-  - Ensure no false statements about tenant rights
-  - Provides accurate and complete information
-  - Contains no factual errors
-  - Addresses all parts of the question
-  - Is logically consistent
-  - Uses precise and accurate terminology
+LEGAL_CORRECTNESS_PROMPT_TEMPLATE: Final = dedent(
+    f"""
+    You are an expert data labeler evaluating model outputs for correctness.
+    Your task is to assign a score based on the following rubric:
+    <Rubric>
+    A correct answer:
+    - legal advice correctly based on Oregon tenant law
+    - Check if advice aligns with ORS 90 (Landlord-Tenant)
+    - Verify city-specific rules are correctly applied
+    - Ensure no false statements about tenant rights
+    - Provides accurate and complete information
+    - Contains no factual errors
+    - Addresses all parts of the question
+    - Is logically consistent
+    - Uses precise and accurate terminology
 
-  When scoring, you should penalize:
-  - Factual errors or inaccuracies
-  - Incomplete or partial answers
-  - Misleading or ambiguous statements
-  - Incorrect terminology
-  - Logical inconsistencies
-  - Missing key information
+    When scoring, you should penalize:
+    - Factual errors or inaccuracies
+    - Incomplete or partial answers
+    - Misleading or ambiguous statements
+    - Incorrect terminology
+    - Logical inconsistencies
+    - Missing key information
 
-  Scoring Guidelines:
-  - Score 1.0 if response is legally correct and complete
-  - Score 0.5 if response has minor inaccuracies or omissions
-  - Score 0.0 if response is legally incorrect or significantly incomplete  
-</Rubric>
+    Scoring Guidelines:
+    {SCORING_GUIDELINES}
+    </Rubric>
 
-<Instructions>
-  - Carefully read the input and output
-  - Check for factual accuracy and completeness
-  - Focus on correctness of information rather than style or verbosity
-</Instructions>
+    <Instructions>
+    - Carefully read the input and output
+    - Check for factual accuracy and completeness
+    - Focus on correctness of information rather than style or verbosity
+    </Instructions>
 
-<Reminders>
-  The goal is to evaluate factual correctness and completeness of the response.
-</Reminders>
-"""
+    <Reminders>
+    The goal is to evaluate factual correctness and completeness of the response.
+    </Reminders>
+
+    {INPUT_OUTPUT}
+    """
+)
 
 legal_correctness_evaluator: SimpleEvaluator = create_llm_as_judge(
     model=EVALUATOR_MODEL_NAME,
-    prompt=LEGAL_CORRECTNESS_PROMPT,
+    prompt=LEGAL_CORRECTNESS_PROMPT_TEMPLATE,
+    feedback_key="legal correctness",
 )
 
 
-# EVALUATOR_T = Union[
-#     RunEvaluator,
-#     Callable[
-#         [schemas.Run, Optional[schemas.Example]],
-#         Union[EvaluationResult, EvaluationResults],
-#     ],
-#     Callable[..., Union[dict, EvaluationResults, EvaluationResult]],
-# ]
-
-
 # Evaluator 3: Response Completeness (LLM-as-Judge).
-def completeness_evaluator(
-    inputs: dict, outputs: dict, reference_outputs: List[Dict[str, str]]
-) -> EvaluationResult:
-    tmp = create_llm_as_judge(
-        model=EVALUATOR_MODEL_NAME,
-        prompt=CORRECTNESS_PROMPT,
-        feedback_key="completeness",
-    )
-
-    return EvaluationResult(
-        tmp(inputs=inputs, outputs=outputs, reference_outputs=reference_outputs)
-    )
-
+completeness_evaluator = create_llm_as_judge(
+    model=EVALUATOR_MODEL_NAME,
+    prompt=CORRECTNESS_PROMPT,
+    feedback_key="general correctness",
+)
 
 # Evaluator 4: Tone & Professionalism (LLM-as-Judge).
-TONE_PROMPT = """
-You are an expert data labeler evaluating model outputs for correctness. Your task is to assign a score based on the following rubric:
-<Rubric>
-  A good answer:
-  - has a tone appropriate for legal advice
-  - Professional but accessible language
-  - Empathetic to tenant's situation
-  - Not overly formal or robotic
-  - Doesn't start with "As a legal expert..."
+TONE_PROMPT_TEMPLATE = dedent(
+    f"""
+    You are an expert data labeler evaluating model outputs for correctness. Your task is to assign a score based on the following rubric:
+    <Rubric>
+    A good answer:
+    - has a tone appropriate for legal advice
+    - Professional but accessible language
+    - Empathetic to tenant's situation
+    - Not overly formal or robotic
+    - Doesn't start with "As a legal expert..."
 
-  When scoring, you should penalize:
-  - uncommon legal jargon
-  - overly casual language
+    When scoring, you should penalize:
+    - uncommon legal jargon
+    - overly casual language
 
-  Scoring Guidelines:
-  - Score 1.0 if citations are present and properly formatted
-  - Score 0.5 if citations present but formatting issues
-  - Score 0.0 if no citations or incorrect citations  
-</Rubric>
+    Scoring Guidelines:
+    {SCORING_GUIDELINES}
+    </Rubric>
 
-<Instructions>
-  - Carefully read the input and output
-  - Check for inappropriate tone or style
-  - Focus on tone, style and verbosity rather than correctness of information
-</Instructions>
+    <Instructions>
+    - Check for inappropriate tone or style
+    - Focus on tone, style and verbosity rather than correctness of information
+    </Instructions>
 
-<Reminders>
-  The goal is to evaluate the tone of the response.
-</Reminders>
-"""
+    <Reminders>
+    The goal is to evaluate the tone of the response.
+    </Reminders>
+
+    {INPUT_OUTPUT}
+    """
+)
 
 tone_evaluator: SimpleEvaluator = create_llm_as_judge(
     model=EVALUATOR_MODEL_NAME,
-    prompt=TONE_PROMPT,
+    prompt=TONE_PROMPT_TEMPLATE,
+    feedback_key="appropriate tone",
 )
 
 

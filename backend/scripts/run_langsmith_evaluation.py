@@ -7,22 +7,21 @@ automated quality evaluation.
 import argparse
 import os
 from pathlib import Path
-from pprint import pprint
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Dict, List
 
 from langchain_core.messages import HumanMessage
 from langsmith import Client, evaluate
-from langsmith.evaluation import EvaluationResult, EvaluationResults
 
 from scripts.langsmith_evaluators import (
     # citation_accuracy_evaluator,
     # citation_format_evaluator,
-    completeness_evaluator,
-    # legal_correctness_evaluator,
+    # completeness_evaluator,
+    legal_correctness_evaluator,
     # performance_evaluator,
-    # tone_evaluator,
+    tone_evaluator,
     # tool_usage_evaluator,
 )
+from tenantfirstaid.constants import SINGLETON
 from tenantfirstaid.langchain_chat_manager import (
     LangChainChatManager,
     OregonCity,
@@ -30,7 +29,7 @@ from tenantfirstaid.langchain_chat_manager import (
 )
 
 
-def agent_wrapper(inputs) -> Any:
+def agent_wrapper(inputs) -> Dict[str, str]:
     """Wrapper function that runs the LangChain agent on a single test case.
 
     This is what LangSmith will call for each evaluation example.
@@ -39,7 +38,7 @@ def agent_wrapper(inputs) -> Any:
         inputs: Dictionary with test inputs (first_question, city, state, facts)
 
     Returns:
-        Dictionary with agent output
+        Dictionary with Model-under-test output
     """
     chat_manager = LangChainChatManager()
 
@@ -47,22 +46,20 @@ def agent_wrapper(inputs) -> Any:
     context_city = OregonCity.from_maybe_str(inputs["city"])
     tid: str = "some-thread-id"
 
-    agent = chat_manager.__create_agent_for_session(
-        city=context_city, state=context_state, thread_id=tid
+    responses = list(
+        chat_manager.generate_streaming_response(
+            message=HumanMessage(content=inputs["query"]),
+            state=context_state,
+            city=context_city,
+            thread_id=tid,
+        )
     )
 
-    # Run agent on the first question.
-    response: Dict[str, Any] = agent.invoke(
-        {
-            "messages": [HumanMessage(content=inputs["first_question"])],
-            "city": context_city,
-            "state": context_state,
-        }
-    )
-
-    # pprint(response)
-
-    return {"output": response["messages"][-1].content}
+    return {
+        "Model-Under-Test Output": "\n".join(
+            [response["text"] for response in responses if ("text" in response)]  # type: ignore bad-typed-dict-key
+        )
+    }
 
 
 # TODO: https://docs.langchain.com/langsmith/multi-turn-simulation
@@ -90,16 +87,17 @@ def run_evaluation(
     print(f"Total examples: {dataset.example_count}")
 
     evaluators: List[
-        Callable[..., Union[Dict[Any, Any], EvaluationResult, EvaluationResults]]
+        #         Callable[..., Union[Dict[Any, Any], EvaluationResult, EvaluationResults]]
+        Any
     ] = [
         # citation_accuracy_evaluator,
-        # legal_correctness_evaluator,
-        completeness_evaluator,
-        # tone_evaluator,
+        legal_correctness_evaluator,
+        # completeness_evaluator,
+        tone_evaluator,
         # citation_format_evaluator,
         # tool_usage_evaluator,
         # performance_evaluator,
-    ]
+    ]  # noqa
 
     # Run evaluation with all evaluators.
     results = evaluate(
@@ -108,20 +106,17 @@ def run_evaluation(
         evaluators=evaluators,
         # experiment_prefix=experiment_prefix,
         # max_concurrency=5,  # Run 5 evaluations in parallel.
-        # num_repetitions=num_repetitions,
+        num_repetitions=num_repetitions,
+        metadata={
+            "LLM model name": SINGLETON.MODEL_NAME,
+            "LLM model temperature": SINGLETON.MODEL_TEMPERATURE,
+        },
     )
 
     # Print summary.
     print("\n=== Evaluation Results ===")
     print(f"Experiment: {results.experiment_name}")
-    # print(f"Examples evaluated: {results}")
-    pprint(results)
-    print("\nAggregate Scores:")
-    # for metric, score in results.aggregate_metrics.items():
-    #     print(f"  {metric}: {score:.2f}")
-
-    # print(f"\nView full results at: {results.experiment_url}")
-
+    print(f"Results: {results._results}")
     return results
 
 
