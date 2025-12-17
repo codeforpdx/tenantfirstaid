@@ -88,11 +88,10 @@ def create_langsmith_dataset(
         client.create_example(
             dataset_id=dataset.id,
             inputs={
-                "first_question": row["first_question"],
+                "query": row["first_question"],
                 "city": city,
                 "state": row["state"],
                 "facts": facts,
-                # "message": reference_conversation
             },
             metadata={
                 "scenario_id": idx,
