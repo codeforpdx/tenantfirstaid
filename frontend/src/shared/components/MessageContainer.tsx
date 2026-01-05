@@ -19,6 +19,7 @@ export default function MessageContainer({
             ? `justify-between h-[calc(100dvh-var(--mobile-offset-message-container)-var(--navbar-height))] md:h-[calc(100dvh-var(--desktop-offset-message-container)-var(--navbar-height))]`
             : "justify-center max-w-[600px]"
         }`}
+        style={{ justifyContent: 'space-between', flexDirection: 'column' }}
     >
       {letterContent !== "" ? (
         <div className="flex flex-col gap-4 items-center flex-1/3 md:flex-2/3 h-[40%] md:h-full">

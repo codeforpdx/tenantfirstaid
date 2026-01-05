@@ -12,6 +12,49 @@ export default function Navbar() {
           <Link to="/">
             <TenantFirstAidLogo />
           </Link>
+                  <div className="flex flex-col gap-6" style={{ flexDirection: 'row', marginLeft: '20px' }}>
+          <Link
+            to="/"
+            className="block px-3 py-2 rounded text-gray-700 font-medium transition-colors hover:bg-[#4F8B82] hover:text-[#F4F4F2]"
+            style={{ color: 'white' }}
+            onClick={() => setSidebarOpen(false)}
+          >
+            Chat
+          </Link>
+          <Link
+            to="/letter"
+            className="block px-3 py-2 rounded text-gray-700 font-medium transition-colors hover:bg-[#4F8B82] hover:text-[#F4F4F2]"
+            style={{ color: 'white' }}
+            onClick={() => setSidebarOpen(false)}
+          >
+            Letter
+          </Link>
+          <Link
+            to="/about"
+            className="block px-3 py-2 rounded text-gray-700 font-medium transition-colors hover:bg-[#4F8B82] hover:text-[#F4F4F2]"
+            style={{ color: 'white' }}
+            onClick={() => setSidebarOpen(false)}
+          >
+            About Tenant First Aid
+          </Link>
+          <Link
+            to="/disclaimer"
+            className="block px-3 py-2 rounded text-gray-700 font-medium transition-colors hover:bg-[#4F8B82] hover:text-[#F4F4F2]"
+            style={{ color: 'white' }}
+            onClick={() => setSidebarOpen(false)}
+          >
+            Disclaimer
+          </Link>
+          <Link
+            to="/privacy-policy"
+            className="block px-3 py-2 rounded text-gray-700 font-medium transition-colors hover:bg-[#4F8B82] hover:text-[#F4F4F2]"
+            style={{ color: 'white' }}
+            onClick={() => setSidebarOpen(false)}
+          >
+            Privacy Policy
+          </Link>
+          <hr className="my-2 border-t border-gray-300" />
+        </div>
         </div>
         <button
           className="flex flex-col justify-center items-center w-10 h-10 relative z-60"

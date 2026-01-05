@@ -5,13 +5,14 @@ import Navbar from "./shared/components/Navbar";
 import Disclaimer from "./Disclaimer";
 import PrivacyPolicy from "./PrivacyPolicy";
 import Letter from "./Letter";
+import HP from "./HP4";
 
 export default function App() {
   return (
     <Router>
       <Navbar />
       <Routes>
-        <Route path="/" element={<Chat />} />
+        <Route path="/" element={<HP />} />
         <Route path="/letter" element={<Letter />} />
         <Route path="/letter/:org/:loc?" element={<Letter />} />
         <Route path="/about" element={<About />} />
