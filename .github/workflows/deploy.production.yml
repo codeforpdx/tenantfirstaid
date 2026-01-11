@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -89,7 +89,7 @@ jobs:
             GOOGLE_CLOUD_PROJECT=${{vars.GOOGLE_CLOUD_PROJECT}}
             GOOGLE_CLOUD_LOCATION=${{vars.GOOGLE_CLOUD_LOCATION}}
             VERTEX_AI_DATASTORE=${{vars.VERTEX_AI_DATASTORE}}
-            SHOW_MODEL_THINKING=false
+            SHOW_MODEL_THINKING=False
             GOOGLE_APPLICATION_CREDENTIALS=/etc/tenantfirstaid/google-service-account.json
             EOF
             chmod 640 /etc/tenantfirstaid/env
