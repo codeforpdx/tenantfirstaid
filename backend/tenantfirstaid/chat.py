@@ -48,10 +48,10 @@ class ChatView(View):
                     case "reasoning":
                         # reasoning-key is not required in the ReasoningContentBlock typed-dict
                         if "reasoning" in content_block:
-                            return_text += f"<i>{content_block['reasoning']}</i>"  # ty: ignore[invalid-key]
+                            return_text += f"<i>{content_block['reasoning']}</i>"
                     case "text":
                         # These are the Model messages back to the User
-                        return_text += f"{content_block['text']}\n"  # ty: ignore[invalid-key]
+                        return_text += f"{content_block['text']}\n"
 
                 assistant_chunks.append(return_text)
                 yield return_text
