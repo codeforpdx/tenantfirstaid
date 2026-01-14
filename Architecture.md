@@ -444,6 +444,8 @@ frontend/
 │   │   ├── useMessages.tsx         # Message handling logic
 │   │   ├── useHousingContext.tsx   # Custom hook for housing context
 │   │   └── useLetterContent.tsx    # State management for letter generation
+│   ├── layouts/                    # Layouts
+│   │   └── PageLayout.tsx          # Layout for pages
 │   ├── pages/Chat/                 # Chat page components
 │   │   ├── components/
 │   │   │   ├── ChatDisclaimer.tsx # Disclaimer for Chat page
