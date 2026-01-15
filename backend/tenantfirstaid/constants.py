@@ -38,16 +38,25 @@ class _GoogEnvAndPolicy:
         # Note: assign explicitly since typecheckers do not understand slotted attributes
         #       that are assigned by __setattr__()
         self.MODEL_NAME: Final = os.getenv("MODEL_NAME")
-        self.GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT")
-        self.GOOGLE_CLOUD_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION")
+        self.GOOGLE_CLOUD_PROJECT: Final = os.getenv("GOOGLE_CLOUD_PROJECT")
+        self.GOOGLE_CLOUD_LOCATION: Final = os.getenv("GOOGLE_CLOUD_LOCATION")
         self.VERTEX_AI_DATASTORE = os.getenv("VERTEX_AI_DATASTORE")
-        self.GOOGLE_APPLICATION_CREDENTIALS = os.getenv(
+        self.GOOGLE_APPLICATION_CREDENTIALS: Final = os.getenv(
             "GOOGLE_APPLICATION_CREDENTIALS"
         )
 
         for c in list(self.__slots__)[:5]:
             if self.__getattribute__(c) is None:
                 raise ValueError(f"[{c}] environment variable is not set.")
+
+        # FIXME: Temporary hack for VERTEX_AI_DATASTORE (old code wanted full
+        #        path URI, new code only wants the last part)
+        #        (https://github.com/codeforpdx/tenantfirstaid/issues/247)
+        if (
+            self.VERTEX_AI_DATASTORE is not None
+            and "projects/" in self.VERTEX_AI_DATASTORE
+        ):
+            self.VERTEX_AI_DATASTORE = self.VERTEX_AI_DATASTORE.split("/")[-1]
 
         # Assign slot attributes for optional environment variables
         self.SHOW_MODEL_THINKING: Final = bool(os.getenv("SHOW_MODEL_THINKING", False))
