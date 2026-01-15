@@ -48,7 +48,7 @@ def agent_wrapper(inputs) -> Dict[str, str]:
 
     responses = list(
         chat_manager.generate_streaming_response(
-            message=HumanMessage(content=inputs["query"]),
+            messages=[HumanMessage(content=inputs["query"])],
             state=context_state,
             city=context_city,
             thread_id=tid,

@@ -6,7 +6,7 @@ Google Gemini API calls with a standardized agent-based architecture.
 
 import logging
 import sys
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Generator, List, Optional
 
 from langchain.agents import create_agent
 
@@ -35,13 +35,14 @@ def starting_message_helper(content: str) -> HumanMessage:
 
 
 class LangChainChatManager:
-    """Manages chat interactions using LangChain agent architecture."""
+    """
+    Manages simultaneous chat interactions using LangChain agent architecture.
+    """
 
     logger: logging.Logger
     llm: ChatGoogleGenerativeAI
     tools: List[BaseTool]
     agent: Optional[CompiledStateGraph] = None
-    message_history: Dict[str, List[AnyMessage]]
 
     def __init__(self) -> None:
         """Initialize the LangChain chat manager with Vertex AI integration."""
@@ -72,13 +73,11 @@ class LangChainChatManager:
         # Specify tools for RAG retrieval.
         self.tools = [retrieve_city_state_laws]
 
-        self.message_history = {}
-
         # defer agent instantiation until 'generate_stream_response'
         self.agent = None
 
     def __create_agent_for_session(
-        self, city: Optional[OregonCity], state: UsaState, thread_id: str
+        self, city: Optional[OregonCity], state: UsaState, thread_id: Optional[str]
     ) -> CompiledStateGraph:
         """Create an agent instance configured for the user's location.
 
@@ -92,9 +91,10 @@ class LangChainChatManager:
 
         system_prompt = SystemMessage(self._prepare_system_prompt(city, state))
 
-        if thread_id not in self.message_history:
-            self.message_history[thread_id] = []
-        self.message_history[thread_id].append(system_prompt)
+        if thread_id is None:
+            checkpointer_or_none = None
+        else:
+            checkpointer_or_none = InMemorySaver()
 
         # Create agent with tools.
         return create_agent(
@@ -102,7 +102,7 @@ class LangChainChatManager:
             self.tools,
             system_prompt=system_prompt,
             state_schema=TFAAgentStateSchema,
-            checkpointer=InMemorySaver(),
+            checkpointer=checkpointer_or_none,
         )
 
     def _prepare_system_prompt(
@@ -131,7 +131,7 @@ class LangChainChatManager:
         messages: list[AnyMessage],
         city: Optional[OregonCity],
         state: UsaState,
-        thread_id: str,
+        thread_id: Optional[str],
     ):
         if self.agent is None:
             self.agent = self.__create_agent_for_session(city, state, thread_id)
@@ -140,10 +140,10 @@ class LangChainChatManager:
 
     def generate_streaming_response(
         self,
-        message: AnyMessage,
+        messages: List[AnyMessage],
         city: Optional[OregonCity],
         state: UsaState,
-        thread_id: str,
+        thread_id: Optional[str],
     ) -> Generator[ContentBlock, Any, None]:
         """Generate streaming response using LangChain agent.
 
@@ -159,16 +159,17 @@ class LangChainChatManager:
         if self.agent is None:
             self.agent = self.__create_agent_for_session(city, state, thread_id)
 
-        if thread_id not in self.message_history:
-            self.message_history[thread_id] = []
-        self.message_history[thread_id].append(message)
-
-        config: RunnableConfig = RunnableConfig(configurable={"thread_id": thread_id})
+        if thread_id is not None:
+            config: RunnableConfig = RunnableConfig(
+                configurable={"thread_id": thread_id}
+            )
+        else:
+            config = RunnableConfig()
 
         # Stream the agent response.
         for chunk in self.agent.stream(
             input={
-                "messages": self.message_history[thread_id],
+                "messages": messages,
                 "city": city,
                 "state": state,
             },
@@ -182,7 +183,7 @@ class LangChainChatManager:
             # TODO: refactor this match/yield into a function
             # Specialize handling/printing based on each message class/type
             for m in chunk[chunk_k]["messages"]:
-                self.message_history[thread_id].append(m)
+                messages.append(m)
 
                 match m:
                     # Messages sent by the Model

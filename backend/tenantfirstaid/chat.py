@@ -20,19 +20,31 @@ class ChatView(View):
         self.chat_manager = LangChainChatManager()
 
     def dispatch_request(self, *args, **kwargs) -> Response:
+        """
+        Handle client POST request
+        Expects JSON body with:
+        - messages: List of AnyMessage dicts
+        - city: Optional city name
+        - state: State abbreviation
+        """
+
         data: Dict[str, Any] = request.json
-        message: AnyMessage = data["messages"]
-        tid: str = data["thread_id"]
+
+        messages: List[AnyMessage] = data["messages"]
+        city: Optional[OregonCity] = OregonCity.from_maybe_str(data["city"])
+        state: UsaState = UsaState.from_maybe_str(data["state"])
+
+        # Create a stable & unique thread ID based on client IP and endpoint
+        # TODO: consider using randomly-generated token stored client-side in
+        #       a secure-cookie
+        tid: Optional[str] = None
 
         def generate() -> Generator[str, Any, None]:
             assistant_chunks: List[str] = []
 
-            city: Optional[OregonCity] = OregonCity.from_maybe_str(data["city"])
-            state: UsaState = UsaState.from_maybe_str(data["state"])
-
             response_stream: Generator[ContentBlock] = (
                 self.chat_manager.generate_streaming_response(
-                    message=message,
+                    messages=messages,
                     city=city,
                     state=state,
                     thread_id=tid,
