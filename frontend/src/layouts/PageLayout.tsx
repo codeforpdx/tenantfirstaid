@@ -13,6 +13,7 @@ export default function PageLayout({ children }: Props) {
       className={`flex items-center justify-center pt-16
         ${isChatPages ? "h-screen" : "sm:pt-32 sm:pb-16"}
         `}
+      id="page-layout"
     >
       {children}
     </div>
