@@ -444,6 +444,8 @@ frontend/
 │   │   ├── useMessages.tsx         # Message handling logic
 │   │   ├── useHousingContext.tsx   # Custom hook for housing context
 │   │   └── useLetterContent.tsx    # State management for letter generation
+│   ├── layouts/                    # Layouts
+│   │   └── PageLayout.tsx          # Layout for pages
 │   ├── pages/Chat/                 # Chat page components
 │   │   ├── components/
 │   │   │   ├── ChatDisclaimer.tsx # Disclaimer for Chat page
@@ -492,6 +494,7 @@ frontend/
 │   │   │   ├── InitializationForm.test.ts # InitializationForm component testing
 │   │   │   ├── Letter.test.ts      # Letter component testing
 │   │   │   ├── LetterDisclaimer.test.ts # LetterDisclaimer component testing
+│   │   │   ├── Layout.test.ts  # PageLayout component testing
 │   │   │   └── MessageWindow.test.ts # MessageWindow component testing
 │   │   └── utils/                  # Utility function testing
 │   │       ├── letterHelper.test.ts # letterHelper testing
