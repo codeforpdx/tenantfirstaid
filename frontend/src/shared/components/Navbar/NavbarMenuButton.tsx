@@ -31,7 +31,7 @@ export default function NavbarMenuButton({
       <span
         className={clsx(
           "block w-7 h-1 my-1 rounded transition-all bg-green-background",
-          sidebarOpen ? "opacity-0" : "",
+          sidebarOpen && "opacity-0",
         )}
       />
       <span
