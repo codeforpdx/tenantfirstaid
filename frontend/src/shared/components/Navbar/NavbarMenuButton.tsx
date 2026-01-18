@@ -1,3 +1,5 @@
+import clsx from "clsx";
+
 interface Props {
   sidebarOpen: boolean;
   setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -19,23 +21,26 @@ export default function NavbarMenuButton({
       aria-label="Open menu"
     >
       <span
-        className={`block w-7 h-1 rounded transition-all ${
+        className={clsx(
+          "block w-7 h-1 rounded transition-all",
           sidebarOpen
             ? "rotate-45 translate-y-2 bg-green-dark group-hover:bg-green-light"
-            : "bg-green-background"
-        }`}
+            : "bg-green-background",
+        )}
       />
       <span
-        className={`block w-7 h-1 my-1 rounded transition-all
-          bg-green-background 
-          ${sidebarOpen ? "opacity-0" : ""}`}
+        className={clsx(
+          "block w-7 h-1 my-1 rounded transition-all bg-green-background",
+          sidebarOpen ? "opacity-0" : "",
+        )}
       />
       <span
-        className={`block w-7 h-1 rounded transition-all ${
+        className={clsx(
+          "block w-7 h-1 rounded transition-all",
           sidebarOpen
             ? "-rotate-45 -translate-y-2 bg-green-dark group-hover:bg-green-light"
-            : "bg-green-background"
-        }`}
+            : "bg-green-background",
+        )}
       />
     </button>
   );

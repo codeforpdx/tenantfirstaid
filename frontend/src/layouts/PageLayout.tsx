@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { useLocation } from "react-router-dom";
 
 interface Props {
@@ -10,9 +11,10 @@ export default function PageLayout({ children }: Props) {
 
   return (
     <div
-      className={`flex items-center justify-center pt-16
-        ${isChatPages ? "h-screen" : "sm:pt-32 sm:pb-16"}
-        `}
+      className={clsx(
+        "flex items-center justify-center pt-16",
+        isChatPages ? "h-screen" : "sm:pt-32 sm:pb-16",
+      )}
       id="page-layout"
     >
       {children}

@@ -12,6 +12,7 @@ import useHousingContext from "./hooks/useHousingContext";
 import { buildChatUserMessage } from "./pages/Chat/utils/formHelper";
 import { ILocation } from "./contexts/HousingContext";
 import FeatureSnippet from "./shared/components/FeatureSnippet";
+import clsx from "clsx";
 
 export default function Letter() {
   const { addMessage, messages, setMessages } = useMessages();
@@ -29,7 +30,7 @@ export default function Letter() {
     housingLocation,
     housingType,
     tenantTopic,
-    issueDescription
+    issueDescription,
   );
 
   useEffect(() => {
@@ -101,7 +102,7 @@ export default function Letter() {
       // Include 1s delay for smoother transition
       const timeoutId = setTimeout(
         () => setIsGenerating(false),
-        LOADING_DISPLAY_DELAY_MS
+        LOADING_DISPLAY_DELAY_MS,
       );
       return () => clearTimeout(timeoutId);
     }
@@ -118,7 +119,10 @@ export default function Letter() {
         <div className="my-auto w-full flex">
           <MessageContainer isOngoing={isOngoing} letterContent={letterContent}>
             <div
-              className={`flex flex-col ${letterContent === "" ? "flex-1" : "flex-1/3"}`}
+              className={clsx(
+                "flex flex-col",
+                letterContent === "" ? "flex-1" : "flex-1/3",
+              )}
             >
               {isGenerating ? (
                 <div className="h-full flex items-center justify-center">
