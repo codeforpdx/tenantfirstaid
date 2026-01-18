@@ -494,7 +494,7 @@ frontend/
 │   │   │   ├── InitializationForm.test.ts # InitializationForm component testing
 │   │   │   ├── Letter.test.ts      # Letter component testing
 │   │   │   ├── LetterDisclaimer.test.ts # LetterDisclaimer component testing
-│   │   │   ├── PageLayout.test.ts  # PageLayout component testing
+│   │   │   ├── Layout.test.ts  # PageLayout component testing
 │   │   │   └── MessageWindow.test.ts # MessageWindow component testing
 │   │   └── utils/                  # Utility function testing
 │   │       ├── letterHelper.test.ts # letterHelper testing

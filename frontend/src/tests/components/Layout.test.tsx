@@ -50,7 +50,7 @@ describe("Page Layout component", () => {
     expect(pageLayout).not.toHaveClass("sm:pt-32", "sm:pb-16");
   });
 
-  it("returns h-screen when path starts with /letter", async () => {
+  it("returns sm:pt-32 sm:pb-16 when path is not / or starts with /letter", async () => {
     const pageLayout = await pageSetup("/about");
 
     expect(pageLayout).not.toHaveClass("h-screen");
