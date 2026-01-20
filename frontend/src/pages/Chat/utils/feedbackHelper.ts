@@ -1,16 +1,5 @@
 import type { IMessage } from "../../../hooks/useMessages";
-
-function sanitizeText(str: string) {
-  // Strips anchor tags
-  str = str.replace(/<a\b[^>]*>(.*?)<\/a>/gi, "$1");
-
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+import sanitizeText from "../../../shared/utils/sanitizeText";
 
 function redactText(message: string, wordsToRedact: string) {
   let redactedMessage = message;
