@@ -3,7 +3,10 @@ import LoadingPage from "../../pages/LoadingPage";
 
 describe("LoadingPage", () => {
   it("renders loading spinner and text", () => {
-    render(<LoadingPage />);
+    const { container } = render(<LoadingPage />);
+
     expect(screen.getByText("Loading...")).toBeInTheDocument();
+    const spinner = container.querySelector(".animate-spin");
+    expect(spinner).toBeInTheDocument();
   });
 });
