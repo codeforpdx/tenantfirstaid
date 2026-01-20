@@ -4,6 +4,7 @@ import Navbar from "./shared/components/Navbar/Navbar";
 import Chat from "./Chat";
 import LoadingPage from "./pages/LoadingPage";
 
+// Lazy-loading for less frequented pages
 const About = lazy(() => import("./About"));
 const Disclaimer = lazy(() => import("./Disclaimer"));
 const PrivacyPolicy = lazy(() => import("./PrivacyPolicy"));
