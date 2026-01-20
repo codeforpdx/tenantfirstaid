@@ -491,9 +491,12 @@ frontend/
 │   │   │   ├── LetterDisclaimer.test.ts # LetterDisclaimer component testing
 │   │   │   └── MessageWindow.test.ts # MessageWindow component testing
 │   │   └── utils/                  # Utility function testing
-│   │       ├── letterHelper.test.ts # letterHelper testing
+│   │       ├── dompurify.test.ts   # dompurify testing
+│   │       ├── exportHelper.test.ts # exportHelper testing
 │   │       ├── formHelper.test.ts  # formHelper testing
-│   │       └── dompurify.test.ts   # dompurify testing
+│   │       ├── letterHelper.test.ts # letterHelper testing
+│   │       ├── sanitizeText.test.ts # sanitizeText testing
+│   │       └── streamHelper.test.ts # streamHelper testing
 ├── public/
 │   └── favicon.svg                 # Site favicon
 ├── package.json                    # Dependencies and scripts
