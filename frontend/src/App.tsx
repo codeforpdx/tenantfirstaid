@@ -1,23 +1,28 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import Chat from "./Chat";
-import About from "./About";
 import Navbar from "./shared/components/Navbar/Navbar";
-import Disclaimer from "./Disclaimer";
-import PrivacyPolicy from "./PrivacyPolicy";
-import Letter from "./Letter";
+import Chat from "./Chat";
+import LoadingPage from "./pages/LoadingPage";
+
+const About = lazy(() => import("./About"));
+const Disclaimer = lazy(() => import("./Disclaimer"));
+const PrivacyPolicy = lazy(() => import("./PrivacyPolicy"));
+const Letter = lazy(() => import("./Letter"));
 
 export default function App() {
   return (
     <Router>
       <Navbar />
-      <Routes>
-        <Route path="/" element={<Chat />} />
-        <Route path="/letter" element={<Letter />} />
-        <Route path="/letter/:org/:loc?" element={<Letter />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/disclaimer" element={<Disclaimer />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-      </Routes>
+      <Suspense fallback={<LoadingPage />}>
+        <Routes>
+          <Route path="/" element={<Chat />} />
+          <Route path="/letter" element={<Letter />} />
+          <Route path="/letter/:org/:loc?" element={<Letter />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/disclaimer" element={<Disclaimer />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        </Routes>
+      </Suspense>
     </Router>
   );
 }
