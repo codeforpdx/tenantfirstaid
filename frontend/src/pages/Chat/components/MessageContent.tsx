@@ -21,9 +21,9 @@ export default function MessageContent({ message }: Props) {
       <span
         className={`
           whitespace-pre-wrap
-          ${messageContent.length === 0 ? "animate-dot-pulse" : ""}`}
+          ${messageContent.length === 0 ? "animate-dot-pulse italic" : ""}`}
         dangerouslySetInnerHTML={{
-          __html: messageContent.length === 0 ? "..." : messageContent,
+          __html: messageContent.length === 0 ? "Typing..." : messageContent,
         }}
       ></span>
     </>
