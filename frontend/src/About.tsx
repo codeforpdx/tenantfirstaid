@@ -43,15 +43,17 @@ export default function About() {
         </PageSection>
 
         <PageSection title="Contact" headingLevel={2}>
-          <p>Michael Zhang</p>
-          <p>Attorney, licensed in Oregon and Washington</p>
-          <a
-            href={`mailto:${CONTACT_EMAIL}`}
-            className="underline text-blue-link hover:text-blue-dark"
-            aria-label="contact-email"
-          >
-            {CONTACT_EMAIL}
-          </a>
+          <div className="flex flex-col">
+            <span>Michael Zhang</span>
+            <span>Attorney, licensed in Oregon and Washington</span>
+            <a
+              href={`mailto:${CONTACT_EMAIL}`}
+              className="underline text-blue-link hover:text-blue-dark"
+              aria-label="contact-email"
+            >
+              {CONTACT_EMAIL}
+            </a>
+          </div>
         </PageSection>
 
         <PageSection
