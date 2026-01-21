@@ -125,12 +125,10 @@ graph LR
 **Data Ingestion Process:**
 
 1. **Document Collection**: Legal documents are stored as text files organized by jurisdiction:
-
    - State laws: `documents/or/*.txt`
    - City codes: `documents/or/portland/*.txt`, `documents/or/eugene/*.txt`
 
 2. **Vector Store Creation**: The `create_vector_store.py` script:
-
    - Processes documents by directory structure
    - Adds metadata attributes (city, state) for filtering
    - Uploads files to Vertex AI RAG corpus
@@ -217,20 +215,17 @@ interface TenantSessionData {
 **Multi-Turn Implementation Details:**
 
 1. **Session Initialization** (`/api/init`):
-
    - Creates UUID v4 session identifier
    - Initializes empty message array
    - Stores user location context (city/state)
    - Uses Flask secure session cookies
 
 2. **Conversation Flow**:
-
    - Each message exchange appends to `messages` array
    - Complete conversation history sent to Gemini for context
    - Location metadata enables jurisdiction-specific legal advice
 
 3. **Context Preservation**:
-
    - Full message history passed to Gemini API on each request
    - System instructions include location-specific context
    - Previous legal advice references maintained across turns
@@ -342,8 +337,8 @@ async function streamText({
       // Update only the bot's message
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.messageId === botMessageId ? { ...msg, content: fullText } : msg
-        )
+          msg.messageId === botMessageId ? { ...msg, content: fullText } : msg,
+        ),
       );
     }
   } catch (error) {
@@ -355,8 +350,8 @@ async function streamText({
               ...msg,
               content: "Sorry, I encountered an error. Please try again.",
             }
-          : msg
-      )
+          : msg,
+      ),
     );
   } finally {
     setIsLoading?.(false);
@@ -477,6 +472,7 @@ frontend/
 │   │   │   ├── DisclaimerLayout.tsx  # Layout for disclaimer components
 │   │   │   ├── FeatureSnippet.tsx  # Features and references component
 │   │   │   ├── MessageContainer.tsx  # Layout for main UI component
+│   │   │   ├── PageSection.tsx     # Layout static page sections component
 │   │   │   └── TenantFirstAidLogo.tsx # Application logo
 │   │   ├── constants/
 │   │   │   └── constants.ts        # File of constants
@@ -492,7 +488,8 @@ frontend/
 │   │   │   ├── InitializationForm.test.ts # InitializationForm component testing
 │   │   │   ├── Letter.test.ts      # Letter component testing
 │   │   │   ├── LetterDisclaimer.test.ts # LetterDisclaimer component testing
-│   │   │   └── MessageWindow.test.ts # MessageWindow component testing
+│   │   │   ├── MessageWindow.test.ts # MessageWindow component testing
+│   │   │   └── PageSection.test.ts # PageSection component testing
 │   │   └── utils/                  # Utility function testing
 │   │       ├── letterHelper.test.ts # letterHelper testing
 │   │       ├── formHelper.test.ts  # formHelper testing
