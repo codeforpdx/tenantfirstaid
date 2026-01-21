@@ -39,8 +39,20 @@ describe("PageSection", () => {
     expect(screen.getByText("Child paragraph")).toBeInTheDocument();
     expect(screen.getByText("Child span")).toBeInTheDocument();
 
-    const wrapper = container.querySelector(".space-y-6.custom-class");
-    expect(wrapper).toBeInTheDocument();
+    const wrapper = container.querySelector("#section-content");
+    expect(wrapper).toHaveClass("space-y-6 custom-class");
+  });
+
+  it("renders children with no class when className isn't given", () => {
+    const { container } = render(
+      <PageSection title="Test" headingLevel={2}>
+        <p>Child paragraph</p>
+        <span>Child span</span>
+      </PageSection>,
+    );
+
+    const wrapper = container.querySelector("#section-content");
+    expect(wrapper).not.toHaveClass();
   });
 
   it("renders JSX title", () => {
