@@ -24,23 +24,27 @@ export default function FeedbackModal({ messages, setOpenFeedback }: Props) {
   return (
     <dialog
       open
-      className="absolute top-[50%] left-[50%] -translate-x-[50%] -translate-y-[50%] flex flex-col gap-4 items-center justify-center w-[300px] sm:w-[500px] h-[300px] rounded-lg p-4"
+      className={`
+        absolute top-[50%] left-[50%] -translate-x-[50%] -translate-y-[50%]
+        flex flex-col items-center justify-center gap-4
+        w-[300px] sm:w-[500px] h-[300px] p-4
+        rounded-lg z-10`}
     >
       {status === "idle" ? (
         <>
           <textarea
-            className="resize-none h-[80%] w-full border transition-colors duration-300 focus:outline-0 focus:border-[#4a90e2] focus:shadow-[0_0_0_2px_rgba(74,144,226,0.2)]"
+            className="h-[80%] w-full"
             placeholder="Please enter your feedback with regards to the chatbot here. A copy of your chat transcript will automatically be included with your response."
             onChange={(event) => setFeedback(event.target.value)}
           />
           <input
-            className="resize-none h-[20%] w-full border transition-colors duration-300 focus:outline-0 focus:border-[#4a90e2] focus:shadow-[0_0_0_2px_rgba(74,144,226,0.2)]"
+            className="h-[20%] w-full"
             placeholder="Enter email(s) to CC transcript separated by commas"
             type="text"
             onChange={(event) => setEmailsToCC(event.target.value)}
           />
           <input
-            className="resize-none h-[20%] w-full border transition-colors duration-300 focus:outline-0 focus:border-[#4a90e2] focus:shadow-[0_0_0_2px_rgba(74,144,226,0.2)]"
+            className="h-[20%] w-full"
             placeholder="Please enter word(s) to redact separated by commas"
             type="text"
             onChange={(event) => setWordsToRedact(event.target.value)}
@@ -53,7 +57,10 @@ export default function FeedbackModal({ messages, setOpenFeedback }: Props) {
       )}
       <div className="flex gap-4">
         <button
-          className="border text-[#1F584F] transition-colors hover:bg-[#E8EEE2]"
+          className={`
+            text-green-dark
+            border border-green-medium hover:border-green-dark
+            hover:bg-green-light`}
           onClick={() => {
             if (feedback.trim() === "") handleModalClose();
             setStatus("sending");
@@ -66,7 +73,10 @@ export default function FeedbackModal({ messages, setOpenFeedback }: Props) {
           Send
         </button>
         <button
-          className="border text-[#E3574B] transition-colors hover:bg-[#fff0ee]"
+          className={`
+            text-red-dark
+            border border-red-medium hover:border-red-dark
+            hover:bg-red-light`}
           onClick={handleModalClose}
         >
           Close

@@ -440,6 +440,7 @@ frontend/
 │   ├── contexts/                   # React Contexts
 │   │   └── HousingContext.tsx      # Housing context for chat/letter generation
 │   ├── hooks/                      # Custom React hooks
+│   │   ├── useIsMobile.tsx         # Checking mobile state
 │   │   ├── useMessages.tsx         # Message handling logic
 │   │   ├── useHousingContext.tsx   # Custom hook for housing context
 │   │   └── useLetterContent.tsx    # State management for letter generation
@@ -447,13 +448,13 @@ frontend/
 │   │   ├── components/
 │   │   │   ├── ChatDisclaimer.tsx # Disclaimer for Chat page
 │   │   │   ├── InitializationForm.tsx # Context information from user
+│   │   │   ├── AutoExpandText.tsx  # Animated Text component
 │   │   │   ├── ExportMessagesButton.tsx # Chat export
 │   │   │   ├── InputField.tsx      # Message input
 │   │   │   ├── FeedbackModal.tsx   # Feedback modal
 │   │   │   ├── MessageContent.tsx  # Message display
 │   │   │   ├── MessageWindow.tsx   # Chat window
-│   │   │   ├── SelectField.tsx     # Initialization form select field
-│   │   │   └── SuggestedPrompts.tsx # Prompt suggestions
+│   │   │   └── SelectField.tsx     # Initialization form select field
 │   │   └── utils/
 │   │       ├── exportHelper.ts     # Export functionality
 │   │       ├── feedbackHelper.tsx  # Feedback functionality
@@ -467,15 +468,20 @@ frontend/
 │   │       └── letterHelper.tsx    # Letter generation functionality
 │   └── shared/                     # Shared components and utils
 │   │   ├── components/
+│   │   │   ├── Navbar/
+│   │   │   │   ├── Sidebar.tsx     # Navigation for mobile
+│   │   │   │   ├── Navbar.tsx      # Navigation
+│   │   │   │   └── NavbarMenuButton.tsx # Navigation component
 │   │   │   ├── BackLink.tsx        # Navigation component
 │   │   │   ├── BeaverIcon.tsx      # Oregon-themed icon
 │   │   │   ├── DisclaimerLayout.tsx  # Layout for disclaimer components
+│   │   │   ├── FeatureSnippet.tsx  # Features and references component
 │   │   │   ├── MessageContainer.tsx  # Layout for main UI component
-│   │   │   ├── Navbar.tsx            # Navigation
 │   │   │   └── TenantFirstAidLogo.tsx # Application logo
 │   │   ├── constants/
 │   │   │   └── constants.ts        # File of constants
 │   │   └── utils/
+│   │       ├── scrolling.ts        # Helper function for window scrolling
 │   │       └── dompurify.ts        # Helper function for sanitizing text
 │   └── tests/                     # Testing suite
 │   │   ├── components/            # Component testing
@@ -486,7 +492,7 @@ frontend/
 │   │   │   ├── InitializationForm.test.ts # InitializationForm component testing
 │   │   │   ├── Letter.test.ts      # Letter component testing
 │   │   │   ├── LetterDisclaimer.test.ts # LetterDisclaimer component testing
-│   │   │   ├── MessageWindow.test.ts # MessageWindow component testing
+│   │   │   └── MessageWindow.test.ts # MessageWindow component testing
 │   │   └── utils/                  # Utility function testing
 │   │       ├── letterHelper.test.ts # letterHelper testing
 │   │       ├── formHelper.test.ts  # formHelper testing

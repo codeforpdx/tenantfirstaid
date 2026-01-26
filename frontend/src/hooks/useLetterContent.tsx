@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { IMessage } from "./useMessages";
-import DOMPurify, { SANITIZE_SETTINGS } from "../shared/utils/dompurify";
+import DOMPurify, { SANITIZE_AI_SETTINGS } from "../shared/utils/dompurify";
 
 export function useLetterContent(messages: IMessage[]) {
   const [letterContent, setLetterContent] = useState("");
@@ -13,7 +13,7 @@ export function useLetterContent(messages: IMessage[]) {
     const latestLetter = messageLetters[messageLetters.length - 1];
     if (latestLetter) {
       setLetterContent(
-        DOMPurify.sanitize(latestLetter?.content, SANITIZE_SETTINGS)
+        DOMPurify.sanitize(latestLetter?.content, SANITIZE_AI_SETTINGS)
           .split("-----generate letter-----")[1]
           .trim(),
       );

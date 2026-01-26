@@ -4,9 +4,8 @@ import { BrowserRouter } from "react-router-dom";
 import { describe, it, afterEach } from "vitest";
 
 const renderChatDisclaimer = async (isOngoing: boolean) => {
-  const { default: ChatDisclaimer } = await import(
-    "../../pages/Chat/components/ChatDisclaimer"
-  );
+  const { default: ChatDisclaimer } =
+    await import("../../pages/Chat/components/ChatDisclaimer");
   const queryClient = new QueryClient();
   return render(
     <QueryClientProvider client={queryClient}>

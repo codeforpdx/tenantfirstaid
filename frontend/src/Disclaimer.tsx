@@ -2,15 +2,16 @@ import { Link } from "react-router-dom";
 import BackLink from "./shared/components/BackLink";
 import { useEffect } from "react";
 import { CONTACT_EMAIL } from "./shared/constants/constants";
+import { scrollToTop } from "./shared/utils/scrolling";
 
 export default function Disclaimer() {
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToTop();
   }, []);
 
   return (
     <div className="flex items-center pt-16 sm:pt-32 sm:pb-16">
-      <div className="relative max-w-2xl m-auto p-8 bg-[#F4F4F2] rounded-lg shadow-md">
+      <div className="relative max-w-2xl m-auto p-8 bg-paper-background rounded-lg shadow-md">
         <BackLink />
         <h2 className="text-2xl font-semibold mt-6 mb-2">Disclaimer</h2>
         <p>
@@ -30,7 +31,7 @@ export default function Disclaimer() {
           contact us at{" "}
           <a
             href={`mailto:${CONTACT_EMAIL}`}
-            className="underline text-blue-600"
+            className="underline text-blue-link hover:text-blue-dark"
             aria-label="contact-email"
           >
             {CONTACT_EMAIL}
@@ -51,7 +52,10 @@ export default function Disclaimer() {
         <h3 className="text-xl font-semibold my-4">2. Privacy</h3>
         <p>
           Please refer to our{" "}
-          <Link to="/privacy-policy" className="underline text-blue-600">
+          <Link
+            to="/privacy-policy"
+            className="underline text-blue-link hover:text-blue-dark"
+          >
             Privacy Policy
           </Link>{" "}
           for information about how we collect, use and disclose information
@@ -408,7 +412,7 @@ export default function Disclaimer() {
           by sending an email to{" "}
           <a
             href={`mailto:${CONTACT_EMAIL}`}
-            className="underline text-blue-600"
+            className="underline text-blue-link hover:text-blue-dark"
             aria-label="contact-email"
           >
             {CONTACT_EMAIL}

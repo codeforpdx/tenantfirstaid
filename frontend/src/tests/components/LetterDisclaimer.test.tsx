@@ -4,9 +4,8 @@ import { BrowserRouter } from "react-router-dom";
 import { describe, it, afterEach } from "vitest";
 
 const renderLetterDisclaimer = async (isOngoing: boolean) => {
-  const { default: LetterDisclaimer } = await import(
-    "../../pages/Letter/components/LetterDisclaimer"
-  );
+  const { default: LetterDisclaimer } =
+    await import("../../pages/Letter/components/LetterDisclaimer");
   const queryClient = new QueryClient();
   return render(
     <QueryClientProvider client={queryClient}>

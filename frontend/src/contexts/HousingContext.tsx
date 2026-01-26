@@ -1,4 +1,5 @@
 import { createContext, useCallback, useMemo, useState } from "react";
+import DOMPurify, { SANITIZE_USER_SETTINGS } from "../shared/utils/dompurify";
 
 export interface ILocation {
   city: string | null;
@@ -18,6 +19,7 @@ export interface IHousingContextType {
   handleIssueDescription: (
     event: React.ChangeEvent<HTMLTextAreaElement>,
   ) => void;
+  handleFormReset: () => void;
 }
 
 const HousingContext = createContext<IHousingContextType | null>(null);
@@ -54,10 +56,20 @@ export default function HousingContextProvider({ children }: Props) {
 
   const handleIssueDescription = useCallback(
     (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setIssueDescription(event.target.value);
+      setIssueDescription(
+        DOMPurify.sanitize(event.target.value, SANITIZE_USER_SETTINGS),
+      );
     },
     [],
   );
+
+  const handleFormReset = useCallback(() => {
+    setCity(null);
+    setHousingLocation({ city: null, state: null });
+    setHousingType(null);
+    setTenantTopic(null);
+    setIssueDescription("");
+  }, []);
 
   const housingContextObject = useMemo(
     () => ({
@@ -71,6 +83,7 @@ export default function HousingContextProvider({ children }: Props) {
       handleHousingChange,
       handleTenantTopic,
       handleIssueDescription,
+      handleFormReset,
     }),
     [
       housingLocation,
@@ -83,6 +96,7 @@ export default function HousingContextProvider({ children }: Props) {
       handleHousingChange,
       handleTenantTopic,
       handleIssueDescription,
+      handleFormReset,
     ],
   );
 
