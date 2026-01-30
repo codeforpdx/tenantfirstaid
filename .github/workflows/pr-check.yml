@@ -23,7 +23,7 @@ jobs:
 
     env:
       GOOGLE_CLOUD_LOCATION: global
-      MODEL_NAME: gpt-2.5-pro
+      MODEL_NAME: gemini-2.5-pro
       SHOW_MODEL_THINKING: true
       VERTEX_AI_DATASTORE: tenantfirstaid-corpora_1758844059585
 
