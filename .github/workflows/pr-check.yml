@@ -57,7 +57,7 @@ jobs:
         uses: google-github-actions/auth@v3
         with:
           project_id: ${{ vars.GOOGLE_CLOUD_PROJECT }}
-          credentials_json: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS}}
+          credentials_json: '${{ secrets.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS}}'
           export_environment_variables: true  # sets GOOGLE_CLOUD_PROJECT in env
           create_credentials_file: true  # sets GOOGLE_APPLICATION_CREDENTIALS in env
 
