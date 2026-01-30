@@ -44,7 +44,7 @@ def agent_wrapper(inputs) -> Dict[str, str]:
 
     context_state = UsaState.from_maybe_str(inputs["state"])
     context_city = OregonCity.from_maybe_str(inputs["city"])
-    tid: str = "some-thread-id"
+    tid: Optional[str] = None
 
     responses = list(
         chat_manager.generate_streaming_response(
@@ -65,7 +65,7 @@ def agent_wrapper(inputs) -> Dict[str, str]:
 # TODO: https://docs.langchain.com/langsmith/multi-turn-simulation
 def run_evaluation(
     dataset_name="tenant-legal-qa-scenarios",
-    experiment_prefix="langchain-agent",
+    experiment_prefix="langchain-chat-manager-",
     num_repetitions: int = 1,
     max_concurrency: Optional[int] = 1,
 ):

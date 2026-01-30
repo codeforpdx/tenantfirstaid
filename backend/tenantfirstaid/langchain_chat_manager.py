@@ -193,6 +193,7 @@ class LangChainChatManager:
                                 # text responses from the Model
                                 case "text":
                                     yield b
+                                # reasoning steps (aka "thoughts") from the Model
                                 case "reasoning":
                                     if "reasoning" in b:
                                         yield b

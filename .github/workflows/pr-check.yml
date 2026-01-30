@@ -16,6 +16,17 @@ jobs:
       run:
         working-directory: backend
 
+    # Add "id-token" with the intended permissions.
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    env:
+      GOOGLE_CLOUD_LOCATION: global
+      MODEL_NAME: gpt-2.5-pro
+      SHOW_MODEL_THINKING: true
+      VERTEX_AI_DATASTORE: tenantfirstaid-corpora_1758844059585
+
     steps:
       - uses: actions/checkout@v5
 
@@ -41,6 +52,14 @@ jobs:
 
       - name: Run type checks
         run: uv run ty check
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GOOGLE_CLOUD_PROJECT }}
+          credentials_json: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS}}
+          export_environment_variables: true  # sets GOOGLE_CLOUD_PROJECT in env
+          create_credentials_file: true  # sets GOOGLE_APPLICATION_CREDENTIALS in env
 
       - name: Run tests
         run: uv run pytest -v -s

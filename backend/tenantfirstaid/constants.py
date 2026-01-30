@@ -12,9 +12,9 @@ class _GoogEnvAndPolicy:
     # Note: these are Class variables, not instance variables.
     __slots__ = (
         "MODEL_NAME",
+        "VERTEX_AI_DATASTORE",
         "GOOGLE_CLOUD_PROJECT",
         "GOOGLE_CLOUD_LOCATION",
-        "VERTEX_AI_DATASTORE",
         "GOOGLE_APPLICATION_CREDENTIALS",
         "SHOW_MODEL_THINKING",
         "SAFETY_SETTINGS",
@@ -38,9 +38,9 @@ class _GoogEnvAndPolicy:
         # Note: assign explicitly since typecheckers do not understand slotted attributes
         #       that are assigned by __setattr__()
         self.MODEL_NAME: Final = os.getenv("MODEL_NAME")
+        self.VERTEX_AI_DATASTORE = os.getenv("VERTEX_AI_DATASTORE")
         self.GOOGLE_CLOUD_PROJECT: Final = os.getenv("GOOGLE_CLOUD_PROJECT")
         self.GOOGLE_CLOUD_LOCATION: Final = os.getenv("GOOGLE_CLOUD_LOCATION")
-        self.VERTEX_AI_DATASTORE = os.getenv("VERTEX_AI_DATASTORE")
         self.GOOGLE_APPLICATION_CREDENTIALS: Final = os.getenv(
             "GOOGLE_APPLICATION_CREDENTIALS"
         )
