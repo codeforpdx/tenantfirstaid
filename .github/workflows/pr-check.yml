@@ -28,7 +28,6 @@ jobs:
       VERTEX_AI_DATASTORE: tenantfirstaid-corpora_1758844059585
       REMOTE_APP_DIR: ${{ vars.REMOTE_APP_DIR }}
 
-
     steps:
       - uses: actions/checkout@v6
 
@@ -60,10 +59,17 @@ jobs:
           echo "REPO: ${{ github.repository }}"
           echo "PR NUMBER: ${{ github.event.pull_request.number }}"
           echo "env var :: MODEL_NAME: ${{ env.MODEL_NAME }}"
-          echo "repository var :: MODEL_NAME: ${{ vars.MODEL_NAME }}"
+          echo "repository var :: MODEL_NAME: $MODEL_NAME"
           echo "repository var :: SERVICE_NAME: ${{ vars.SERVICE_NAME }}"
           echo "repository secret :: GOOGLE_SERVICE_ACCOUNT_CREDENTIALS: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS }}"
           # echo "environment.staging var :: GOOGLE_CLOUD_PROJECT: ${{ vars.GOOGLE_CLOUD_PROJECT }}"
+        env:
+          MODEL_NAME: ${{ vars.MODEL_NAME }}
+
+      - name: Dump vars context
+        env:
+          VARS_CONTEXT: ${{ toJson(vars) }}
+        run: echo "$VARS_CONTEXT"
 
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v3
