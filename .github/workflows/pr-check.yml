@@ -60,16 +60,21 @@ jobs:
           echo "PR NUMBER: ${{ github.event.pull_request.number }}"
           echo "env var :: MODEL_NAME: ${{ env.MODEL_NAME }}"
           echo "repository var :: MODEL_NAME: $MODEL_NAME"
-          echo "repository var :: SERVICE_NAME: ${{ vars.SERVICE_NAME }}"
+          echo "repository var :: SERVICE_NAME: $SERVICE_NAME"
           echo "repository secret :: GOOGLE_SERVICE_ACCOUNT_CREDENTIALS: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS }}"
           # echo "environment.staging var :: GOOGLE_CLOUD_PROJECT: ${{ vars.GOOGLE_CLOUD_PROJECT }}"
         env:
-          MODEL_NAME: ${{ vars.MODEL_NAME }}
+          SERVICE_NAME: ${{ vars.SERVICE_NAME }}
 
       - name: Dump vars context
         env:
           VARS_CONTEXT: ${{ toJson(vars) }}
         run: echo "$VARS_CONTEXT"
+
+      - name: Dump env context
+        env:
+          TMP_CONTEXT: ${{ toJson(env) }}
+        run: echo "$TMP_CONTEXT"
 
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v3
