@@ -1,4 +1,34 @@
 Original conversation,first_question,facts,city,state
+"You: I am on a week to week lease and I am one day late on rent, I just got a 72 hour eviction notice. dont I get 5 day buffer for late rent?
+Bot: Under ORS 90.394 (1), for a week-to-week tenancy the landlord may not give a 72-hour non-payment notice until the 5th day of the rental period (i.e., after rent is at least five days late). Because you got the notice only one day after rent was due, it's premature and legally defective. Put the landlord on notice <i>in writing</i> that the notice is invalid and, if you can, pay the rent immediately.","I am on a week to week lease and I am one day late on rent, I just got a 72 hour eviction notice. dont I get 5 day buffer for late rent?","[""Tenant is on a week-to-week lease."", ""Tenant is one day late on rent."", ""Landlord served Tenant with a 72-hour eviction notice for the late rent.""]",,"OR"
+"You: If ive moved out but there are some things I forgot, can my landlord throw them away?
+Bot: Not right away. Under ORS 90.425 your ex-landlord must:
+
+1. Mail (and post) a written notice that lists the items, where they're stored and a deadline to claim them at least 8 days after the notice is mailed. 
+2. Keep the items somewhere safe during that period (they can charge reasonable storage costs). 
+3. Let you pick them up if you respond by the deadline and remove them within 15 days. 
+
+Only after the deadline can the landlord sell, donate or throw away what's left (and must first pay any surplus sale proceeds to you). They may toss obvious trash, perishables or items worth so little that storage costs exceed $1,000 in value, but they still must send the notice.
+
+If the landlord skips these steps you can sue for up to twice your actual losses (at least one months rent).","If ive moved out but there are some things I forgot, can my landlord throw them away?","[""Tenant moved out but left personal belongings behind.""]",,"OR"
+"You: I have a month to month tenancy and am trying to give 30 days notice but my landlord is saying that isn't enough warning
+Bot: In Oregon a month-to-month renter may end the tenancy 'by giving the landlord notice in writing not less than 30 days prior to the date designated in the notice for the termination of the tenancy.' (ORS 90.427 (3)(a) or, for MH/floating-home spaces, ORS 90.620 (1).)
+
+Tips to avoid push-back: 
+* Put the notice in writing and date it. 
+* Specify your last day of possession. 
+* Serve it by personal delivery or by first-class mail (add three days if mailed) (ORS 90.155, 90.160). 
+
+If you do those things, 30 days is all the statute requires; the landlord cannot insist on more.",I have a month to month tenancy and am trying to give 30 days notice but my landlord is saying that isn't enough warning,"[""Tenant is on a month-to-month tenancy."", ""Tenant attempted to give 30 days notice to terminate the tenancy."", ""Landlord claims 30 days notice is insufficient.."", ""Tenant has not yet confirmed whether the notice was written, dated, and properly delivered.""]",,"OR"
+"You: My ex attacked me and in the process destroyed several cabinets and a door in the home. My landlord evicted him but now will I be responsible for the damages?
+Bot: Likely not. Under ORS 90.325 (3)(b) a tenant isn't liable for damage that results from conduct by a perpetrator relating to domestic violence. Since your ex's assault qualifies, the landlord can't legally charge you for the broken cabinets or door. If the landlord asks, be ready to give basic proof (e.g., police report or restraining-order paperwork).",My ex attacked me and in the process destroyed several cabinets and a door in the home. My landlord evicted him but now will I be responsible for the damages?,"[""Tenant's ex-partner assaulted them."", ""Tenant's ex-partner destroyed cabinets and a door in the home."", ""Tenant's landlord evicted the ex-partner."", ""Tenant is concerned about being held responsible for the damages.""]",,"OR"
+
+"You: If my landlord put my security deposit in an interest-bearing account, are they required to give me the interest when I move out?
+Bot: Yes. In Portland, if your landlord puts your security deposit in an interest-bearing account, the interest accrues to you. The landlord must return the interest with your deposit, though they can deduct up to 5% of the interest for administrative costs.
+
+According to Portland City Code 30.01.087(B), your rental agreement must state the name and address of the bank where the deposit is held and whether the account is interest-bearing.
+
+Does your written rental agreement mention an interest-bearing account?","If my landlord put my security deposit in an interest-bearing account, are they required to give me the interest when I move out?","[""Tenant recently moved out of their apartment"", ""Tenant only received the full amount of their security deposit back and not any interest accrued"", ""Tenants lease says that the landlord placed the deposit in an account at IQ Credit Union that does not accrue interest""]","Portland","OR"
 "You: I just moved into a new apartment and it is so hot in the summer
 Bot: Has your landlord told you that you can�t install a portable air-conditioning (or other cooling) unit, or placed any restrictions on it?
 You: no, but shouldn't the apartment have ac?
@@ -198,8 +228,6 @@ Bot: 1. Nothing changes until you get a WRITTEN notice.
 � Wait and see if a proper written notice arrives. 
 � If it does, check the date and reason. If it�s late, missing, or retaliatory, you can ignore it or defend if the landlord later files an eviction. 
 � If you receive any notice and are unsure, talk to a local tenants� clinic or a lawyer right away.",My landlord tried to raise our rent too high and when I pointed out the law now he says he won't renew our lease and we have to go month to month,"[""Tenant has lived in the house for almost one year."", ""Tenant�s fixed-term lease ends on June 1."", ""Landlord attempted to raise Tenant�s rent beyond the legal limit, which Tenant challenged."", ""Landlord verbally threatened not to renew the lease and move Tenant to month-to-month."", ""Tenant has received no written notice of non-renewal or termination from landlord.""]",,"OR"
-"You: I am on a week to week lease and I am one day late on rent, I just got a 72 hour eviction notice. dont I get 5 day buffer for late rent?
-Bot: Under ORS 90.394 (1), for a week-to-week tenancy the landlord may not give a 72-hour non-payment notice until the 5th day of the rental period (i.e., after rent is at least five days late). Because you got the notice only one day after rent was due, it�s premature and legally defective. Put the landlord on notice�in writing�that the notice is invalid and, if you can, pay the rent immediately.","I am on a week to week lease and I am one day late on rent, I just got a 72 hour eviction notice. dont I get 5 day buffer for late rent?","[""Tenant is on a week-to-week lease."", ""Tenant is one day late on rent."", ""Landlord served Tenant with a 72-hour eviction notice for the late rent.""]",,"OR"
 "You: I am 5 days late on my rent and I was given a 10 day eviction notice 
 Bot: What date was your rent due, and on what date did the landlord hand or mail you the 10-day notice?
 You: my rent was due on the 1st and I received the notice on the 5th
@@ -588,25 +616,6 @@ You: no
 Bot: Understood. If the accounting or refund doesn�t show up by June 18, ORS 90.300 lets you pursue up to twice the $1,200 plus the refund itself. Keep all paperwork and deadlines handy.
 
 Good luck, and take care.","Ive been evicted, what happens now with the rent I owed?","[""Tenant was evicted and owes $4,000 in unpaid rent per the eviction judgment."", ""Tenant gave up possession of the unit on May 18."", ""Tenant�s security deposit (and any prepaid rent) was $1,200."", ""Landlord has not yet provided a written accounting or refund of the deposit."", ""Tenant gave the landlord a forwarding address."", ""Landlord has until June 18 (31 days after possession) to send the accounting and any refund.""]",,"OR"
-"You: If ive moved out but there are some things I forgot, can my landlord throw them away?
-Bot: Not right away. Under ORS 90.425 your ex-landlord must:
-
-1. Mail (and post) a written notice that lists the items, where they�re stored and a deadline to claim them�at least 8 days after the notice is mailed. 
-2. Keep the items somewhere safe during that period (they can charge reasonable storage costs). 
-3. Let you pick them up if you respond by the deadline and remove them within 15 days. 
-
-Only after the deadline can the landlord sell, donate or throw away what�s left (and must first pay any surplus sale proceeds to you). They may toss obvious trash, perishables or items worth so little that storage costs exceed $1,000 in value, but they still must send the notice.
-
-If the landlord skips these steps you can sue for up to twice your actual losses (at least one month�s rent).","If ive moved out but there are some things I forgot, can my landlord throw them away?","[""Tenant moved out but left personal belongings behind.""]",,"OR"
-"You: I have a month to month tenancy and am trying to give 30 days notice but my landlord is saying that isn't enough warning
-Bot: In Oregon a month-to-month renter may end the tenancy �by giving the landlord notice in writing not less than 30 days prior to the date designated in the notice for the termination of the tenancy.� (ORS 90.427 (3)(a) or, for MH/floating-home spaces, ORS 90.620 (1).)
-
-Tips to avoid push-back: 
-� Put the notice in writing and date it. 
-� Specify your last day of possession. 
-� Serve it by personal delivery or by first-class mail (add three days if mailed) � ORS 90.155, 90.160. 
-
-If you do those things, 30 days is all the statute requires; the landlord cannot insist on more.",I have a month to month tenancy and am trying to give 30 days notice but my landlord is saying that isn't enough warning,"[""Tenant is on a month-to-month tenancy."", ""Tenant attempted to give 30 days� notice to terminate the tenancy."", ""Landlord claims 30 days� notice is insufficient.."", ""Tenant has not yet confirmed whether the notice was written, dated, and properly delivered.""]",,"OR"
 "You: I am on a month to month lease and my landlord is trying to give me a 30 day no-cause eviction, is that really enough time?
 Bot: Under ORS 90.427:
 
@@ -811,8 +820,6 @@ So:
 � If the landlord insists or threatens eviction, you can: 
 � Send a short letter citing ORS 90.445(2) and asking that the charge be removed. 
 � Call your local legal aid office; if it turns into an eviction issue you can reach Oregon Law Center at 513-123-4567.","My now ex husband attacked me and so I kicked him out and my landlord helped me evict him, but now she is saying I need to pay a tenant removal lease fee","[""Tenant�s ex-husband attacked her and was removed from the unit."", ""Landlord helped remove the ex-husband but is now demanding a 'tenant removal lease fee.'"", ""Ex-husband was listed on the lease.""]",,"OR"
-"You: My ex attacked me and in the process destroyed several cabinets and a door in the home. My landlord evicted him but now will I be responsible for the damages?
-Bot: Likely not. Under ORS 90.325 (3)(b) a tenant isn�t liable for damage that �results from conduct by a perpetrator relating to domestic violence.� Since your ex�s assault qualifies, the landlord can�t legally charge you for the broken cabinets or door. If the landlord asks, be ready to give basic proof (e.g., police report or restraining-order paperwork).",My ex attacked me and in the process destroyed several cabinets and a door in the home. My landlord evicted him but now will I be responsible for the damages?,"[""Tenant�s ex-partner assaulted them."", ""Tenant�s ex-partner destroyed cabinets and a door in the home."", ""Tenant�s landlord evicted the ex-partner."", ""Tenant is concerned about being held responsible for the damages.""]",,"OR"
 "You: My boyfriend assaulted me and I called the police and broke up with him. Now my landlord is trying to evict me, can he do that?
 Bot: Oregon law (ORS 90.445 & 90.449) bars a landlord from ending your tenancy just because you were the victim of domestic violence; they may only remove the perpetrator. 
 
@@ -888,9 +895,3 @@ What you can still do:
 Deadlines are tight, so act today. Have you already contacted the clerk to see if judgment was entered?
 You: I can call right now
 Bot: Great�when you call, please ask the clerk: �Has the judge already entered a default judgment in my eviction case?�","I accidentally missed my first court appearance for an eviction, I dont think my landlord has a good case, will the court consider both sides or only rule for him because hes there","[""Tenant accidentally missed their first court appearance for an eviction."", ""Tenant believes the landlord does not have a strong case."", ""Tenant has not yet called the court clerk but is about to.""]",,"OR"
-"You: If my landlord put my security deposit in an interest-bearing account, are they required to give me the interest when I move out?
-Bot: Yes. In Portland, if your landlord puts your security deposit in an interest-bearing account, the interest accrues to you. The landlord must return the interest with your deposit, though they can deduct up to 5% of the interest for administrative costs.
-
-According to Portland City Code 30.01.087(B), your rental agreement must state the name and address of the bank where the deposit is held and whether the account is interest-bearing.
-
-Does your written rental agreement mention an interest-bearing account?","If my landlord put my security deposit in an interest-bearing account, are they required to give me the interest when I move out?","[""Tenant recently moved out of their apartment"", ""Tenant only received the full amount of their security deposit back and not any interest accrued"", ""Tenants lease says that the landlord placed the deposit in an account at IQ Credit Union that does not accrue interest""]","Portland","OR"

@@ -33,6 +33,37 @@ Welcome to the Tenant First Aid repository. This file contains the main points f
 
 All python commands should be run via `uv run python ...`
 
+## LangChain Agent Architecture
+
+The backend uses LangChain 1.0.8+ for agent-based conversation management with Vertex AI integration.
+
+### Key Components
+- **LangChainChatManager**: Main agent orchestration class (`backend/tenantfirstaid/langchain_chat.py`)
+- **retrieve_city_law**: Tool for city-specific legal retrieval
+- **retrieve_state_law**: Tool for state-wide legal retrieval
+- **ChatVertexAI**: LangChain wrapper for Google Gemini 2.5 Pro
+
+### Environment Variables
+```bash
+MODEL_NAME=gemini-2.5-pro              # LLM model name
+VERTEX_AI_DATASTORE=projects/.../datastores/...  # RAG corpus ID
+SHOW_MODEL_THINKING=false              # Enable Gemini thinking mode
+LANGSMITH_API_KEY=...                  # Optional: Enable tracing
+LANGSMITH_PROJECT=tenant-first-aid     # Optional: LangSmith project name
+```
+
+### Testing LangChain Components
+```bash
+# Run LangChain-specific tests
+uv run pytest -k langchain
+
+# Run with LangSmith tracing (requires API key)
+LANGSMITH_TRACING=true uv run pytest -k langchain
+
+# Run evaluations (see docs/EVALUATION.md)
+uv run python scripts/run_langsmith_evaluation.py --num-samples 20
+```
+
 ## Local `./frontend` workflow
 
 1. Format, lint and type‑check your changes:

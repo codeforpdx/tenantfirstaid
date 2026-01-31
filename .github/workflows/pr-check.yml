@@ -16,8 +16,20 @@ jobs:
       run:
         working-directory: backend
 
+    # Add "id-token" with the intended permissions.
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    env:
+      GOOGLE_CLOUD_LOCATION: global
+      MODEL_NAME: gemini-2.5-pro
+      SHOW_MODEL_THINKING: true
+      VERTEX_AI_DATASTORE: tenantfirstaid-corpora_1758844059585
+      REMOTE_APP_DIR: ${{ vars.REMOTE_APP_DIR }}
+
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -41,6 +53,36 @@ jobs:
 
       - name: Run type checks
         run: uv run ty check
+
+      - name: debug Action vars
+        run: |
+          echo "REPO: ${{ github.repository }}"
+          echo "PR NUMBER: ${{ github.event.pull_request.number }}"
+          echo "env var :: MODEL_NAME: ${{ env.MODEL_NAME }}"
+          echo "repository var :: MODEL_NAME: $MODEL_NAME"
+          echo "repository var :: SERVICE_NAME: $SERVICE_NAME"
+          echo "repository secret :: GOOGLE_SERVICE_ACCOUNT_CREDENTIALS: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS }}"
+          # echo "environment.staging var :: GOOGLE_CLOUD_PROJECT: ${{ vars.GOOGLE_CLOUD_PROJECT }}"
+        env:
+          SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+
+      - name: Dump vars context
+        env:
+          VARS_CONTEXT: ${{ toJson(vars) }}
+        run: echo "$VARS_CONTEXT"
+
+      - name: Dump env context
+        env:
+          TMP_CONTEXT: ${{ toJson(env) }}
+        run: echo "$TMP_CONTEXT"
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GOOGLE_CLOUD_PROJECT }}
+          credentials_json: '${{ secrets.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS }}'
+          export_environment_variables: true  # sets GOOGLE_CLOUD_PROJECT in env
+          create_credentials_file: true  # sets GOOGLE_APPLICATION_CREDENTIALS in env
 
       - name: Run tests
         run: uv run pytest -v -s
