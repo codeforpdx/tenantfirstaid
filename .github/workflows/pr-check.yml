@@ -1,6 +1,8 @@
 name: PR Checks
 
 on:
+  # NOTE: since the majority of PRs will originate from forks, we cannot rely on
+  # repo secrets or vars being available in the pull_request event.
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -27,6 +29,8 @@ jobs:
       SHOW_MODEL_THINKING: true
       VERTEX_AI_DATASTORE: tenantfirstaid-corpora_1758844059585
       REMOTE_APP_DIR: ${{ vars.REMOTE_APP_DIR }}
+      # detect if this is a PR from a forked repo
+      PR_FROM_FORK: ${{ github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name }}
 
     steps:
       - uses: actions/checkout@v6
@@ -54,29 +58,8 @@ jobs:
       - name: Run type checks
         run: uv run ty check
 
-      - name: debug Action vars
-        run: |
-          echo "REPO: ${{ github.repository }}"
-          echo "PR NUMBER: ${{ github.event.pull_request.number }}"
-          echo "env var :: MODEL_NAME: ${{ env.MODEL_NAME }}"
-          echo "repository var :: MODEL_NAME: $MODEL_NAME"
-          echo "repository var :: SERVICE_NAME: $SERVICE_NAME"
-          echo "repository secret :: GOOGLE_SERVICE_ACCOUNT_CREDENTIALS: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS }}"
-          # echo "environment.staging var :: GOOGLE_CLOUD_PROJECT: ${{ vars.GOOGLE_CLOUD_PROJECT }}"
-        env:
-          SERVICE_NAME: ${{ vars.SERVICE_NAME }}
-
-      - name: Dump vars context
-        env:
-          VARS_CONTEXT: ${{ toJson(vars) }}
-        run: echo "$VARS_CONTEXT"
-
-      - name: Dump env context
-        env:
-          TMP_CONTEXT: ${{ toJson(env) }}
-        run: echo "$TMP_CONTEXT"
-
-      - name: Authenticate with Google Cloud
+      - name: Authenticate with Google Cloud (when not from a forked repo)
+        if: env.PR_FROM_FORK != 'true'
         uses: google-github-actions/auth@v3
         with:
           project_id: ${{ vars.GOOGLE_CLOUD_PROJECT }}
@@ -84,8 +67,22 @@ jobs:
           export_environment_variables: true  # sets GOOGLE_CLOUD_PROJECT in env
           create_credentials_file: true  # sets GOOGLE_APPLICATION_CREDENTIALS in env
 
-      - name: Run tests
-        run: uv run pytest -v -s
+      - name: Set fake Google Cloud credentials (when from a forked repo)
+        if: env.PR_FROM_FORK == 'true'
+        env:
+          GOOGLE_CLOUD_PROJECT: ${{ github.workflow_ref }}-fake-google-cloud-project
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workflow_ref }}/tmp/fake-google-credentials.json
+        run: |
+          echo "GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT" >> $GITHUB_ENV
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS" >> $GITHUB_ENV
+
+      # NOTE: tests require GOOGLE_* env vars to be set from one of the above steps
+      - name: Run tests that mock services that require repo secrets
+        run: uv run pytest -v -s -m "not require-repo-secrets"
+
+      - name: Run additional tests that require repo secrets
+        if: env.PR_FROM_FORK != 'true'
+        run: uv run pytest -v -s -m "require-repo-secrets"
 
   frontend-build:
     runs-on: ubuntu-latest
@@ -94,10 +91,10 @@ jobs:
         working-directory: frontend
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: npm
@@ -108,6 +105,7 @@ jobs:
 
       - name: Run linting checks
         run: npm run lint
+
       - name: Run format fixes
         run: npx prettier --write .
 
