@@ -28,7 +28,6 @@ jobs:
       MODEL_NAME: gemini-2.5-pro
       SHOW_MODEL_THINKING: true
       VERTEX_AI_DATASTORE: tenantfirstaid-corpora_1758844059585
-      REMOTE_APP_DIR: ${{ vars.REMOTE_APP_DIR }}
       # detect if this is a PR from a forked repo
       PR_FROM_FORK: ${{ github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name }}
 
