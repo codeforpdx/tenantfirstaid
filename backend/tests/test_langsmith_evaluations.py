@@ -9,9 +9,9 @@ from tenantfirstaid.location import OregonCity, UsaState
 
 # set env var 'LANGSMITH_TRACING=true' in order to run these tests
 
-
 @pytest.mark.skip("work-in-progress")
-@pytest.mark.langsmith(test_suite_name="")
+@pytest.mark.require_repo_secrets
+@pytest.mark.langsmith(test_suite_name="general_evaluations")
 def test_month_to_month() -> None:
     user_query: str = dedent(
         """I have a month to month tenancy and am trying to give 30 days

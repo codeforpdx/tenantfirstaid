@@ -78,11 +78,11 @@ jobs:
 
       # NOTE: tests require GOOGLE_* env vars to be set from one of the above steps
       - name: Run tests that mock services that require repo secrets
-        run: uv run pytest -v -s -m "not require-repo-secrets"
+        run: uv run pytest -v -s -m "not require_repo_secrets"
 
       - name: Run additional tests that require repo secrets
         if: env.PR_FROM_FORK != 'true'
-        run: uv run pytest -v -s -m "require-repo-secrets"
+        run: uv run pytest -v -s -m "require_repo_secrets"
 
   frontend-build:
     runs-on: ubuntu-latest

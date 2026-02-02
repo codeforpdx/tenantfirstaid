@@ -53,3 +53,8 @@ dev = [
     "google-cloud-discoveryengine>=0.15.0",
     "types-flask-cors>=6.0.0.20250809",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "require_repo_secrets: mark test as requiring repository secrets to run",
+]
