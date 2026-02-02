@@ -175,7 +175,6 @@ class LangChainChatManager:
             },
             stream_mode="updates",
             config=config,
-            durability="sync",
         ):
             # outer dict key changes with internal messages (Model, Tool, ...)
             chunk_k = list(chunk.keys())[0]
