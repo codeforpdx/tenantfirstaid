@@ -2,7 +2,7 @@
 
 ## Overview
 
-Tenant First Aid is a chatbot application that provides legal information related to housing and eviction in Oregon. The system uses a Retrieval-Augmented Generation (RAG) architecture to provide accurate, contextual responses based on Oregon housing law documents.
+Tenant First Aid is a chatbot application that provides legal information related to housing and eviction in Oregon. The system uses a Retrieval-Augmented Generation (RAG) architecture to provide accurate, contextual responses based on Oregon housing law documents.  The LangChain framework is used to abstract models and agents.
 
 The application follows a modern web architecture with a Flask-based Python backend serving a React frontend, deployed on Digital Ocean infrastructure.
 
@@ -17,9 +17,11 @@ graph TB
     end
 
     subgraph "AI/ML Services"
-        Gemini[Google Gemini 2.5 Pro<br/>LLM]
-        RAG[Vertex AI RAG<br/>Document Retrieval]
-        Corpus[RAG Corpus<br/>Oregon Housing Law]
+        subgraph "LangChain"
+            Gemini[Google Gemini 2.5 Pro<br/>LLM]
+            RAG[Vertex AI RAG<br/>Document Retrieval]
+            Corpus[RAG Corpus<br/>Oregon Housing Law]
+        end
     end
 
     subgraph "Infrastructure"
@@ -47,38 +49,47 @@ graph TB
 
 ### Overview
 
-The backend is a Flask-based Python application that serves as the API layer for the chatbot. It handles user sessions, manages conversations, and orchestrates interactions with Google's Vertex AI services for RAG-based responses.
+The backend is a Flask-based Python application that serves as the API layer for the chatbot. It handles user sessions, manages conversations.  LangChain orchestrates interactions with Google's Gemini and Vertex AI services for RAG-based responses.
 
 ### Directory/File Structure
 
 ```
 backend/
-├── tenantfirstaid/                 # Main application package
+├── tenantfirstaid/                     # Main application package
 │   ├── __init__.py
-│   ├── app.py                      # Flask application setup and routing
-│   ├── chat.py                     # Chat logic and Gemini integration
-│   ├── citations.py                # Citation handling
-│   ├── session.py                  # Session management
-│   ├── feedback.py                 # Message feedback logic and email integration
-│   └── sections.json               # Legal section mappings
-├── scripts/                        # Utility scripts
-│   ├── create_vector_store.py      # RAG corpus setup
-│   ├── convert_csv_to_jsonl.py     # Data conversion utilities
-│   └── documents/                  # Source legal documents
-│       └── or/                     # Oregon state laws
-│           ├── OAR54.txt           # Oregon Administrative Rules
-│           ├── ORS090.txt          # Oregon Revised Statutes
+│   ├── app.py                          # Flask application setup and routing
+│   ├── chat.py                         # Flask ChatView
+|   ├── constants.py                    # Immutable state and consolidated interface to environment variables
+|   ├── location.py                     # City & State normalization and sanitization
+|   ├── langchain_chat_manager.py       # Chat model configuration and response generation
+|   ├── langchain_tools.py              # LangChain Agent tools (i.e. RAG retriever)
+|   ├── citations.py                    # Citation handling
+│   ├── session.py                      # Session management
+│   ├── feedback.py                     # Message feedback logic and email integration
+│   └── sections.json                   # Legal section mappings
+├── scripts/                            # Utility scripts
+│   ├── create_langsmith_dataset.py     # Upload corpus to LangSmith
+│   ├── langsmith_evaluators.py         # LLM-as-a-Judge configuration (i.e. scoring, rubric)
+│   ├── run_langsmith_evaluators.py     # LangSmith experiment runner
+│   ├── simple_langchain_demo.py        # LangChain proof-of-concept
+│   ├── vertex_ai_list_datastores.py    # Utility to get Google Vertex AI Datastore IDs
+│   ├── create_vector_store.py          # RAG corpus setup
+│   ├── convert_csv_to_jsonl.py         # Data conversion utilities
+│   └── documents/                      # Source legal documents
+│       └── or/                         # Oregon state laws
+│           ├── OAR54.txt               # Oregon Administrative Rules
+│           ├── ORS090.txt              # Oregon Revised Statutes
 │           ├── ORS091.txt
 │           ├── ORS105.txt
 │           ├── ORS109.txt
 │           ├── ORS659A.txt
-│           ├── portland/           # Portland city codes
+│           ├── portland/               # Portland city codes
 │           │   └── PCC30.01.txt
-│           └── eugene/             # Eugene city codes
+│           └── eugene/                 # Eugene city codes
 │               └── EHC8.425.txt
-├── tests/                          # Test suite
-├── pyproject.toml                  # Python dependencies and config
-└── Makefile                        # Development commands
+├── tests/                              # Test suite
+├── pyproject.toml                      # Python dependencies and config
+└── Makefile                            # Development commands
 ```
 
 ### RAG (Retrieval-Augmented Generation)
