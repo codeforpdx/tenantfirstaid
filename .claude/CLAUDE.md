@@ -38,7 +38,7 @@ All python commands should be run via `uv run python ...`
 The backend uses LangChain 1.0.8+ for agent-based conversation management with Vertex AI integration.
 
 ### Key Components
-- **LangChainChatManager**: Main agent orchestration class (`backend/tenantfirstaid/langchain_chat.py`)
+- **LangChainChatManager**: Main agent orchestration class (`backend/tenantfirstaid/langchain_chat_manager.py`)
 - **retrieve_city_state_laws**: Tool for city/state-specific legal retrieval
 - **ChatVertexAI**: LangChain wrapper for Google Gemini
 
