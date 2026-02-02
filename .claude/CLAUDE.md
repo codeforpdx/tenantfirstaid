@@ -39,17 +39,15 @@ The backend uses LangChain 1.0.8+ for agent-based conversation management with V
 
 ### Key Components
 - **LangChainChatManager**: Main agent orchestration class (`backend/tenantfirstaid/langchain_chat.py`)
-- **retrieve_city_law**: Tool for city-specific legal retrieval
-- **retrieve_state_law**: Tool for state-wide legal retrieval
-- **ChatVertexAI**: LangChain wrapper for Google Gemini 2.5 Pro
+- **retrieve_city_state_laws**: Tool for city/state-specific legal retrieval
+- **ChatVertexAI**: LangChain wrapper for Google Gemini
 
 ### Environment Variables
 ```bash
-MODEL_NAME=gemini-2.5-pro              # LLM model name
-VERTEX_AI_DATASTORE=projects/.../datastores/...  # RAG corpus ID
-SHOW_MODEL_THINKING=false              # Enable Gemini thinking mode
-LANGSMITH_API_KEY=...                  # Optional: Enable tracing
-LANGSMITH_PROJECT=tenant-first-aid     # Optional: LangSmith project name
+MODEL_NAME=gemini-2.5-pro                          # LLM model name
+VERTEX_AI_DATASTORE=projects/.../datastores/...    # RAG corpus ID
+SHOW_MODEL_THINKING=false                          # Enable Gemini thinking mode
+LANGSMITH_API_KEY=...                              # Optional: Enable LLM evaluations
 ```
 
 ### Testing LangChain Components
