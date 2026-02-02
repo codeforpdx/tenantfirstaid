@@ -53,10 +53,11 @@ LANGSMITH_API_KEY=...                              # Optional: Enable LLM evalua
 ### Testing LangChain Components
 ```bash
 # Run LangChain-specific tests
-uv run pytest -k langchain
+uv run pytest -m langchain
 
 # Run with LangSmith tracing (requires API key)
-LANGSMITH_TRACING=true uv run pytest -k langchain
+LANGSMITH_TRACING=true LANGCHAIN_TRACING_V2=true uv run pytest -m langchain
+
 
 # Run evaluations (see docs/EVALUATION.md)
 uv run python scripts/run_langsmith_evaluation.py --num-samples 20

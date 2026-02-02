@@ -94,22 +94,21 @@ backend/
 
 ### RAG (Retrieval-Augmented Generation)
 
-The system uses **LangChain agents** with **Vertex AI RAG** tools for document retrieval. This combines LangChain's agent orchestration with Google's Vertex AI vector search capabilities and Gemini 2.5 Pro language model.
+The system uses **LangChain agents** with **Vertex AI RAG** tools for document retrieval. This combines LangChain's agent orchestration with Google's Vertex AI vector search capabilities and the Gemini language model.
 
 **Architecture Type**: Agent-based RAG with tool calling
-- **Framework**: LangChain 1.0.8+ (monolithic package)
-- **LLM Integration**: ChatVertexAI (langchain-google-vertexai 3.0.3+)
+- **Framework**: LangChain 1.1+
+- **LLM Integration**: ChatGoogleGenerativeAI (langchain-google-genai 4.0+)
 - **Agent Pattern**: `create_agent()` with custom RAG tools
-- **Retrieval Method**: Dense vector similarity search with metadata filtering
+- **Retrieval Method**: Dense vector similarity search with metadata filtering (VertexAISearchRetriever)
 
 #### Tool-Based Retrieval
 
-The agent has access to two retrieval tools:
+The agent has access to one retrieval tool:
 
-1. **City-Specific Law Retrieval**: Searches documents filtered by city and state
-2. **State-Wide Law Retrieval**: Searches general Oregon laws
+1. **City-Specific and State Law Retrieval**: Searches documents filtered by city (optional) and state
 
-The LLM decides which tool(s) to use based on the user's query and location context.
+The LLM decides how to call the tool based on the user's query and location context.
 
 #### Data Ingestion Pipeline
 
@@ -165,8 +164,8 @@ The query pipeline retrieves relevant legal information and generates responses:
 sequenceDiagram
     participant User
     participant Flask as Flask API
-    participant Session as Session Store
-    participant Gemini as Gemini 2.5 Pro
+    participant Session as Chat Manager
+    participant Gemini
     participant RAG as Vertex AI RAG
     participant Corpus as Document Corpus
 
@@ -186,16 +185,17 @@ sequenceDiagram
 
 1. **Context Preparation**: User query is combined with conversation history and location context
 2. **RAG Retrieval**: Vertex AI RAG searches the document corpus for relevant legal passages
-3. **Response Generation**: Gemini 2.5 Pro generates contextual responses using retrieved documents
+3. **Response Generation**: Gemini generates contextual responses using retrieved documents
 4. **Streaming Response**: Response is streamed back to the client in real-time
 5. **Session Update**: Conversation state is persisted for continuity
 
 ## Multi-Turn Conversation Management
 
-The system maintains conversational context across multiple interactions through a sophisticated session management approach that preserves conversation history while enabling contextual responses.
+The system maintains conversational context across multiple interactions by appending human and AI messages (including reasoning) to follow-up queries.
 
 ### Session Architecture
 
+:construction: TODO: update this section
 ```mermaid
 graph TB
     subgraph "Client Session"
@@ -237,10 +237,10 @@ interface TenantSessionData {
 
 1. **Session Initialization** (`/api/init`):
 
-   - Creates UUID v4 session identifier
+   - Creates UUID v4 session identifier :construction:
    - Initializes empty message array
    - Stores user location context (city/state)
-   - Uses Flask secure session cookies
+   - Uses Flask secure session cookies :construction:
 
 2. **Conversation Flow**:
 
@@ -251,6 +251,7 @@ interface TenantSessionData {
 3. **Context Preservation**:
 
    - Full message history passed to Gemini API on each request
+     - preserving Reasoning and Thought Signatures
    - System instructions include location-specific context
    - Previous legal advice references maintained across turns
    - Citation links and legal precedents remain accessible
@@ -270,7 +271,7 @@ The application implements real-time response streaming to provide immediate fee
 sequenceDiagram
     participant UI as React Frontend
     participant API as Flask API
-    participant Gemini as Gemini 2.5 Pro
+    participant Gemini as Gemini
     participant RAG as Vertex AI RAG
 
     UI->>API: POST /api/query with user message
@@ -286,36 +287,6 @@ sequenceDiagram
     end
 
     API->>API: Concatenate full response & update session
-```
-
-### Backend Streaming Implementation
-
-**Stream Generation** (`chat.py:131-157`):
-
-```python
-def generate():
-    response_stream = self.chat_manager.generate_gemini_chat_response(
-        current_session["messages"],
-        current_session["city"],
-        current_session["state"],
-        stream=True,  # Enable streaming
-    )
-
-    assistant_chunks = []
-    for event in response_stream:
-        # Extract text chunk from Gemini response
-        chunk = event.candidates[0].content.parts[0].text
-        assistant_chunks.append(chunk)
-        yield chunk  # Stream to client
-
-    # Persist complete response
-    assistant_msg = "".join(assistant_chunks)
-    current_session["messages"].append({
-        "role": "model",
-        "content": assistant_msg
-    })
-
-return Response(stream_with_context(generate()), mimetype="text/plain")
 ```
 
 ### Frontend Streaming Implementation

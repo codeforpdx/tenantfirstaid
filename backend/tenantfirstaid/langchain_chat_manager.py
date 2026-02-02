@@ -63,10 +63,10 @@ class LangChainChatManager:
             location=SINGLETON.GOOGLE_CLOUD_LOCATION,
             safety_settings=SINGLETON.SAFETY_SETTINGS,
             # consistency
-            temperature=SINGLETON.MODEL_TEMPERATURE,
+            temperature=SINGLETON.MODEL_TEMPERATURE,  # 1.0 is default for Gemini 3+, https://docs.langchain.com/oss/python/integrations/chat/google_generative_ai#instantiation
             seed=0,
             # reasoning
-            thinking_budget=-1,
+            thinking_budget=-1,  # gemini 2.5 specific (use thinking_level for 3+ https://docs.langchain.com/oss/python/integrations/chat/google_generative_ai#thinking-support)
             include_thoughts=SINGLETON.SHOW_MODEL_THINKING,
         )
 

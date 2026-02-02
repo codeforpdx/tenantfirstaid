@@ -54,19 +54,11 @@ uv run python scripts/run_langsmith_evaluation.py \
 
 ### CI/CD
 
-Evaluation runs automatically on every PR that modifies backend code:
-- **Scope**: 20 test scenarios (subset for fast feedback)
-- **Threshold**: Must maintain quality scores above baseline
-- **Results**: Available in LangSmith dashboard
-
-To run full evaluation manually:
-1. Go to Actions → LangSmith Automated Evaluation
-2. Click "Run workflow"
-3. Set num_samples (empty = all scenarios)
+Because CI runs on PRs from forked repos, those jobs do not have access to repo vars/secrets (i.e. API keys).  Therefore PRs cannot automatically run LangSmith evaluations.
 
 ## Metrics Explained
 
-### Citation Accuracy (0.0-1.0)
+### Citation Accuracy (0.0-1.0) :construction:
 Evaluates if responses include proper citations to Oregon laws.
 - **1.0**: Proper ORS citations with HTML anchor tags
 - **0.5**: Citations present but formatting issues
@@ -84,7 +76,7 @@ Evaluates if legal advice is accurate based on Oregon tenant law.
 - **0.5**: Partially accurate or incomplete
 - **0.0**: Legally incorrect or misleading
 
-### Completeness (0.0-1.0)
+### Completeness (0.0-1.0) :construction:
 Evaluates if response fully addresses the user's question.
 - **1.0**: Comprehensive answer with context
 - **0.5**: Partial answer
@@ -101,17 +93,17 @@ Evaluates if tone is appropriate for legal advice.
 - Overly technical jargon
 - Dismissive or condescending language
 
-### Citation Format (Binary)
+### Citation Format (Binary) :construction:
 Checks HTML anchor tag format compliance.
 - **Pass**: Uses `<a href="..." target="_blank">ORS X.XXX</a>`
 - **Fail**: Missing anchor tags or incorrect format
 
-### Tool Usage (Binary)
+### Tool Usage (Binary) :construction:
 Checks if agent used RAG retrieval appropriately.
 - **Pass**: Used `retrieve_city_law` or `retrieve_state_law`
 - **Fail**: No retrieval tools used for legal question
 
-### Performance
+### Performance :construction:
 Tracks latency and token usage.
 - **Good**: < 5 seconds
 - **Acceptable**: 5-10 seconds
@@ -127,8 +119,8 @@ Tracks latency and token usage.
 
 2. Re-upload to LangSmith:
 ```bash
-cd backend
-uv run python scripts/create_langsmith_dataset.py
+cd backend/scripts
+uv run python create_langsmith_dataset.py --dataset-name tenant-legal-qa-scenarios [--overwrite] [--limit-examples 4]
 ```
 
 ## Viewing Results
@@ -146,7 +138,7 @@ https://smith.langchain.com/
 1. **Make code changes** to improve citation accuracy
 2. **Run evaluation locally**:
    ```bash
-   uv run python scripts/run_langsmith_evaluation.py --num-samples 20 --experiment "improve-citations"
+   uv run python scripts/run_langsmith_evaluation.py --num-samples 10 --experiment "improve-citations"
    ```
 3. **View results** in LangSmith dashboard
 4. **Compare** with baseline experiment
@@ -187,9 +179,9 @@ LLM-as-judge evaluators can have biases. Review specific examples in LangSmith d
 ### LANGSMITH_API_KEY not set
 1. Create account at https://smith.langchain.com/
 2. Generate API key from settings
-3. Set environment variable:
+3. Set environment variable in [.env](../.env)
    ```bash
-   export LANGSMITH_API_KEY=your-api-key
+  LANGSMITH_API_KEY=your-api-key
    ```
 
 ## Environment Variables
@@ -203,26 +195,10 @@ LANGSMITH_API_KEY=your-api-key
 
 # Optional
 LANGSMITH_PROJECT=tenant-first-aid-dev  # Project name in LangSmith
-LANGSMITH_TRACING_V2=true              # Enable detailed tracing
+LANGSMITH_TRACING=true
+LANGCHAIN_TRACING_V2=true               # Enable detailed tracing
 MODEL_NAME=gemini-2.5-pro              # Model to evaluate
 ```
-
-## Production Monitoring
-
-Enable sampling of live production traffic:
-
-```python
-# In production deployment
-import langsmith
-
-# Sample 1% of production traffic for evaluation
-langsmith.configure(
-    sampling_rate=0.01,
-    project="tenant-first-aid-prod"
-)
-```
-
-This allows continuous quality monitoring without impacting performance.
 
 ## Best Practices
 
