@@ -6,7 +6,7 @@ advice responses across multiple dimensions.
 
 import re
 from textwrap import dedent
-from typing import Any, Final
+from typing import Any, Dict, Final
 
 from openevals import create_llm_as_judge
 from openevals.prompts import CORRECTNESS_PROMPT
@@ -194,7 +194,7 @@ tone_evaluator: SimpleEvaluator = create_llm_as_judge(
 
 
 # Evaluator 5: Citation Format (Heuristic).
-def citation_format_evaluator(run, example) -> Any:
+def citation_format_evaluator(run, example) -> Dict[str, Any]:
     """Check if citations use proper HTML anchor tag format.
 
     Args:
@@ -234,7 +234,7 @@ def citation_format_evaluator(run, example) -> Any:
 
 
 # Evaluator 6: Tool Usage (Heuristic).
-def tool_usage_evaluator(run, example) -> Any:
+def tool_usage_evaluator(run, example) -> Dict[str, Any]:
     """Check if agent used RAG tools appropriately.
 
     Args:
@@ -244,6 +244,14 @@ def tool_usage_evaluator(run, example) -> Any:
     Returns:
         Dictionary with evaluation results
     """
+
+    if not hasattr(run, "trace") or not run.trace:
+        return {
+            "key": "tool_usage",
+            "score": 0.0,
+            "comment": "No trace available for evaluation",
+        }
+
     # Access trace to see which tools were called.
     tool_calls = []
     for step in run.trace.get("steps", []):
@@ -263,7 +271,7 @@ def tool_usage_evaluator(run, example) -> Any:
 
 
 # Evaluator 7: Performance Metrics (Heuristic).
-def performance_evaluator(run, example) -> Any:
+def performance_evaluator(run, example) -> Dict[str, Any]:
     """Track latency and token usage.
 
     Args:
