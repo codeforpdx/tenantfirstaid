@@ -60,7 +60,7 @@ class ChatView(View):
                     case "reasoning":
                         # reasoning-key is not required in the ReasoningContentBlock typed-dict
                         if "reasoning" in content_block:
-                            return_text += f"<i>{content_block['reasoning']}</i>"
+                            return_text += f"\N{THINKING FACE} <em>{content_block['reasoning'].rstrip()}</em> \N{THINKING FACE}\n\n"
                     case "text":
                         # These are the Model messages back to the User
                         return_text += f"{content_block['text']}\n"
