@@ -1,9 +1,29 @@
 import os
 from pathlib import Path
-from typing import Final
+from typing import Final, Optional
 
 from dotenv import load_dotenv
 from langchain_google_genai import HarmBlockThreshold, HarmCategory
+
+
+def _strtobool(val: Optional[str]) -> bool:
+    """Convert a string representation of truth to true (1) or false (0).
+
+    True values are 'y', 'yes', 't', 'true', 'on', and '1';
+    False values are 'n', 'no', 'f', 'false', 'off', and '0'.  Also None.
+    Raises ValueError if 'val' is anything else.
+    """
+
+    if val is None:
+        return False
+
+    # credit to SO: https://stackoverflow.com/a/79879247
+    val = val.lower()
+    if val in ("y", "yes", "t", "true", "on", "1"):
+        return True
+    if val in ("n", "no", "f", "false", "off", "0"):
+        return False
+    raise ValueError(f"Invalid truth value {val!r}")
 
 
 class _GoogEnvAndPolicy:
@@ -59,7 +79,9 @@ class _GoogEnvAndPolicy:
             self.VERTEX_AI_DATASTORE = self.VERTEX_AI_DATASTORE.split("/")[-1]
 
         # Assign slot attributes for optional environment variables
-        self.SHOW_MODEL_THINKING: Final = bool(os.getenv("SHOW_MODEL_THINKING", False))
+        self.SHOW_MODEL_THINKING: Final = _strtobool(
+            os.getenv("SHOW_MODEL_THINKING", "false")
+        )
 
         # Assign slot attributes for hard-coded values
         # TODO: separate these from environment variables
