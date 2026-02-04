@@ -2,8 +2,11 @@
 This module defines Tools for an Agent to call
 """
 
+import json
+from pathlib import Path
 from typing import Optional
 
+from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from langchain.tools import ToolRuntime
 from langchain_core.tools import tool
@@ -20,7 +23,7 @@ class Rag_Builder:
     The helper class handles creds, project, location, datastore, etc.
     """
 
-    __credentials: Credentials
+    __credentials: Credentials | service_account.Credentials
     rag: VertexAISearchRetriever
 
     def __init__(
@@ -29,9 +32,23 @@ class Rag_Builder:
         name: Optional[str] = "tfa-retriever",
         max_documents: Optional[int] = 1,
     ) -> None:
-        self.__credentials = Credentials.from_authorized_user_file(
-            SINGLETON.GOOGLE_APPLICATION_CREDENTIALS
-        )
+        if SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is None:
+            raise ValueError("GOOGLE_APPLICATION_CREDENTIALS is not set")
+
+        cred_path = Path(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
+
+        with cred_path.open("r") as f:
+            match json.load(f).get("type"):
+                case "authorized_user":
+                    self.__credentials = Credentials.from_authorized_user_file(
+                        SINGLETON.GOOGLE_APPLICATION_CREDENTIALS
+                    )
+                case "service_account":
+                    self.__credentials = (
+                        service_account.Credentials.from_service_account_file(
+                            SINGLETON.GOOGLE_APPLICATION_CREDENTIALS
+                        )
+                    )
 
         self.rag = VertexAISearchRetriever(
             beta=True,  # required for this implementation
