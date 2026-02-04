@@ -40,8 +40,6 @@ class ChatView(View):
         tid: Optional[str] = None
 
         def generate() -> Generator[str, Any, None]:
-            assistant_chunks: List[str] = []
-
             response_stream: Generator[ContentBlock] = (
                 self.chat_manager.generate_streaming_response(
                     messages=messages,
@@ -65,7 +63,6 @@ class ChatView(View):
                         # These are the Model messages back to the User
                         return_text += f"{content_block['text']}\n"
 
-                assistant_chunks.append(return_text)
                 yield return_text
 
         return Response(
