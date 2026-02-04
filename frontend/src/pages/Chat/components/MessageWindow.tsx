@@ -68,13 +68,13 @@ export default function MessageWindow({
                 return (
                   <div
                     className={`flex w-full ${
-                      message.role === "model" ? "justify-start" : "justify-end"
+                      message.role === "ai" ? "justify-start" : "justify-end"
                     }`}
                     key={message.messageId}
                   >
                     <div
                       className={`message-bubble p-3 rounded-2xl max-w-[95%] ${
-                        message.role === "model"
+                        message.role === "ai"
                           ? "bg-slate-200 rounded-tl-sm"
                           : "bg-green-dark text-white rounded-tr-sm"
                       }`}

@@ -22,21 +22,21 @@ vi.mock("../../pages/Chat/components/MessageWindow", () => ({
 }));
 
 const mockMessages1 = [
-  { content: "some text", role: "model", messageId: 1 },
+  { content: "some text", role: "ai", messageId: 1 },
   { content: "some text", role: "user", messageId: 2 },
   {
     content: "some text-----generate letter-----<p>Letter HTML</p>",
-    role: "model",
+    role: "ai",
     messageId: 3,
   },
 ];
 
 const mockMessages2 = [
-  { content: "some text", role: "model", messageId: 1 },
+  { content: "some text", role: "ai", messageId: 1 },
   { content: "some text", role: "user", messageId: 2 },
   {
     content: "some text",
-    role: "model",
+    role: "ai",
     messageId: 3,
   },
 ];

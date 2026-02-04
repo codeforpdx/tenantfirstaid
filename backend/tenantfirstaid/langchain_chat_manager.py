@@ -149,6 +149,8 @@ class LangChainChatManager:
 
         Args:
             messages: List of message dictionaries with 'role' and 'content' keys
+                      where role is one of 'human', 'user', 'ai', 'assistant',
+                      'function', 'tool', 'system', or 'developer'.
             city: User's city
             state: User's state
 
