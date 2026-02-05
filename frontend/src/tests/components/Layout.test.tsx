@@ -26,7 +26,7 @@ const renderLayout = async (path: string) => {
           </Layout>
         </MemoryRouter>
       </HousingContextProvider>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 };
 

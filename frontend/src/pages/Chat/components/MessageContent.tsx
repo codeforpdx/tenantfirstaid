@@ -1,4 +1,3 @@
-import clsx from "clsx";
 import type { IMessage } from "../../../hooks/useMessages";
 import DOMPurify, {
   SANITIZE_AI_SETTINGS,
@@ -21,7 +20,7 @@ export default function MessageContent({ message }: Props) {
       <strong>{message.role === "ai" ? "Bot: " : "You: "}</strong>
       <span className="whitespace-pre-wrap">
         {messageContent.length === 0 ? (
-          <span className="animate-dot-pulse italic">Typing...</span>
+          <span className="animate-dot-pulse italic">Thinking...</span>
         ) : (
           <span dangerouslySetInnerHTML={{ __html: messageContent }} />
         )}

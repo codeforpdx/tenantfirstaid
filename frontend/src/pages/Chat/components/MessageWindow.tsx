@@ -71,9 +71,7 @@ export default function MessageWindow({
                   <div
                     className={clsx(
                       "flex w-full",
-                      message.role === "ai"
-                        ? "justify-start"
-                        : "justify-end",
+                      message.role === "ai" ? "justify-start" : "justify-end",
                     )}
                     key={message.messageId}
                   >

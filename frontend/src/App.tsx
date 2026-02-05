@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Navbar from "./shared/components/Navbar/Navbar";
 import Chat from "./Chat";
 import LoadingPage from "./pages/LoadingPage";
+import PageLayout from "./layouts/PageLayout";
 
 // Lazy-loading for less frequented pages
 const About = lazy(() => import("./About"));
@@ -15,19 +16,28 @@ export default function App() {
     <Router>
       <Navbar />
       <Routes>
-        <Route path="/" element={<Chat />} />
+        <Route
+          path="/"
+          element={
+            <PageLayout>
+              <Chat />
+            </PageLayout>
+          }
+        />
         <Route
           path="/*"
           element={
-            <Suspense fallback={<LoadingPage />}>
-              <Routes>
-                <Route path="/letter" element={<Letter />} />
-                <Route path="/letter/:org/:loc?" element={<Letter />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/disclaimer" element={<Disclaimer />} />
-                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-              </Routes>
-            </Suspense>
+            <PageLayout>
+              <Suspense fallback={<LoadingPage />}>
+                <Routes>
+                  <Route path="/letter" element={<Letter />} />
+                  <Route path="/letter/:org/:loc?" element={<Letter />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/disclaimer" element={<Disclaimer />} />
+                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                </Routes>
+              </Suspense>
+            </PageLayout>
           }
         />
       </Routes>
