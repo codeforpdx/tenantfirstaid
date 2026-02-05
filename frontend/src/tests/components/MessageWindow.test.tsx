@@ -16,7 +16,7 @@ beforeAll(() => {
 describe("MessageWindow component", () => {
   const messages: IMessage[] = [
     { role: "user", content: "first message", messageId: "1" },
-    { role: "model", content: "second message", messageId: "2" },
+    { role: "ai", content: "second message", messageId: "2" },
     { role: "user", content: "third message", messageId: "3" },
   ];
 

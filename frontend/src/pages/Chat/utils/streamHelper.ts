@@ -32,7 +32,7 @@ async function streamText({
   setMessages((prev) => [
     ...prev,
     {
-      role: "model",
+      role: "ai",
       content: "",
       messageId: botMessageId,
     },
