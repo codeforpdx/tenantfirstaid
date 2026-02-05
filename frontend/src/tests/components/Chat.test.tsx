@@ -25,7 +25,8 @@ const mockMessages1 = [
   { content: "some text", role: "ai", messageId: 1 },
   { content: "some text", role: "user", messageId: 2 },
   {
-    content: "some text-----generate letter-----<p>Letter HTML</p>",
+    content:
+      "some text-----generate letter-----<p>Letter HTML</p>-----end of letter-----",
     role: "ai",
     messageId: 3,
   },
