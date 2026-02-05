@@ -15,19 +15,12 @@ export default function App() {
   return (
     <Router>
       <Navbar />
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <PageLayout>
-              <Chat />
-            </PageLayout>
-          }
-        />
-        <Route
-          path="/*"
-          element={
-            <PageLayout>
+      <PageLayout>
+        <Routes>
+          <Route path="/" element={<Chat />} />
+          <Route
+            path="/*"
+            element={
               <Suspense fallback={<LoadingPage />}>
                 <Routes>
                   <Route path="/letter" element={<Letter />} />
@@ -37,10 +30,10 @@ export default function App() {
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 </Routes>
               </Suspense>
-            </PageLayout>
-          }
-        />
-      </Routes>
+            }
+          />
+        </Routes>
+      </PageLayout>
     </Router>
   );
 }
