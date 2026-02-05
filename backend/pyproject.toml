@@ -1,7 +1,7 @@
 
 [project]
 name = "tenant-first-aid"
-version = "0.2.0"
+version = "0.3.0"
 requires-python = ">=3.12"
 dependencies = [
   "flask>=3.1.1",
@@ -17,8 +17,15 @@ dependencies = [
   "simplejson",
   "svglib<1.6", # holding version back because 1.6.0 now requires manual platform installation of https://www.cairographics.org/download/
   "python-dotenv",
-  "pandas>=2.3.0",
   "vertexai>=1.43.0",
+  "langchain>=1.1.0,<2.0.0",
+  "langchain-google-vertexai>=3.1.0,<4.0.0",
+  "langsmith[pytest]>=0.4.47,<0.5.0",
+  "langchain-core>=1.1.0",
+  "openevals>=0.1.2",
+  "langchain-google-community[vertexaisearch]>=3.0.1",
+  "polars>=1.35.2",
+  "langchain-google-genai>=4.0.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -33,17 +40,21 @@ build-backend = "setuptools.build_meta"
 dev = [
     "ipdb>=0.13.13",
     "mypy>=1.16.1",
-    "pandas-stubs>=2.2.3.250527",
     "pyrefly>=0.21.0",
     "pytest>=8.4.0",
+    "pytest-asyncio>=0.23.0",
     "pytest-cov>=6.1.1",
     "pytest-mock>=3.14.1",
     "ruff>=0.12.0",
     "ty>=0.0.1a11",
     "types-Flask>=1.1.6",
     "types-simplejson>=3.20.0.20250326",
+    "httpx>=0.27.0",
+    "google-cloud-discoveryengine>=0.15.0",
+    "types-flask-cors>=6.0.0.20250809",
 ]
 
-gen_convo = [
-      "pandas",
+[tool.pytest.ini_options]
+markers = [
+    "require_repo_secrets: mark test as requiring repository secrets to run",
 ]

@@ -1,12 +1,12 @@
-from pathlib import Path
-from flask import Flask
-from flask_mailman import Mail
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-from flask_cors import CORS
 import logging
 import os
+from pathlib import Path
 
+from flask import Flask
+from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_mailman import Mail
 
 if Path(".env").exists():
     from dotenv import load_dotenv
@@ -14,7 +14,6 @@ if Path(".env").exists():
     load_dotenv(override=True)
 
 from .chat import ChatView
-
 from .feedback import send_feedback
 
 app = Flask(__name__)

@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -86,6 +86,7 @@ jobs:
             APP_PASSWORD=${{secrets.APP_PASSWORD}}
             SENDER_EMAIL=${{vars.SENDER_EMAIL}}
             RECIPIENT_EMAIL=${{vars.RECIPIENT_EMAIL}}
+            MODEL_NAME=${{vars.MODEL_NAME}}
             GOOGLE_CLOUD_PROJECT=${{vars.GOOGLE_CLOUD_PROJECT}}
             GOOGLE_CLOUD_LOCATION=${{vars.GOOGLE_CLOUD_LOCATION}}
             VERTEX_AI_DATASTORE=${{vars.VERTEX_AI_DATASTORE}}
