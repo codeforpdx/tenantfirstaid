@@ -72,7 +72,7 @@ describe("exportMessages", () => {
 
     // Role capitalization and all messages included
     expect(html).toContain("<strong>User</strong>");
-    expect(html).toContain("<strong>Model</strong>");
+    expect(html).toContain("<strong>AI</strong>");
     const paragraphCount = (html.match(/<p>/g) || []).length;
     expect(paragraphCount).toBe(3);
 

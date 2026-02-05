@@ -9,7 +9,7 @@ export default function exportMessages(messages: IMessage[]) {
     .map(
       ({ role, content }) =>
         `<p><strong>${
-          role.charAt(0).toUpperCase() + role.slice(1)
+          role === "user" ? "User" : "AI"
         }</strong>: ${sanitizeText(content)}</p>`,
     )
     .join("");
