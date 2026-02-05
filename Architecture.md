@@ -464,6 +464,7 @@ frontend/
 │   │   │   ├── DisclaimerLayout.tsx  # Layout for disclaimer components
 │   │   │   ├── FeatureSnippet.tsx  # Features and references component
 │   │   │   ├── MessageContainer.tsx  # Layout for main UI component
+│   │   │   ├── PageSection.tsx     # Layout static page sections component
 │   │   │   └── TenantFirstAidLogo.tsx # Application logo
 │   │   ├── constants/
 │   │   │   └── constants.ts        # File of constants
@@ -479,7 +480,8 @@ frontend/
 │   │   │   ├── InitializationForm.test.ts # InitializationForm component testing
 │   │   │   ├── Letter.test.ts      # Letter component testing
 │   │   │   ├── LetterDisclaimer.test.ts # LetterDisclaimer component testing
-│   │   │   └── MessageWindow.test.ts # MessageWindow component testing
+│   │   │   ├── MessageWindow.test.ts # MessageWindow component testing
+│   │   │   └── PageSection.test.ts # PageSection component testing
 │   │   └── utils/                  # Utility function testing
 │   │       ├── dompurify.test.ts   # dompurify testing
 │   │       ├── exportHelper.test.ts # exportHelper testing
