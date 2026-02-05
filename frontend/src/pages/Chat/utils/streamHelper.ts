@@ -1,7 +1,7 @@
 import { ILocation } from "../../../contexts/HousingContext";
 import { type IMessage } from "../../../hooks/useMessages";
 
-interface IStreamTextOptions {
+export interface IStreamTextOptions {
   addMessage: (args: {
     city: string | null;
     state: string;

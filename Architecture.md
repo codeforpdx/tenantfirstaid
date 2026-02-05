@@ -143,12 +143,10 @@ graph LR
 **Data Ingestion Process:**
 
 1. **Document Collection**: Legal documents are stored as text files organized by jurisdiction:
-
    - State laws: `documents/or/*.txt`
    - City codes: `documents/or/portland/*.txt`, `documents/or/eugene/*.txt`
 
 2. **Vector Store Creation**: The `create_vector_store.py` script:
-
    - Processes documents by directory structure
    - Adds metadata attributes (city, state) for filtering
    - Uploads files to Vertex AI RAG corpus
@@ -227,7 +225,7 @@ interface TenantSessionData {
   state: string; // User's state (default: "or")
   messages: Array<{
     // Complete conversation history
-    role: "user" | "model";
+    role: "user" | "ai";
     content: string;
   }>;
 }
@@ -236,20 +234,17 @@ interface TenantSessionData {
 **Multi-Turn Implementation Details:**
 
 1. **Session Initialization** (`/api/init`):
-
    - Creates UUID v4 session identifier :construction:
    - Initializes empty message array
    - Stores user location context (city/state)
    - Uses Flask secure session cookies :construction:
 
 2. **Conversation Flow**:
-
    - Each message exchange appends to `messages` array
    - Complete conversation history sent to Gemini for context
    - Location metadata enables jurisdiction-specific legal advice
 
 3. **Context Preservation**:
-
    - Full message history passed to Gemini API on each request
      - preserving Reasoning and Thought Signatures
    - System instructions include location-specific context
@@ -308,7 +303,7 @@ async function streamText({
   setMessages((prev) => [
     ...prev,
     {
-      role: "model",
+      role: "ai",
       content: "",
       messageId: botMessageId,
     },
@@ -332,8 +327,8 @@ async function streamText({
       // Update only the bot's message
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.messageId === botMessageId ? { ...msg, content: fullText } : msg
-        )
+          msg.messageId === botMessageId ? { ...msg, content: fullText } : msg,
+        ),
       );
     }
   } catch (error) {
@@ -345,8 +340,8 @@ async function streamText({
               ...msg,
               content: "Sorry, I encountered an error. Please try again.",
             }
-          : msg
-      )
+          : msg,
+      ),
     );
   } finally {
     setIsLoading?.(false);
@@ -434,29 +429,31 @@ frontend/
 │   │   ├── useMessages.tsx         # Message handling logic
 │   │   ├── useHousingContext.tsx   # Custom hook for housing context
 │   │   └── useLetterContent.tsx    # State management for letter generation
-│   ├── pages/Chat/                 # Chat page components
-│   │   ├── components/
-│   │   │   ├── ChatDisclaimer.tsx # Disclaimer for Chat page
-│   │   │   ├── InitializationForm.tsx # Context information from user
-│   │   │   ├── AutoExpandText.tsx  # Animated Text component
-│   │   │   ├── ExportMessagesButton.tsx # Chat export
-│   │   │   ├── InputField.tsx      # Message input
-│   │   │   ├── FeedbackModal.tsx   # Feedback modal
-│   │   │   ├── MessageContent.tsx  # Message display
-│   │   │   ├── MessageWindow.tsx   # Chat window
-│   │   │   └── SelectField.tsx     # Initialization form select field
-│   │   └── utils/
-│   │       ├── exportHelper.ts     # Export functionality
-│   │       ├── feedbackHelper.tsx  # Feedback functionality
-│   │       ├── formHelper.tsx      # Housing context functionality
-│   │       └── streamHelper.tsx    # Stream functionality
-│   ├── pages/Letter/               # Letter page components
-│   │   ├── components/
-│   │   │   ├── LetterDisclaimer.tsx # Disclaimer for Letter page
-│   │   │   └── LetterGenerationDialog.tsx # Letter page dialog
-│   │   └── utils/
-│   │       └── letterHelper.tsx    # Letter generation functionality
-│   └── shared/                     # Shared components and utils
+│   ├── pages/
+│   │   ├── Chat/                   # Chat page components
+│   │   │   ├── components/
+│   │   │   │   ├── ChatDisclaimer.tsx # Disclaimer for Chat page
+│   │   │   │   ├── InitializationForm.tsx # Context information from user
+│   │   │   │   ├── AutoExpandText.tsx  # Animated Text component
+│   │   │   │   ├── ExportMessagesButton.tsx # Chat export
+│   │   │   │   ├── InputField.tsx      # Message input
+│   │   │   │   ├── FeedbackModal.tsx   # Feedback modal
+│   │   │   │   ├── MessageContent.tsx  # Message display
+│   │   │   │   ├── MessageWindow.tsx   # Chat window
+│   │   │   │   └── SelectField.tsx     # Initialization form select field
+│   │   │   └── utils/
+│   │   │       ├── exportHelper.ts     # Export functionality
+│   │   │       ├── feedbackHelper.tsx  # Feedback functionality
+│   │   │       ├── formHelper.tsx      # Housing context functionality
+│   │   │       └── streamHelper.tsx    # Stream functionality
+│   │   ├──Letter/               # Letter page components
+│   │   │   ├── components/
+│   │   │   │   ├── LetterDisclaimer.tsx # Disclaimer for Letter page
+│   │   │   │   └── LetterGenerationDialog.tsx # Letter page dialog
+│   │   │   └── utils/
+│   │   │       └── letterHelper.tsx    # Letter generation functionality
+│   │   └── LoadingPage.tsx             # Loading component for routes
+│   ├── shared/                     # Shared components and utils
 │   │   ├── components/
 │   │   │   ├── Navbar/
 │   │   │   │   ├── Sidebar.tsx     # Navigation for mobile
@@ -484,9 +481,12 @@ frontend/
 │   │   │   ├── LetterDisclaimer.test.ts # LetterDisclaimer component testing
 │   │   │   └── MessageWindow.test.ts # MessageWindow component testing
 │   │   └── utils/                  # Utility function testing
-│   │       ├── letterHelper.test.ts # letterHelper testing
+│   │       ├── dompurify.test.ts   # dompurify testing
+│   │       ├── exportHelper.test.ts # exportHelper testing
 │   │       ├── formHelper.test.ts  # formHelper testing
-│   │       └── dompurify.test.ts   # dompurify testing
+│   │       ├── letterHelper.test.ts # letterHelper testing
+│   │       ├── sanitizeText.test.ts # sanitizeText testing
+│   │       └── streamHelper.test.ts # streamHelper testing
 ├── public/
 │   └── favicon.svg                 # Site favicon
 ├── package.json                    # Dependencies and scripts

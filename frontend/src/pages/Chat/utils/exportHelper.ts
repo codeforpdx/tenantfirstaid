@@ -1,16 +1,5 @@
 import type { IMessage } from "../../../hooks/useMessages";
-
-function sanitizeText(str: string) {
-  // Strips anchor tags
-  str = str.replace(/<a\b[^>]*>(.*?)<\/a>/gi, "$1");
-
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+import sanitizeText from "../../../shared/utils/sanitizeText";
 
 export default function exportMessages(messages: IMessage[]) {
   if (messages.length < 2) return;
@@ -20,7 +9,7 @@ export default function exportMessages(messages: IMessage[]) {
     .map(
       ({ role, content }) =>
         `<p><strong>${
-          role.charAt(0).toUpperCase() + role.slice(1)
+          role === "user" ? "User" : "AI"
         }</strong>: ${sanitizeText(content)}</p>`,
     )
     .join("");
