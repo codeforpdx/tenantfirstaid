@@ -1,24 +1,64 @@
 import { useEffect, useState } from "react";
-import { IMessage } from "./useMessages";
+import useMessages, { IMessage } from "./useMessages";
 import DOMPurify, { SANITIZE_AI_SETTINGS } from "../shared/utils/dompurify";
+
+const LETTER_START = "-----generate letter-----";
+const LETTER_END = "-----end of letter-----";
+
+function extractLetter(content: string) {
+  const startIndex = content.lastIndexOf(LETTER_START);
+  const endIndex = content.indexOf(LETTER_END, startIndex);
+
+  if (startIndex === -1 || endIndex === -1) {
+    return { letter: null, reconstructedContent: content };
+  }
+
+  const letter = content
+    .substring(startIndex + LETTER_START.length, endIndex)
+    .trim();
+
+  const before = content.substring(0, startIndex).trim();
+  const after = content.substring(endIndex + LETTER_END.length).trim();
+  const reconstructedContent = [before, after]
+    .filter(Boolean)
+    .map((text) => text.replace(/`/g, "'"))
+    .join("\n\n");
+
+  return { letter, reconstructedContent };
+}
 
 export function useLetterContent(messages: IMessage[]) {
   const [letterContent, setLetterContent] = useState("");
+  const { setMessages } = useMessages();
 
   useEffect(() => {
-    const messageLetters = messages?.filter(
-      (message) =>
-        message.content.split("-----generate letter-----").length === 2,
+    const messagesWithLetter = messages.filter((message) =>
+      message.content.includes(LETTER_START),
     );
-    const latestLetter = messageLetters[messageLetters.length - 1];
-    if (latestLetter) {
-      setLetterContent(
-        DOMPurify.sanitize(latestLetter?.content, SANITIZE_AI_SETTINGS)
-          .split("-----generate letter-----")[1]
-          .trim(),
-      );
-    }
-  }, [messages]);
+    const latestMessageWithLetter =
+      messagesWithLetter[messagesWithLetter.length - 1];
+
+    if (latestMessageWithLetter === undefined) return;
+
+    const { letter, reconstructedContent } = extractLetter(
+      latestMessageWithLetter.content,
+    );
+
+    if (letter === null) return;
+
+    setLetterContent(DOMPurify.sanitize(letter, SANITIZE_AI_SETTINGS));
+    setMessages((prev) => {
+      const newMessages = [...prev];
+      const lastIndex = newMessages.length - 1;
+
+      newMessages[lastIndex] = {
+        ...newMessages[lastIndex],
+        content: DOMPurify.sanitize(reconstructedContent, SANITIZE_AI_SETTINGS),
+      };
+
+      return newMessages;
+    });
+  }, [messages, setMessages]);
 
   return { letterContent };
 }
