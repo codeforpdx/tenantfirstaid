@@ -14,16 +14,23 @@ export default function App() {
   return (
     <Router>
       <Navbar />
-      <Suspense fallback={<LoadingPage />}>
-        <Routes>
-          <Route path="/" element={<Chat />} />
-          <Route path="/letter" element={<Letter />} />
-          <Route path="/letter/:org/:loc?" element={<Letter />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/disclaimer" element={<Disclaimer />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        </Routes>
-      </Suspense>
+      <Routes>
+        <Route path="/" element={<Chat />} />
+        <Route
+          path="/*"
+          element={
+            <Suspense fallback={<LoadingPage />}>
+              <Routes>
+                <Route path="/letter" element={<Letter />} />
+                <Route path="/letter/:org/:loc?" element={<Letter />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/disclaimer" element={<Disclaimer />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              </Routes>
+            </Suspense>
+          }
+        />
+      </Routes>
     </Router>
   );
 }

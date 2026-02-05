@@ -18,14 +18,13 @@ export default function MessageContent({ message }: Props) {
   return (
     <>
       <strong>{message.role === "ai" ? "Bot: " : "You: "}</strong>
-      <span
-        className={`
-          whitespace-pre-wrap
-          ${messageContent.length === 0 ? "animate-dot-pulse italic" : ""}`}
-        dangerouslySetInnerHTML={{
-          __html: messageContent.length === 0 ? "Typing..." : messageContent,
-        }}
-      ></span>
+      <span className="whitespace-pre-wrap">
+        {messageContent.length === 0 ? (
+          <span className="animate-dot-pulse italic">Typing...</span>
+        ) : (
+          <span dangerouslySetInnerHTML={{ __html: messageContent }} />
+        )}
+      </span>
     </>
   );
 }
