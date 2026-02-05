@@ -17,7 +17,7 @@ export default function MessageContent({ message }: Props) {
 
   return (
     <>
-      <strong>{message.role === "model" ? "Bot: " : "You: "}</strong>
+      <strong>{message.role === "ai" ? "Bot: " : "You: "}</strong>
       <span
         className={`
           whitespace-pre-wrap

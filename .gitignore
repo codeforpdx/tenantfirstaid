@@ -51,6 +51,9 @@ build/
 *.manifest
 *.spec
 
+# Ignore generated credentials from google-github-actions/auth
+gha-creds-*.json
+
 # Local data
 chatlog.jsonl
 /backend/chatlog.jsonl
