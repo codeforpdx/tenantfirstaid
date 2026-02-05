@@ -53,7 +53,7 @@ describe("exportMessages", () => {
         content: '<script>alert("xss")</script>',
         messageId: "1",
       },
-      { role: "model", content: "Safe & <secure>", messageId: "2" },
+      { role: "ai", content: "Safe & <secure>", messageId: "2" },
       { role: "user", content: "Third message", messageId: "3" },
     ];
 
@@ -94,7 +94,7 @@ describe("exportMessages", () => {
     expect(() =>
       exportMessages([
         { role: "user", content: "Test", messageId: "1" },
-        { role: "model", content: "Response", messageId: "2" },
+        { role: "ai", content: "Response", messageId: "2" },
       ]),
     ).not.toThrow();
 
@@ -103,7 +103,7 @@ describe("exportMessages", () => {
     exportMessages([
       { role: "user", content: "", messageId: "1" },
       {
-        role: "model",
+        role: "ai",
         content: '<a href="link.com">Click</a> & "quoted"',
         messageId: "2",
       },

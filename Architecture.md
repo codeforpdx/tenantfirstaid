@@ -225,7 +225,7 @@ interface TenantSessionData {
   state: string; // User's state (default: "or")
   messages: Array<{
     // Complete conversation history
-    role: "user" | "model";
+    role: "user" | "ai";
     content: string;
   }>;
 }
@@ -303,7 +303,7 @@ async function streamText({
   setMessages((prev) => [
     ...prev,
     {
-      role: "model",
+      role: "ai",
       content: "",
       messageId: botMessageId,
     },
