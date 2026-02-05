@@ -10,6 +10,12 @@ interface Props {
   className?: string;
 }
 
+/**
+ * A reusable page section component with a dynamic heading level.
+ * Renders h2 or h3 header followed by content.
+ *
+ * @returns A section with a heading and content container
+ */
 export default function PageSection({
   title,
   headingLevel,
