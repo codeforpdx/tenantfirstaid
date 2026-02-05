@@ -71,7 +71,7 @@ export default function MessageWindow({
                   <div
                     className={clsx(
                       "flex w-full",
-                      message.role === "model"
+                      message.role === "ai"
                         ? "justify-start"
                         : "justify-end",
                     )}
@@ -80,7 +80,7 @@ export default function MessageWindow({
                     <div
                       className={clsx(
                         "message-bubble p-3 rounded-2xl max-w-[95%]",
-                        message.role === "model"
+                        message.role === "ai"
                           ? "bg-slate-200 rounded-tl-sm"
                           : "bg-green-dark text-white rounded-tr-sm",
                       )}

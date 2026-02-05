@@ -75,7 +75,7 @@ export default function Letter() {
           setMessages((prev) => [
             ...prev,
             {
-              role: "model",
+              role: "ai",
               content: INITIAL_INSTRUCTION,
               messageId: Date.now().toString(),
             },
@@ -84,7 +84,7 @@ export default function Letter() {
           setMessages((prev) => [
             ...prev,
             {
-              role: "model",
+              role: "ai",
               content: ERROR_MESSAGE,
               messageId: Date.now().toString(),
             },

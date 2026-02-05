@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 export interface IMessage {
-  role: "user" | "model";
+  role: "user" | "ai";
   content: string;
   messageId: string;
 }

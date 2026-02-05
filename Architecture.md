@@ -2,7 +2,7 @@
 
 ## Overview
 
-Tenant First Aid is a chatbot application that provides legal information related to housing and eviction in Oregon. The system uses a Retrieval-Augmented Generation (RAG) architecture to provide accurate, contextual responses based on Oregon housing law documents.
+Tenant First Aid is a chatbot application that provides legal information related to housing and eviction in Oregon. The system uses a Retrieval-Augmented Generation (RAG) architecture to provide accurate, contextual responses based on Oregon housing law documents.  The LangChain framework is used to abstract models and agents.
 
 The application follows a modern web architecture with a Flask-based Python backend serving a React frontend, deployed on Digital Ocean infrastructure.
 
@@ -17,9 +17,11 @@ graph TB
     end
 
     subgraph "AI/ML Services"
-        Gemini[Google Gemini 2.5 Pro<br/>LLM]
-        RAG[Vertex AI RAG<br/>Document Retrieval]
-        Corpus[RAG Corpus<br/>Oregon Housing Law]
+        subgraph "LangChain"
+            Gemini[Google Gemini 2.5 Pro<br/>LLM]
+            RAG[Vertex AI RAG<br/>Document Retrieval]
+            Corpus[RAG Corpus<br/>Oregon Housing Law]
+        end
     end
 
     subgraph "Infrastructure"
@@ -47,50 +49,66 @@ graph TB
 
 ### Overview
 
-The backend is a Flask-based Python application that serves as the API layer for the chatbot. It handles user sessions, manages conversations, and orchestrates interactions with Google's Vertex AI services for RAG-based responses.
+The backend is a Flask-based Python application that serves as the API layer for the chatbot. It handles user sessions, manages conversations.  LangChain orchestrates interactions with Google's Gemini and Vertex AI services for RAG-based responses.
 
 ### Directory/File Structure
 
 ```
 backend/
-├── tenantfirstaid/                 # Main application package
+├── tenantfirstaid/                     # Main application package
 │   ├── __init__.py
-│   ├── app.py                      # Flask application setup and routing
-│   ├── chat.py                     # Chat logic and Gemini integration
-│   ├── citations.py                # Citation handling
-│   ├── session.py                  # Session management
-│   ├── feedback.py                 # Message feedback logic and email integration
-│   └── sections.json               # Legal section mappings
-├── scripts/                        # Utility scripts
-│   ├── create_vector_store.py      # RAG corpus setup
-│   ├── convert_csv_to_jsonl.py     # Data conversion utilities
-│   └── documents/                  # Source legal documents
-│       └── or/                     # Oregon state laws
-│           ├── OAR54.txt           # Oregon Administrative Rules
-│           ├── ORS090.txt          # Oregon Revised Statutes
+│   ├── app.py                          # Flask application setup and routing
+│   ├── chat.py                         # Flask ChatView
+|   ├── constants.py                    # Immutable state and consolidated interface to environment variables
+|   ├── location.py                     # City & State normalization and sanitization
+|   ├── langchain_chat_manager.py       # Chat model configuration and response generation
+|   ├── langchain_tools.py              # LangChain Agent tools (i.e. RAG retriever)
+|   ├── citations.py                    # Citation handling
+│   ├── session.py                      # Session management
+│   ├── feedback.py                     # Message feedback logic and email integration
+│   └── sections.json                   # Legal section mappings
+├── scripts/                            # Utility scripts
+│   ├── create_langsmith_dataset.py     # Upload corpus to LangSmith
+│   ├── langsmith_evaluators.py         # LLM-as-a-Judge configuration (i.e. scoring, rubric)
+│   ├── run_langsmith_evaluators.py     # LangSmith experiment runner
+│   ├── simple_langchain_demo.py        # LangChain proof-of-concept
+│   ├── vertex_ai_list_datastores.py    # Utility to get Google Vertex AI Datastore IDs
+│   ├── create_vector_store.py          # RAG corpus setup
+│   ├── convert_csv_to_jsonl.py         # Data conversion utilities
+│   └── documents/                      # Source legal documents
+│       └── or/                         # Oregon state laws
+│           ├── OAR54.txt               # Oregon Administrative Rules
+│           ├── ORS090.txt              # Oregon Revised Statutes
 │           ├── ORS091.txt
 │           ├── ORS105.txt
 │           ├── ORS109.txt
 │           ├── ORS659A.txt
-│           ├── portland/           # Portland city codes
+│           ├── portland/               # Portland city codes
 │           │   └── PCC30.01.txt
-│           └── eugene/             # Eugene city codes
+│           └── eugene/                 # Eugene city codes
 │               └── EHC8.425.txt
-├── tests/                          # Test suite
-├── pyproject.toml                  # Python dependencies and config
-└── Makefile                        # Development commands
+├── tests/                              # Test suite
+├── pyproject.toml                      # Python dependencies and config
+└── Makefile                            # Development commands
 ```
 
 ### RAG (Retrieval-Augmented Generation)
 
-The system uses **Vertex AI RAG (Retrieval-Augmented Generation)**, which combines Google's Vertex AI vector search capabilities with the Gemini 2.5 Pro language model. This is specifically a **grounded generation** approach where the LLM has access to a tool-based retrieval system that searches through a curated corpus of Oregon housing law documents.
+The system uses **LangChain agents** with **Vertex AI RAG** tools for document retrieval. This combines LangChain's agent orchestration with Google's Vertex AI vector search capabilities and the Gemini language model.
 
-**RAG Type and Category:**
+**Architecture Type**: Agent-based RAG with tool calling
+- **Framework**: LangChain 1.1+
+- **LLM Integration**: ChatGoogleGenerativeAI (langchain-google-genai 4.0+)
+- **Agent Pattern**: `create_agent()` with custom RAG tools
+- **Retrieval Method**: Dense vector similarity search with metadata filtering (VertexAISearchRetriever)
 
-- **Architecture Type**: Tool-augmented RAG with function calling
-- **Implementation**: Vertex AI managed RAG service
-- **Retrieval Method**: Dense vector similarity search with semantic matching
-- **Grounding**: Tool-based retrieval integrated directly into Gemini's generation process
+#### Tool-Based Retrieval
+
+The agent has access to one retrieval tool:
+
+1. **City-Specific and State Law Retrieval**: Searches documents filtered by city (optional) and state
+
+The LLM decides how to call the tool based on the user's query and location context.
 
 #### Data Ingestion Pipeline
 
@@ -146,8 +164,8 @@ The query pipeline retrieves relevant legal information and generates responses:
 sequenceDiagram
     participant User
     participant Flask as Flask API
-    participant Session as Session Store
-    participant Gemini as Gemini 2.5 Pro
+    participant Session as Chat Manager
+    participant Gemini
     participant RAG as Vertex AI RAG
     participant Corpus as Document Corpus
 
@@ -167,16 +185,17 @@ sequenceDiagram
 
 1. **Context Preparation**: User query is combined with conversation history and location context
 2. **RAG Retrieval**: Vertex AI RAG searches the document corpus for relevant legal passages
-3. **Response Generation**: Gemini 2.5 Pro generates contextual responses using retrieved documents
+3. **Response Generation**: Gemini generates contextual responses using retrieved documents
 4. **Streaming Response**: Response is streamed back to the client in real-time
 5. **Session Update**: Conversation state is persisted for continuity
 
 ## Multi-Turn Conversation Management
 
-The system maintains conversational context across multiple interactions through a sophisticated session management approach that preserves conversation history while enabling contextual responses.
+The system maintains conversational context across multiple interactions by appending human and AI messages (including reasoning) to follow-up queries.
 
 ### Session Architecture
 
+:construction: TODO: update this section
 ```mermaid
 graph TB
     subgraph "Client Session"
@@ -218,10 +237,10 @@ interface TenantSessionData {
 
 1. **Session Initialization** (`/api/init`):
 
-   - Creates UUID v4 session identifier
+   - Creates UUID v4 session identifier :construction:
    - Initializes empty message array
    - Stores user location context (city/state)
-   - Uses Flask secure session cookies
+   - Uses Flask secure session cookies :construction:
 
 2. **Conversation Flow**:
 
@@ -232,6 +251,7 @@ interface TenantSessionData {
 3. **Context Preservation**:
 
    - Full message history passed to Gemini API on each request
+     - preserving Reasoning and Thought Signatures
    - System instructions include location-specific context
    - Previous legal advice references maintained across turns
    - Citation links and legal precedents remain accessible
@@ -251,7 +271,7 @@ The application implements real-time response streaming to provide immediate fee
 sequenceDiagram
     participant UI as React Frontend
     participant API as Flask API
-    participant Gemini as Gemini 2.5 Pro
+    participant Gemini as Gemini
     participant RAG as Vertex AI RAG
 
     UI->>API: POST /api/query with user message
@@ -267,36 +287,6 @@ sequenceDiagram
     end
 
     API->>API: Concatenate full response & update session
-```
-
-### Backend Streaming Implementation
-
-**Stream Generation** (`chat.py:131-157`):
-
-```python
-def generate():
-    response_stream = self.chat_manager.generate_gemini_chat_response(
-        current_session["messages"],
-        current_session["city"],
-        current_session["state"],
-        stream=True,  # Enable streaming
-    )
-
-    assistant_chunks = []
-    for event in response_stream:
-        # Extract text chunk from Gemini response
-        chunk = event.candidates[0].content.parts[0].text
-        assistant_chunks.append(chunk)
-        yield chunk  # Stream to client
-
-    # Persist complete response
-    assistant_msg = "".join(assistant_chunks)
-    current_session["messages"].append({
-        "role": "model",
-        "content": assistant_msg
-    })
-
-return Response(stream_with_context(generate()), mimetype="text/plain")
 ```
 
 ### Frontend Streaming Implementation

@@ -1,18 +1,22 @@
-from xhtml2pdf import pisa
+import os
 from io import BytesIO
+from typing import Optional, Tuple
+
 from flask import request
 from flask_mailman import EmailMessage
-import os
-from typing import Optional, Tuple
+from xhtml2pdf import pisa
+from xhtml2pdf.context import pisaContext
 
 MAX_ATTACHMENT_SIZE: int = 2 * 1024 * 1024
 
 
 def convert_html_to_pdf(html_content: str) -> Optional[bytes]:
     pdf_buffer = BytesIO()
+
     pisa_status = pisa.CreatePDF(html_content, dest=pdf_buffer)
-    if pisa_status.err:
+    if isinstance(pisa_status, pisaContext) and pisa_status.err != 0:
         return None
+
     return pdf_buffer.getvalue()
 
 
@@ -21,11 +25,13 @@ def send_feedback() -> Tuple[str, int]:
     file = request.files.get("transcript")
 
     emails_to_cc = request.form.get("emailsToCC")
-    cc_list = [
-        stripped_email
-        for email in emails_to_cc.split(",")
-        if (stripped_email := email.strip())
-    ]
+    cc_list = []
+    if emails_to_cc is not None:
+        cc_list = [
+            stripped_email
+            for email in emails_to_cc.split(",")
+            if (stripped_email := email.strip())
+        ]
 
     if not file:
         return "No file provided", 404
@@ -47,7 +53,7 @@ def send_feedback() -> Tuple[str, int]:
     }
 
     try:
-        msg = EmailMessage(email_params)
+        msg = EmailMessage(**email_params)
         msg.attach(
             "transcript.pdf",
             pdf_content,
