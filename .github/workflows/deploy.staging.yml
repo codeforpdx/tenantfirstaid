@@ -33,7 +33,7 @@ jobs:
           npm run build
 
       - name: Upload backend code via SCP
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ vars.URL }}
           username: ${{ secrets.SSH_USER }}
@@ -43,7 +43,7 @@ jobs:
           rm: true
 
       - name: Upload frontend code via SCP
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ vars.URL }}
           username: ${{ secrets.SSH_USER }}
@@ -53,7 +53,7 @@ jobs:
           rm: false # Otherwise we wipe out the backend code
 
       - name: Bootstrap on droplet
-        uses: appleboy/ssh-action@v0.1.7
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ vars.URL }}
           username: ${{ secrets.SSH_USER }}
