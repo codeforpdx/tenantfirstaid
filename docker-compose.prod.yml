@@ -1,0 +1,46 @@
+services:
+  backend:
+    image: ghcr.io/codeforpdx/tenantfirstaid/backend:latest
+    container_name: tenantfirstaid-backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5000:5000"
+    environment:
+      - ENV=prod
+      - FLASK_ENV=production
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
+      - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/google-creds.json
+      - VERTEX_AI_DATASTORE=${VERTEX_AI_DATASTORE}
+      - MODEL_NAME=${MODEL_NAME:-gemini-2.5-pro}
+      - SHOW_MODEL_THINKING=${SHOW_MODEL_THINKING:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - MAIL_SERVER=${MAIL_SERVER}
+      - MAIL_PORT=${MAIL_PORT}
+      - SENDER_EMAIL=${SENDER_EMAIL}
+      - APP_PASSWORD=${APP_PASSWORD}
+      - RECIPIENT_EMAIL=${RECIPIENT_EMAIL}
+    volumes:
+      - google-creds:/app/secrets:ro
+    networks:
+      - tenantfirstaid
+
+  frontend:
+    image: ghcr.io/codeforpdx/tenantfirstaid/frontend:latest
+    container_name: tenantfirstaid-frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - backend
+    networks:
+      - tenantfirstaid
+
+volumes:
+  google-creds:
+    external: true
+
+networks:
+  tenantfirstaid:
+    driver: bridge
