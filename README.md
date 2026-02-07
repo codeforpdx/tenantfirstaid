@@ -15,6 +15,8 @@ Live at https://tenantfirstaid.com/
 <summary>GitHub account</summary>
 
 - You will need a GitHub account (free) to contribute to the project.  No account is necessary to browse the source code.
+  - You will be invited to join the [Contributor](https://github.com/orgs/codeforpdx/teams/contributor) team after you complete [step 2 ("Connect on Discord & Request Access") of the Code PDX onboarding](https://www.codepdx.org/volunteer)
+  - Look for the invitation email and click the link in the email to accept the invitation.
 </details>
 
 <details>
@@ -27,7 +29,10 @@ Live at https://tenantfirstaid.com/
 <details>
 <summary>Google Cloud application default credentials file</summary>
 
-- The chatbot now uses Google Gemini instead of OpenAI. You need to authenticate with the gcloud cli to develop, following these instructions:
+- This is needed to spin up a local instance of the backend (i.e. API calls to the chat LLM and RAG agent).
+- The chatbot now uses Google Gemini (previously OpenAI's ChatGPT).
+- The `tenantfirstaid` Google project admin will need to manually assign a role to you (gmail account).  Reach out in the Discord channel #[tenantfirstaid-general](https://discord.com/channels/1068260532806766733/1367177752792531115) to arrange this.
+- You need to authenticate with the gcloud cli to develop, following these instructions:
     1. [install gcloud](https://cloud.google.com/sdk/docs/install)
     1. [generate application default credentials file](https://cloud.google.com/docs/authentication/application-default-credentials)
     1. `gcloud auth application-default login`
