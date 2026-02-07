@@ -15,6 +15,7 @@ import {
 } from "../../../shared/constants/constants";
 import { scrollToTop } from "../../../shared/utils/scrolling";
 import AutoExpandText from "./AutoExpandText";
+import clsx from "clsx";
 
 const NONLETTERABLE_TOPICS = Object.keys(NONLETTERABLE_TOPIC_OPTIONS);
 
@@ -206,22 +207,20 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
 
       <div className="flex justify-center gap-4">
         <button
-          className={`
-            text-red-dark
-            border border-red-medium hover:border-red-dark
-            hover:bg-red-light
-            ${city === "other" ? "opacity-50" : ""}`}
+          className={clsx(
+            "text-red-dark border border-red-medium hover:border-red-dark hover:bg-red-light",
+            city === "other" && "opacity-50",
+          )}
           type="reset"
           onClick={handleFormReset}
         >
           Reset
         </button>
         <button
-          className={`
-            text-green-dark
-            border border-green-medium hover:border-green-dark
-            hover:bg-green-light
-            ${city === "other" ? "opacity-50" : ""}`}
+          className={clsx(
+            "text-green-dark border border-green-medium hover:border-green-dark hover:bg-green-light",
+            city === "other" && "opacity-50",
+          )}
           style={{
             cursor: city === "other" ? "not-allowed" : "pointer",
           }}
@@ -240,13 +239,15 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
           issueDescription && (
             <Link
               to="letter"
-              className={`
-                flex items-center
-                py-1 px-4
-                border rounded-md border-blue-medium hover:border-blue-dark
-                font-semibold text-center text-blue-dark 
-                hover:bg-blue-light no-underline
-                ${city === "other" ? "opacity-50" : ""}`}
+              className={clsx(
+                "flex items-center",
+                "py-1 px-4",
+                "border rounded-md border-blue-medium",
+                "font-semibold text-center text-blue-dark",
+                "hover:border-blue-dark hover:bg-blue-light",
+                "no-underline",
+                city === "other" && "opacity-50",
+              )}
               style={{
                 cursor: city === "other" ? "not-allowed" : "pointer",
               }}

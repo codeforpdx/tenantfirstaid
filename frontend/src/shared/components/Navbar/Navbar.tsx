@@ -5,6 +5,7 @@ import NavbarMenuButton from "./NavbarMenuButton";
 import Sidebar from "./Sidebar";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { NAVBAR_LINKS } from "../../constants/constants";
+import clsx from "clsx";
 
 export default function Navbar() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -30,12 +31,13 @@ export default function Navbar() {
                 to={to}
                 key={label}
                 className={({ isActive }) =>
-                  `px-2
-                  text-paper-background hover:text-green-dark
-                  hover:bg-green-light
-                  hover:outline hover:outline-paper-background hover:rounded
-                  hover:opacity-70 no-underline
-                  ${isActive ? "bg-green-medium text-paper-background rounded" : "no-underline"}`
+                  clsx(
+                    "px-2 text-paper-background",
+                    "hover:text-green-dark hover:bg-green-light hover:opacity-70",
+                    "hover:outline hover:outline-paper-background hover:rounded",
+                    "no-underline",
+                    isActive ? "bg-green-medium rounded" : "no-underline",
+                  )
                 }
               >
                 {label}
