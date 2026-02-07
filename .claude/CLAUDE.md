@@ -109,6 +109,30 @@ Write commit messages and PR descriptions as a humble but experienced engineer w
 
 Don't embarrass me with robot speak, marketing buzzwords, or vague fluff. Just leave a meaningful trace so someone can understand the choices later. Assume the reader is able to follow the code perfectly fine.
 
+## GitHub Actions Security
+
+We pin all third-party actions to commit SHAs to prevent supply chain attacks:
+
+```yaml
+# ✅ Good: Commit SHA with inline version comment
+uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345 #v1.0.0
+
+# ❌ Bad: Floating version tags
+uses: appleboy/scp-action@v1.0.0
+```
+
+We allow fully qualified semantic version tag from
+- `Astral` (uv) github actions (note: CodeQL will warn about this)
+- immutable tags
+
+```yaml
+# ✅ Good: semantic version tag
+uses: astral-sh/setup-uv@7.3.0
+
+# ❌ Bad: major-only version tag
+uses: astral-sh/setup-uv@7
+```
+
 ## What reviewers look for
 
 - Tests covering new behaviour.
