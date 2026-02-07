@@ -482,8 +482,8 @@ frontend/
 │   │   │   ├── InitializationForm.test.ts # InitializationForm component testing
 │   │   │   ├── Letter.test.ts      # Letter component testing
 │   │   │   ├── LetterDisclaimer.test.ts # LetterDisclaimer component testing
-│   │   │   ├── Layout.test.ts  # PageLayout component testing
 │   │   │   ├── MessageWindow.test.ts # MessageWindow component testing
+│   │   │   ├── PageLayout.test.tsx # PageLayout component testing
 │   │   │   └── PageSection.test.ts # PageSection component testing
 │   │   └── utils/                  # Utility function testing
 │   │       ├── dompurify.test.ts   # dompurify testing

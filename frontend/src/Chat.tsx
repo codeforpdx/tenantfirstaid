@@ -12,7 +12,7 @@ export default function Chat() {
   const { letterContent } = useLetterContent(messages);
 
   return (
-    <div className="h-screen w-full flex flex-col lg:flex-row gap-4 transition-all duration-300 md:px-4 max-w-[1400px]">
+    <div className="h-full w-full flex flex-col lg:flex-row gap-4 transition-all duration-300 md:px-4 max-w-[1400px]">
       <div className="my-auto w-full flex">
         <MessageContainer isOngoing={isOngoing} letterContent={letterContent}>
           <div

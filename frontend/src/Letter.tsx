@@ -115,7 +115,7 @@ export default function Letter() {
   return (
     <>
       <LetterGenerationDialog ref={dialogRef} />
-      <div className="h-screen w-full flex flex-col lg:flex-row gap-4 transition-all duration-300 sm:px-4 max-w-[1400px]">
+      <div className="h-full w-full flex flex-col lg:flex-row gap-4 transition-all duration-300 sm:px-4 max-w-[1400px]">
         <div className="my-auto w-full flex">
           <MessageContainer isOngoing={isOngoing} letterContent={letterContent}>
             <div

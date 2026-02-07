@@ -12,8 +12,8 @@ export default function PageLayout({ children }: Props) {
   return (
     <div
       className={clsx(
-        "flex items-center justify-center pt-16",
-        isChatPages ? "h-screen" : "sm:pt-32 sm:pb-16",
+        "flex justify-center pt-(--navbar-height)",
+        isChatPages ? "h-dvh" : "items-center sm:pt-32 sm:pb-16",
       )}
       id="page-layout"
     >
