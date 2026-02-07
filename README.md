@@ -57,6 +57,75 @@ Live at https://tenantfirstaid.com/
 1. Go to http://localhost:5173
 1. Start chatting
 
+## Docker Development Setup (Alternative)
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) (24.0+)
+- [Docker Compose](https://docs.docker.com/compose/install/) (2.0+)
+- Google Cloud credentials (same as local setup)
+
+### Quick Start
+
+1. Copy environment template:
+   ```bash
+   cp .env.docker.example .env
+   ```
+
+2. Update `.env` with your credentials path:
+   ```bash
+   # Edit GOOGLE_APPLICATION_CREDENTIALS_HOST to point to your credentials
+   GOOGLE_APPLICATION_CREDENTIALS_HOST=/home/<USERNAME>/.config/gcloud/application_default_credentials.json
+   ```
+
+3. Start the application:
+   ```bash
+   docker compose up
+   ```
+
+4. Access the application:
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:5000
+
+### Development Workflow
+
+- **Hot reload enabled** - Changes to source files are reflected immediately
+- **Run backend checks:**
+  ```bash
+  docker compose exec backend make lint
+  docker compose exec backend make typecheck
+  docker compose exec backend make test
+  ```
+- **Run frontend checks:**
+  ```bash
+  docker compose exec frontend npm run lint
+  docker compose exec frontend npm run test -- --run
+  ```
+- **View logs:**
+  ```bash
+  docker compose logs -f backend
+  docker compose logs -f frontend
+  ```
+
+### Stopping
+
+```bash
+docker compose down
+```
+
+### Troubleshooting
+
+**Windows/WSL2 Performance:**
+- Keep source code inside WSL2 filesystem, not Windows filesystem
+- Add `consistency: delegated` to volume mounts if experiencing slow performance
+
+**Permission Issues:**
+- Ensure Google credentials file is readable: `chmod 644 <credentials-file>`
+- On Linux, ensure your user is in the `docker` group: `sudo usermod -aG docker $USER`
+
+**Port Already in Use:**
+- Change ports in `docker-compose.yml` if 5000 or 5173 are taken
+
 ### Backend Development & Checks
 
 1. change to the `backend/` directory
