@@ -162,6 +162,22 @@ As an alternative to the local development setup above, you can use Docker conta
    docker compose up
    ```
 
+   On MacOS with [`apple/container`](https://github.com/apple/container) (>= 0.9.0):
+   ```bash
+   container system start
+   cd frontend && container build --build-arg TYPE=dev --tag frontend-dev
+   container run \
+     --name frontend \
+     --remove \
+     --env VITE_API_URL=http://localhost:5000 \
+     -v ./frontend/src:/app/src:ro \
+     -v ./frontend/public:/app/public:ro \
+     -v ./frontend/index.html:/app/index.html:ro \
+     -v ./frontend/vite.config.ts:/app/vite.config.ts:ro \
+     frontend-dev:latest
+   container exec -it frontend /bin/sh
+   ```
+
 4. Access the application:
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:5000
@@ -180,6 +196,13 @@ As an alternative to the local development setup above, you can use Docker conta
   docker compose exec frontend npm run lint
   docker compose exec frontend npm run test -- --run
   ```
+
+  on MacOS with `apple/container`
+  ```bash
+  container exec frontend npm run lint
+  container exec frontend npm run test -- --run
+  ```
+  
 - **View logs:**
   ```bash
   docker compose logs -f backend
