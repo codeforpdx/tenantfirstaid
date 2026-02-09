@@ -7,7 +7,7 @@ Live at https://tenantfirstaid.com/
 ## Local Development
 
 [![PR Checks](https://github.com/codeforpdx/tenantfirstaid/actions/workflows/pr-check.yml/badge.svg)](https://github.com/codeforpdx/tenantfirstaid/actions/workflows/pr-check.yml)
-[![CI-CD](https://github.com/codeforpdx/tenantfirstaid/actions/workflows/deploy.yml/badge.svg)](https://github.com/codeforpdx/tenantfirstaid/actions/workflows/deploy.yml)
+[![CI-CD (Production)](https://github.com/codeforpdx/tenantfirstaid/actions/workflows/deploy.production.yml/badge.svg)](https://github.com/codeforpdx/tenantfirstaid/actions/workflows/deploy.production.yml)
 
 ### Prerequisites
 
