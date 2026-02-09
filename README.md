@@ -17,6 +17,7 @@ Live at https://tenantfirstaid.com/
 - You will need a GitHub account (free) to contribute to the project.  No account is necessary to browse the source code.
   - You will be invited to join the [Contributor](https://github.com/orgs/codeforpdx/teams/contributor) team after you complete [step 2 ("Connect on Discord & Request Access") of the Code PDX onboarding](https://www.codepdx.org/volunteer)
   - Look for the invitation email and click the link in the email to accept the invitation.
+  - You will also have to enable [commit signing](https://docs.github.com/authentication/managing-commit-signature-verification) by adding a key (typically `GPG`) to your GitHub account (click on your avatar -> Settings -> SSH and GPG keys).
 </details>
 
 <details>
