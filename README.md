@@ -165,7 +165,9 @@ As an alternative to the local development setup above, you can use Docker conta
    On MacOS with [`apple/container`](https://github.com/apple/container) (>= 0.9.0):
    ```bash
    container system start
+   # build frontend-dev image
    cd frontend && container build --build-arg TYPE=dev --tag frontend-dev
+   # start frontend container
    container run \
      --name frontend \
      --remove \
@@ -174,8 +176,36 @@ As an alternative to the local development setup above, you can use Docker conta
      -v ./frontend/public:/app/public:ro \
      -v ./frontend/index.html:/app/index.html:ro \
      -v ./frontend/vite.config.ts:/app/vite.config.ts:ro \
-     frontend-dev:latest
+     --publish 5173:5173 \
+     frontend-dev:latest &
+   # execute interactive shell in frontend container
    container exec -it frontend /bin/sh
+
+   # build backend-dev image
+   container build --build-arg TYPE=dev --tag backend-dev
+   # start backend container
+   container run \
+     --name backend \
+     --remove \
+     --env FLASK_ENV=development \
+     --env SHOW_MODEL_THINKING=${SHOW_MODEL_THINKING:-true} \
+     --env GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT} \
+     --env GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-global} \
+     --env GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/google-creds.json \
+     --env VERTEX_AI_DATASTORE=${VERTEX_AI_DATASTORE} \
+     --env MODEL_NAME=${MODEL_NAME:-gemini-2.5-pro} \
+     --env LOG_LEVEL=${LOG_LEVEL:-DEBUG} \
+     --env LANGSMITH_API_KEY=${LANGSMITH_API_KEY} \
+     --env LANGSMITH_TRACING=${LANGSMITH_TRACING:-true} \
+     --env LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-true} \
+     -v ./backend/tenantfirstaid:/app/tenantfirstaid:ro \
+     -v ./backend/tests:/app/tests:ro \
+     -v ./backend/scripts:/app/scripts:ro \
+     -v ${GOOGLE_APPLICATION_CREDENTIALS_HOST}:/app/secrets/google-creds.json \
+     --publish 5000:5000 \
+     backend-dev:latest &
+   # execute interactive shell in backend container
+   container exec -it backend /bin/sh
    ```
 
 4. Access the application:
@@ -191,6 +221,14 @@ As an alternative to the local development setup above, you can use Docker conta
   docker compose exec backend make typecheck
   docker compose exec backend make test
   ```
+
+  on MacOS with `apple/container`
+  ```bash
+  container exec backend make lint
+  container exec backend make typecheck
+  container exec backend make test
+  ```
+
 - **Run frontend checks:**
   ```bash
   docker compose exec frontend npm run lint
@@ -202,7 +240,7 @@ As an alternative to the local development setup above, you can use Docker conta
   container exec frontend npm run lint
   container exec frontend npm run test -- --run
   ```
-  
+
 - **View logs:**
   ```bash
   docker compose logs -f backend
@@ -214,6 +252,11 @@ As an alternative to the local development setup above, you can use Docker conta
 ```bash
 docker compose down
 ```
+
+On MacOS with [`apple/container`](https://github.com/apple/container) (>= 0.9.0):
+   ```bash
+   container stop --all
+   ```
 
 ### Troubleshooting
 
