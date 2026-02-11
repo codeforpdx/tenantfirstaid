@@ -134,14 +134,16 @@ Live at https://tenantfirstaid.com/
   ```
   `--keep-going` will continue to run checks, even if previous `make` rule fail. Omit if you want to stop after the first `make` rule fails.
 
-## Docker Development Setup (Alternative)
+## Containerized Development Setup (Alternative)
 
-As an alternative to the local development setup above, you can use Docker containers for a consistent development environment across Mac, Linux, and Windows.
+As an alternative to the local development setup above, you can use containers for a consistent development environment across Mac, Linux, and Windows.
 
 ### Prerequisites
 
-- [Docker](https://docs.docker.com/get-docker/) (24.0+)
-- [Docker Compose](https://docs.docker.com/compose/install/) (2.0+)
+- Container runtime
+   - [Docker](https://docs.docker.com/get-docker/) (24.0+)
+   - [Docker Compose](https://docs.docker.com/compose/install/) (2.0+)
+   - or [Apple/Container](https://github.com/apple/container) (0.9.0+)
 - Google Cloud credentials (same as local setup)
 
 ### Quick Start
@@ -162,7 +164,7 @@ As an alternative to the local development setup above, you can use Docker conta
    docker compose up
    ```
 
-   On MacOS with [`apple/container`](https://github.com/apple/container) (>= 0.9.0):
+   On MacOS with [`apple/container`](https://github.com/apple/container):
    ```bash
    container system start
    # build frontend-dev image
