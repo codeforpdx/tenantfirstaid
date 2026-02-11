@@ -23,7 +23,6 @@ services:
       - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-global}
       - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/google-creds.json
       - VERTEX_AI_DATASTORE=${VERTEX_AI_DATASTORE}
-      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-dev-secret-key-unsafe}
       - MODEL_NAME=${MODEL_NAME:-gemini-2.5-pro}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
       - LANGSMITH_API_KEY=${LANGSMITH_API_KEY}
