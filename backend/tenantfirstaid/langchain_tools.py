@@ -3,6 +3,7 @@ This module defines Tools for an Agent to call
 """
 
 import json
+import logging
 from pathlib import Path
 from typing import Optional
 
@@ -13,7 +14,7 @@ from langchain_core.tools import tool
 from langchain_google_community import VertexAISearchRetriever
 from pydantic import BaseModel
 
-from .constants import SINGLETON
+from .constants import LETTER_TEMPLATE, SINGLETON
 from .location import OregonCity, UsaState
 
 
@@ -78,6 +79,25 @@ def __filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
         city_or_null = city.lower()
 
     return f"""city: ANY("{city_or_null}") AND state: ANY("{state.lower()}")"""
+
+
+logger = logging.getLogger(__name__)
+
+
+@tool
+def get_letter_template(query: str) -> str:
+    """Retrieve the letter template when the user asks to draft or generate a letter.
+
+    Fill in placeholders with any details the user has provided, leave the rest intact.
+
+    Args:
+        query: The user's letter request (required by Gemini function-calling API).
+
+    Returns:
+        A formatted letter template with placeholder fields.
+    """
+    logger.info("Letter template requested: %s", query)
+    return LETTER_TEMPLATE
 
 
 class CityStateLawsInputSchema(BaseModel):
