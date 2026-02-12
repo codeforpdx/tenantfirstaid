@@ -101,7 +101,9 @@ def test_retrieve_city_state_laws_parameter_order(mock_rag_class):
 def test_tool_schema_matches_function_signature():
     """Test that Pydantic schema matches function defaults."""
     schema_fields = set(CityStateLawsInputSchema.model_fields.keys())
-    func_params = set(inspect.signature(retrieve_city_state_laws.func).parameters.keys())  # type: ignore[union-attr]
+    func_params = set(
+        inspect.signature(retrieve_city_state_laws.func).parameters.keys()
+    )  # type: ignore[union-attr]
     func_params.discard("runtime")
 
     assert schema_fields == func_params
