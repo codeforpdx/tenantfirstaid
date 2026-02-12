@@ -102,8 +102,8 @@ def test_tool_schema_matches_function_signature():
     """Test that Pydantic schema matches function defaults."""
     schema_fields = set(CityStateLawsInputSchema.model_fields.keys())
     func_params = set(
-        inspect.signature(retrieve_city_state_laws.func).parameters.keys()
-    )  # type: ignore[union-attr]
+        inspect.signature(retrieve_city_state_laws.func).parameters.keys()  # type: ignore[unresolved-attribute]
+    )
     func_params.discard("runtime")
 
     assert schema_fields == func_params
