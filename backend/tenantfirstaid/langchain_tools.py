@@ -81,22 +81,15 @@ def __filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
     return f"""city: ANY("{city_or_null}") AND state: ANY("{state.lower()}")"""
 
 
-logger = logging.getLogger(__name__)
-
-
 @tool
-def get_letter_template(query: str) -> str:
+def get_letter_template() -> str:
     """Retrieve the letter template when the user asks to draft or generate a letter.
 
     Fill in placeholders with any details the user has provided, leave the rest intact.
 
-    Args:
-        query: The user's letter request (required by Gemini function-calling API).
-
     Returns:
         A formatted letter template with placeholder fields.
     """
-    logger.info("Letter template requested: %s", query)
     return LETTER_TEMPLATE
 
 
