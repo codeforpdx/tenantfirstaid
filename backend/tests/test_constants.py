@@ -5,6 +5,7 @@ ensure that symbols are read-only
 
 from tenantfirstaid.constants import (
     DEFAULT_INSTRUCTIONS,
+    LETTER_TEMPLATE,
     OREGON_LAW_CENTER_PHONE_NUMBER,
 )
 
@@ -16,6 +17,12 @@ def test_default_instructions_contains_oregon_law_center_phone():
 def test_default_instructions_contains_citation_links():
     assert "https://oregon.public.law/statutes" in DEFAULT_INSTRUCTIONS
     assert 'target="_blank"' in DEFAULT_INSTRUCTIONS
+
+
+def test_letter_template_contains_placeholders():
+    assert "[Your Name]" in LETTER_TEMPLATE
+    assert "[Your Street Address]" in LETTER_TEMPLATE
+    assert "ORS 90.320" in LETTER_TEMPLATE
 
 
 def test_import_constants():

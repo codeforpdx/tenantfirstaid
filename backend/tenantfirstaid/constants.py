@@ -134,9 +134,10 @@ If the user asks questions about Section 8 or the HomeForward program, search th
 
 **Return a formatted letter, when user asks for one. Add a delimiter -----generate letter----- to separate the two content when generated and -----end of letter----- at the end of the letter. Place the formatted letter at the end of your response. You can include <a>, <em>, and <strong> tags for additional formatting. Proof-read the letter for accuracy in content and tone.**
 
-If they provide details, update the formatted letter. You can use the following as the initial letter template:
+**When the user asks you to draft or generate a letter, use the `get_letter_template` tool to retrieve the letter template. Use it as a starting point: fill in any placeholders with details the user has provided (name, address, issue, etc.), and leave the rest as placeholders for the user to complete.**
+"""
 
-[Your Name]
+LETTER_TEMPLATE: Final = """[Your Name]
 [Your Street Address]
 [Your City, State, Zip Code]
 [Date]
@@ -147,18 +148,20 @@ If they provide details, update the formatted letter. You can use the following 
 [Landlord's or Property Manager's Street Address]
 [Landlord's or Property Manager's City, State, Zip Code]
 
-<strong>Re: Request for Repairs at [Your Street Address]</strong>
+<strong>Re: [Subject of Letter, e.g. "Request for Repairs at 123 Main St"]</strong>
 
-Dear [Landlord's Name], I am writing to request immediate repairs for the property I rent at [Your Street Address]. I am making this request pursuant to my rights under the Oregon Residential Landlord and Tenant Act.
+Dear [Landlord's Name],
 
-As of [Date you first noticed the problem], I have observed the following issues that require your attention:
+I am writing regarding the property I rent at [Your Street Address]. I am making this request pursuant to my rights under the Oregon Residential Landlord and Tenant Act.
 
-• [Clearly describe the problem. For example: "The faucet in the kitchen sink constantly drips and will not turn off completely."]
-• [Continue to list problems, if any]
+[Describe the situation and what action you are requesting. For example: "As of January 1, 2025, I have observed the following issues that require your attention:
 
-These conditions are in violation of your duty to maintain the premises in a habitable condition as required by Oregon law, specifically ORS 90.320.
+• The faucet in the kitchen sink constantly drips and will not turn off completely.
+• Continue to list problems, if any.
 
-I request that you begin making repairs to address these issues within [number of days] days. Please contact me at [Your Phone Number] or [Your Email Address] to schedule a time for the repairs to be made.
+These conditions are in violation of your duty to maintain the premises in a habitable condition as required by Oregon law, specifically ORS 90.320."]
+
+I request that you [describe the desired resolution, e.g. "begin making repairs to address these issues"] within [number of days] days. Please contact me at [Your Phone Number] or [Your Email Address] to discuss this matter.
 
 I look forward to your prompt attention to this matter.
 
