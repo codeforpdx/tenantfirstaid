@@ -16,7 +16,7 @@ import {
 } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
-import { IMessage } from "../../hooks/useMessages";
+import { IChatMessage } from "../../hooks/useMessages";
 
 beforeAll(() => {
   if (!("scrollTo" in HTMLElement.prototype)) {
@@ -142,7 +142,7 @@ describe("Letter component - effect orchestration", () => {
 
     mockUseMessages.mockReturnValue({
       addMessage: mockAddMessage,
-      messages: [{ role: "user", content: "hi", messageId: "1" }],
+      messages: [{ role: "human", content: "hi", id: "1" }],
       setMessages: mockSetMessages,
     });
 
@@ -205,7 +205,7 @@ describe("Letter component - effect orchestration", () => {
 
     const setMessagesCall = mockSetMessages.mock.calls.find((call) => {
       const result = call[0]([]);
-      return result.some((msg: IMessage) =>
+      return result.some((msg: IChatMessage) =>
         msg.content.includes("Unable to generate letter"),
       );
     });

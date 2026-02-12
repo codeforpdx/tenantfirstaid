@@ -42,11 +42,11 @@ export default function Letter() {
     setMessages((prev) => [
       ...prev,
       {
-        role: "user",
+        role: "human",
         content: [hasIssueContext ? initialUserMessage : "", output.userMessage]
           .join(" ")
           .trim(),
-        messageId: userMessageId,
+        id: userMessageId,
       },
     ]);
     streamLocationRef.current = output.selectedLocation;
@@ -76,7 +76,7 @@ export default function Letter() {
             {
               role: "ai",
               content: INITIAL_INSTRUCTION,
-              messageId: Date.now().toString(),
+              id: Date.now().toString(),
             },
           ]);
         } else {
@@ -85,7 +85,7 @@ export default function Letter() {
             {
               role: "ai",
               content: ERROR_MESSAGE,
-              messageId: Date.now().toString(),
+              id: Date.now().toString(),
             },
           ]);
         }

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import exportMessages from "../../pages/Chat/utils/exportHelper";
-import { IMessage } from "../../hooks/useMessages";
+import { IChatMessage } from "../../hooks/useMessages";
 
 function createMockDocument() {
   const writelnCalls: string[] = [];
@@ -40,21 +40,19 @@ describe("exportMessages", () => {
     exportMessages([]);
     expect(windowOpenSpy).not.toHaveBeenCalled();
 
-    exportMessages([
-      { role: "user", content: "Single message", messageId: "1" },
-    ]);
+    exportMessages([{ role: "human", content: "Single message", id: "1" }]);
     expect(windowOpenSpy).not.toHaveBeenCalled();
   });
 
   it("should open window, generate HTML with sanitized content, and trigger print", () => {
-    const messages: IMessage[] = [
+    const messages: IChatMessage[] = [
       {
-        role: "user",
+        role: "human",
         content: '<script>alert("xss")</script>',
-        messageId: "1",
+        id: "1",
       },
-      { role: "ai", content: "Safe & <secure>", messageId: "2" },
-      { role: "user", content: "Third message", messageId: "3" },
+      { role: "ai", content: "Safe & <secure>", id: "2" },
+      { role: "human", content: "Third message", id: "3" },
     ];
 
     exportMessages(messages);
@@ -93,19 +91,19 @@ describe("exportMessages", () => {
     vi.stubGlobal("window", { open: vi.fn(() => null) });
     expect(() =>
       exportMessages([
-        { role: "user", content: "Test", messageId: "1" },
-        { role: "ai", content: "Response", messageId: "2" },
+        { role: "human", content: "Test", id: "1" },
+        { role: "ai", content: "Response", id: "2" },
       ]),
     ).not.toThrow();
 
     // Empty content and special characters
     vi.stubGlobal("window", { open: vi.fn(() => mockDocument) });
     exportMessages([
-      { role: "user", content: "", messageId: "1" },
+      { role: "human", content: "", id: "1" },
       {
         role: "ai",
         content: '<a href="link.com">Click</a> & "quoted"',
-        messageId: "2",
+        id: "2",
       },
     ]);
 

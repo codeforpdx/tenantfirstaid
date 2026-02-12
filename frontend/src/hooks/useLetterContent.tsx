@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import useMessages, { IMessage } from "./useMessages";
+import useMessages, { IChatMessage } from "./useMessages";
 import DOMPurify, { SANITIZE_AI_SETTINGS } from "../shared/utils/dompurify";
 
 const LETTER_START = "-----generate letter-----";
@@ -27,7 +27,11 @@ function extractLetter(content: string) {
   return { letter, reconstructedContent };
 }
 
-export function useLetterContent(messages: IMessage[]) {
+/**
+ * Extracts and sanitizes generated letter content from chat messages.
+ * Strips the letter block from the message and returns it separately.
+ */
+export function useLetterContent(messages: IChatMessage[]) {
   const [letterContent, setLetterContent] = useState("");
   const { setMessages } = useMessages();
 

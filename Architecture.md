@@ -225,7 +225,7 @@ interface TenantSessionData {
   state: string; // User's state (default: "or")
   messages: Array<{
     // Complete conversation history
-    role: "user" | "ai";
+    role: "human" | "ai";
     content: string;
   }>;
 }
@@ -305,7 +305,7 @@ async function streamText({
     {
       role: "ai",
       content: "",
-      messageId: botMessageId,
+      id: botMessageId,
     },
   ]);
 
@@ -327,7 +327,7 @@ async function streamText({
       // Update only the bot's message
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.messageId === botMessageId ? { ...msg, content: fullText } : msg,
+          msg.id === botMessageId ? { ...msg, content: fullText } : msg,
         ),
       );
     }
@@ -335,7 +335,7 @@ async function streamText({
     console.error("Error:", error);
     setMessages((prev) =>
       prev.map((msg) =>
-        msg.messageId === botMessageId
+        msg.id === botMessageId
           ? {
               ...msg,
               content: "Sorry, I encountered an error. Please try again.",
