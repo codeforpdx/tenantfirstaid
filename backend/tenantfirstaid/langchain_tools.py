@@ -88,7 +88,11 @@ class CityStateLawsInputSchema(BaseModel):
 
 @tool(args_schema=CityStateLawsInputSchema, response_format="content")
 def retrieve_city_state_laws(
-    query: str, state: UsaState, city: Optional[OregonCity] = None, *, runtime: ToolRuntime
+    query: str,
+    state: UsaState,
+    city: Optional[OregonCity] = None,
+    *,
+    runtime: ToolRuntime,
 ) -> str:
     """
     Retrieve relevant state (and when specified, city) specific housing
