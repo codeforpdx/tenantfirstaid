@@ -3,7 +3,6 @@ This module defines Tools for an Agent to call
 """
 
 import json
-import logging
 from pathlib import Path
 from typing import Optional
 
