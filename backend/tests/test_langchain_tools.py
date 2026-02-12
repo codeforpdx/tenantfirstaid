@@ -70,6 +70,6 @@ def test_retrieve_state_law_filters_correctly():
 
 def test_get_letter_template_returns_template():
     """Test that get_letter_template returns the letter template content."""
-    result = get_letter_template.invoke("draft a letter")
+    result = get_letter_template.invoke("")
     assert "[Your Name]" in result
     assert "ORS 90.320" in result
