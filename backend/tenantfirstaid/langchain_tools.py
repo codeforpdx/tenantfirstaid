@@ -82,8 +82,8 @@ def __filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
 
 class CityStateLawsInputSchema(BaseModel):
     query: str
-    city: Optional[OregonCity] = None
     state: UsaState
+    city: Optional[OregonCity] = None
 
 
 @tool(args_schema=CityStateLawsInputSchema, response_format="content")
