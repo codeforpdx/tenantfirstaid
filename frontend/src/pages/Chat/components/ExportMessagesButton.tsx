@@ -1,10 +1,13 @@
-import { IMessage } from "../../../hooks/useMessages";
+import { IChatMessage } from "../../../hooks/useMessages";
 import exportMessages from "../utils/exportHelper";
 
 interface Props {
-  messages: IMessage[];
+  messages: IChatMessage[];
 }
 
+/**
+ * Button that opens a printable window with the conversation transcript.
+ */
 export default function ExportMessagesButton({ messages }: Props) {
   return (
     <button

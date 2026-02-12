@@ -1,14 +1,19 @@
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import type { MessageType } from "@langchain/core/messages";
 
-export interface IMessage {
-  role: "user" | "ai";
+/**
+ * Chat message interface aligned with LangChain's message types.
+ * Uses LangChain MessageType for role to ensure consistency with backend.
+ */
+export interface IChatMessage {
+  role: Extract<MessageType, "human" | "ai">;
   content: string;
-  messageId: string;
+  id: string;
 }
 
 async function addNewMessage(
-  messages: IMessage[],
+  messages: IChatMessage[],
   city: string | null,
   state: string,
 ) {
@@ -21,8 +26,12 @@ async function addNewMessage(
   return response.body?.getReader();
 }
 
+/**
+ * Hook for managing chat messages and sending queries to the backend.
+ * Provides message state, a setter, and a mutation for posting new messages.
+ */
 export default function useMessages() {
-  const [messages, setMessages] = useState<IMessage[]>([]);
+  const [messages, setMessages] = useState<IChatMessage[]>([]);
 
   const addMessage = useMutation({
     mutationFn: async ({

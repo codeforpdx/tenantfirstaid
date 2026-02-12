@@ -1,7 +1,11 @@
-import type { IMessage } from "../../../hooks/useMessages";
+import type { IChatMessage } from "../../../hooks/useMessages";
 import sanitizeText from "../../../shared/utils/sanitizeText";
 
-export default function exportMessages(messages: IMessage[]) {
+/**
+ * Opens a printable window with the conversation history.
+ * Sanitizes message content before rendering to prevent XSS.
+ */
+export default function exportMessages(messages: IChatMessage[]) {
   if (messages.length < 2) return;
 
   const newDocument = window.open("", "", "height=800,width=600");
@@ -9,7 +13,7 @@ export default function exportMessages(messages: IMessage[]) {
     .map(
       ({ role, content }) =>
         `<p><strong>${
-          role === "user" ? "User" : "AI"
+          role === "human" ? "User" : "AI"
         }</strong>: ${sanitizeText(content)}</p>`,
     )
     .join("");

@@ -1,12 +1,15 @@
 import { ILocation } from "../../../contexts/HousingContext";
-import { type IMessage } from "../../../hooks/useMessages";
+import { type IChatMessage } from "../../../hooks/useMessages";
 
+/**
+ * Options for streaming AI responses into the chat message list.
+ */
 export interface IStreamTextOptions {
   addMessage: (args: {
     city: string | null;
     state: string;
   }) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
-  setMessages: React.Dispatch<React.SetStateAction<IMessage[]>>;
+  setMessages: React.Dispatch<React.SetStateAction<IChatMessage[]>>;
   housingLocation: ILocation;
   setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -34,7 +37,7 @@ async function streamText({
     {
       role: "ai",
       content: "",
-      messageId: botMessageId,
+      id: botMessageId,
     },
   ]);
 
@@ -59,7 +62,7 @@ async function streamText({
       // Update only the bot's message
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.messageId === botMessageId ? { ...msg, content: fullText } : msg,
+          msg.id === botMessageId ? { ...msg, content: fullText } : msg,
         ),
       );
     }
@@ -67,7 +70,7 @@ async function streamText({
     console.error("Error:", error);
     setMessages((prev) =>
       prev.map((msg) =>
-        msg.messageId === botMessageId
+        msg.id === botMessageId
           ? {
               ...msg,
               content: "Sorry, I encountered an error. Please try again.",

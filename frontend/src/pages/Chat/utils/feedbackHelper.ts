@@ -1,4 +1,4 @@
-import type { IMessage } from "../../../hooks/useMessages";
+import type { IChatMessage } from "../../../hooks/useMessages";
 import sanitizeText from "../../../shared/utils/sanitizeText";
 
 function redactText(message: string, wordsToRedact: string) {
@@ -21,8 +21,12 @@ function redactText(message: string, wordsToRedact: string) {
   return redactedMessage;
 }
 
+/**
+ * Submits user feedback along with a redacted chat transcript to the backend.
+ * Builds an HTML transcript, applies word redaction, and sends via FormData.
+ */
 export default async function sendFeedback(
-  messages: IMessage[],
+  messages: IChatMessage[],
   userFeedback: string,
   emailsToCC: string,
   wordsToRedact: string,
@@ -33,7 +37,7 @@ export default async function sendFeedback(
     .map(
       ({ role, content }) =>
         `<p><strong>${
-          role.charAt(0).toUpperCase() + role.slice(1)
+          role === "human" ? "User" : "AI"
         }</strong>: ${redactText(sanitizeText(content), wordsToRedact)}</p>`,
     )
     .join("");

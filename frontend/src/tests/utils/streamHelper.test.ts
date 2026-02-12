@@ -78,8 +78,8 @@ describe("streamText", () => {
 
     const updateCall = mockSetMessages.mock.calls[2][0]; // Second chunk update
     const existingMessages = [
-      { role: "user", content: "User message", messageId: "999" },
-      { role: "ai", content: "First", messageId: "1000001" },
+      { role: "human", content: "User message", id: "999" },
+      { role: "ai", content: "First", id: "1000001" },
     ];
 
     const updated = updateCall(existingMessages);
@@ -102,9 +102,7 @@ describe("streamText", () => {
     expect(console.error).toHaveBeenCalledWith("Error:", expect.any(Error));
 
     const errorUpdateCall = mockSetMessages.mock.calls.find(([updater]) => {
-      const result = updater([
-        { role: "ai", content: "", messageId: "1000001" },
-      ]);
+      const result = updater([{ role: "ai", content: "", id: "1000001" }]);
       return result[0].content.includes("Sorry, I encountered an error");
     });
 

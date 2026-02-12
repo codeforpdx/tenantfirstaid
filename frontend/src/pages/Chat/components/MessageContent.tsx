@@ -1,12 +1,15 @@
-import type { IMessage } from "../../../hooks/useMessages";
+import type { IChatMessage } from "../../../hooks/useMessages";
 import DOMPurify, {
   SANITIZE_AI_SETTINGS,
 } from "../../../shared/utils/dompurify";
 
 interface Props {
-  message: IMessage;
+  message: IChatMessage;
 }
 
+/**
+ * Renders a single chat message bubble with sanitized HTML content.
+ */
 export default function MessageContent({ message }: Props) {
   const messageContent = DOMPurify.sanitize(
     message.content,

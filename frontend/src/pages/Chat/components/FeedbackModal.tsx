@@ -1,12 +1,15 @@
 import { useState } from "react";
 import sendFeedback from "../utils/feedbackHelper";
-import { IMessage } from "../../../hooks/useMessages";
+import { IChatMessage } from "../../../hooks/useMessages";
 
 interface Props {
-  messages: IMessage[];
+  messages: IChatMessage[];
   setOpenFeedback: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+/**
+ * Dialog for submitting feedback with optional email CC and word redaction.
+ */
 export default function FeedbackModal({ messages, setOpenFeedback }: Props) {
   const [feedback, setFeedback] = useState("");
   const [wordsToRedact, setWordsToRedact] = useState("");
