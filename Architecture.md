@@ -327,7 +327,7 @@ async function streamText({
       // Update only the bot's message
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.messageId === botMessageId ? { ...msg, content: fullText } : msg,
+          msg.id === botMessageId ? { ...msg, content: fullText } : msg,
         ),
       );
     }
@@ -335,7 +335,7 @@ async function streamText({
     console.error("Error:", error);
     setMessages((prev) =>
       prev.map((msg) =>
-        msg.messageId === botMessageId
+        msg.id === botMessageId
           ? {
               ...msg,
               content: "Sorry, I encountered an error. Please try again.",
