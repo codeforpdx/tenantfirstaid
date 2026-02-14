@@ -11,10 +11,7 @@ interface Props {
  * Renders a single chat message bubble with sanitized HTML content.
  */
 export default function MessageContent({ message }: Props) {
-  const messageContent = DOMPurify.sanitize(
-    message.text,
-    SANITIZE_AI_SETTINGS,
-  )
+  const messageContent = DOMPurify.sanitize(message.text, SANITIZE_AI_SETTINGS)
     .split("-----generate letter-----")[0]
     .trim();
 
