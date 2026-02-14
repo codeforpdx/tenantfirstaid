@@ -94,13 +94,17 @@ def get_letter_template() -> str:
 
 class CityStateLawsInputSchema(BaseModel):
     query: str
-    city: Optional[OregonCity]
     state: UsaState
+    city: Optional[OregonCity] = None
 
 
 @tool(args_schema=CityStateLawsInputSchema, response_format="content")
 def retrieve_city_state_laws(
-    query: str, city: Optional[OregonCity], state: UsaState, runtime: ToolRuntime
+    query: str,
+    state: UsaState,
+    city: Optional[OregonCity] = None,
+    *,
+    runtime: ToolRuntime,
 ) -> str:
     """
     Retrieve relevant state (and when specified, city) specific housing
