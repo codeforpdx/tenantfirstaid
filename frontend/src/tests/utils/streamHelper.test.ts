@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import {
   streamText,
   type IStreamTextOptions,
@@ -78,8 +79,8 @@ describe("streamText", () => {
 
     const updateCall = mockSetMessages.mock.calls[2][0]; // Second chunk update
     const existingMessages = [
-      { role: "human", content: "User message", id: "999" },
-      { role: "ai", content: "First", id: "1000001" },
+      new HumanMessage({ content: "User message", id: "999" }),
+      new AIMessage({ content: "First", id: "1000001" }),
     ];
 
     const updated = updateCall(existingMessages);
@@ -102,7 +103,7 @@ describe("streamText", () => {
     expect(console.error).toHaveBeenCalledWith("Error:", expect.any(Error));
 
     const errorUpdateCall = mockSetMessages.mock.calls.find(([updater]) => {
-      const result = updater([{ role: "ai", content: "", id: "1000001" }]);
+      const result = updater([new AIMessage({ content: "", id: "1000001" })]);
       return result[0].content.includes("Sorry, I encountered an error");
     });
 

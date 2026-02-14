@@ -1,3 +1,4 @@
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import MessageWindow from "./pages/Chat/components/MessageWindow";
 import useMessages from "./hooks/useMessages";
 import { useEffect, useRef, useState } from "react";
@@ -16,7 +17,7 @@ import FeatureSnippet from "./shared/components/FeatureSnippet";
 export default function Letter() {
   const { addMessage, messages, setMessages } = useMessages();
   const isOngoing = messages.length > 0;
-  const { letterContent } = useLetterContent(messages);
+  const { letterContent } = useLetterContent(messages, setMessages);
   const { org, loc } = useParams();
   const [startStreaming, setStartStreaming] = useState(false);
   const streamLocationRef = useRef<ILocation | null>(null);
@@ -41,13 +42,12 @@ export default function Letter() {
     // Add user message
     setMessages((prev) => [
       ...prev,
-      {
-        role: "human",
+      new HumanMessage({
         content: [hasIssueContext ? initialUserMessage : "", output.userMessage]
           .join(" ")
           .trim(),
         id: userMessageId,
-      },
+      }),
     ]);
     streamLocationRef.current = output.selectedLocation;
     setStartStreaming(true);
@@ -73,20 +73,18 @@ export default function Letter() {
         if (streamDone) {
           setMessages((prev) => [
             ...prev,
-            {
-              role: "ai",
+            new AIMessage({
               content: INITIAL_INSTRUCTION,
               id: Date.now().toString(),
-            },
+            }),
           ]);
         } else {
           setMessages((prev) => [
             ...prev,
-            {
-              role: "ai",
+            new AIMessage({
               content: ERROR_MESSAGE,
               id: Date.now().toString(),
-            },
+            }),
           ]);
         }
       }
@@ -97,7 +95,7 @@ export default function Letter() {
 
   useEffect(() => {
     // Wait for the second message (index 1) which contains the initial AI response
-    if (messages.length > 1 && messages[1]?.content !== "") {
+    if (messages.length > 1 && messages[1]?.text !== "") {
       // Include 1s delay for smoother transition
       const timeoutId = setTimeout(
         () => setIsGenerating(false),

@@ -1,7 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import MessageWindow from "../../pages/Chat/components/MessageWindow";
-import { IChatMessage } from "../../hooks/useMessages";
+import { TChatMessage } from "../../hooks/useMessages";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import HousingContextProvider from "../../contexts/HousingContext";
 
@@ -14,10 +15,10 @@ beforeAll(() => {
 });
 
 describe("MessageWindow component", () => {
-  const messages: IChatMessage[] = [
-    { role: "human", content: "first message", id: "1" },
-    { role: "ai", content: "second message", id: "2" },
-    { role: "human", content: "third message", id: "3" },
+  const messages: TChatMessage[] = [
+    new HumanMessage({ content: "first message", id: "1" }),
+    new AIMessage({ content: "second message", id: "2" }),
+    new HumanMessage({ content: "third message", id: "3" }),
   ];
 
   const defaultProps = {

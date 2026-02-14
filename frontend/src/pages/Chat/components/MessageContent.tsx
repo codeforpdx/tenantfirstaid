@@ -1,10 +1,10 @@
-import type { IChatMessage } from "../../../hooks/useMessages";
+import type { TChatMessage } from "../../../hooks/useMessages";
 import DOMPurify, {
   SANITIZE_AI_SETTINGS,
 } from "../../../shared/utils/dompurify";
 
 interface Props {
-  message: IChatMessage;
+  message: TChatMessage;
 }
 
 /**
@@ -12,7 +12,7 @@ interface Props {
  */
 export default function MessageContent({ message }: Props) {
   const messageContent = DOMPurify.sanitize(
-    message.content,
+    message.text,
     SANITIZE_AI_SETTINGS,
   )
     .split("-----generate letter-----")[0]
@@ -20,7 +20,7 @@ export default function MessageContent({ message }: Props) {
 
   return (
     <>
-      <strong>{message.role === "ai" ? "Bot: " : "You: "}</strong>
+      <strong>{message.type === "ai" ? "Bot: " : "You: "}</strong>
       <span className="whitespace-pre-wrap">
         {messageContent.length === 0 ? (
           <span className="animate-dot-pulse italic">Typing...</span>

@@ -1,4 +1,4 @@
-import type { IChatMessage } from "../../../hooks/useMessages";
+import type { TChatMessage } from "../../../hooks/useMessages";
 import sanitizeText from "../../../shared/utils/sanitizeText";
 
 function redactText(message: string, wordsToRedact: string) {
@@ -26,7 +26,7 @@ function redactText(message: string, wordsToRedact: string) {
  * Builds an HTML transcript, applies word redaction, and sends via FormData.
  */
 export default async function sendFeedback(
-  messages: IChatMessage[],
+  messages: TChatMessage[],
   userFeedback: string,
   emailsToCC: string,
   wordsToRedact: string,
@@ -35,10 +35,10 @@ export default async function sendFeedback(
 
   const messageChain = messages
     .map(
-      ({ role, content }) =>
+      (msg) =>
         `<p><strong>${
-          role === "human" ? "User" : "AI"
-        }</strong>: ${redactText(sanitizeText(content), wordsToRedact)}</p>`,
+          msg.type === "human" ? "User" : "AI"
+        }</strong>: ${redactText(sanitizeText(msg.text), wordsToRedact)}</p>`,
     )
     .join("");
 

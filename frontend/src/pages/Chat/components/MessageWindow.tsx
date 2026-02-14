@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { IChatMessage } from "../../../hooks/useMessages";
+import type { TChatMessage } from "../../../hooks/useMessages";
 import InputField from "./InputField";
 import MessageContent from "./MessageContent";
 import ExportMessagesButton from "./ExportMessagesButton";
@@ -8,12 +8,12 @@ import FeedbackModal from "./FeedbackModal";
 import { useLocation } from "react-router-dom";
 
 interface Props {
-  messages: IChatMessage[];
+  messages: TChatMessage[];
   addMessage: (args: {
     city: string | null;
     state: string;
   }) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
-  setMessages: React.Dispatch<React.SetStateAction<IChatMessage[]>>;
+  setMessages: React.Dispatch<React.SetStateAction<TChatMessage[]>>;
   isOngoing: boolean;
 }
 
@@ -72,13 +72,13 @@ export default function MessageWindow({
                 return (
                   <div
                     className={`flex w-full ${
-                      message.role === "ai" ? "justify-start" : "justify-end"
+                      message.type === "ai" ? "justify-start" : "justify-end"
                     }`}
                     key={message.id}
                   >
                     <div
                       className={`message-bubble p-3 rounded-2xl max-w-[95%] ${
-                        message.role === "ai"
+                        message.type === "ai"
                           ? "bg-slate-200 rounded-tl-sm"
                           : "bg-green-dark text-white rounded-tr-sm"
                       }`}

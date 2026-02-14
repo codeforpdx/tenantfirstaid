@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import exportMessages from "../../pages/Chat/utils/exportHelper";
-import { IChatMessage } from "../../hooks/useMessages";
+import { TChatMessage } from "../../hooks/useMessages";
 
 function createMockDocument() {
   const writelnCalls: string[] = [];
@@ -40,19 +41,18 @@ describe("exportMessages", () => {
     exportMessages([]);
     expect(windowOpenSpy).not.toHaveBeenCalled();
 
-    exportMessages([{ role: "human", content: "Single message", id: "1" }]);
+    exportMessages([new HumanMessage({ content: "Single message", id: "1" })]);
     expect(windowOpenSpy).not.toHaveBeenCalled();
   });
 
   it("should open window, generate HTML with sanitized content, and trigger print", () => {
-    const messages: IChatMessage[] = [
-      {
-        role: "human",
+    const messages: TChatMessage[] = [
+      new HumanMessage({
         content: '<script>alert("xss")</script>',
         id: "1",
-      },
-      { role: "ai", content: "Safe & <secure>", id: "2" },
-      { role: "human", content: "Third message", id: "3" },
+      }),
+      new AIMessage({ content: "Safe & <secure>", id: "2" }),
+      new HumanMessage({ content: "Third message", id: "3" }),
     ];
 
     exportMessages(messages);
@@ -91,20 +91,19 @@ describe("exportMessages", () => {
     vi.stubGlobal("window", { open: vi.fn(() => null) });
     expect(() =>
       exportMessages([
-        { role: "human", content: "Test", id: "1" },
-        { role: "ai", content: "Response", id: "2" },
+        new HumanMessage({ content: "Test", id: "1" }),
+        new AIMessage({ content: "Response", id: "2" }),
       ]),
     ).not.toThrow();
 
     // Empty content and special characters
     vi.stubGlobal("window", { open: vi.fn(() => mockDocument) });
     exportMessages([
-      { role: "human", content: "", id: "1" },
-      {
-        role: "ai",
+      new HumanMessage({ content: "", id: "1" }),
+      new AIMessage({
         content: '<a href="link.com">Click</a> & "quoted"',
         id: "2",
-      },
+      }),
     ]);
 
     const html = mockDocument.writelnCalls.join("");
