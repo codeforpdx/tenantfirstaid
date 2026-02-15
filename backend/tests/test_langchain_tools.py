@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 from tenantfirstaid.langchain_tools import (
     CityStateLawsInputSchema,
     __filter_builder,
+    get_letter_template,
     retrieve_city_state_laws,
 )
 from tenantfirstaid.location import OregonCity, UsaState
@@ -68,6 +69,13 @@ def test_retrieve_state_law_filters_correctly():
     # Verify filter was constructed correctly.
     assert 'city: ANY("null")' in str(filter)
     assert 'state: ANY("or")' in str(filter)
+
+
+def test_get_letter_template_returns_template():
+    """Test that get_letter_template returns the letter template content."""
+    result = get_letter_template.invoke("")
+    assert "[Your Name]" in result
+    assert "ORS 90.320" in result
 
 
 @patch("tenantfirstaid.langchain_tools.Rag_Builder")
