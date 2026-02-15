@@ -217,6 +217,32 @@ graph TB
 
 ### Conversation Persistence
 
+**Frontend Message Type:**
+
+The frontend uses LangChain's `HumanMessage` and `AIMessage` classes directly to keep message types consistent with the backend:
+
+```typescript
+import type { AIMessage, HumanMessage } from "@langchain/core/messages";
+
+type TChatMessage = HumanMessage | AIMessage;
+```
+
+LangChain's `BaseMessage` exposes several accessors for message data:
+- `.content` — the raw message content (`string | Array<ContentBlock>`)
+- `.text` — a getter that returns `.content` as a `string` (handles content block arrays)
+- `.type` — the message role (`"human"` or `"ai"`)
+- `.id` — unique message identifier
+
+When serializing messages for the backend API, the hook maps these to the format the backend expects:
+
+```typescript
+const serializedMsg = messages.map((msg) => ({
+  role: msg.type,
+  content: msg.text,
+  id: msg.id,
+}));
+```
+
 **Session Data Structure:**
 
 ```typescript
@@ -286,15 +312,15 @@ sequenceDiagram
 
 ### Frontend Streaming Implementation
 
-**Stream Processing** (`streamHelper.ts:15-80`):
+**Stream Processing** (`streamHelper.ts`):
 
 ```typescript
 async function streamText({
   addMessage,
   setMessages,
-  location,
+  housingLocation,
   setIsLoading,
-}: IStreamTextOptions) {
+}: IStreamTextOptions): Promise<boolean | undefined> {
   const botMessageId = (Date.now() + 1).toString();
 
   setIsLoading?.(true);
@@ -302,33 +328,31 @@ async function streamText({
   // Add empty bot message that will be updated
   setMessages((prev) => [
     ...prev,
-    {
-      role: "ai",
-      content: "",
-      id: botMessageId,
-    },
+    new AIMessage({ content: "", id: botMessageId }),
   ]);
 
   try {
     const reader = await addMessage({
-      city: location?.city,
-      state: location?.state || "",
+      city: housingLocation?.city,
+      state: housingLocation?.state || "",
     });
-    if (!reader) return;
+    if (!reader) {
+      console.error("Stream reader is unavailable");
+      return;
+    }
     const decoder = new TextDecoder();
     let fullText = "";
 
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) return true;
       const chunk = decoder.decode(value);
       fullText += chunk;
 
       // Update only the bot's message
+      const botMessage = new AIMessage({ content: fullText, id: botMessageId });
       setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === botMessageId ? { ...msg, content: fullText } : msg,
-        ),
+        prev.map((msg) => (msg.id === botMessageId ? botMessage : msg)),
       );
     }
   } catch (error) {
@@ -336,10 +360,10 @@ async function streamText({
     setMessages((prev) =>
       prev.map((msg) =>
         msg.id === botMessageId
-          ? {
-              ...msg,
+          ? new AIMessage({
               content: "Sorry, I encountered an error. Please try again.",
-            }
+              id: botMessageId,
+            })
           : msg,
       ),
     );
