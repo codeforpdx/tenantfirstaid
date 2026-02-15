@@ -567,6 +567,83 @@ graph TB
     ReactQuery --> API[Backend API]
 ```
 
+## Containerization
+
+The application supports Docker containerization for consistent development and deployment environments across Mac, Linux, and Windows.
+
+### Container Architecture
+
+```mermaid
+graph TB
+    subgraph "Development"
+        DevCompose[docker-compose.yml]
+        BackendDev[Backend Container<br/>Flask Dev Server<br/>Hot Reload]
+        FrontendDev[Frontend Container<br/>Vite Dev Server<br/>Hot Reload]
+    end
+
+    subgraph "CI/CD Pipeline"
+        GHA[GitHub Actions<br/>Multi-arch Build]
+        BuildBackend[Build Backend<br/>amd64 + arm64]
+        BuildFrontend[Build Frontend<br/>amd64 + arm64]
+    end
+
+    subgraph "Registry"
+        GHCR[ghcr.io<br/>Container Registry]
+    end
+
+    subgraph "Production"
+        ProdCompose[docker-compose.prod.yml]
+        BackendProd[Backend Container<br/>Gunicorn]
+        FrontendProd[Frontend Container<br/>Nginx]
+    end
+
+    DevCompose --> BackendDev
+    DevCompose --> FrontendDev
+
+    GHA --> BuildBackend
+    GHA --> BuildFrontend
+    BuildBackend --> GHCR
+    BuildFrontend --> GHCR
+
+    GHCR --> BackendProd
+    GHCR --> FrontendProd
+    ProdCompose --> BackendProd
+    ProdCompose --> FrontendProd
+```
+
+### Image Types
+
+**Development Images (`TYPE=dev`):**
+- Include all dev dependencies (pytest, ruff, mypy, etc.)
+- Include tests, scripts, and Makefile
+- Run Flask/Vite dev servers with hot reload
+- Optimized for developer experience
+
+**Production Images (`TYPE=deploy`):**
+- Minimal dependencies (production only)
+- No tests or dev tools
+- Run Gunicorn/nginx for production serving
+- Optimized for size and security
+
+### Multi-Architecture Support
+
+Images are built for:
+- `linux/amd64` - x86_64 processors (Intel/AMD)
+- `linux/arm64` - ARM processors (Apple Silicon, AWS Graviton)
+
+Enables deployment to cost-effective ARM-based cloud instances.
+
+### Container Registry
+
+Production images published to:
+- `ghcr.io/codeforpdx/tenantfirstaid/backend:latest`
+- `ghcr.io/codeforpdx/tenantfirstaid/frontend:latest`
+
+Tagged with:
+- `latest` - Latest from main branch
+- `main-<sha>` - Specific commit from main
+- `<branch>` - Latest from feature branch
+
 ## Deployment
 
 ### Infrastructure

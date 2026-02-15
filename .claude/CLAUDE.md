@@ -87,6 +87,54 @@ uv run python scripts/run_langsmith_evaluation.py --num-samples 20
    npm run test -- --run --coverage
    ```
 
+## Docker Workflow (Alternative)
+
+As an alternative to running services locally, Docker provides a consistent development environment.
+
+### Starting Docker Environment
+
+```bash
+docker compose up
+```
+
+### Running Backend Checks in Docker
+
+```bash
+# Format, lint, typecheck, test
+docker compose exec backend make fmt
+docker compose exec backend make lint
+docker compose exec backend make typecheck
+docker compose exec backend make test
+
+# All checks
+docker compose exec backend make --keep-going check
+```
+
+### Running Frontend Checks in Docker
+
+```bash
+docker compose exec frontend npm run lint
+docker compose exec frontend npm run format
+docker compose exec frontend npm run test -- --run
+docker compose exec frontend npm run test -- --run --coverage
+```
+
+### Building Production Images Locally
+
+```bash
+# Backend
+docker build --build-arg TYPE=deploy -t backend:prod ./backend
+
+# Frontend
+docker build --build-arg TYPE=deploy -t frontend:prod ./frontend
+```
+
+### Notes
+
+- GitHub Actions automatically builds and pushes multi-arch images on push to main
+- Use `docker compose down` to stop services
+- Use `docker compose down -v` to also remove volumes
+
 ## Style notes
 
 - Write comments as full sentences and end them with a period.
