@@ -1,16 +1,20 @@
-import type { IMessage } from "../../../hooks/useMessages";
+import type { TChatMessage } from "../../../hooks/useMessages";
 import sanitizeText from "../../../shared/utils/sanitizeText";
 
-export default function exportMessages(messages: IMessage[]) {
+/**
+ * Opens a printable window with the conversation history.
+ * Sanitizes message content before rendering to prevent XSS.
+ */
+export default function exportMessages(messages: TChatMessage[]) {
   if (messages.length < 2) return;
 
   const newDocument = window.open("", "", "height=800,width=600");
   const messageChain = messages
     .map(
-      ({ role, content }) =>
+      (msg) =>
         `<p><strong>${
-          role === "user" ? "User" : "AI"
-        }</strong>: ${sanitizeText(content)}</p>`,
+          msg.type === "human" ? "User" : "AI"
+        }</strong>: ${sanitizeText(msg.text)}</p>`,
     )
     .join("");
 

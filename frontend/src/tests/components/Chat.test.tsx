@@ -2,6 +2,7 @@ import { render, cleanup, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, afterEach, beforeAll } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
 
 beforeAll(() => {
   if (!("scrollTo" in HTMLElement.prototype)) {
@@ -22,24 +23,19 @@ vi.mock("../../pages/Chat/components/MessageWindow", () => ({
 }));
 
 const mockMessages1 = [
-  { content: "some text", role: "ai", messageId: 1 },
-  { content: "some text", role: "user", messageId: 2 },
-  {
+  new AIMessage({ content: "some text", id: "1" }),
+  new HumanMessage({ content: "some text", id: "2" }),
+  new AIMessage({
     content:
       "some text-----generate letter-----<p>Letter HTML</p>-----end of letter-----",
-    role: "ai",
-    messageId: 3,
-  },
+    id: "3",
+  }),
 ];
 
 const mockMessages2 = [
-  { content: "some text", role: "ai", messageId: 1 },
-  { content: "some text", role: "user", messageId: 2 },
-  {
-    content: "some text",
-    role: "ai",
-    messageId: 3,
-  },
+  new AIMessage({ content: "some text", id: "1" }),
+  new HumanMessage({ content: "some text", id: "2" }),
+  new AIMessage({ content: "some text", id: "3" }),
 ];
 
 const renderChat = async () => {

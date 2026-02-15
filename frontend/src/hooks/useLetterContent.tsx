@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import useMessages, { IMessage } from "./useMessages";
+import { AIMessage } from "@langchain/core/messages";
+import { TChatMessage } from "./useMessages";
 import DOMPurify, { SANITIZE_AI_SETTINGS } from "../shared/utils/dompurify";
 
 const LETTER_START = "-----generate letter-----";
@@ -27,13 +28,19 @@ function extractLetter(content: string) {
   return { letter, reconstructedContent };
 }
 
-export function useLetterContent(messages: IMessage[]) {
+/**
+ * Extracts and sanitizes generated letter content from chat messages.
+ * Strips the letter block from the message and returns it separately.
+ */
+export function useLetterContent(
+  messages: TChatMessage[],
+  setMessages: React.Dispatch<React.SetStateAction<TChatMessage[]>>,
+) {
   const [letterContent, setLetterContent] = useState("");
-  const { setMessages } = useMessages();
 
   useEffect(() => {
     const messagesWithLetter = messages.filter((message) =>
-      message.content.includes(LETTER_START),
+      message.text.includes(LETTER_START),
     );
     const latestMessageWithLetter =
       messagesWithLetter[messagesWithLetter.length - 1];
@@ -41,23 +48,25 @@ export function useLetterContent(messages: IMessage[]) {
     if (latestMessageWithLetter === undefined) return;
 
     const { letter, reconstructedContent } = extractLetter(
-      latestMessageWithLetter.content,
+      latestMessageWithLetter.text,
     );
 
     if (letter === null) return;
 
     setLetterContent(DOMPurify.sanitize(letter, SANITIZE_AI_SETTINGS));
-    setMessages((prev) => {
-      const newMessages = [...prev];
-      const lastIndex = newMessages.length - 1;
-
-      newMessages[lastIndex] = {
-        ...newMessages[lastIndex],
-        content: DOMPurify.sanitize(reconstructedContent, SANITIZE_AI_SETTINGS),
-      };
-
-      return newMessages;
-    });
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === latestMessageWithLetter.id
+          ? new AIMessage({
+              content: DOMPurify.sanitize(
+                reconstructedContent,
+                SANITIZE_AI_SETTINGS,
+              ),
+              id: msg.id,
+            })
+          : msg,
+      ),
+    );
   }, [messages, setMessages]);
 
   return { letterContent };

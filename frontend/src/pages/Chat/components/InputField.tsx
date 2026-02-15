@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from "react";
-import { type IMessage } from "../../../hooks/useMessages";
+import { HumanMessage } from "@langchain/core/messages";
+import { type TChatMessage } from "../../../hooks/useMessages";
 import { streamText } from "../utils/streamHelper";
 import useHousingContext from "../../../hooks/useHousingContext";
 
@@ -8,7 +9,7 @@ interface Props {
     city: string | null;
     state: string;
   }) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
-  setMessages: React.Dispatch<React.SetStateAction<IMessage[]>>;
+  setMessages: React.Dispatch<React.SetStateAction<TChatMessage[]>>;
   isLoading: boolean;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   value: string;
@@ -16,6 +17,9 @@ interface Props {
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 }
 
+/**
+ * Auto-resizing text input for composing and sending chat messages.
+ */
 export default function InputField({
   addMessage,
   setMessages,
@@ -38,7 +42,7 @@ export default function InputField({
     // Add user message
     setMessages((prev) => [
       ...prev,
-      { role: "user", content: value, messageId: userMessageId },
+      new HumanMessage({ content: value, id: userMessageId }),
     ]);
 
     await streamText({
