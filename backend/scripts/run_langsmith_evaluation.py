@@ -58,14 +58,22 @@ def agent_wrapper(inputs) -> Dict[str, str]:
     return {
         "Model-Under-Test Output": "\n".join(
             [response["text"] for response in responses if ("text" in response)]  # type: ignore bad-typed-dict-key
-        )
+        ),
+        # SHOW_MODEL_THINKING env var controls whether reasoning is included in the output for evaluation debugging.
+        "Model-Under-Test Reasoning": "\n".join(
+            [
+                response["reasoning"]  # type: ignore bad-typed-dict-key
+                for response in responses
+                if ("reasoning" in response)
+            ]
+        ),
     }
 
 
 # TODO: https://docs.langchain.com/langsmith/multi-turn-simulation
 def run_evaluation(
     dataset_name="tenant-legal-qa-scenarios",
-    experiment_prefix="langchain-chat-manager-",
+    experiment_prefix="tfa-",
     num_repetitions: int = 1,
     max_concurrency: Optional[int] = 1,
 ):
@@ -105,7 +113,7 @@ def run_evaluation(
         agent_wrapper,
         data=dataset_name,
         evaluators=evaluators,
-        # experiment_prefix=experiment_prefix,
+        experiment_prefix=experiment_prefix,
         # max_concurrency=5,  # Run 5 evaluations in parallel.
         num_repetitions=num_repetitions,
         metadata={
@@ -131,7 +139,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--experiment",
-        default="langchain-agent",
+        default="tfa-",
         help="Experiment prefix for this evaluation run",
     )
     parser.add_argument(
