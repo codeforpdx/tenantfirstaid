@@ -93,7 +93,9 @@ class _GoogEnvAndPolicy:
             HarmCategory.HARM_CATEGORY_UNSPECIFIED: HarmBlockThreshold.OFF,
         }
 
-        self.MODEL_TEMPERATURE: Final = float(0)
+        self.MODEL_TEMPERATURE: Final = float(
+            0.7
+        )  # Gemini 2.5 best-practice is 0.7, Gemini 3+ default is 1.0 (https://docs.langchain.com/oss/python/integrations/chat/google_generative_ai#instantiation)
         self.MAX_TOKENS: Final = 65535
 
 
