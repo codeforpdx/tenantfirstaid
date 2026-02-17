@@ -35,6 +35,24 @@ class ExampleOutput(TypedDict):
     facts: List[str]
 
 
+class ExampleInput(TypedDict):
+    query: str
+    city: str
+    state: str
+
+
+class ExampleMetadata(TypedDict):
+    scenario_id: int
+    city: str
+    state: str
+    tags: List[str]
+
+
+class ExampleOutput(TypedDict):
+    reference_conversation: List[AnyMessage]
+    facts: List[str]
+
+
 def create_langsmith_dataset(
     input_csv: Path, limit_examples: int, dataset_name: str, overwrite_dataset=False
 ) -> Dataset:
