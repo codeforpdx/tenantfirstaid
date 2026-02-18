@@ -14,6 +14,7 @@ import polars as pd
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, AnyMessage, HumanMessage
 from langsmith import Client
+from langsmith.schemas import Dataset
 
 
 class ExampleInput(TypedDict):
@@ -36,7 +37,7 @@ class ExampleOutput(TypedDict):
 
 def create_langsmith_dataset(
     input_csv: Path, limit_examples: int, dataset_name: str, overwrite_dataset=False
-):
+) -> Dataset:
     """Upload test scenarios to LangSmith for automated evaluation."""
     client = Client(api_key=os.getenv("LANGSMITH_API_KEY"))
 
