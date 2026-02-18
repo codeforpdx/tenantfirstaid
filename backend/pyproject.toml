@@ -2,7 +2,7 @@
 [project]
 name = "tenant-first-aid"
 version = "0.3.0"
-requires-python = ">=3.12,<3.14" # langchain_core uses Pydantic V1, which is incompatible with Python 3.14+
+requires-python = ">=3.12,<3.14" # langchain_core triggers a Pydantic V1 warning, https://github.com/langchain-ai/langchain/issues/34441
 dependencies = [
   "flask>=3.1.1",
   "flask-mailman>=1.1.1",
