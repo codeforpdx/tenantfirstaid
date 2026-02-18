@@ -35,21 +35,22 @@ Run evaluation on the full dataset:
 
 ```bash
 cd backend
-uv run python scripts/run_langsmith_evaluation.py
+uv run scripts/run_langsmith_evaluation.py
 ```
 
 Run evaluation on a subset (faster for development):
 
 ```bash
-uv run python scripts/run_langsmith_evaluation.py --num-samples 20
+uv run scripts/run_langsmith_evaluation.py --num-samples 4
 ```
 
 Run a specific experiment:
 
 ```bash
-uv run python scripts/run_langsmith_evaluation.py \
+uv run scripts/run_langsmith_evaluation.py \
+  --dataset "tenant-legal-qa-scenarios" \
   --experiment "my-experiment" \
-  --dataset "tenant-legal-qa-scenarios"
+  --num-repetitions 1
 ```
 
 ### CI/CD
@@ -133,6 +134,20 @@ https://smith.langchain.com/
 - **Traces**: Debug individual responses
 - **Metrics**: Track quality over time
 
+## Dataset Structure
+
+- **Inputs**: query, city, state (what the model receives)
+- **Reference Outputs**: facts, reference_conversation (ground truth)
+
+## Evaluator Run Structure
+- Inputs (to the evaluator, e.g. LLM-as-a-Judge)
+  - **inputs** - `dataset.inputs`
+  - **outputs**
+    - `Model-Under-Test Output`: what the chatbot responded with
+    - `Model-Under-Test Reasoning`: what the chatbot was thinking. Optionally captured for debugging (`SHOW_MODEL_THINKING` env var)
+    - `Model-Under-Test System Prompt`: what the chatbot was given as instructions
+  - **reference_outputs** - `dataset.reference outputs`
+
 ### Example Workflow
 
 1. **Make code changes** to improve citation accuracy
@@ -197,7 +212,8 @@ LANGSMITH_API_KEY=your-api-key
 LANGSMITH_PROJECT=tenant-first-aid-dev  # Project name in LangSmith
 LANGSMITH_TRACING=true
 LANGCHAIN_TRACING_V2=true               # Enable detailed tracing
-MODEL_NAME=gemini-2.5-pro              # Model to evaluate
+MODEL_NAME=gemini-2.5-pro               # Model to evaluate
+SHOW_MODEL_THINKING=true                # capture reasoning in LangSmith Evaluator Run view
 ```
 
 ## Best Practices
