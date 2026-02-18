@@ -42,9 +42,7 @@ _PCC_HEADER = re.compile(r"^(30\.\d+\.\d+)\s+(.+?)\.?\s*$", re.MULTILINE)
 _EHC_ID = "EHC8.425"
 
 
-def _split_by_pattern(
-    text: str, pattern: re.Pattern, id_prefix: str
-) -> list[dict]:
+def _split_by_pattern(text: str, pattern: re.Pattern, id_prefix: str) -> list[dict]:
     """Generic splitter: find all header matches, slice content between them."""
     matches = list(pattern.finditer(text))
     if not matches:
@@ -116,6 +114,7 @@ def _split_pcc(text: str) -> list[dict]:
 
 # --- document registry ---------------------------------------------------
 
+
 def _iter_documents() -> Generator[tuple[dict, str, str], None, None]:
     """Yield (metadata, text, file_stem) for every source document."""
     or_dir = DOCUMENTS_DIR / "or"
@@ -137,7 +136,7 @@ def _iter_documents() -> Generator[tuple[dict, str, str], None, None]:
     # City files
     city_files = [
         (or_dir / "portland" / "PCC30.01.txt", "or", "portland", "PCC30.01"),
-        (or_dir / "eugene" / "EHC8.425.txt",   "or", "eugene",   "EHC8.425"),
+        (or_dir / "eugene" / "EHC8.425.txt", "or", "eugene", "EHC8.425"),
     ]
     for path, state, city, stem in city_files:
         if path.exists():
@@ -154,7 +153,13 @@ def _sections_for(meta: dict, text: str, stem: str) -> list[dict]:
         sections = _split_pcc(text)
     elif stem == "EHC8.425":
         # Single-section file — emit as one document
-        sections = [{"id": _EHC_ID, "title": "Eugene Housing Code 8.425", "content": text.strip()}]
+        sections = [
+            {
+                "id": _EHC_ID,
+                "title": "Eugene Housing Code 8.425",
+                "content": text.strip(),
+            }
+        ]
     else:
         sections = []
 
@@ -171,6 +176,7 @@ def _sections_for(meta: dict, text: str, stem: str) -> list[dict]:
 
 
 # --- main ----------------------------------------------------------------
+
 
 def run(out_path: Path, dry_run: bool) -> None:
     all_sections: list[dict] = []

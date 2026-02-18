@@ -147,18 +147,24 @@ def _make_rag_builder(mock_retriever_class, mock_singleton, docs):
     mock_singleton.GOOGLE_APPLICATION_CREDENTIALS = "/fake/creds.json"
     mock_retriever_class.return_value.invoke.return_value = docs
 
-    with patch("pathlib.Path.open", MagicMock()), patch(
-        "tenantfirstaid.langchain_tools.json.load",
-        return_value={"type": "service_account"},
-    ), patch(
-        "tenantfirstaid.langchain_tools.service_account.Credentials.from_service_account_file"
+    with (
+        patch("pathlib.Path.open", MagicMock()),
+        patch(
+            "tenantfirstaid.langchain_tools.json.load",
+            return_value={"type": "service_account"},
+        ),
+        patch(
+            "tenantfirstaid.langchain_tools.service_account.Credentials.from_service_account_file"
+        ),
     ):
         return Rag_Builder(filter='state: ANY("or")')
 
 
 @patch("tenantfirstaid.langchain_tools.VertexAISearchRetriever")
 @patch("tenantfirstaid.langchain_tools.SINGLETON")
-def test_rag_builder_search_formats_multiple_results(mock_singleton, mock_retriever_class):
+def test_rag_builder_search_formats_multiple_results(
+    mock_singleton, mock_retriever_class
+):
     """Test that search() labels each result so the agent can distinguish them."""
     docs = [
         Document(page_content="first passage", metadata={"source": "ORS090.txt"}),

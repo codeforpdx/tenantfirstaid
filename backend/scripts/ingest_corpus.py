@@ -135,8 +135,10 @@ def run(corpus_path: Path, dry_run: bool) -> None:
     print(f"Loaded {len(sections)} sections from {corpus_path}")
 
     if dry_run:
-        print(f"[dry-run] would import {len(sections)} documents in "
-              f"{-(-len(sections) // BATCH_SIZE)} batch(es)")
+        print(
+            f"[dry-run] would import {len(sections)} documents in "
+            f"{-(-len(sections) // BATCH_SIZE)} batch(es)"
+        )
         return
 
     credentials = _load_credentials()
@@ -155,7 +157,11 @@ def run(corpus_path: Path, dry_run: bool) -> None:
     ]
     for n, batch in enumerate(batches, start=1):
         docs = [_build_document(s) for s in batch]
-        print(f"Importing batch {n}/{len(batches)} ({len(docs)} documents)...", end=" ", flush=True)
+        print(
+            f"Importing batch {n}/{len(batches)} ({len(docs)} documents)...",
+            end=" ",
+            flush=True,
+        )
         _import_batch(client, parent, docs)
         print("done")
 
