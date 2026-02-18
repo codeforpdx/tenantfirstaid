@@ -71,7 +71,7 @@ def create_langsmith_dataset(
         df = pd.read_csv(csv_path, encoding="cp1252", n_rows=limit_examples)
 
     # replace all empty "city" values with "null" string
-    df["city"].fill_null("null")
+    df["city"] = df["city"].fill_null("null")
 
     # Convert each row to LangSmith example.
     for idx, row in enumerate(df.rows(named=True)):
