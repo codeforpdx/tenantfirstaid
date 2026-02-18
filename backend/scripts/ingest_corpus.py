@@ -144,6 +144,9 @@ def run(corpus_path: Path, dry_run: bool) -> None:
     credentials = _load_credentials()
     client = _make_client(credentials)
 
+    assert SINGLETON.GOOGLE_CLOUD_PROJECT is not None
+    assert SINGLETON.VERTEX_AI_DATASTORE is not None
+
     parent = client.branch_path(
         project=SINGLETON.GOOGLE_CLOUD_PROJECT,
         location=SINGLETON.GOOGLE_CLOUD_LOCATION or "global",
