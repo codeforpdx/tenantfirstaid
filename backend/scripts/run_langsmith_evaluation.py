@@ -67,6 +67,9 @@ def agent_wrapper(inputs) -> Dict[str, str]:
                 if ("reasoning" in response)
             ]
         ),
+        "Model-Under-Test System Prompt": chat_manager.system_prompt.content
+        if isinstance(chat_manager.system_prompt.content, str)
+        else "",
         # TODO: figure out how to return ToolMessage content blocks for evaluation of tool calls and outputs
         #       since these are not currently included in the output stream from generate_streaming_response()
     }
