@@ -66,7 +66,8 @@ def agent_wrapper(inputs) -> Dict[str, str]:
                 for response in responses
                 if ("reasoning" in response)
             ]
-        ),
+        )
+        or "N/A - Set env var `SHOW_MODEL_THINKING=true` to capture reasoning",
         "Model-Under-Test System Prompt": chat_manager.system_prompt.content
         if isinstance(chat_manager.system_prompt.content, str)
         else "",
