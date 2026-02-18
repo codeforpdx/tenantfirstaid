@@ -33,8 +33,8 @@ INPUT_OUTPUT: Final = dedent(
     </input>
 
     Use the Model-Under-Test Output below to evaluate the response.  Disregard
-    the Model-Under-Test Reasoning & Tools Used sections, which are for
-    evaluation debugging only and should not affect the scores.
+    other Model-Under-Test sections, which are for evaluation debugging only
+    and should not affect the scores.
     
     <output>
     {outputs}
