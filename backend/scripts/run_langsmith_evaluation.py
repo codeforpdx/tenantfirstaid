@@ -67,6 +67,14 @@ def agent_wrapper(inputs) -> Dict[str, str]:
                 if ("reasoning" in response)
             ]
         ),
+        "Model-Under-Test Tools Used": ", ".join(
+            [
+                response["tool"]  # type: ignore bad-typed-dict-key
+                for response in responses
+                if ("tool" in response)
+            ]
+        ),
+        # TODO: figure out how to return ToolMessage content blocks for evaluation of tool calls and outputs
     }
 
 
