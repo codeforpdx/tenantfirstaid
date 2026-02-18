@@ -8,17 +8,36 @@ import argparse
 import ast
 import os
 from pathlib import Path
-from typing import List
+from typing import List, TypedDict
 
 import polars as pd
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, AnyMessage, HumanMessage
 from langsmith import Client
+from langsmith.schemas import Dataset
+
+
+class ExampleInput(TypedDict):
+    query: str
+    city: str
+    state: str
+
+
+class ExampleMetadata(TypedDict):
+    scenario_id: int
+    city: str
+    state: str
+    tags: List[str]
+
+
+class ExampleOutput(TypedDict):
+    reference_conversation: List[AnyMessage]
+    facts: List[str]
 
 
 def create_langsmith_dataset(
     input_csv: Path, limit_examples: int, dataset_name: str, overwrite_dataset=False
-):
+) -> Dataset:
     """Upload test scenarios to LangSmith for automated evaluation."""
     client = Client(api_key=os.getenv("LANGSMITH_API_KEY"))
 
@@ -52,7 +71,7 @@ def create_langsmith_dataset(
         df = pd.read_csv(csv_path, encoding="cp1252", n_rows=limit_examples)
 
     # replace all empty "city" values with "null" string
-    df["city"].fill_null("null")
+    df["city"] = df["city"].fill_null("null")
 
     # Convert each row to LangSmith example.
     for idx, row in enumerate(df.rows(named=True)):
@@ -87,21 +106,23 @@ def create_langsmith_dataset(
         # Each example has inputs and expected metadata.
         client.create_example(
             dataset_id=dataset.id,
-            inputs={
-                "query": row["first_question"],
-                "city": city,
-                "state": row["state"],
-                "facts": facts,
-            },
-            metadata={
-                "scenario_id": idx,
-                "city": city,
-                "state": row["state"],
+            inputs=ExampleInput(
+                query=row["first_question"],
+                city=city,
+                state=row["state"],
+            ),
+            metadata=ExampleMetadata(
+                scenario_id=idx,
+                city=city,
+                state=row["state"],
                 # Tag scenarios for filtering.
-                "tags": [f"city-{city}", f"state-{row['state']}"],
-            },
-            # Optionally include reference conversation for comparison.
-            outputs={"reference_conversation": reference_conversation},
+                tags=[f"city-{city}", f"state-{row['state']}"],
+            ),
+            # Optionally include reference conversation and fact(s) for comparison by LLM-as-a-judge evaluation.
+            outputs=ExampleOutput(
+                reference_conversation=reference_conversation,
+                facts=facts,
+            ),
         )
 
     print(f"Created dataset '{dataset.name}' with {len(df)} scenarios")

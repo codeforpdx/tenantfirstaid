@@ -32,6 +32,10 @@ INPUT_OUTPUT: Final = dedent(
     {inputs}
     </input>
 
+    Use the Model-Under-Test Output below to evaluate the response.  Disregard
+    other Model-Under-Test sections, which are for evaluation debugging only
+    and should not affect the scores.
+    
     <output>
     {outputs}
     </output>
