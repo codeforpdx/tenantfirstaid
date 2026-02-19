@@ -10,7 +10,7 @@ export default function DisclaimerLayout({ isOngoing, children }: Props) {
     <div
       className={clsx(
         "container mx-auto text-xs",
-        isOngoing ? "" : "max-w-[600px]",
+        !isOngoing && "max-w-[600px]",
       )}
     >
       <p>

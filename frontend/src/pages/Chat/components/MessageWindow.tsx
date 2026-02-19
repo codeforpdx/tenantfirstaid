@@ -61,10 +61,7 @@ export default function MessageWindow({
   return (
     <>
       <div
-        className={clsx(
-          "flex-1",
-          isOngoing ? "overflow-y-scroll" : "overflow-y-none",
-        )}
+        className={clsx("flex-1", isOngoing && "overflow-y-scroll")}
         ref={messagesRef}
       >
         <div className="max-h-[calc(100dvh-var(--message-window-offset)-var(--navbar-height))] mx-auto max-w-[700px]">
