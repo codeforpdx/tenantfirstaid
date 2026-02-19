@@ -18,6 +18,7 @@ Prerequisites:
 """
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -44,8 +45,11 @@ _ID_UNSAFE = re.compile(r"[^a-zA-Z0-9-]")
 def _safe_doc_id(raw_id: str) -> str:
     """Convert a corpus section id to an RFC-1034-compliant document id."""
     sanitized = _ID_UNSAFE.sub("-", raw_id)
-    # IDs must not exceed 63 characters.
-    return sanitized[:63]
+    if len(sanitized) > 63:
+        # Append an 8-char hash so truncated IDs stay unique.
+        suffix = "-" + hashlib.sha1(raw_id.encode()).hexdigest()[:8]
+        sanitized = sanitized[: 63 - len(suffix)] + suffix
+    return sanitized
 
 
 def _load_credentials() -> Credentials | service_account.Credentials:
@@ -144,8 +148,10 @@ def run(corpus_path: Path, dry_run: bool) -> None:
     credentials = _load_credentials()
     client = _make_client(credentials)
 
-    assert SINGLETON.GOOGLE_CLOUD_PROJECT is not None
-    assert SINGLETON.VERTEX_AI_DATASTORE is not None
+    if SINGLETON.GOOGLE_CLOUD_PROJECT is None:
+        raise ValueError("GOOGLE_CLOUD_PROJECT is not set")
+    if SINGLETON.VERTEX_AI_DATASTORE is None:
+        raise ValueError("VERTEX_AI_DATASTORE is not set")
 
     parent = client.branch_path(
         project=SINGLETON.GOOGLE_CLOUD_PROJECT,
