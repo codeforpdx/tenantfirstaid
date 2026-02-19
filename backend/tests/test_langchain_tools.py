@@ -2,11 +2,15 @@
 Test location sanitization and other methods
 """
 
+import inspect
 from typing import Dict
+from unittest.mock import MagicMock, patch
 
 from tenantfirstaid.langchain_tools import (
     CityStateLawsInputSchema,
     __filter_builder,
+    get_letter_template,
+    retrieve_city_state_laws,
 )
 from tenantfirstaid.location import OregonCity, UsaState
 
@@ -65,3 +69,49 @@ def test_retrieve_state_law_filters_correctly():
     # Verify filter was constructed correctly.
     assert 'city: ANY("null")' in str(filter)
     assert 'state: ANY("or")' in str(filter)
+
+
+def test_get_letter_template_returns_template():
+    """Test that get_letter_template returns the letter template content."""
+    result = get_letter_template.invoke("")
+    assert "[Your Name]" in result
+    assert "ORS 90.320" in result
+
+
+@patch("tenantfirstaid.langchain_tools.Rag_Builder")
+def test_retrieve_city_state_laws_state_only(mock_rag_class):
+    """Test tool can be invoked with only state parameter."""
+    mock_rag_class.return_value.search.return_value = ""
+
+    # Should not raise despite city being omitted.
+    retrieve_city_state_laws.func(  # type: ignore[union-attr]
+        query="late rent fee", state=UsaState("or"), runtime=MagicMock()
+    )
+
+
+@patch("tenantfirstaid.langchain_tools.Rag_Builder")
+def test_retrieve_city_state_laws_parameter_order(mock_rag_class):
+    """Test that parameters are correctly ordered."""
+    mock_rag_class.return_value.search.return_value = ""
+
+    # Pass city before state (opposite of function signature order).
+    retrieve_city_state_laws.func(  # type: ignore[union-attr]
+        query="eviction notice",
+        city=OregonCity("portland"),
+        state=UsaState("or"),
+        runtime=MagicMock(),
+    )
+
+    filter_arg = mock_rag_class.call_args[1]["filter"]
+    assert "portland" in filter_arg and "or" in filter_arg
+
+
+def test_tool_schema_matches_function_signature():
+    """Test that Pydantic schema matches function defaults."""
+    schema_fields = set(CityStateLawsInputSchema.model_fields.keys())
+    func_params = set(
+        inspect.signature(retrieve_city_state_laws.func).parameters.keys()  # type: ignore[unresolved-attribute]
+    )
+    func_params.discard("runtime")
+
+    assert schema_fields == func_params

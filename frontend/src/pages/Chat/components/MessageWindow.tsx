@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { IMessage } from "../../../hooks/useMessages";
+import type { TChatMessage } from "../../../hooks/useMessages";
 import InputField from "./InputField";
 import MessageContent from "./MessageContent";
 import ExportMessagesButton from "./ExportMessagesButton";
@@ -9,15 +9,19 @@ import { useLocation } from "react-router-dom";
 import clsx from "clsx";
 
 interface Props {
-  messages: IMessage[];
+  messages: TChatMessage[];
   addMessage: (args: {
     city: string | null;
     state: string;
   }) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
-  setMessages: React.Dispatch<React.SetStateAction<IMessage[]>>;
+  setMessages: React.Dispatch<React.SetStateAction<TChatMessage[]>>;
   isOngoing: boolean;
 }
 
+/**
+ * Main chat view that displays the message list, input field, and action buttons.
+ * Shows the initialization form when no messages exist.
+ */
 export default function MessageWindow({
   messages,
   addMessage,
@@ -71,14 +75,14 @@ export default function MessageWindow({
                   <div
                     className={clsx(
                       "flex w-full",
-                      message.role === "ai" ? "justify-start" : "justify-end",
+                      message.type === "ai" ? "justify-start" : "justify-end",
                     )}
-                    key={message.messageId}
+                    key={message.id}
                   >
                     <div
                       className={clsx(
                         "message-bubble p-3 rounded-2xl max-w-[95%]",
-                        message.role === "ai"
+                        message.type === "ai"
                           ? "bg-slate-200 rounded-tl-sm"
                           : "bg-green-dark text-white rounded-tr-sm",
                       )}

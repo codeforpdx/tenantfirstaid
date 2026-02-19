@@ -1,12 +1,16 @@
+import { AIMessage } from "@langchain/core/messages";
 import { ILocation } from "../../../contexts/HousingContext";
-import { type IMessage } from "../../../hooks/useMessages";
+import { type TChatMessage } from "../../../hooks/useMessages";
 
+/**
+ * Options for streaming AI responses into the chat message list.
+ */
 export interface IStreamTextOptions {
   addMessage: (args: {
     city: string | null;
     state: string;
   }) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
-  setMessages: React.Dispatch<React.SetStateAction<IMessage[]>>;
+  setMessages: React.Dispatch<React.SetStateAction<TChatMessage[]>>;
   housingLocation: ILocation;
   setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -31,11 +35,7 @@ async function streamText({
   // Add empty bot message that will be updated
   setMessages((prev) => [
     ...prev,
-    {
-      role: "ai",
-      content: "",
-      messageId: botMessageId,
-    },
+    new AIMessage({ content: "", id: botMessageId }),
   ]);
 
   try {
@@ -57,21 +57,20 @@ async function streamText({
       fullText += chunk;
 
       // Update only the bot's message
+      const botMessage = new AIMessage({ content: fullText, id: botMessageId });
       setMessages((prev) =>
-        prev.map((msg) =>
-          msg.messageId === botMessageId ? { ...msg, content: fullText } : msg,
-        ),
+        prev.map((msg) => (msg.id === botMessageId ? botMessage : msg)),
       );
     }
   } catch (error) {
     console.error("Error:", error);
     setMessages((prev) =>
       prev.map((msg) =>
-        msg.messageId === botMessageId
-          ? {
-              ...msg,
+        msg.id === botMessageId
+          ? new AIMessage({
               content: "Sorry, I encountered an error. Please try again.",
-            }
+              id: botMessageId,
+            })
           : msg,
       ),
     );

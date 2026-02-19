@@ -1,4 +1,4 @@
-import { IMessage } from "../../../hooks/useMessages";
+import { TChatMessage } from "../../../hooks/useMessages";
 import BeaverIcon from "../../../shared/components/BeaverIcon";
 import { useEffect, useState } from "react";
 import { buildChatUserMessage } from "../utils/formHelper";
@@ -16,6 +16,7 @@ import {
 import { scrollToTop } from "../../../shared/utils/scrolling";
 import AutoExpandText from "./AutoExpandText";
 import clsx from "clsx";
+import { HumanMessage } from "@langchain/core/messages";
 
 const NONLETTERABLE_TOPICS = Object.keys(NONLETTERABLE_TOPIC_OPTIONS);
 
@@ -24,9 +25,12 @@ interface Props {
     city: string | null;
     state: string;
   }) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
-  setMessages: React.Dispatch<React.SetStateAction<IMessage[]>>;
+  setMessages: React.Dispatch<React.SetStateAction<TChatMessage[]>>;
 }
 
+/**
+ * Initial chat form for selecting location, housing type, topic, and issue description.
+ */
 export default function InitializationForm({ addMessage, setMessages }: Props) {
   const {
     housingLocation,
@@ -63,7 +67,7 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
     const userMessageId = Date.now().toString();
     setMessages((prev) => [
       ...prev,
-      { role: "user", content: initialUserMessage, messageId: userMessageId },
+      new HumanMessage({ content: initialUserMessage, id: userMessageId }),
     ]);
 
     await streamText({

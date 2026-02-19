@@ -26,7 +26,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph.state import CompiledStateGraph
 
 from .constants import DEFAULT_INSTRUCTIONS, SINGLETON
-from .langchain_tools import retrieve_city_state_laws
+from .langchain_tools import get_letter_template, retrieve_city_state_laws
 from .location import OregonCity, TFAAgentStateSchema, UsaState
 
 
@@ -71,7 +71,7 @@ class LangChainChatManager:
         )
 
         # Specify tools for RAG retrieval.
-        self.tools = [retrieve_city_state_laws]
+        self.tools = [retrieve_city_state_laws, get_letter_template]
 
         # defer agent instantiation until 'generate_stream_response'
         self.agent = None

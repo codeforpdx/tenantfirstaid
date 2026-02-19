@@ -13,7 +13,7 @@ from langchain_core.tools import tool
 from langchain_google_community import VertexAISearchRetriever
 from pydantic import BaseModel
 
-from .constants import SINGLETON
+from .constants import LETTER_TEMPLATE, SINGLETON
 from .location import OregonCity, UsaState
 
 
@@ -80,15 +80,31 @@ def __filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
     return f"""city: ANY("{city_or_null}") AND state: ANY("{state.lower()}")"""
 
 
+@tool
+def get_letter_template() -> str:
+    """Retrieve the letter template when the user asks to draft or generate a letter.
+
+    Fill in placeholders with any details the user has provided, leave the rest intact.
+
+    Returns:
+        A formatted letter template with placeholder fields.
+    """
+    return LETTER_TEMPLATE
+
+
 class CityStateLawsInputSchema(BaseModel):
     query: str
-    city: Optional[OregonCity]
     state: UsaState
+    city: Optional[OregonCity] = None
 
 
 @tool(args_schema=CityStateLawsInputSchema, response_format="content")
 def retrieve_city_state_laws(
-    query: str, city: Optional[OregonCity], state: UsaState, runtime: ToolRuntime
+    query: str,
+    state: UsaState,
+    city: Optional[OregonCity] = None,
+    *,
+    runtime: ToolRuntime,
 ) -> str:
     """
     Retrieve relevant state (and when specified, city) specific housing
