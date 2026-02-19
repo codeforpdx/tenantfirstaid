@@ -34,7 +34,7 @@ class Rag_Builder:
         self,
         filter: str,
         name: Optional[str] = "tfa-retriever",
-        max_documents: Optional[int] = 1,
+        max_documents: Optional[int] = 3,
         get_extractive_answers: bool = True,
     ) -> None:
         if SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is None:
@@ -54,6 +54,8 @@ class Rag_Builder:
                             SINGLETON.GOOGLE_APPLICATION_CREDENTIALS
                         )
                     )
+                case _ as unknown:
+                    raise ValueError(f"Unknown credential type: {unknown!r}")
 
         self.rag = VertexAISearchRetriever(
             beta=True,  # required for this implementation
@@ -167,7 +169,7 @@ def retrieve_city_state_laws(
             are too brief.
 
     Returns:
-        Relevant legal passages from city-specific laws
+        Relevant legal passages from city- or state-specific housing laws.
     """
 
     helper = Rag_Builder(

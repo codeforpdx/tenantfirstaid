@@ -30,6 +30,9 @@ DEFAULT_OUT = DOCUMENTS_DIR / "corpus.jsonl"
 # --- section splitters ---------------------------------------------------
 
 # ORS/OAR files: "      90.260 Title text..."  (6 leading spaces)
+# The 6-space indent is a formatting convention in the downloaded .txt exports
+# from the Oregon Legislature website.  If a source document is refreshed and
+# the splitter stops producing sections
 _ORS_HEADER = re.compile(r"^      (\d+\.\d+) (.+?)(?:\.\s|$)", re.MULTILINE)
 
 # OAR files: "411-054-0000" on its own line, title on the next line
