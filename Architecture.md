@@ -68,14 +68,16 @@ backend/
 │   ├── feedback.py                     # Message feedback logic and email integration
 │   └── sections.json                   # Legal section mappings
 ├── scripts/                            # Utility scripts
+│   ├── create_corpus_jsonl.py          # Split source documents into per-section corpus.jsonl
+│   ├── ingest_corpus.py                # Upload corpus.jsonl to Vertex AI Search datastore
 │   ├── create_langsmith_dataset.py     # Upload corpus to LangSmith
 │   ├── langsmith_evaluators.py         # LLM-as-a-Judge configuration (i.e. scoring, rubric)
-│   ├── run_langsmith_evaluators.py     # LangSmith experiment runner
+│   ├── run_langsmith_evaluation.py     # LangSmith experiment runner
 │   ├── simple_langchain_demo.py        # LangChain proof-of-concept
 │   ├── vertex_ai_list_datastores.py    # Utility to get Google Vertex AI Datastore IDs
-│   ├── create_vector_store.py          # RAG corpus setup
 │   ├── convert_csv_to_jsonl.py         # Data conversion utilities
 │   └── documents/                      # Source legal documents
+│       ├── corpus.jsonl                # Generated per-section corpus (run create_corpus_jsonl.py)
 │       └── or/                         # Oregon state laws
 │           ├── OAR54.txt               # Oregon Administrative Rules
 │           ├── ORS090.txt              # Oregon Revised Statutes
@@ -106,13 +108,16 @@ The system uses **LangChain agents** with **Vertex AI RAG** tools for document r
 
 The agent has access to one retrieval tool:
 
-1. **City-Specific and State Law Retrieval**: Searches documents filtered by city (optional) and state
+1. **`retrieve_city_state_laws`**: Searches the per-section corpus filtered by `city` and `state` metadata. The model controls three parameters exposed in the tool schema:
+   - `city` — omit for state statutes (ORS/OAR), supply for city ordinances (Portland PCC, Eugene EHC)
+   - `max_documents` (1–10, default 3) — increase when initial results are incomplete
+   - `get_extractive_answers` (default `True`) — set to `False` to retrieve full section chunks instead of short snippets
 
-The LLM decides how to call the tool based on the user's query and location context.
+The LLM decides how to call the tool based on the user's query and location context. If city-filtered results don't contain an answer, the system prompt instructs the agent to retry without a city to fall back to state statutes.
 
 #### Data Ingestion Pipeline
 
-The RAG system processes legal documents to create a searchable knowledge base:
+The RAG system processes legal documents to create a searchable knowledge base. Documents are split into individual sections before ingestion so Vertex AI Search can return the exact relevant statute rather than a chunk from a large monolithic file.
 
 ```mermaid
 graph LR
@@ -123,21 +128,21 @@ graph LR
     end
 
     subgraph "Processing Pipeline"
-        Script[create_vector_store.py]
-        Upload[File Upload<br/>to OpenAI]
-        Metadata[Attribute Tagging<br/>city, state]
+        Split[create_corpus_jsonl.py<br/>per-section split]
+        JSONL[corpus.jsonl<br/>~706 sections]
+        Ingest[ingest_corpus.py<br/>batch upload]
     end
 
     subgraph "Storage"
-        VectorStore[Vertex AI<br/>RAG Corpus]
+        VectorStore[Vertex AI Search<br/>Datastore]
     end
 
-    ORS --> Script
-    Portland --> Script
-    Eugene --> Script
-    Script --> Upload
-    Upload --> Metadata
-    Metadata --> VectorStore
+    ORS --> Split
+    Portland --> Split
+    Eugene --> Split
+    Split --> JSONL
+    JSONL --> Ingest
+    Ingest --> VectorStore
 ```
 
 **Data Ingestion Process:**
@@ -146,13 +151,21 @@ graph LR
    - State laws: `documents/or/*.txt`
    - City codes: `documents/or/portland/*.txt`, `documents/or/eugene/*.txt`
 
-2. **Vector Store Creation**: The `create_vector_store.py` script:
-   - Processes documents by directory structure
-   - Adds metadata attributes (city, state) for filtering
-   - Uploads files to Vertex AI RAG corpus
-   - Handles UTF-8 encoding requirements
+2. **Corpus Generation** (`create_corpus_jsonl.py`):
+   - Splits each source file into individual statute sections using regex patterns per document type
+   - Writes one JSON object per section to `documents/corpus.jsonl`
+   - Each entry carries `id`, `title`, `content`, `state`, and `city` fields
 
-3. **Metadata Attribution**: Documents are tagged with jurisdiction metadata to enable location-specific queries
+3. **Ingestion** (`ingest_corpus.py`):
+   - Reads `corpus.jsonl` and uploads each section as a separate Vertex AI Search document
+   - Structured metadata (`city`, `state`) is stored alongside the raw text content so the retriever's `city: ANY(...)` filters keep working
+   - Imports in batches of 100 using incremental reconciliation (re-running is safe)
+
+To rebuild and re-upload the corpus after source document changes:
+```bash
+uv run python scripts/create_corpus_jsonl.py
+uv run python scripts/ingest_corpus.py
+```
 
 #### Query Pipeline
 
@@ -624,10 +637,11 @@ The application uses environment-based secrets management:
 **Required Secrets:**
 
 - `FLASK_SECRET_KEY` - Session encryption key
-- `GOOGLE_SERVICE_ACCOUNT_CREDENTIALS_FILE` - Path to GCP service account JSON
-- `GEMINI_RAG_CORPUS` - Vertex AI RAG corpus identifier
-- `GEMINI_RAG_CORPUS_[CITY]` - Vertex AI RAG corpus identifier for a specific location (Optional)
-- `OPENAI_API_KEY` - OpenAI API key (used by data ingestion scripts)
+- `GOOGLE_APPLICATION_CREDENTIALS` - Path to GCP service account or authorized-user JSON
+- `GOOGLE_CLOUD_PROJECT` - GCP project ID (e.g. `tenantfirstaid`)
+- `GOOGLE_CLOUD_LOCATION` - Vertex AI location (e.g. `global`)
+- `VERTEX_AI_DATASTORE` - Vertex AI Search datastore ID
+- `MODEL_NAME` - Gemini model name (e.g. `gemini-2.5-pro`)
 
 **Security Measures:**
 
