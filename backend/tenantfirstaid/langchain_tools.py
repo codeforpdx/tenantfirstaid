@@ -63,7 +63,7 @@ class Rag_Builder:
             project_id=SINGLETON.GOOGLE_CLOUD_PROJECT,  # tenantfirstaid
             location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,  # global
             data_store_id=SINGLETON.VERTEX_AI_DATASTORE,  # "tenantfirstaid-corpora_1758844059585",
-            engine_data_type=0,  # tenantfirstaid-corpora_1758844059585 is unstructured
+            engine_data_type=0,  # 0 = unstructured data store
             get_extractive_answers=get_extractive_answers,
             name=name,
             max_documents=max_documents,

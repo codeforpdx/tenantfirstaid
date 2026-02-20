@@ -94,6 +94,8 @@ def _build_document(section: dict) -> discoveryengine_v1beta.Document:
         json_data=json.dumps(
             {
                 "title": section.get("title", ""),
+                # "null" is the sentinel used by __filter_builder in langchain_tools.py
+                # when no city is specified (i.e. state-level statutes).
                 "city": section.get("city", "null"),
                 "state": section.get("state", "or"),
             },

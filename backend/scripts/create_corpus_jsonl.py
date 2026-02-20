@@ -20,9 +20,12 @@ Usage:
 
 import argparse
 import json
+import logging
 import re
 from collections.abc import Generator
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 DOCUMENTS_DIR = Path(__file__).parent / "documents"
 DEFAULT_OUT = DOCUMENTS_DIR / "corpus.jsonl"
@@ -70,8 +73,8 @@ def _split_ors(text: str, stem: str) -> list[dict]:
     return _split_by_pattern(text, _ORS_HEADER, stem)
 
 
-def _split_oar(text: str) -> list[dict]:
-    """OAR54: section id on its own line, title on the following line."""
+def _split_oar(text: str, id_prefix: str) -> list[dict]:
+    """OAR: section id on its own line, title on the following line."""
     lines = text.splitlines()
     entries = []
     i = 0
@@ -88,7 +91,7 @@ def _split_oar(text: str) -> list[dict]:
                 j += 1
             entries.append(
                 {
-                    "id": f"OAR54_{section_id}",
+                    "id": f"{id_prefix}_{section_id}",
                     "title": title,
                     "content": "\n".join(body_lines).strip(),
                 }
@@ -151,7 +154,7 @@ def _sections_for(meta: dict, text: str, stem: str) -> list[dict]:
     if stem.startswith("ORS"):
         sections = _split_ors(text, stem)
     elif stem.startswith("OAR"):
-        sections = _split_oar(text)
+        sections = _split_oar(text, id_prefix=stem)
     elif stem == "PCC30.01":
         sections = _split_pcc(text)
     elif stem == "EHC8.425":
@@ -166,8 +169,9 @@ def _sections_for(meta: dict, text: str, stem: str) -> list[dict]:
     else:
         sections = []
 
-    # Fallback for files where no section headers were detected
+    # Fallback for files where no section headers were detected.
     if not sections:
+        logger.warning("No sections parsed for %s — emitting as single document", stem)
         sections = [{"id": stem, "title": stem, "content": text.strip()}]
 
     # Attach jurisdiction metadata to every section
