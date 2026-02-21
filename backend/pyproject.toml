@@ -18,7 +18,7 @@ dependencies = [
   "python-dotenv",
   "langchain>=1.2.10,<2.0.0",
   "langchain-google-vertexai>=3.1.0,<4.0.0",
-  "langsmith[pytest]>=0.4.47,<0.5.0",
+  "langsmith[pytest]>=0.6.3",
   "langchain-core>=1.2.11",
   "langchain-google-community[vertexaisearch]>=3.0.1",
   "langchain-google-genai>=4.0.0",
