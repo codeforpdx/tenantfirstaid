@@ -26,9 +26,10 @@ function extractLetter(content: string) {
     .join("\n\n");
 
   // Fallback message in case only the letter portion is returned as the AI response
-  if (reconstructedContent === "")
+  if (reconstructedContent === "") {
     reconstructedContent =
       "Here's the generated letter. Do you wish to modify it?";
+  }
 
   return { letter, reconstructedContent };
 }
