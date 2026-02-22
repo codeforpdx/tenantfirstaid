@@ -13,7 +13,9 @@ const letterOnlyMessage = new AIMessage({
 describe("useLetterContent", () => {
   it("uses fallback text when the response contains only the letter block", async () => {
     const { result } = renderHook(() => {
-      const [messages, setMessages] = useState<TChatMessage[]>([letterOnlyMessage]);
+      const [messages, setMessages] = useState<TChatMessage[]>([
+        letterOnlyMessage,
+      ]);
       const { letterContent } = useLetterContent(messages, setMessages);
       return { messages, letterContent };
     });
