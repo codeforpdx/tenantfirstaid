@@ -89,7 +89,7 @@ class LangChainChatManager:
             AgentExecutor configured with tools and system prompt
         """
 
-        system_prompt = SystemMessage(self._prepare_system_prompt(city, state))
+        self.system_prompt = SystemMessage(self._prepare_system_prompt(city, state))
 
         if thread_id is None:
             checkpointer_or_none = None
@@ -100,7 +100,7 @@ class LangChainChatManager:
         return create_agent(
             self.llm,
             self.tools,
-            system_prompt=system_prompt,
+            system_prompt=self.system_prompt,
             state_schema=TFAAgentStateSchema,
             checkpointer=checkpointer_or_none,
         )
