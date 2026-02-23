@@ -63,7 +63,8 @@ export default function useMessages() {
       city: string | null;
       state: string;
     }) => {
-      const filteredMessages = messages.filter((msg) => msg.text.trim() !== ""); // Filters out empty bot message
+      // Drops empty bot placeholder; empty human messages blocked by InputField's submit guardrail.
+      const filteredMessages = messages.filter((msg) => msg.text.trim() !== "");
       return await addNewMessage(filteredMessages, city, state);
     },
   });
