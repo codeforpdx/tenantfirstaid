@@ -55,7 +55,8 @@ def _classify_blocks(
                     end_match = LETTER_END_REGEX.search(text)
                     if end_match:
                         letter_parts.append(text[: end_match.start()])
-                        # Finalize the letter
+                        # Finalize the letter; text after the delimiter is dropped
+                        # (prompt guarantees the letter is the last element).
                         yield LetterChunk(letter="".join(letter_parts).strip())
                         in_letter = False
                     else:
