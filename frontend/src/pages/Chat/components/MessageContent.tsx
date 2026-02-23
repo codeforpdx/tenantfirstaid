@@ -30,7 +30,9 @@ interface Props {
 }
 
 /**
- * Renders a single chat message bubble with sanitized HTML content.
+ * Renders a single chat message bubble.
+ * AI messages are parsed as newline-delimited JSON chunks and rendered as markdown.
+ * Human messages are rendered as plain markdown.
  */
 export default function MessageContent({ message }: Props) {
   return (

@@ -2,6 +2,7 @@
 Module for Flask Chat View
 """
 
+import logging
 import re
 from typing import Any, Dict, Generator, List, Optional
 
@@ -26,12 +27,14 @@ from .schema import (
 LETTER_START_REGEX = re.compile(re.escape(LETTER_START), re.IGNORECASE)
 LETTER_END_REGEX = re.compile(re.escape(LETTER_END), re.IGNORECASE)
 
+_logger = logging.getLogger(__name__)
+
 
 def _classify_blocks(
     stream: Generator[ContentBlock, Any, None],
 ) -> Generator[ResponseChunk, Any, None]:
     """
-    Convert raw LangChain content blocks into JSON strings.
+    Convert raw LangChain content blocks into typed ResponseChunk objects.
 
     Watches for letter delimiters inside text blocks and emits a
     LetterChunk if it exists.
@@ -76,7 +79,7 @@ def _classify_blocks(
                         yield TextChunk(text=text)
 
     if in_letter and letter_parts:
-        current_app.logger.warning(
+        _logger.warning(
             "Stream ended while inside letter block; yielding partial letter."
         )
         yield LetterChunk(letter="".join(letter_parts).strip())

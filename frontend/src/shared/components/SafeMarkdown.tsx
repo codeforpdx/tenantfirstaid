@@ -15,6 +15,7 @@ const components: Components = {
   p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
   ul: ({ children }) => <ul className="list-disc ml-4 mb-3">{children}</ul>,
   ol: ({ children }) => <ol className="list-decimal ml-4 mb-3">{children}</ol>,
+  li: ({ children }) => <li className="mb-1">{children}</li>,
 };
 
 interface Props {

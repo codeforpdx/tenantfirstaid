@@ -53,6 +53,18 @@ class TestClassifyBlocks:
         assert "Dear" in result[0].letter
         assert "Landlord," in result[0].letter
 
+    def test_stream_ends_mid_letter(self):
+        result = chunks(
+            [
+                text_block("-----generate letter-----\nDear Landlord,"),
+                text_block("\nI am writing to inform you..."),
+            ]
+        )
+        assert len(result) == 1
+        assert result[0].type == "letter"
+        assert "Dear Landlord," in result[0].letter
+        assert "I am writing to inform you..." in result[0].letter
+
 
 @pytest.fixture
 def chat_manager(mocker):
