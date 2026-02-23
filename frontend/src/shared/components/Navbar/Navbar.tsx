@@ -36,7 +36,7 @@ export default function Navbar() {
                     "hover:text-green-dark hover:bg-green-light hover:opacity-70",
                     "hover:outline hover:outline-paper-background hover:rounded",
                     "no-underline",
-                    isActive ? "bg-green-medium rounded" : "no-underline",
+                    isActive && "bg-green-medium rounded",
                   )
                 }
               >
