@@ -4,7 +4,7 @@ Module for Flask Chat View
 
 import logging
 import re
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Generator
 
 from flask import Response, current_app, request, stream_with_context
 from flask.views import View
@@ -98,16 +98,16 @@ class ChatView(View):
         - state: State abbreviation
         """
 
-        data: Dict[str, Any] = request.json
+        data: dict[str, Any] = request.json
 
-        messages: List[AnyMessage] = data["messages"]
-        city: Optional[OregonCity] = OregonCity.from_maybe_str(data["city"])
+        messages: list[AnyMessage] = data["messages"]
+        city: OregonCity | None = OregonCity.from_maybe_str(data["city"])
         state: UsaState = UsaState.from_maybe_str(data["state"])
 
         # Create a stable & unique thread ID based on client IP and endpoint
         # TODO: consider using randomly-generated token stored client-side in
         #       a secure-cookie
-        tid: Optional[str] = None
+        tid: str | None = None
 
         def generate() -> Generator[str, Any, None]:
             response_stream: Generator[ContentBlock] = (

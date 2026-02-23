@@ -32,12 +32,6 @@ async function streamText({
 
   setIsLoading?.(true);
 
-  // Add empty bot message that will be updated
-  setMessages((prev) => [
-    ...prev,
-    new AIMessage({ content: "", id: botMessageId }),
-  ]);
-
   try {
     const reader = await addMessage({
       city: housingLocation?.city,
@@ -47,6 +41,12 @@ async function streamText({
       console.error("Stream reader is unavailable");
       return;
     }
+
+    // Add empty bot message only once we have a valid reader
+    setMessages((prev) => [
+      ...prev,
+      new AIMessage({ content: "", id: botMessageId }),
+    ]);
     const decoder = new TextDecoder();
     let buffer = "";
     let fullText = "";

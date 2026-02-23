@@ -21,20 +21,17 @@ const components: Components = {
 interface Props {
   children: string;
   remarkPlugins?: Options["remarkPlugins"];
-  components?: Options["components"];
 }
 
-/** Renders markdown with links forced to open in a new tab safely. */
-export default function SafeMarkdown({
-  children,
-  remarkPlugins,
-  components: componentOverrides,
-}: Props) {
+/**
+ * Renders markdown with links forced to open in a new tab safely.
+ * Paragraphs have bottom margin suppressed on the last child to avoid trailing space.
+ * Bullet and numbered lists are indented with disc/decimal markers.
+ * List items have a small gap between them.
+ */
+export default function SafeMarkdown({ children, remarkPlugins }: Props) {
   return (
-    <Markdown
-      components={{ ...components, ...componentOverrides }}
-      remarkPlugins={remarkPlugins}
-    >
+    <Markdown components={components} remarkPlugins={remarkPlugins}>
       {children}
     </Markdown>
   );

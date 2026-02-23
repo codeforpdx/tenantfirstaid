@@ -13,13 +13,14 @@ function RenderedChunk({ chunkObj }: ChunkProps) {
     case "reasoning":
       return (
         <div className="flex gap-2 my-2">
-          {/* reasoning chunk */}
+          {/* reasoning chunk is styled to help differentiate reasoning from text */}
           {`\u{1F914}`}
-          <span className="italic text-slate-500 leading-relaxed">
+          <em className="text-slate-500 leading-relaxed">
             {chunkObj.reasoning}
-          </span>
+          </em>
         </div>
       );
+    // No letter case (chunk handled in letter panel)
     default:
       return null;
   }
@@ -58,6 +59,10 @@ export default function MessageContent({ message }: Props) {
                         />
                       );
                     } catch {
+                      console.warn(
+                        "MessageContent: failed to parse chunk as JSON, falling back to markdown:",
+                        chunk,
+                      );
                       return (
                         <SafeMarkdown key={`automated-${index}`}>
                           {chunk}

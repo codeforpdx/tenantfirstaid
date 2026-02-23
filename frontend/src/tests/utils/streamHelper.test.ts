@@ -146,6 +146,35 @@ describe("streamText", () => {
     );
   });
 
+  it("should flush buffer when final chunk has no trailing newline", async () => {
+    // The last chunk intentionally omits a trailing newline to exercise the
+    // buffer-flush path that runs when done=true and buffer is non-empty.
+    const mockReader = createMockReader([
+      '{"type":"text","text":"Hello"}\n',
+      '{"type":"text","text":"world"}', // no trailing newline
+    ]);
+    mockAddMessage.mockResolvedValue(mockReader);
+
+    const result = await streamText({
+      addMessage: mockAddMessage,
+      setMessages: mockSetMessages,
+      housingLocation: { city: "Portland", state: "OR" },
+      setIsLoading: mockSetIsLoading,
+    } as IStreamTextOptions);
+
+    expect(result).toBe(true);
+    expect(mockSetMessages).toHaveBeenCalledTimes(3); // 1 initial + 2 chunk updates
+
+    const lastUpdateCall =
+      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0];
+    const updated = lastUpdateCall([
+      new AIMessage({ content: "", id: "1000001" }),
+    ]);
+    expect(updated[0].content).toBe(
+      '{"type":"text","text":"Hello"}\n{"type":"text","text":"world"}\n',
+    );
+  });
+
   it("should handle null reader and log error", async () => {
     mockAddMessage.mockResolvedValue(undefined);
 
@@ -159,5 +188,6 @@ describe("streamText", () => {
     expect(result).toBeUndefined();
     expect(console.error).toHaveBeenCalledWith("Stream reader is unavailable");
     expect(mockSetIsLoading).toHaveBeenCalledWith(false);
+    expect(mockSetMessages).not.toHaveBeenCalled(); // No empty "Typing..." when reader is unavailable
   });
 });
