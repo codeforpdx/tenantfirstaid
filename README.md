@@ -134,6 +134,147 @@ Live at https://tenantfirstaid.com/
   ```
   `--keep-going` will continue to run checks, even if previous `make` rule fail. Omit if you want to stop after the first `make` rule fails.
 
+## Containerized Development Setup (Alternative)
+
+As an alternative to the local development setup above, you can use containers for a consistent development environment across Mac, Linux, and Windows.
+
+### Prerequisites
+
+- Container runtime
+   - [Docker](https://docs.docker.com/get-docker/) (24.0+)
+   - [Docker Compose](https://docs.docker.com/compose/install/) (2.0+)
+   - or [Apple/Container](https://github.com/apple/container) (0.9.0+)
+- Google Cloud credentials (same as local setup)
+
+### Quick Start
+
+1. Copy environment template:
+   ```bash
+   cp .env.docker.example .env
+   ```
+
+2. Update `.env` with your credentials path:
+   ```bash
+   # Edit GOOGLE_APPLICATION_CREDENTIALS_HOST to point to your credentials
+   GOOGLE_APPLICATION_CREDENTIALS_HOST=/home/<USERNAME>/.config/gcloud/application_default_credentials.json
+   ```
+
+3. Start the application:
+   ```bash
+   docker compose up
+   ```
+
+   On MacOS with [`apple/container`](https://github.com/apple/container):
+   ```bash
+   container system start
+   # build frontend-dev image
+   cd frontend && container build --build-arg TYPE=dev --tag frontend-dev
+   # start frontend container
+   container run \
+     --name frontend \
+     --remove \
+     --env VITE_API_URL=http://localhost:3000 \
+     -v ./frontend/src:/app/src:ro \
+     -v ./frontend/public:/app/public:ro \
+     -v ./frontend/index.html:/app/index.html:ro \
+     -v ./frontend/vite.config.ts:/app/vite.config.ts:ro \
+     --publish 5173:5173 \
+     frontend-dev:latest &
+   # execute interactive shell in frontend container
+   container exec -it frontend /bin/sh
+
+   # build backend-dev image
+   container build --build-arg TYPE=dev --tag backend-dev
+   # set env from .env and then start backend container
+   env `grep -e '^\w.*=\S*' .env | cut -d\  -f1` && container run \
+     --name backend \
+     --remove \
+     --env FLASK_ENV=development \
+     --env SHOW_MODEL_THINKING=${SHOW_MODEL_THINKING:-true} \
+     --env GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT} \
+     --env GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-global} \
+     --env GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/google-creds.json \
+     --env VERTEX_AI_DATASTORE=${VERTEX_AI_DATASTORE} \
+     --env MODEL_NAME=${MODEL_NAME:-gemini-2.5-pro} \
+     --env LOG_LEVEL=${LOG_LEVEL:-DEBUG} \
+     --env LANGSMITH_API_KEY=${LANGSMITH_API_KEY} \
+     --env LANGSMITH_TRACING=${LANGSMITH_TRACING:-true} \
+     --env LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-true} \
+     -v ./backend/tenantfirstaid:/app/tenantfirstaid:ro \
+     -v ./backend/tests:/app/tests:ro \
+     -v ./backend/scripts:/app/scripts:ro \
+     -v ${GOOGLE_APPLICATION_CREDENTIALS}:/app/secrets/google-creds.json:ro \
+     --publish 3000:5000 \
+     backend-dev:latest &
+   # execute interactive shell in backend container
+   container exec -it backend /bin/sh
+   ```
+
+4. Access the application:
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:5000
+
+### Development Workflow
+
+- **Hot reload enabled** - Changes to source files are reflected immediately
+- **Run backend checks:**
+  ```bash
+  docker compose exec backend make lint
+  docker compose exec backend make typecheck
+  docker compose exec backend make test
+  ```
+
+  on MacOS with `apple/container`
+  ```bash
+  cd backend && make clean  # __pycache__ dirs are bind'd-in to containers as read-only so delete them
+  container exec backend make lint
+  container exec backend make typecheck
+  container exec backend make test
+  ```
+
+- **Run frontend checks:**
+  ```bash
+  docker compose exec frontend npm run lint
+  docker compose exec frontend npm run test -- --run
+  ```
+
+  on MacOS with `apple/container`
+  ```bash
+  container exec frontend npm run lint
+  container exec frontend npm run test -- --run
+  ```
+
+- **View logs:**
+  ```bash
+  docker compose logs -f backend
+  docker compose logs -f frontend
+  ```
+
+### Stopping
+
+```bash
+docker compose down
+```
+
+On MacOS with [`apple/container`](https://github.com/apple/container) (>= 0.9.0):
+   ```bash
+   container stop --all
+   container system stop
+   ```
+
+### Troubleshooting
+
+**Windows/WSL2 Performance:**
+- Keep source code inside WSL2 filesystem, not Windows filesystem
+- Add `consistency: delegated` to volume mounts if experiencing slow performance
+
+**Permission Issues:**
+- Ensure Google credentials file is readable: `chmod 644 <credentials-file>`
+- On Linux, ensure your user is in the `docker` group: `sudo usermod -aG docker $USER`
+
+**Port Already in Use:**
+- Change ports in `docker-compose.yml` if 5000 or 5173 are taken
+
 ## Contributing
 
 We currently have regular project meetups: https://www.meetup.com/codepdx/ . Also check out https://www.codepdx.org/ to find our Discord server.
