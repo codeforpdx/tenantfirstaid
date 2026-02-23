@@ -21,7 +21,7 @@ function RenderedChunk({ chunkObj }: ChunkProps) {
         </div>
       );
     default:
-      return "";
+      return null;
   }
 }
 
@@ -36,7 +36,7 @@ export default function MessageContent({ message }: Props) {
   return (
     <>
       <strong>{message.type === "ai" ? "Bot: " : "You: "}</strong>
-      <span className="whitespace-pre-wrap">
+      <div>
         {message.text.length === 0 ? (
           <span className="animate-dot-pulse italic">Typing...</span>
         ) : (
@@ -69,7 +69,7 @@ export default function MessageContent({ message }: Props) {
             )}
           </>
         )}
-      </span>
+      </div>
     </>
   );
 }

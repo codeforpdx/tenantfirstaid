@@ -14,7 +14,14 @@ from langchain_core.messages import (
 
 from .langchain_chat_manager import LangChainChatManager
 from .location import OregonCity, UsaState
-from .schema import LETTER_END, LETTER_START, LetterChunk, ReasoningChunk, TextChunk
+from .schema import (
+    LETTER_END,
+    LETTER_START,
+    LetterChunk,
+    ReasoningChunk,
+    ResponseChunk,
+    TextChunk,
+)
 
 LETTER_START_REGEX = re.compile(re.escape(LETTER_START), re.IGNORECASE)
 LETTER_END_REGEX = re.compile(re.escape(LETTER_END), re.IGNORECASE)
@@ -22,7 +29,7 @@ LETTER_END_REGEX = re.compile(re.escape(LETTER_END), re.IGNORECASE)
 
 def _classify_blocks(
     stream: Generator[ContentBlock, Any, None],
-) -> Generator[str, Any, None]:
+) -> Generator[ResponseChunk, Any, None]:
     """
     Convert raw LangChain content blocks into JSON strings.
 
@@ -67,6 +74,12 @@ def _classify_blocks(
                             letter_parts = [rest]
                     else:
                         yield TextChunk(text=text)
+
+    if in_letter and letter_parts:
+        current_app.logger.warning(
+            "Stream ended while inside letter block; yielding partial letter."
+        )
+        yield LetterChunk(letter="".join(letter_parts).strip())
 
 
 class ChatView(View):

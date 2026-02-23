@@ -3,8 +3,8 @@ import { TChatMessage } from "./useMessages";
 import type { TResponseChunk } from "../types/MessageTypes";
 
 /**
- * Extracts generated letter content from chat messages by scanning for
- * letter chunks in the most recent AI message that contains one.
+ * Extracts generated letter content from chat messages by scanning all AI
+ * messages and returning the last letter chunk found.
  */
 export function useLetterContent(messages: TChatMessage[]) {
   const letterContent = useMemo(() => {
