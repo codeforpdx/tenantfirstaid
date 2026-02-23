@@ -14,7 +14,7 @@ from langchain_core.messages import (
 
 from .langchain_chat_manager import LangChainChatManager
 from .location import OregonCity, UsaState
-from .schema import TextChunk, ReasoningChunk, LetterChunk, LETTER_START, LETTER_END
+from .schema import LETTER_END, LETTER_START, LetterChunk, ReasoningChunk, TextChunk
 
 LETTER_START_REGEX = re.compile(re.escape(LETTER_START), re.IGNORECASE)
 LETTER_END_REGEX = re.compile(re.escape(LETTER_END), re.IGNORECASE)

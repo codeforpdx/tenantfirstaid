@@ -4,7 +4,8 @@ from typing import Final, Optional
 
 from dotenv import load_dotenv
 from langchain_google_genai import HarmBlockThreshold, HarmCategory
-from .schema import LETTER_START, LETTER_END
+
+from .schema import LETTER_END, LETTER_START
 
 
 def _strtobool(val: Optional[str]) -> bool:

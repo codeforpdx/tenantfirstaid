@@ -1,4 +1,5 @@
 from typing import Final, Literal
+
 from pydantic import BaseModel, Field
 
 LETTER_START: Final = "-----generate letter-----"

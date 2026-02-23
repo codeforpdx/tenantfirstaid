@@ -15,7 +15,7 @@ from pydantic import BaseModel
 
 from .constants import LETTER_TEMPLATE, SINGLETON
 from .location import OregonCity, UsaState
-from .schema import LETTER_START, LETTER_END
+from .schema import LETTER_END, LETTER_START
 
 
 class Rag_Builder:
