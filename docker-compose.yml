@@ -15,7 +15,7 @@ services:
       - ./backend/tests:/app/tests:ro
       - ./backend/scripts:/app/scripts:ro
       # Mount Google credentials from host
-      - ${GOOGLE_APPLICATION_CREDENTIALS_HOST}:/app/secrets/google-creds.json:ro
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/app/secrets/google-creds.json:ro
     environment:
       - ENV=dev
       - FLASK_ENV=development
