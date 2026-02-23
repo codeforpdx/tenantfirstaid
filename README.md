@@ -173,7 +173,7 @@ As an alternative to the local development setup above, you can use containers f
    container run \
      --name frontend \
      --remove \
-     --env VITE_API_URL=http://localhost:5000 \
+     --env VITE_API_URL=http://localhost:3000 \
      -v ./frontend/src:/app/src:ro \
      -v ./frontend/public:/app/public:ro \
      -v ./frontend/index.html:/app/index.html:ro \
@@ -204,7 +204,7 @@ As an alternative to the local development setup above, you can use containers f
      -v ./backend/tests:/app/tests:ro \
      -v ./backend/scripts:/app/scripts:ro \
      -v ${GOOGLE_APPLICATION_CREDENTIALS_HOST}:/app/secrets/google-creds.json \
-     --publish 5000:5000 \
+     --publish 3000:5000 \
      backend-dev:latest &
    # execute interactive shell in backend container
    container exec -it backend /bin/sh
@@ -226,6 +226,7 @@ As an alternative to the local development setup above, you can use containers f
 
   on MacOS with `apple/container`
   ```bash
+  cd backend && make clean  # __pycache__ dirs are bind'd-in to containers as read-only so delete them
   container exec backend make lint
   container exec backend make typecheck
   container exec backend make test
@@ -258,6 +259,7 @@ docker compose down
 On MacOS with [`apple/container`](https://github.com/apple/container) (>= 0.9.0):
    ```bash
    container stop --all
+   container system stop
    ```
 
 ### Troubleshooting
