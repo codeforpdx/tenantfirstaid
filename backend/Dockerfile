@@ -58,7 +58,7 @@ ENV UV_COMPILE_BYTECODE=1
 
 # Install only production dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --no-dev
+    uv sync --no-dev --frozen
 
 # Copy only application code (no tests)
 COPY tenantfirstaid/ ./tenantfirstaid/
