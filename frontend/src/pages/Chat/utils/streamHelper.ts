@@ -48,19 +48,32 @@ async function streamText({
       return;
     }
     const decoder = new TextDecoder();
+    let buffer = "";
     let fullText = "";
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) return true;
-      const chunk = decoder.decode(value);
-      fullText += chunk;
+      buffer += decoder.decode(value, { stream: true });
 
-      // Update only the bot's message
-      const botMessage = new AIMessage({ content: fullText, id: botMessageId });
-      setMessages((prev) =>
-        prev.map((msg) => (msg.id === botMessageId ? botMessage : msg)),
-      );
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      lines
+        .filter((line) => line.trim() !== "")
+        .forEach((processedText) => {
+          if (processedText) {
+            fullText += processedText + "\n";
+            // Update only the bot's message
+            const botMessage = new AIMessage({
+              content: fullText,
+              id: botMessageId,
+            });
+            setMessages((prev) =>
+              prev.map((msg) => (msg.id === botMessageId ? botMessage : msg)),
+            );
+          }
+        });
     }
   } catch (error) {
     console.error("Error:", error);

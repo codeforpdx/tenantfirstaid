@@ -8,6 +8,27 @@ import type { AIMessage, HumanMessage } from "@langchain/core/messages";
  */
 export type TChatMessage = HumanMessage | AIMessage;
 
+/**
+ * Reconstructs the plain-text format from a stored AI message, which may
+ * contain newline-delimited JSON chunks so it wouldn't echo JSON back
+ */
+export function deserializeAiMessage(text: string): string {
+  return text
+    .split("\n")
+    .filter(Boolean)
+    .flatMap((line) => {
+      try {
+        const chunk = JSON.parse(line);
+        if (chunk.type === "text") return [chunk.text];
+        if (chunk.type === "letter") return [chunk.letter];
+        return [];
+      } catch {
+        return [line]; // plain text
+      }
+    })
+    .join("\n");
+}
+
 async function addNewMessage(
   messages: TChatMessage[],
   city: string | null,
@@ -15,7 +36,7 @@ async function addNewMessage(
 ) {
   const serializedMsg = messages.map((msg) => ({
     role: msg.type,
-    content: msg.text,
+    content: msg.type === "ai" ? deserializeAiMessage(msg.text) : msg.text,
     id: msg.id,
   }));
   const response = await fetch("/api/query", {

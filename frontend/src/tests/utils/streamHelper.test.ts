@@ -43,7 +43,10 @@ describe("streamText", () => {
   });
 
   it("should stream text chunks and update bot message progressively", async () => {
-    const mockReader = createMockReader(["Hello", " ", "world", "!"]);
+    const mockReader = createMockReader([
+      '{"type":"text","text":"Hello"}\n',
+      '{"type":"text","text":"world"}\n',
+    ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
     const result = await streamText({
@@ -58,7 +61,7 @@ describe("streamText", () => {
       city: "Portland",
       state: "OR",
     });
-    expect(mockSetMessages).toHaveBeenCalledTimes(5); // 1 initial + 4 chunk updates
+    expect(mockSetMessages).toHaveBeenCalledTimes(3); // 1 initial + 2 chunk updates
 
     // Verify loading state management
     expect(mockSetIsLoading).toHaveBeenCalledWith(true);
@@ -67,7 +70,10 @@ describe("streamText", () => {
   });
 
   it("should accumulate text correctly and only update the bot message", async () => {
-    const mockReader = createMockReader(["First", " chunk"]);
+    const mockReader = createMockReader([
+      '{"type":"text","text":"First"}\n',
+      '{"type":"text","text":" chunk"}\n',
+    ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
     await streamText({
@@ -77,7 +83,7 @@ describe("streamText", () => {
       setIsLoading: mockSetIsLoading,
     } as IStreamTextOptions);
 
-    const updateCall = mockSetMessages.mock.calls[2][0]; // Second chunk update
+    const updateCall = mockSetMessages.mock.calls.at(-1)[0];
     const existingMessages = [
       new HumanMessage({ content: "User message", id: "999" }),
       new AIMessage({ content: "First", id: "1000001" }),
@@ -86,7 +92,9 @@ describe("streamText", () => {
     const updated = updateCall(existingMessages);
 
     expect(updated[0]).toEqual(existingMessages[0]); // User message unchanged
-    expect(updated[1].content).toBe("First chunk"); // Bot message updated
+    expect(updated[1].content).toBe(
+      '{"type":"text","text":"First"}\n{"type":"text","text":" chunk"}\n',
+    ); // Bot message updated with accumulated JSON chunks
   });
 
   it("should set loading to false even when error occurs and set error message", async () => {
@@ -108,6 +116,32 @@ describe("streamText", () => {
     });
 
     expect(errorUpdateCall).toBeDefined();
+  });
+
+  it("should accumulate reasoning and text chunks in order", async () => {
+    const mockReader = createMockReader([
+      '{"type":"reasoning","reasoning":"Let me think."}\n',
+      '{"type":"text","text":"Here is the answer."}\n',
+    ]);
+    mockAddMessage.mockResolvedValue(mockReader);
+
+    await streamText({
+      addMessage: mockAddMessage,
+      setMessages: mockSetMessages,
+      housingLocation: { city: "Portland", state: "OR" },
+      setIsLoading: mockSetIsLoading,
+    } as IStreamTextOptions);
+
+    // 1 initial + 2 chunk updates
+    expect(mockSetMessages).toHaveBeenCalledTimes(3);
+
+    const lastUpdateCall = mockSetMessages.mock.calls.at(-1)[0];
+    const updated = lastUpdateCall([
+      new AIMessage({ content: "", id: "1000001" }),
+    ]);
+    expect(updated[0].content).toBe(
+      '{"type":"reasoning","reasoning":"Let me think."}\n{"type":"text","text":"Here is the answer."}\n',
+    );
   });
 
   it("should handle null reader and log error", async () => {

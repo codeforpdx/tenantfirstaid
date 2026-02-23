@@ -1,7 +1,29 @@
+import SafeMarkdown from "../../../shared/components/SafeMarkdown";
 import type { TChatMessage } from "../../../hooks/useMessages";
-import DOMPurify, {
-  SANITIZE_AI_SETTINGS,
-} from "../../../shared/utils/dompurify";
+import type { TResponseChunk } from "../../../types/MessageTypes";
+
+interface ChunkProps {
+  chunkObj: TResponseChunk;
+}
+
+function RenderedChunk({ chunkObj }: ChunkProps) {
+  switch (chunkObj.type) {
+    case "text":
+      return <SafeMarkdown>{chunkObj.text}</SafeMarkdown>;
+    case "reasoning":
+      return (
+        <div className="flex gap-2 my-2">
+          {/* reasoning chunk */}
+          {`\u{1F914}`}
+          <span className="italic text-slate-500 leading-relaxed">
+            {chunkObj.reasoning}
+          </span>
+        </div>
+      );
+    default:
+      return "";
+  }
+}
 
 interface Props {
   message: TChatMessage;
@@ -11,18 +33,41 @@ interface Props {
  * Renders a single chat message bubble with sanitized HTML content.
  */
 export default function MessageContent({ message }: Props) {
-  const messageContent = DOMPurify.sanitize(message.text, SANITIZE_AI_SETTINGS)
-    .split("-----generate letter-----")[0]
-    .trim();
-
   return (
     <>
       <strong>{message.type === "ai" ? "Bot: " : "You: "}</strong>
       <span className="whitespace-pre-wrap">
-        {messageContent.length === 0 ? (
+        {message.text.length === 0 ? (
           <span className="animate-dot-pulse italic">Typing...</span>
         ) : (
-          <span dangerouslySetInnerHTML={{ __html: messageContent }} />
+          <>
+            {message.type === "ai" ? (
+              <>
+                {message.text
+                  .split("\n")
+                  .filter((chunk) => chunk.length !== 0)
+                  .map((chunk, index) => {
+                    try {
+                      const chunkObj = JSON.parse(chunk) as TResponseChunk;
+                      return (
+                        <RenderedChunk
+                          key={chunkObj.type + index}
+                          chunkObj={chunkObj}
+                        />
+                      );
+                    } catch {
+                      return (
+                        <SafeMarkdown key={`automated-${index}`}>
+                          {chunk}
+                        </SafeMarkdown>
+                      );
+                    }
+                  })}
+              </>
+            ) : (
+              <SafeMarkdown>{message.text}</SafeMarkdown>
+            )}
+          </>
         )}
       </span>
     </>

@@ -16,7 +16,6 @@ def test_default_instructions_contains_oregon_law_center_phone():
 
 def test_default_instructions_contains_citation_links():
     assert "https://oregon.public.law/statutes" in DEFAULT_INSTRUCTIONS
-    assert 'target="_blank"' in DEFAULT_INSTRUCTIONS
 
 
 def test_letter_template_contains_placeholders():

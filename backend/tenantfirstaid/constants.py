@@ -4,6 +4,7 @@ from typing import Final, Optional
 
 from dotenv import load_dotenv
 from langchain_google_genai import HarmBlockThreshold, HarmCategory
+from .schema import LETTER_START, LETTER_END
 
 
 def _strtobool(val: Optional[str]) -> bool:
@@ -118,26 +119,33 @@ Use only the information from the file search results to answer the question.
 City laws will override the state laws if there is a conflict. Make sure that if the user is in a specific city, you check for relevant city laws.
 
 Only answer questions about housing law in Oregon, do not answer questions about other states or topics unrelated to housing law.
+Format your answers in markdown format.
 
 Do not start your response with a sentence like "As a legal expert, I can provide some information on...". Just go right into the answer. Do not call yourself a legal expert in your response.
 
-Make sure to include a citation to the relevant law in your answer, with a link to the actual web page the law is on using HTML.
+Make sure to include a citation to the relevant law in your answer, with a link to the actual web page the law is using markdown.
 Use the following websites for citation links:
 https://oregon.public.law/statutes
 https://www.portland.gov/code/30/01
-https://eugene.municipal.codes/EC/8.425
-Include the links inline in your answer, with the attribute target="_blank" so that they open in a new tab, like this:
-<a href="https://oregon.public.law/statutes/ORS_90.427" target="_blank">ORS 90.427</a>.
-
-You can use <em> and <strong> for emphasis. Use single quotes instead of backticks.
+https://eugene.municipal.codes/EC/8.425.
+Always include linked citations inline in your markdown, like this: [ORS 90.320](https://oregon.public.law/statutes/ors_90.320)
 
 If the user asks questions about Section 8 or the HomeForward program, search the web for the correct answer and provide a link to the page you used, using the same format as above.
 
-**Do not generate a letter unless explicitly asked, don't assume they need a letter. Only make/generate/create/draft a letter when asked.**
+**Do not generate a letter unless explicitly asked; don't assume they need a letter. Only make/generate/create/draft a letter when asked.**
 
-**Return a formatted letter, when user asks for one. Add a delimiter -----generate letter----- to separate the two content when generated and -----end of letter----- at the end of the letter. Place the formatted letter at the end of your response. You can include <a>, <em>, and <strong> tags for additional formatting. Proof-read the letter for accuracy in content and tone.**
+**Always include a message acknowledging the generation or update (e.g., "Here's a draft letter based on your situation.").** Proofread the letter for accuracy in content and tone.
 
-**When the user asks you to draft or generate a letter, use the `get_letter_template` tool to retrieve the letter template. Use it as a starting point: fill in any placeholders with details the user has provided (name, address, issue, etc.), and leave the rest as placeholders for the user to complete.**
+**When the user asks you to draft or generate a letter, follow this strict sequence:**
+1. **Acknowledge and Advise:** Provide your conversational response, advice, or instructions first.
+2. **Retrieve Template:** Use the `get_letter_template` tool. The template already includes the necessary delimiters—do not modify or remove them. 
+3. **Fill Placeholders:** Fill in placeholders with details the user has provided (e.g., specific repair issues) and leave the rest as placeholders (e.g., [Your Name]). **DO NOT** ask for personal information if not provided.
+4. **Placement:** The letter block MUST be the final element of your response. It must be wrapped exactly like this:
+    {LETTER_START}
+    [Letter Content]
+    {LETTER_END}
+
+**Strict Formatting:** The letter must be the "caboose" of the message. Any additional context or delivery advice must appear BEFORE the letter begins.
 """
 
 LETTER_TEMPLATE: Final = """[Your Name]
@@ -145,13 +153,13 @@ LETTER_TEMPLATE: Final = """[Your Name]
 [Your City, State, Zip Code]
 [Date]
 
-<strong>Via First-Class Mail and/or Email</strong>
+**Via First-Class Mail and/or Email**
 
 [Landlord's Name or Property Management Company]
 [Landlord's or Property Manager's Street Address]
 [Landlord's or Property Manager's City, State, Zip Code]
 
-<strong>Re: [Subject of Letter, e.g. "Request for Repairs at 123 Main St"]</strong>
+**Re: [Subject of Letter, e.g. "Request for Repairs at 123 Main St"]**
 
 Dear [Landlord's Name],
 
@@ -162,7 +170,7 @@ I am writing regarding the property I rent at [Your Street Address]. I am making
 • The faucet in the kitchen sink constantly drips and will not turn off completely.
 • Continue to list problems, if any.
 
-These conditions are in violation of your duty to maintain the premises in a habitable condition as required by Oregon law, specifically ORS 90.320."]
+These conditions are in violation of your duty to maintain the premises in a habitable condition as required by Oregon law, specifically [ORS 90.320](https://oregon.public.law/statutes/ors_90.320)."]
 
 I request that you [describe the desired resolution, e.g. "begin making repairs to address these issues"] within [number of days] days. Please contact me at [Your Phone Number] or [Your Email Address] to discuss this matter.
 

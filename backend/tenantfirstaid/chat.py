@@ -2,6 +2,7 @@
 Module for Flask Chat View
 """
 
+import re
 from typing import Any, Dict, Generator, List, Optional
 
 from flask import Response, current_app, request, stream_with_context
@@ -13,6 +14,59 @@ from langchain_core.messages import (
 
 from .langchain_chat_manager import LangChainChatManager
 from .location import OregonCity, UsaState
+from .schema import TextChunk, ReasoningChunk, LetterChunk, LETTER_START, LETTER_END
+
+LETTER_START_REGEX = re.compile(re.escape(LETTER_START), re.IGNORECASE)
+LETTER_END_REGEX = re.compile(re.escape(LETTER_END), re.IGNORECASE)
+
+
+def _classify_blocks(
+    stream: Generator[ContentBlock, Any, None],
+) -> Generator[str, Any, None]:
+    """
+    Convert raw LangChain content blocks into JSON strings.
+
+    Watches for letter delimiters inside text blocks and emits a
+    LetterChunk if it exists.
+    """
+    in_letter = False
+    letter_parts: list[str] = []
+
+    for content_block in stream:
+        match content_block["type"]:
+            case "reasoning":
+                yield ReasoningChunk(reasoning=content_block["reasoning"])
+
+            case "text":
+                text = content_block["text"]
+
+                if in_letter:
+                    # Look for the end stop.
+                    end_match = LETTER_END_REGEX.search(text)
+                    if end_match:
+                        letter_parts.append(text[: end_match.start()])
+                        # Finalize the letter
+                        yield LetterChunk(letter="".join(letter_parts).strip())
+                        in_letter = False
+                    else:
+                        letter_parts.append(text)
+
+                else:
+                    # Look for the start of the letter
+                    start_match = LETTER_START_REGEX.search(text)
+                    if start_match:
+                        before = text[: start_match.start()].strip()
+                        if before:
+                            yield TextChunk(text=before)
+                        rest = text[start_match.end() :]
+                        end_match = LETTER_END_REGEX.search(rest)
+                        if end_match:
+                            yield LetterChunk(letter=rest[: end_match.start()].strip())
+                        else:
+                            in_letter = True
+                            letter_parts = [rest]
+                    else:
+                        yield TextChunk(text=text)
 
 
 class ChatView(View):
@@ -48,22 +102,9 @@ class ChatView(View):
                     thread_id=tid,
                 )
             )
-
-            for content_block in response_stream:
-                return_text: str = ""
-
+            for content_block in _classify_blocks(response_stream):
                 current_app.logger.debug(f"Received content_block: {content_block}")
-
-                match content_block["type"]:
-                    case "reasoning":
-                        # reasoning-key is not required in the ReasoningContentBlock typed-dict
-                        if "reasoning" in content_block:
-                            return_text += f"\N{THINKING FACE} <em>{content_block['reasoning'].rstrip()}</em> \N{THINKING FACE}\n\n"
-                    case "text":
-                        # These are the Model messages back to the User
-                        return_text += f"{content_block['text']}\n"
-
-                yield return_text
+                yield content_block.model_dump_json() + "\n"
 
         return Response(
             stream_with_context(generate()),

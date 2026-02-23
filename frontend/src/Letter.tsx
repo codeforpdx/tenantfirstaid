@@ -17,7 +17,7 @@ import FeatureSnippet from "./shared/components/FeatureSnippet";
 export default function Letter() {
   const { addMessage, messages, setMessages } = useMessages();
   const isOngoing = messages.length > 0;
-  const { letterContent } = useLetterContent(messages, setMessages);
+  const { letterContent } = useLetterContent(messages);
   const { org, loc } = useParams();
   const [startStreaming, setStartStreaming] = useState(false);
   const streamLocationRef = useRef<ILocation | null>(null);

@@ -1,4 +1,6 @@
 import React from "react";
+import remarkBreaks from "remark-breaks";
+import SafeMarkdown from "./SafeMarkdown";
 
 interface Props {
   isOngoing: boolean;
@@ -29,12 +31,9 @@ export default function MessageContainer({
       {letterContent !== "" ? (
         <div className="flex flex-col gap-4 items-center flex-1/3 md:flex-2/3 h-[40%] md:h-full">
           <div className="overflow-y-scroll pr-4 w-full">
-            <span
-              className="whitespace-pre-wrap generated-letter"
-              dangerouslySetInnerHTML={{
-                __html: letterContent,
-              }}
-            />
+            <SafeMarkdown remarkPlugins={[remarkBreaks]}>
+              {letterContent}
+            </SafeMarkdown>
           </div>
         </div>
       ) : null}

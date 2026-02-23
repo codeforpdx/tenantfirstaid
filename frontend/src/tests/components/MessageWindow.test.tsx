@@ -17,7 +17,10 @@ beforeAll(() => {
 describe("MessageWindow component", () => {
   const messages: TChatMessage[] = [
     new HumanMessage({ content: "first message", id: "1" }),
-    new AIMessage({ content: "second message", id: "2" }),
+    new AIMessage({
+      content: '{"type":"text","text":"second message"}\n',
+      id: "2",
+    }),
     new HumanMessage({ content: "third message", id: "3" }),
   ];
 

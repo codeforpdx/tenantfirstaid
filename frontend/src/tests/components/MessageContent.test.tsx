@@ -1,0 +1,64 @@
+import { render, screen } from "@testing-library/react";
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
+import { describe, it, expect } from "vitest";
+import MessageContent from "../../pages/Chat/components/MessageContent";
+
+describe("MessageContent", () => {
+  it("renders text chunk for AI message", () => {
+    const message = new AIMessage({
+      content: '{"type":"text","text":"Hello, this is the answer."}\n',
+      id: "1",
+    });
+    render(<MessageContent message={message} />);
+    expect(screen.getByText("Hello, this is the answer.")).toBeInTheDocument();
+  });
+
+  it("renders reasoning chunk with thinking icon", () => {
+    const message = new AIMessage({
+      content:
+        '{"type":"reasoning","reasoning":"I need to think about this."}\n',
+      id: "2",
+    });
+    render(<MessageContent message={message} />);
+    expect(screen.getByText("I need to think about this.")).toBeInTheDocument();
+    expect(screen.getByText("🤔")).toBeInTheDocument();
+  });
+
+  it("renders both reasoning and text chunks when mixed", () => {
+    const message = new AIMessage({
+      content:
+        '{"type":"reasoning","reasoning":"Let me check the statute."}\n{"type":"text","text":"ORS 90.427 covers this."}\n',
+      id: "3",
+    });
+    render(<MessageContent message={message} />);
+    expect(screen.getByText("Let me check the statute.")).toBeInTheDocument();
+    expect(screen.getByText("ORS 90.427 covers this.")).toBeInTheDocument();
+    expect(screen.getByText("🤔")).toBeInTheDocument();
+  });
+
+  it("does not render letter chunk inline", () => {
+    const message = new AIMessage({
+      content: '{"type":"letter","letter":"Dear Landlord, fix the heat."}\n',
+      id: "4",
+    });
+    const { container } = render(<MessageContent message={message} />);
+    expect(container.textContent).not.toContain("Dear Landlord");
+  });
+
+  it("shows Typing... when AI message content is empty", () => {
+    const message = new AIMessage({ content: "", id: "4" });
+    render(<MessageContent message={message} />);
+    expect(screen.getByText("Typing...")).toBeInTheDocument();
+  });
+
+  it("renders human message as plain markdown without JSON parsing", () => {
+    const message = new HumanMessage({
+      content: "Is my landlord allowed to do this?",
+      id: "5",
+    });
+    render(<MessageContent message={message} />);
+    expect(
+      screen.getByText("Is my landlord allowed to do this?"),
+    ).toBeInTheDocument();
+  });
+});

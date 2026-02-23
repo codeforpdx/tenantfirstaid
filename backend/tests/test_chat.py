@@ -2,8 +2,56 @@ import pytest
 from flask import Flask
 from langchain_core.messages.content import create_text_block
 
-from tenantfirstaid.chat import ChatView
+from tenantfirstaid.chat import ChatView, _classify_blocks
 from tenantfirstaid.langchain_chat_manager import LangChainChatManager
+
+
+def text_block(text: str) -> dict:
+    return {"type": "text", "text": text}
+
+
+def reasoning_block(reasoning: str) -> dict:
+    return {"type": "reasoning", "reasoning": reasoning}
+
+
+def chunks(blocks):
+    return list(_classify_blocks(iter(blocks)))
+
+
+class TestClassifyBlocks:
+    def test_plain_text_passthrough(self):
+        result = chunks([text_block("Here is some advice.")])
+        assert len(result) == 1
+        assert result[0].type == "text"
+        assert result[0].text == "Here is some advice."
+
+    def test_reasoning_passthrough(self):
+        result = chunks([reasoning_block("Let me think.")])
+        assert len(result) == 1
+        assert result[0].type == "reasoning"
+        assert result[0].reasoning == "Let me think."
+
+    def test_letter_extracted_exact_delimiters(self):
+        block = text_block(
+            "Here's a letter.\n"
+            "-----generate letter-----\nDear Landlord,\n-----end of letter-----"
+        )
+        result = chunks([block])
+        assert result[0].type == "text"
+        assert result[0].text == "Here's a letter."
+        assert result[1].type == "letter"
+        assert result[1].letter == "Dear Landlord,"
+
+    def test_letter_split_across_blocks(self):
+        result = chunks(
+            [
+                text_block("-----generate letter-----\nDear"),
+                text_block(" Landlord,\n-----end of letter-----"),
+            ]
+        )
+        assert result[0].type == "letter"
+        assert "Dear" in result[0].letter
+        assert "Landlord," in result[0].letter
 
 
 @pytest.fixture

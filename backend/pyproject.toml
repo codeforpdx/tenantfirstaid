@@ -17,6 +17,7 @@ dependencies = [
   "langchain-google-community[vertexaisearch]>=3.0.1",
   "langchain-google-genai>=4.0.0",
   "google-auth>=2.40.3",
+  "pydantic>=2.12.5",
 ]
 
 [tool.setuptools.packages.find]

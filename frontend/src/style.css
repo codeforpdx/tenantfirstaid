@@ -90,8 +90,7 @@ a {
   @apply no-underline;
 }
 
-.message-bubble a,
-.generated-letter a {
+.message-bubble a {
   @apply inline text-blue-link transition-colors hover:text-blue-dark rounded;
 }
 

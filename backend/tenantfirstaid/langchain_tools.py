@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from .constants import LETTER_TEMPLATE, SINGLETON
 from .location import OregonCity, UsaState
+from .schema import LETTER_START, LETTER_END
 
 
 class Rag_Builder:
@@ -89,7 +90,7 @@ def get_letter_template() -> str:
     Returns:
         A formatted letter template with placeholder fields.
     """
-    return LETTER_TEMPLATE
+    return f"{LETTER_START}\n{LETTER_TEMPLATE}\n{LETTER_END}"
 
 
 class CityStateLawsInputSchema(BaseModel):

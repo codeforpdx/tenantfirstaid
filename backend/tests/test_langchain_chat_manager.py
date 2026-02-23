@@ -33,7 +33,6 @@ def test_system_prompt_includes_location(oregon_state, portland_city):
     prompt = chat_manager._prepare_system_prompt(city, state)
 
     assert "Portland OR" in prompt
-    assert 'target="_blank"' in prompt  # Citation format.
 
 
 def test_prepare_system_prompt_includes_city_state(oregon_state, portland_city):
