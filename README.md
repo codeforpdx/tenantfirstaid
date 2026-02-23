@@ -185,8 +185,8 @@ As an alternative to the local development setup above, you can use containers f
 
    # build backend-dev image
    container build --build-arg TYPE=dev --tag backend-dev
-   # start backend container
-   container run \
+   # set env from .env and then start backend container
+   env `grep -e '^\w.*=\S*' .env | cut -d\  -f1` && container run \
      --name backend \
      --remove \
      --env FLASK_ENV=development \
@@ -203,7 +203,7 @@ As an alternative to the local development setup above, you can use containers f
      -v ./backend/tenantfirstaid:/app/tenantfirstaid:ro \
      -v ./backend/tests:/app/tests:ro \
      -v ./backend/scripts:/app/scripts:ro \
-     -v ${GOOGLE_APPLICATION_CREDENTIALS_HOST}:/app/secrets/google-creds.json \
+     -v ${GOOGLE_APPLICATION_CREDENTIALS}:/app/secrets/google-creds.json:ro \
      --publish 3000:5000 \
      backend-dev:latest &
    # execute interactive shell in backend container
