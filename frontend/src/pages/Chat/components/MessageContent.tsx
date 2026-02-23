@@ -52,6 +52,7 @@ export default function MessageContent({ message }: Props) {
                   .map((chunk, index) => {
                     try {
                       const chunkObj = JSON.parse(chunk) as TResponseChunk;
+                      // type prefix avoids bare index, which React warns against
                       return (
                         <RenderedChunk
                           key={chunkObj.type + index}

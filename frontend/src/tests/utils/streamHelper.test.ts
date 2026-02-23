@@ -111,12 +111,15 @@ describe("streamText", () => {
     expect(mockSetIsLoading).toHaveBeenCalledWith(false);
     expect(console.error).toHaveBeenCalledWith("Error:", expect.any(Error));
 
-    const errorUpdateCall = mockSetMessages.mock.calls.find(([updater]) => {
-      const result = updater([new AIMessage({ content: "", id: "1000001" })]);
-      return result[0].content.includes("Sorry, I encountered an error");
-    });
-
-    expect(errorUpdateCall).toBeDefined();
+    // addMessage rejected before any bot message was added to state.
+    // The catch block should append the error message unconditionally.
+    const updateCall = mockSetMessages.mock.calls[0][0];
+    const existingMessages = [
+      new HumanMessage({ content: "User message", id: "999" }),
+    ];
+    const result = updateCall(existingMessages);
+    expect(result).toHaveLength(2);
+    expect(result[1].content).toContain("Sorry, I encountered an error");
   });
 
   it("should accumulate reasoning and text chunks in order", async () => {

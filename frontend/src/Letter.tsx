@@ -69,12 +69,14 @@ export default function Letter() {
           "What was generated is just an initial template. Please include details of your specific housing situation to update the letter.";
         const ERROR_MESSAGE =
           "Unable to generate letter. Please try again or refresh the page.";
+        const toJsonlMessage = (text: string) =>
+          JSON.stringify({ type: "text", text }) + "\n";
 
         if (streamDone) {
           setMessages((prev) => [
             ...prev,
             new AIMessage({
-              content: INITIAL_INSTRUCTION,
+              content: toJsonlMessage(INITIAL_INSTRUCTION),
               id: Date.now().toString(),
             }),
           ]);
@@ -82,7 +84,7 @@ export default function Letter() {
           setMessages((prev) => [
             ...prev,
             new AIMessage({
-              content: ERROR_MESSAGE,
+              content: toJsonlMessage(ERROR_MESSAGE),
               id: Date.now().toString(),
             }),
           ]);

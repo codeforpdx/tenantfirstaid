@@ -83,16 +83,17 @@ async function streamText({
     }
   } catch (error) {
     console.error("Error:", error);
-    setMessages((prev) =>
-      prev.map((msg) =>
-        msg.id === botMessageId
-          ? new AIMessage({
-              content: "Sorry, I encountered an error. Please try again.",
-              id: botMessageId,
-            })
-          : msg,
-      ),
-    );
+    setMessages((prev) => [
+      ...prev.filter((msg) => msg.id !== botMessageId),
+      new AIMessage({
+        content:
+          JSON.stringify({
+            type: "text",
+            text: "Sorry, I encountered an error. Please try again.",
+          }) + "\n",
+        id: botMessageId,
+      }),
+    ]);
   } finally {
     setIsLoading?.(false);
   }

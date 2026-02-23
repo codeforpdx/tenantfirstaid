@@ -110,7 +110,7 @@ class ChatView(View):
         tid: str | None = None
 
         def generate() -> Generator[str, Any, None]:
-            response_stream: Generator[ContentBlock] = (
+            response_stream: Generator[ContentBlock, Any, None] = (
                 self.chat_manager.generate_streaming_response(
                     messages=messages,
                     city=city,
@@ -122,6 +122,7 @@ class ChatView(View):
                 current_app.logger.debug(f"Received content_block: {content_block}")
                 yield content_block.model_dump_json() + "\n"
 
+        # text/plain rather than application/x-ndjson: client only reads raw bytes
         return Response(
             stream_with_context(generate()),
             mimetype="text/plain",
