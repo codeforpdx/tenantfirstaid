@@ -13,7 +13,7 @@ ENV UV_LINK_MODE=copy
 WORKDIR /app
 
 # Copy dependency files
-COPY pyproject.toml uv.lock* ./
+COPY pyproject.toml uv.lock ./
 
 # ─────────────────────────────────────────────────────────────
 # Dev stage - full tooling
@@ -37,7 +37,7 @@ COPY Makefile        ./
 
 # Sync the project
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked
+    uv sync --frozen
 
 ENV FLASK_ENV=development
 ENV ENV=dev
