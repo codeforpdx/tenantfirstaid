@@ -32,7 +32,10 @@ export default function App() {
               </Suspense>
             }
           />
-        </Routes>
+      </Routes>
+      <footer className="hidden sm:block fixed bottom-4 right-4 text-xs">
+        UI Version {__APP_VERSION__}
+      </footer>
       </PageLayout>
     </Router>
   );

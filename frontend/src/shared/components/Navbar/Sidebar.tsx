@@ -36,6 +36,9 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: Props) {
             </NavLink>
           ))}
           <hr className="my-2 border-t border-gray-300" />
+          <p className="text-xs text-gray-400 text-center">
+            UI Version {__APP_VERSION__}
+          </p>
         </div>
       </div>
       {sidebarOpen && (

@@ -20,10 +20,16 @@ function extractLetter(content: string) {
 
   const before = content.substring(0, startIndex).trim();
   const after = content.substring(endIndex + LETTER_END.length).trim();
-  const reconstructedContent = [before, after]
+  let reconstructedContent = [before, after]
     .filter(Boolean)
     .map((text) => text.replace(/`/g, "'"))
     .join("\n\n");
+
+  // Fallback message in case only the letter portion is returned as the AI response
+  if (reconstructedContent === "") {
+    reconstructedContent =
+      "Here's the generated letter. Do you wish to modify it?";
+  }
 
   return { letter, reconstructedContent };
 }
