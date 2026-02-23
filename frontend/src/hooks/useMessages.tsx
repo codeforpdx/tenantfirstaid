@@ -68,10 +68,6 @@ export default function useMessages() {
     },
   });
 
-  useEffect(() => {
-    setMessages([]);
-  }, []);
-
   return {
     messages,
     setMessages,
