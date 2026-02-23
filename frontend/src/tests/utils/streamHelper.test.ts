@@ -83,7 +83,8 @@ describe("streamText", () => {
       setIsLoading: mockSetIsLoading,
     } as IStreamTextOptions);
 
-    const updateCall = mockSetMessages.mock.calls.at(-1)[0];
+    const calls = mockSetMessages.mock.calls;
+    const updateCall = calls[calls.length - 1][0];
     const existingMessages = [
       new HumanMessage({ content: "User message", id: "999" }),
       new AIMessage({ content: "First", id: "1000001" }),
@@ -135,7 +136,8 @@ describe("streamText", () => {
     // 1 initial + 2 chunk updates
     expect(mockSetMessages).toHaveBeenCalledTimes(3);
 
-    const lastUpdateCall = mockSetMessages.mock.calls.at(-1)[0];
+    const lastCalls = mockSetMessages.mock.calls;
+    const lastUpdateCall = lastCalls[lastCalls.length - 1][0];
     const updated = lastUpdateCall([
       new AIMessage({ content: "", id: "1000001" }),
     ]);
