@@ -7,7 +7,8 @@ services:
         TYPE: dev
     container_name: tenantfirstaid-backend-dev
     ports:
-      - "5000:5000"
+      # we map port 3000 on the host to avoid MacOS conflict with ControlCenter
+      - "3000:5000"
     volumes:
       # Mount source for hot reload
       - ./backend/tenantfirstaid:/app/tenantfirstaid:ro
@@ -39,6 +40,7 @@ services:
         TYPE: dev
     container_name: tenantfirstaid-frontend-dev
     ports:
+      # Map port 5173 in the container to port 5173 on the host for Vite dev server
       - "5173:5173"
     volumes:
       # Mount source for hot reload
@@ -47,7 +49,7 @@ services:
       - ./frontend/index.html:/app/index.html:ro
       - ./frontend/vite.config.ts:/app/vite.config.ts:ro
     environment:
-      - VITE_API_URL=http://localhost:5000
+      - VITE_API_URL=http://localhost:3000
     depends_on:
       - backend
     networks:
