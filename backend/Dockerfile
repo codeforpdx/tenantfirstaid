@@ -4,19 +4,13 @@ ARG TYPE=deploy
 # ─────────────────────────────────────────────────────────────
 # Base stage - common setup
 # ─────────────────────────────────────────────────────────────
-FROM python:3.12-slim AS base
+# Use Astral's image with pre-installed UV and Python 3.13
+FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim AS base
+
+# Copy from the cache instead of linking since it's a mounted volume
+ENV UV_LINK_MODE=copy
 
 WORKDIR /app
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:$PATH"
 
 # Copy dependency files
 COPY pyproject.toml uv.lock* ./
@@ -26,14 +20,24 @@ COPY pyproject.toml uv.lock* ./
 # ─────────────────────────────────────────────────────────────
 FROM base AS dev
 
+# Install system dependencies (e.g. make)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        make \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install all dependencies including dev group
-RUN uv sync
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --no-install-project --frozen
 
 # Copy all source code and tests
 COPY tenantfirstaid/ ./tenantfirstaid/
-COPY scripts/ ./scripts/
-COPY tests/ ./tests/
-COPY Makefile ./
+COPY scripts/        ./scripts/
+COPY tests/          ./tests/
+COPY Makefile        ./
+
+# Sync the project
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked
 
 ENV FLASK_ENV=development
 ENV ENV=dev
@@ -49,8 +53,12 @@ CMD ["uv", "run", "python", "-m", "tenantfirstaid.app"]
 # ─────────────────────────────────────────────────────────────
 FROM base AS deploy
 
+# Enable bytecode compilation
+ENV UV_COMPILE_BYTECODE=1
+
 # Install only production dependencies
-RUN uv sync --no-dev
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --no-dev
 
 # Copy only application code (no tests)
 COPY tenantfirstaid/ ./tenantfirstaid/
