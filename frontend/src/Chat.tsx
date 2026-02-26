@@ -17,7 +17,7 @@ export default function Chat() {
         <MessageContainer isOngoing={isOngoing} letterContent={letterContent}>
           <div
             className={clsx(
-              "flex flex-col",
+              "flex flex-col min-h-0",
               letterContent === "" ? "flex-1" : "flex-1/3",
             )}
           >
