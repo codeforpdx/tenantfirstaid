@@ -119,7 +119,7 @@ describe("streamText", () => {
     ];
     const result = updateCall(existingMessages);
     expect(result).toHaveLength(2);
-    expect(result[1].content).toContain("Sorry, I encountered an error");
+    expect(result[1].text).toContain("Sorry, I encountered an error");
   });
 
   it("should accumulate reasoning and text chunks in order", async () => {

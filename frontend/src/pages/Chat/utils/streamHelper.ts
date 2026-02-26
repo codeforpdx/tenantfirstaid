@@ -1,6 +1,6 @@
 import { AIMessage } from "@langchain/core/messages";
 import { ILocation } from "../../../contexts/HousingContext";
-import { type TChatMessage } from "../../../hooks/useMessages";
+import { type TChatMessage, type TUiMessage } from "../../../hooks/useMessages";
 
 /**
  * Options for streaming AI responses into the chat message list.
@@ -84,16 +84,14 @@ async function streamText({
     }
   } catch (error) {
     console.error("Error:", error);
+    const errorMessage: TUiMessage = {
+      type: "ui",
+      text: "Sorry, I encountered an error. Please try again.",
+      id: botMessageId,
+    };
     setMessages((prev) => [
       ...prev.filter((msg) => msg.id !== botMessageId),
-      new AIMessage({
-        content:
-          JSON.stringify({
-            type: "text",
-            text: "Sorry, I encountered an error. Please try again.",
-          }) + "\n",
-        id: botMessageId,
-      }),
+      errorMessage,
     ]);
   } finally {
     setIsLoading?.(false);
