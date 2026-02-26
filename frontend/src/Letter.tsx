@@ -78,24 +78,13 @@ export default function Letter() {
           id: Date.now().toString(),
         };
         setMessages((prev) => [...prev, uiMessage]);
+        // Clear spinner after a short delay for a smoother transition.
+        setTimeout(() => setIsGenerating(false), LOADING_DISPLAY_DELAY_MS);
       }
     };
 
     runGenerateLetter();
   }, [startStreaming, addMessage, setMessages]);
-
-  useEffect(() => {
-    // Wait for messages[2] (the post-stream instruction) since MessageWindow
-    // hides the first two messages on the letter page
-    if (messages.length > 2) {
-      // Include 1s delay for smoother transition
-      const timeoutId = setTimeout(
-        () => setIsGenerating(false),
-        LOADING_DISPLAY_DELAY_MS,
-      );
-      return () => clearTimeout(timeoutId);
-    }
-  }, [messages]);
 
   useEffect(() => {
     dialogRef.current?.showModal();
