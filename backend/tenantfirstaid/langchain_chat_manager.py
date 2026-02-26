@@ -183,7 +183,9 @@ class LangChainChatManager:
             config=config,
         ):
             # outer dict key changes with internal messages (Model, Tool, ...)
-            chunk_k = list(chunk.keys())[0]
+            if not chunk:
+                continue
+            chunk_k = next(iter(chunk))
 
             # TODO: refactor this match/yield into a function
             # Specialize handling/printing based on each message class/type

@@ -33,6 +33,10 @@ def _classify_blocks(
                 yield TextChunk(text=content_block["text"])
             case "letter":
                 yield LetterChunk(letter=content_block["letter"])
+            case _:
+                current_app.logger.warning(
+                    f"Unhandled block type: {content_block['type']}"
+                )
 
 
 class ChatView(View):
