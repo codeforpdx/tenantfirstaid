@@ -96,8 +96,9 @@ export default function Letter() {
   }, [startStreaming, addMessage, setMessages]);
 
   useEffect(() => {
-    // Wait for the second message (index 1) which contains the initial AI response
-    if (messages.length > 1 && messages[1]?.text !== "") {
+    // Wait for messages[2] (the post-stream instruction) since MessageWindow
+    // hides the first two messages on the letter page
+    if (messages.length > 2) {
       // Include 1s delay for smoother transition
       const timeoutId = setTimeout(
         () => setIsGenerating(false),
