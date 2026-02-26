@@ -191,8 +191,13 @@ describe("streamText", () => {
     expect(result).toBeUndefined();
     expect(console.error).toHaveBeenCalledWith("Stream reader is unavailable");
     expect(mockSetIsLoading).toHaveBeenCalledWith(false);
-    // setMessages is called twice: once to add the empty bot message before the API call,
-    // then again to remove it when the reader is unavailable.
+    // setMessages is called twice: once to add the empty placeholder, once to replace
+    // it with a TUiMessage error so the letter page slice(2) can show the error.
     expect(mockSetMessages).toHaveBeenCalledTimes(2);
+    const replaceCall = mockSetMessages.mock.calls[1][0];
+    const result2 = replaceCall([
+      new AIMessage({ content: "", id: "1000001" }),
+    ]);
+    expect(result2[0].text).toContain("Sorry, I encountered an error");
   });
 });

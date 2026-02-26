@@ -45,7 +45,14 @@ async function streamText({
     });
     if (!reader) {
       console.error("Stream reader is unavailable");
-      setMessages((prev) => prev.filter((msg) => msg.id !== botMessageId));
+      const nullReaderError: TUiMessage = {
+        type: "ui",
+        text: "Sorry, I encountered an error. Please try again.",
+        id: botMessageId,
+      };
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === botMessageId ? nullReaderError : msg)),
+      );
       return;
     }
     const decoder = new TextDecoder();
