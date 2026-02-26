@@ -5,10 +5,12 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:5000:5000"
+    secrets:
+      - flask_secret
     environment:
+      - FLASK_SECRET_KEY_FILE=/run/secrets/flask_secret
       - ENV=prod
       - FLASK_ENV=production
-      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
       - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
       - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION}
       - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/google-creds.json
@@ -36,6 +38,10 @@ services:
       - backend
     networks:
       - tenantfirstaid
+
+secrets:
+  flask_secret:
+    external: true
 
 volumes:
   google-creds:
