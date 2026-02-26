@@ -37,6 +37,11 @@ class TestClassifyBlocks:
         assert result[0].type == "letter"
         assert result[0].letter == "Dear Landlord,"
 
+    def test_unknown_block_type_is_skipped_and_logged(self, app):
+        with app.app_context():
+            result = chunks([{"type": "image", "image": "..."}])
+        assert result == []
+
 
 @pytest.fixture
 def chat_manager(mocker):
