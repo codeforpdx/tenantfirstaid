@@ -15,7 +15,6 @@ from pydantic import BaseModel
 
 from .constants import LETTER_TEMPLATE, SINGLETON
 from .location import OregonCity, UsaState
-from .schema import LETTER_END, LETTER_START
 
 
 class Rag_Builder:
@@ -86,11 +85,31 @@ def get_letter_template() -> str:
     """Retrieve the letter template when the user asks to draft or generate a letter.
 
     Fill in placeholders with any details the user has provided, leave the rest intact.
+    After filling in the template, call submit_letter with the completed letter.
 
     Returns:
         A formatted letter template with placeholder fields.
     """
-    return f"{LETTER_START}\n{LETTER_TEMPLATE}\n{LETTER_END}"
+    return LETTER_TEMPLATE
+
+
+class GenerateLetterInputSchema(BaseModel):
+    letter: str
+
+
+@tool(args_schema=GenerateLetterInputSchema)
+def generate_letter(letter: str) -> str:
+    """Display the completed or updated letter in the letter panel.
+
+    Call this after filling in the letter template or after making any updates.
+
+    Args:
+        letter: The complete letter content with placeholders filled in.
+
+    Returns:
+        Confirmation that the letter was displayed.
+    """
+    return "Letter generated successfully."
 
 
 class CityStateLawsInputSchema(BaseModel):

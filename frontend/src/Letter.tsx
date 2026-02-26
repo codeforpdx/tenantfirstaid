@@ -1,4 +1,5 @@
-import { AIMessage, HumanMessage } from "@langchain/core/messages";
+import { HumanMessage } from "@langchain/core/messages";
+import type { TUiMessage } from "./hooks/useMessages";
 import MessageWindow from "./pages/Chat/components/MessageWindow";
 import useMessages from "./hooks/useMessages";
 import { useEffect, useRef, useState } from "react";
@@ -69,26 +70,14 @@ export default function Letter() {
           "What was generated is just an initial template. Please include details of your specific housing situation to update the letter.";
         const ERROR_MESSAGE =
           "Unable to generate letter. Please try again or refresh the page.";
-        const toJsonlMessage = (text: string) =>
-          JSON.stringify({ type: "text", text }) + "\n";
 
-        if (streamDone) {
-          setMessages((prev) => [
-            ...prev,
-            new AIMessage({
-              content: toJsonlMessage(INITIAL_INSTRUCTION),
-              id: Date.now().toString(),
-            }),
-          ]);
-        } else {
-          setMessages((prev) => [
-            ...prev,
-            new AIMessage({
-              content: toJsonlMessage(ERROR_MESSAGE),
-              id: Date.now().toString(),
-            }),
-          ]);
-        }
+        const text = streamDone ? INITIAL_INSTRUCTION : ERROR_MESSAGE;
+        const uiMessage: TUiMessage = {
+          type: "ui",
+          text,
+          id: Date.now().toString(),
+        };
+        setMessages((prev) => [...prev, uiMessage]);
       }
     };
 

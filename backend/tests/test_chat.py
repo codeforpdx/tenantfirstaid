@@ -31,39 +31,11 @@ class TestClassifyBlocks:
         assert result[0].type == "reasoning"
         assert result[0].reasoning == "Let me think."
 
-    def test_letter_extracted_exact_delimiters(self):
-        block = text_block(
-            "Here's a letter.\n"
-            "-----generate letter-----\nDear Landlord,\n-----end of letter-----"
-        )
-        result = chunks([block])
-        assert result[0].type == "text"
-        assert result[0].text == "Here's a letter."
-        assert result[1].type == "letter"
-        assert result[1].letter == "Dear Landlord,"
-
-    def test_letter_split_across_blocks(self):
-        result = chunks(
-            [
-                text_block("-----generate letter-----\nDear"),
-                text_block(" Landlord,\n-----end of letter-----"),
-            ]
-        )
-        assert result[0].type == "letter"
-        assert "Dear" in result[0].letter
-        assert "Landlord," in result[0].letter
-
-    def test_stream_ends_mid_letter(self):
-        result = chunks(
-            [
-                text_block("-----generate letter-----\nDear Landlord,"),
-                text_block("\nI am writing to inform you..."),
-            ]
-        )
+    def test_letter_passthrough(self):
+        result = chunks([{"type": "letter", "letter": "Dear Landlord,"}])
         assert len(result) == 1
         assert result[0].type == "letter"
-        assert "Dear Landlord," in result[0].letter
-        assert "I am writing to inform you..." in result[0].letter
+        assert result[0].letter == "Dear Landlord,"
 
 
 @pytest.fixture

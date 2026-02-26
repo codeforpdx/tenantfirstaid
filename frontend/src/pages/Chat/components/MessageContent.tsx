@@ -38,7 +38,7 @@ interface Props {
 export default function MessageContent({ message }: Props) {
   return (
     <>
-      <strong>{message.type === "ai" ? "Bot: " : "You: "}</strong>
+      <strong>{message.type === "human" ? "You: " : "Bot: "}</strong>
       <div>
         {message.text.length === 0 ? (
           <span className="animate-dot-pulse italic">Typing...</span>

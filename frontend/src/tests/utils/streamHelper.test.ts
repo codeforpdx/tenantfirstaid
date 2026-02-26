@@ -111,9 +111,9 @@ describe("streamText", () => {
     expect(mockSetIsLoading).toHaveBeenCalledWith(false);
     expect(console.error).toHaveBeenCalledWith("Error:", expect.any(Error));
 
-    // addMessage rejected before any bot message was added to state.
-    // The catch block should append the error message unconditionally.
-    const updateCall = mockSetMessages.mock.calls[0][0];
+    // The empty bot message is added before the API call (calls[0]).
+    // The catch block appends the error message as the second setMessages call (calls[1]).
+    const updateCall = mockSetMessages.mock.calls[1][0];
     const existingMessages = [
       new HumanMessage({ content: "User message", id: "999" }),
     ];
@@ -191,6 +191,8 @@ describe("streamText", () => {
     expect(result).toBeUndefined();
     expect(console.error).toHaveBeenCalledWith("Stream reader is unavailable");
     expect(mockSetIsLoading).toHaveBeenCalledWith(false);
-    expect(mockSetMessages).not.toHaveBeenCalled(); // No empty "Typing..." when reader is unavailable
+    // setMessages is called twice: once to add the empty bot message before the API call,
+    // then again to remove it when the reader is unavailable.
+    expect(mockSetMessages).toHaveBeenCalledTimes(2);
   });
 });

@@ -1,9 +1,6 @@
-from typing import Final, Literal
+from typing import Literal
 
 from pydantic import BaseModel, Field
-
-LETTER_START: Final = "-----generate letter-----"
-LETTER_END: Final = "-----end of letter-----"
 
 
 class TextChunk(BaseModel):

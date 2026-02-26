@@ -48,7 +48,8 @@ def test_tools_include_rag_retrieval():
     """Test that tools list includes RAG retrieval and letter template tools."""
     chat_manager = LangChainChatManager()
 
-    assert len(chat_manager.tools) == 2
+    assert len(chat_manager.tools) == 3
     tool_names = [tool.name for tool in chat_manager.tools]
     assert "retrieve_city_state_laws" in tool_names
+    assert "generate_letter" in tool_names
     assert "get_letter_template" in tool_names

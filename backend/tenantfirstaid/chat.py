@@ -2,9 +2,7 @@
 Module for Flask Chat View
 """
 
-import logging
-import re
-from typing import Any, Generator
+from typing import Any, Dict, Generator, List
 
 from flask import Response, current_app, request, stream_with_context
 from flask.views import View
@@ -16,74 +14,25 @@ from langchain_core.messages import (
 from .langchain_chat_manager import LangChainChatManager
 from .location import OregonCity, UsaState
 from .schema import (
-    LETTER_END,
-    LETTER_START,
     LetterChunk,
     ReasoningChunk,
     ResponseChunk,
     TextChunk,
 )
 
-LETTER_START_REGEX = re.compile(re.escape(LETTER_START), re.IGNORECASE)
-LETTER_END_REGEX = re.compile(re.escape(LETTER_END), re.IGNORECASE)
-
-_logger = logging.getLogger(__name__)
-
 
 def _classify_blocks(
     stream: Generator[ContentBlock, Any, None],
 ) -> Generator[ResponseChunk, Any, None]:
-    """
-    Convert raw LangChain content blocks into typed ResponseChunk objects.
-
-    Watches for letter delimiters inside text blocks and emits a
-    LetterChunk if it exists.
-    """
-    in_letter = False
-    letter_parts: list[str] = []
-
+    """Convert raw LangChain content blocks into typed ResponseChunk objects."""
     for content_block in stream:
         match content_block["type"]:
             case "reasoning":
                 yield ReasoningChunk(reasoning=content_block["reasoning"])
-
             case "text":
-                text = content_block["text"]
-
-                if in_letter:
-                    # Look for the end stop.
-                    end_match = LETTER_END_REGEX.search(text)
-                    if end_match:
-                        letter_parts.append(text[: end_match.start()])
-                        # Finalize the letter; text after the delimiter is dropped
-                        # (prompt guarantees the letter is the last element).
-                        yield LetterChunk(letter="".join(letter_parts).strip())
-                        in_letter = False
-                    else:
-                        letter_parts.append(text)
-
-                else:
-                    # Look for the start of the letter
-                    start_match = LETTER_START_REGEX.search(text)
-                    if start_match:
-                        before = text[: start_match.start()].strip()
-                        if before:
-                            yield TextChunk(text=before)
-                        rest = text[start_match.end() :]
-                        end_match = LETTER_END_REGEX.search(rest)
-                        if end_match:
-                            yield LetterChunk(letter=rest[: end_match.start()].strip())
-                        else:
-                            in_letter = True
-                            letter_parts = [rest]
-                    else:
-                        yield TextChunk(text=text)
-
-    if in_letter and letter_parts:
-        _logger.warning(
-            "Stream ended while inside letter block; yielding partial letter."
-        )
-        yield LetterChunk(letter="".join(letter_parts).strip())
+                yield TextChunk(text=content_block["text"])
+            case "letter":
+                yield LetterChunk(letter=content_block["letter"])
 
 
 class ChatView(View):
@@ -99,9 +48,9 @@ class ChatView(View):
         - state: State abbreviation
         """
 
-        data: dict[str, Any] = request.json
+        data: Dict[str, Any] = request.json
 
-        messages: list[AnyMessage] = data["messages"]
+        messages: List[AnyMessage] = data["messages"]
         city: OregonCity | None = OregonCity.from_maybe_str(data["city"])
         state: UsaState = UsaState.from_maybe_str(data["state"])
 

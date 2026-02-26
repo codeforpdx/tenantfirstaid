@@ -6,7 +6,14 @@ import type { AIMessage, HumanMessage } from "@langchain/core/messages";
  * Chat message Type aligned with LangChain's message types
  * to ensure consistency with backend.
  */
-export type TChatMessage = HumanMessage | AIMessage;
+export type TChatMessage = HumanMessage | AIMessage | TUiMessage;
+
+/** UI-only message for display purposes; excluded from backend history. */
+export type TUiMessage = {
+  type: "ui";
+  text: string;
+  id: string;
+};
 
 /**
  * Reconstructs the plain-text format from a stored AI message, which may
@@ -63,8 +70,10 @@ export default function useMessages() {
       city: string | null;
       state: string;
     }) => {
-      // Drops empty bot placeholder; empty human messages blocked by InputField's submit guardrail.
-      const filteredMessages = messages.filter((msg) => msg.text.trim() !== "");
+      // Exclude UI-only messages and empty placeholders from backend history.
+      const filteredMessages = messages.filter(
+        (msg) => msg.type !== "ui" && msg.text.trim() !== "",
+      );
       return await addNewMessage(filteredMessages, city, state);
     },
   });

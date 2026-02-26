@@ -32,6 +32,12 @@ async function streamText({
 
   setIsLoading?.(true);
 
+  // Add empty bot message immediately so "Typing..." appears before the API responds.
+  setMessages((prev) => [
+    ...prev,
+    new AIMessage({ content: "", id: botMessageId }),
+  ]);
+
   try {
     const reader = await addMessage({
       city: housingLocation?.city,
@@ -39,14 +45,9 @@ async function streamText({
     });
     if (!reader) {
       console.error("Stream reader is unavailable");
+      setMessages((prev) => prev.filter((msg) => msg.id !== botMessageId));
       return;
     }
-
-    // Add empty bot message only once we have a valid reader
-    setMessages((prev) => [
-      ...prev,
-      new AIMessage({ content: "", id: botMessageId }),
-    ]);
     const decoder = new TextDecoder();
     let buffer = "";
     let fullText = "";

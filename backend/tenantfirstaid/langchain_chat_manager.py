@@ -26,7 +26,11 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph.state import CompiledStateGraph
 
 from .constants import DEFAULT_INSTRUCTIONS, SINGLETON
-from .langchain_tools import get_letter_template, retrieve_city_state_laws
+from .langchain_tools import (
+    generate_letter,
+    get_letter_template,
+    retrieve_city_state_laws,
+)
 from .location import OregonCity, TFAAgentStateSchema, UsaState
 
 
@@ -71,7 +75,7 @@ class LangChainChatManager:
         )
 
         # Specify tools for RAG retrieval.
-        self.tools = [retrieve_city_state_laws, get_letter_template]
+        self.tools = [retrieve_city_state_laws, get_letter_template, generate_letter]
 
         # defer agent instantiation until 'generate_stream_response'
         self.agent = None
@@ -200,7 +204,16 @@ class LangChainChatManager:
                                         yield b
                                 # the Model calling a tool
                                 case "tool_call":
-                                    self.logger.info(b)
+                                    if b["name"] == "generate_letter":
+                                        letter = b["args"].get("letter")
+                                        if letter:
+                                            yield {"type": "letter", "letter": letter}
+                                        else:
+                                            self.logger.warning(
+                                                "generate_letter called with missing or empty letter arg."
+                                            )
+                                    else:
+                                        self.logger.info(b)
                                 case "server_tool_call":
                                     self.logger.info(b)
 
