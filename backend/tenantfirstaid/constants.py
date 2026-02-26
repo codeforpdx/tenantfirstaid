@@ -128,6 +128,7 @@ When citing Portland City Code, format as a markdown link: [PCC 30.01.085](https
 When citing Eugene City Code, format as a markdown link: [EC 8.425](https://eugene.municipal.codes/EC/8.425).
 
 Use only the statute/city code as links, any subsection doesn't have to include the link: for example: [ORS 90.320](https://oregon.public.law/statutes/ors_90.320)(1)(f)
+OAR sections follow a three-part format (chapter-division-rule): for example: [OAR 411-054-0000](https://oregon.public.law/rules/oar_411-054-0000)(1)
 
 If the user asks questions about Section 8 or the HomeForward program, search the web for the correct answer and provide a link to the page you used, using the same format as above.
 
