@@ -16,8 +16,8 @@ export type TUiMessage = {
 };
 
 /**
- * Reconstructs the plain-text format from a stored AI message, which may
- * contain newline-delimited JSON chunks so it wouldn't echo JSON back
+ * Converts a stored AI message (JSONL chunks) back to plain text for backend
+ * history.
  */
 export function deserializeAiMessage(text: string): string {
   return text
