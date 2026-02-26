@@ -19,8 +19,7 @@ export default function MessageContainer({
         "p-4 sm:p-6",
         "bg-paper-background rounded-lg shadow-[0_4px_6px_rgba(0,0,0,0.1)]",
         "max-w-full",
-        isOngoing &&
-          "h-[calc(100dvh-var(--mobile-offset-message-container)-var(--navbar-height))] md:h-[calc(100dvh-var(--desktop-offset-message-container)-var(--navbar-height))]",
+        isOngoing && "h-[calc(100dvh-var(--navbar-height))]",
       )}
     >
       {letterContent !== "" ? (
@@ -37,7 +36,7 @@ export default function MessageContainer({
       ) : null}
       <div
         className={clsx(
-          "flex flex-col h-[60%] md:h-full",
+          "flex flex-col min-h-0 h-[60%] md:h-full",
           letterContent === "" ? "flex-1" : "flex-1/3",
         )}
       >
