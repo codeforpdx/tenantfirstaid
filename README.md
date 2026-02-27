@@ -138,10 +138,6 @@ Live at https://tenantfirstaid.com/
 
 We currently have regular project meetups: https://www.meetup.com/codepdx/ . Also check out https://www.codepdx.org/ to find our Discord server.
 
-## Remote server setup
+## Deployment
 
-On DO, we:
-
-1. added our ssh public keys
-2. install nginx
-3. Kent got the tls cert (just ask chatgpt?)
+For information on how the application is deployed, where it runs, how to debug issues, and who has access, see [Deployment.md](Deployment.md).
