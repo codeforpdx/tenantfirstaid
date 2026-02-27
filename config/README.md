@@ -1,10 +1,12 @@
-# Remote server setup
+# Server configuration
 
-Ubuntu LTS 24.04 hosted on Digital Ocean with 2 CPUs and 2GB RAM. Stack includes Certbot, Porkbun, Google Gemini, and Nginx.
+This directory contains reference copies of the server configuration files. For full deployment documentation, see [Deployment.md](../Deployment.md).
 
-This folder is just a copy of the things on the remote server. There is no Github action or similar to sync these.
+> These files are **not auto-deployed** by the CI pipeline. Changes must be manually copied to the server by a server admin. See [Deployment.md — Manual server configuration changes](../Deployment.md#manual-server-configuration-changes).
 
-## Paths to files
+## Files and their deployed paths
 
-- /etc/systemd/system/tenantfirstaid-backend.service
-- /etc/nginx/sites-available/tenantfirstaid
+| File | Deployed path |
+|------|--------------|
+| `tenantfirstaid-backend.service` | `/etc/systemd/system/tenantfirstaid-backend.service` |
+| `tenantfirstaid.conf` | `/etc/nginx/sites-available/tenantfirstaid` |

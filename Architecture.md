@@ -4,7 +4,7 @@
 
 Tenant First Aid is a chatbot application that provides legal information related to housing and eviction in Oregon. The system uses a Retrieval-Augmented Generation (RAG) architecture to provide accurate, contextual responses based on Oregon housing law documents.  The LangChain framework is used to abstract models and agents.
 
-The application follows a modern web architecture with a Flask-based Python backend serving a React frontend, deployed on Digital Ocean infrastructure.
+The application follows a modern web architecture with a Flask-based Python backend serving a React frontend, deployed on Digital Ocean infrastructure. See [Deployment.md](Deployment.md) for deployment details.
 
 ```mermaid
 graph TB
@@ -569,105 +569,4 @@ graph TB
 
 ## Deployment
 
-### Infrastructure
-
-The application is deployed on Digital Ocean infrastructure with the following setup:
-
-**Server Specifications:**
-
-- **Platform**: Ubuntu LTS 24.04
-- **Resources**: 2 CPUs, 2GB RAM
-- **Provider**: Digital Ocean
-
-**Technology Stack:**
-
-```mermaid
-graph TB
-    subgraph "External Services"
-        Users[Users/Clients]
-        Certbot[Let's Encrypt<br/>SSL Certificates]
-        Porkbun[Porkbun<br/>DNS Provider]
-        GCP[Google Cloud Platform<br/>AI Services]
-    end
-
-    subgraph "Digital Ocean Server"
-        Nginx[Nginx<br/>Reverse Proxy & SSL]
-        Systemd[Systemd<br/>Process Manager]
-        Gunicorn[Gunicorn<br/>WSGI Server]
-        Flask[Flask Application]
-    end
-
-    Users --> Nginx
-    Certbot --> Nginx
-    Porkbun --> Users
-    Nginx --> Gunicorn
-    Systemd --> Gunicorn
-    Gunicorn --> Flask
-    Flask --> GCP
-```
-
-**Service Configuration:**
-
-- **Web Server**: Nginx as reverse proxy with SSL termination
-- **Application Server**: Gunicorn with 10 worker processes
-- **Process Management**: Systemd service for automatic restart and monitoring
-
-### Secrets Management
-
-The application uses environment-based secrets management:
-
-**Configuration Files:**
-
-- **Production**: `/etc/tenantfirstaid/env` - Environment file loaded by systemd service
-- **Development**: `backend/.env` - Local environment file (git-ignored)
-
-**Required Secrets:**
-
-- `FLASK_SECRET_KEY` - Session encryption key
-- `GOOGLE_SERVICE_ACCOUNT_CREDENTIALS_FILE` - Path to GCP service account JSON
-- `GEMINI_RAG_CORPUS` - Vertex AI RAG corpus identifier
-- `GEMINI_RAG_CORPUS_[CITY]` - Vertex AI RAG corpus identifier for a specific location (Optional)
-- `OPENAI_API_KEY` - OpenAI API key (used by data ingestion scripts)
-
-**Security Measures:**
-
-- Environment variables loaded at service startup
-- Service account credentials stored as JSON file
-- SSL/TLS encryption via Let's Encrypt certificates
-- Secure session cookies with HttpOnly and SameSite attributes
-
-**Deployment Architecture:**
-
-```mermaid
-graph LR
-    subgraph "Client"
-        Browser[Web Browser]
-    end
-
-    subgraph "Edge"
-        DNS[Porkbun DNS]
-        SSL[Let's Encrypt]
-    end
-
-    subgraph "Digital Ocean"
-        LB[Nginx<br/>Port 443/80]
-        App[Gunicorn + Flask<br/>Unix Socket]
-        Files[Config Files<br/>/etc/tenantfirstaid/]
-    end
-
-    subgraph "Google Cloud"
-        Vertex[Vertex AI<br/>Gemini + RAG]
-        Auth[Service Account<br/>Authentication]
-    end
-
-    Browser --> DNS
-    DNS --> SSL
-    SSL --> LB
-    LB --> App
-    App --> DB
-    App --> Auth
-    Auth --> Vertex
-    Files --> App
-```
-
-This architecture provides a scalable, secure deployment suitable for serving legal advice to tenants in Oregon while maintaining high availability and performance.
+See [Deployment.md](Deployment.md) for the full deployment documentation, including infrastructure details, the CI/CD pipeline, secrets management, debugging, permissions, and observability.
