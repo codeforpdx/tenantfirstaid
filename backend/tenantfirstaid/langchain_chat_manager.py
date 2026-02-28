@@ -190,6 +190,7 @@ class LangChainChatManager:
             # TODO: refactor this match/yield into a function
             # Specialize handling/printing based on each message class/type
             for m in chunk[chunk_k]["messages"]:
+                # Extend caller's list so tool messages are included in the agent's running context.
                 messages.append(m)
 
                 match m:

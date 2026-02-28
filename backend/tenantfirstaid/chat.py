@@ -6,10 +6,7 @@ from typing import Any, Dict, Generator, List
 
 from flask import Response, current_app, request, stream_with_context
 from flask.views import View
-from langchain_core.messages import (
-    AnyMessage,
-    ContentBlock,
-)
+from langchain_core.messages import ContentBlock
 
 from .langchain_chat_manager import LangChainChatManager
 from .location import OregonCity, UsaState
@@ -47,14 +44,14 @@ class ChatView(View):
         """
         Handle client POST request
         Expects JSON body with:
-        - messages: List of AnyMessage dicts
+        - messages: List of message dicts from the frontend ({"role": ..., "content": ..., "id": ...})
         - city: Optional city name
         - state: State abbreviation
         """
 
         data: Dict[str, Any] = request.json
 
-        messages: List[AnyMessage] = data["messages"]
+        messages: List[Dict[str, Any]] = data["messages"]
         city: OregonCity | None = OregonCity.from_maybe_str(data["city"])
         state: UsaState = UsaState.from_maybe_str(data["state"])
 
