@@ -26,6 +26,7 @@ export default function Letter() {
   const [isGenerating, setIsGenerating] = useState(true);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasInitialized = useRef(false);
   const LOADING_DISPLAY_DELAY_MS = 1000;
   const { housingLocation, housingType, tenantTopic, issueDescription } =
     useHousingContext();
@@ -36,9 +37,12 @@ export default function Letter() {
     issueDescription,
   );
 
+  // Adds the initial user message once and triggers streaming.
   useEffect(() => {
+    if (hasInitialized.current) return;
     const output = buildLetterUserMessage(org, loc);
     if (output === null) return;
+    hasInitialized.current = true;
     const hasIssueContext = issueDescription !== "";
 
     const userMessageId = Date.now().toString();
