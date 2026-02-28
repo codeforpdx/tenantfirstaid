@@ -6,7 +6,7 @@ Google Gemini API calls with a standardized agent-based architecture.
 
 import logging
 import sys
-from typing import Any, Generator, List, Optional
+from typing import Any, Dict, Generator, List, Optional
 
 from langchain.agents import create_agent
 
@@ -144,7 +144,7 @@ class LangChainChatManager:
 
     def generate_streaming_response(
         self,
-        messages: List[AnyMessage],
+        messages: List[AnyMessage | Dict[str, Any]],
         city: Optional[OregonCity],
         state: UsaState,
         thread_id: Optional[str],
