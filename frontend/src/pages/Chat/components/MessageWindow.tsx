@@ -74,17 +74,17 @@ export default function MessageWindow({
                       "flex w-full",
                       message.type === "ai" && "justify-start",
                       message.type === "human" && "justify-end",
-                      message.type === "ui" && "justify-center",
+                      message.type === "ui" && "justify-start",
                     )}
                     key={message.id}
                   >
                     <div
                       className={clsx(
-                        message.type !== "ui" &&
-                          "message-bubble p-3 rounded-2xl max-w-[95%]",
+                        "message-bubble p-3 rounded-2xl max-w-[95%]",
                         message.type === "ai" && "bg-slate-200 rounded-tl-sm",
                         message.type === "human" &&
                           "bg-green-dark text-white rounded-tr-sm",
+                        message.type === "ui" && "bg-slate-200 rounded-tl-sm",
                       )}
                     >
                       <MessageContent message={message} />

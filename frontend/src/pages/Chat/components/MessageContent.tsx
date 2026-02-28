@@ -26,6 +26,24 @@ function RenderedChunk({ chunkObj }: ChunkProps) {
   }
 }
 
+/** Returns true if an AI message has content that will visibly render. */
+function hasRenderableContent(text: string): boolean {
+  return text
+    .split("\n")
+    .filter(Boolean)
+    .some((chunk) => {
+      try {
+        const parsed = JSON.parse(chunk) as TResponseChunk;
+        return (
+          (parsed.type === "text" && parsed.text.length > 0) ||
+          parsed.type === "reasoning"
+        );
+      } catch {
+        return true;
+      }
+    });
+}
+
 interface Props {
   message: TChatMessage;
 }
@@ -38,14 +56,23 @@ interface Props {
 export default function MessageContent({ message }: Props) {
   if (message.type === "ui") {
     return (
-      <p className="text-sm text-gray-500 italic text-center">{message.text}</p>
+      <>
+        <strong>Info: </strong>
+        <p className="italic">{message.text}</p>
+      </>
     );
   }
+
+  const isThinking =
+    message.type === "ai"
+      ? !hasRenderableContent(message.text)
+      : message.text.length === 0;
+
   return (
     <>
-      <strong>{message.type === "ai" ? "Bot: " : "You: "}</strong>
+      <strong>{message.type === "ai" ? "Brainy: " : "You: "}</strong>
       <div>
-        {message.text.length === 0 ? (
+        {isThinking ? (
           <span className="animate-dot-pulse italic">Thinking...</span>
         ) : (
           <>

@@ -63,7 +63,7 @@ describe("MessageContent", () => {
       screen.getByText("What was generated is just an initial template."),
     ).toBeInTheDocument();
     expect(screen.queryByText(/You:/)).toBeNull();
-    expect(screen.queryByText(/Bot:/)).toBeNull();
+    expect(screen.queryByText(/Brainy:/)).toBeNull();
   });
 
   it("renders human message as plain markdown without JSON parsing", () => {
