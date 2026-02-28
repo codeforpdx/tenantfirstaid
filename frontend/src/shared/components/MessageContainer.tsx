@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import remarkBreaks from "remark-breaks";
 import SafeMarkdown from "./SafeMarkdown";
 
@@ -14,6 +14,18 @@ export default function MessageContainer({
   letterContent,
   children,
 }: Props) {
+  const [isFlashing, setIsFlashing] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (letterContent === "") return;
+    setIsFlashing(true);
+    timerRef.current = setTimeout(() => setIsFlashing(false), 1000);
+    return () => {
+      if (timerRef.current !== null) clearTimeout(timerRef.current);
+    };
+  }, [letterContent]);
+
   return (
     <div
       className={clsx(
@@ -25,7 +37,12 @@ export default function MessageContainer({
       )}
     >
       {letterContent !== "" ? (
-        <div className="flex flex-col gap-4 items-center flex-1/3 md:flex-2/3 h-[40%] md:h-full">
+        <div
+          className={clsx(
+            "flex flex-col gap-4 items-center flex-1/3 md:flex-2/3 h-[40%] md:h-full rounded-lg",
+            isFlashing && "animate-letter-flash",
+          )}
+        >
           <div className="overflow-y-scroll pr-4 w-full">
             <SafeMarkdown remarkPlugins={[remarkBreaks]}>
               {letterContent}

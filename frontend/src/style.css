@@ -115,6 +115,24 @@ select {
   @apply border transition-colors duration-300 focus:outline-0 focus:border-blue-dark focus:shadow-[0_0_0_2px_rgba(74,144,226,0.2)];
 }
 
+@keyframes letterFlash {
+  0% {
+    background-color: transparent;
+  }
+
+  20% {
+    background-color: #fefce8; /* yellow-50 */
+  }
+
+  100% {
+    background-color: transparent;
+  }
+}
+
+.animate-letter-flash {
+  animation: letterFlash 1s ease-out;
+}
+
 .animate-dot-pulse {
   display: inline-block;
   position: relative;
