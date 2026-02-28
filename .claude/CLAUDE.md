@@ -139,7 +139,3 @@ uses: astral-sh/setup-uv@7
 - Clear documentation for any public API changes.
 - Clean history and a helpful PR description.
 - Inconsistent environment variables and secrets declarations across GitHub Actions, .env.example, tests, and relevant Markdown documentation; this includes secrets and variables which are declared but never referenced in the code.
-
-### Pull request review instructions
-
-Please hide older outdated Claude review comments, that are longer than 15 lines, when adding a new review so that Assignee and other reviewers can focus on the latest review.
