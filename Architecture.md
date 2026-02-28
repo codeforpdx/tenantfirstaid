@@ -628,9 +628,7 @@ The application uses environment-based secrets management:
 
 - `FLASK_SECRET_KEY` - Session encryption key
 - `GOOGLE_SERVICE_ACCOUNT_CREDENTIALS_FILE` - Path to GCP service account JSON
-- `GEMINI_RAG_CORPUS` - Vertex AI RAG corpus identifier
-- `GEMINI_RAG_CORPUS_[CITY]` - Vertex AI RAG corpus identifier for a specific location (Optional)
-- `OPENAI_API_KEY` - OpenAI API key (used by data ingestion scripts)
+- `VERTEX_AI_DATASTORE` - Vertex AI Search data store ID
 
 **Security Measures:**
 
