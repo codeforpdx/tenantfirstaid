@@ -118,7 +118,7 @@ export default function Letter() {
           <MessageContainer isOngoing={isOngoing} letterContent={letterContent}>
             <div
               className={clsx(
-                "flex flex-col",
+                "flex flex-col min-h-0",
                 letterContent === "" ? "flex-1" : "flex-1/3",
               )}
             >
@@ -139,10 +139,18 @@ export default function Letter() {
             </div>
           </MessageContainer>
         </div>
-        <div className="flex flex-col m-auto lg:h-[620px] lg:max-w-[300px] rounded-lg bg-paper-background">
-          <FeatureSnippet />
-          <div className="p-4">
-            <LetterDisclaimer isOngoing={isOngoing} />
+        <div
+          className={clsx(
+            "flex flex-col m-auto w-full rounded-lg bg-paper-background",
+            "lg:self-start lg:max-w-[300px]",
+            "[@media(max-height:800px)]:my-0 [@media(max-height:800px)]:self-stretch [@media(max-height:800px)]:overflow-hidden",
+          )}
+        >
+          <div className="[@media(max-height:800px)]:overflow-y-auto">
+            <FeatureSnippet />
+            <div className="p-4">
+              <LetterDisclaimer isOngoing={isOngoing} />
+            </div>
           </div>
         </div>
       </div>

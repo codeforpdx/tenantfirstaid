@@ -61,10 +61,10 @@ export default function MessageWindow({
   return (
     <>
       <div
-        className={clsx("flex-1", isOngoing && "overflow-y-scroll")}
+        className={clsx("flex-1 min-h-0", isOngoing && "overflow-y-scroll")}
         ref={messagesRef}
       >
-        <div className="max-h-[calc(100dvh-var(--message-window-offset)-var(--navbar-height))] mx-auto max-w-[700px]">
+        <div className="mx-auto max-w-[700px]">
           {isOngoing ? (
             <div className="flex flex-col gap-4 relative">
               {displayedMessages.map((message) => {
