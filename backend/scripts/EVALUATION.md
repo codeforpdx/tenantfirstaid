@@ -20,10 +20,16 @@ Tenant First Aid uses LangSmith for automated quality evaluation of legal advice
 
 ### One-Time Setup
 
-Create the LangSmith dataset from existing test scenarios:
+1. Install the evaluator dependency. The chatbot uses `langchain-google-genai`, but the LLM-as-judge evaluators use `init_chat_model()` which resolves Gemini models to `ChatVertexAI` under the hood:
 
 ```bash
 cd backend
+uv add langchain-google-vertexai
+```
+
+2. Create the LangSmith dataset from existing test scenarios:
+
+```bash
 uv run python scripts/create_langsmith_dataset.py
 ```
 
@@ -35,13 +41,7 @@ Run evaluation on the full dataset:
 
 ```bash
 cd backend
-uv run scripts/run_langsmith_evaluation.py
-```
-
-Run evaluation on a subset (faster for development):
-
-```bash
-uv run scripts/run_langsmith_evaluation.py --num-samples 4
+uv run python scripts/run_langsmith_evaluation.py
 ```
 
 Run a specific experiment:
