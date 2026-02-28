@@ -25,6 +25,7 @@ export default function Letter() {
   const streamLocationRef = useRef<ILocation | null>(null);
   const [isGenerating, setIsGenerating] = useState(true);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const LOADING_DISPLAY_DELAY_MS = 1000;
   const { housingLocation, housingType, tenantTopic, issueDescription } =
     useHousingContext();
@@ -80,12 +81,24 @@ export default function Letter() {
         };
         setMessages((prev) => [...prev, uiMessage]);
         // Clear spinner after a short delay for a smoother transition.
-        setTimeout(() => setIsGenerating(false), LOADING_DISPLAY_DELAY_MS);
+        timerRef.current = setTimeout(
+          () => setIsGenerating(false),
+          LOADING_DISPLAY_DELAY_MS,
+        );
       }
     };
 
     runGenerateLetter();
   }, [startStreaming, addMessage, setMessages]);
+
+  // Clear any pending timer if the component unmounts before it fires.
+  useEffect(() => {
+    return () => {
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     dialogRef.current?.showModal();

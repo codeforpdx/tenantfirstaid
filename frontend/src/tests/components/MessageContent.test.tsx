@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import { describe, it, expect } from "vitest";
 import MessageContent from "../../pages/Chat/components/MessageContent";
+import type { TUiMessage } from "../../hooks/useMessages";
 
 describe("MessageContent", () => {
   it("renders text chunk for AI message", () => {
@@ -49,6 +50,20 @@ describe("MessageContent", () => {
     const message = new AIMessage({ content: "", id: "4" });
     render(<MessageContent message={message} />);
     expect(screen.getByText("Thinking...")).toBeInTheDocument();
+  });
+
+  it("renders ui message as plain italic text without a label", () => {
+    const message: TUiMessage = {
+      type: "ui",
+      text: "What was generated is just an initial template.",
+      id: "6",
+    };
+    render(<MessageContent message={message} />);
+    expect(
+      screen.getByText("What was generated is just an initial template."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/You:/)).toBeNull();
+    expect(screen.queryByText(/Bot:/)).toBeNull();
   });
 
   it("renders human message as plain markdown without JSON parsing", () => {

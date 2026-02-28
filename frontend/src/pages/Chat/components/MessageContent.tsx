@@ -36,6 +36,11 @@ interface Props {
  * Human messages are rendered as plain markdown.
  */
 export default function MessageContent({ message }: Props) {
+  if (message.type === "ui") {
+    return (
+      <p className="text-sm text-gray-500 italic text-center">{message.text}</p>
+    );
+  }
   return (
     <>
       <strong>{message.type === "ai" ? "Bot: " : "You: "}</strong>
