@@ -24,7 +24,7 @@ Tenant First Aid uses LangSmith for automated quality evaluation of legal advice
 
 ```bash
 cd backend
-uv add langchain-google-vertexai
+uv add --group dev langchain-google-vertexai
 ```
 
 2. Create the LangSmith dataset from existing test scenarios:
@@ -47,7 +47,7 @@ uv run python scripts/run_langsmith_evaluation.py
 Run a specific experiment:
 
 ```bash
-uv run scripts/run_langsmith_evaluation.py \
+uv run python scripts/run_langsmith_evaluation.py \
   --dataset "tenant-legal-qa-scenarios" \
   --experiment "my-experiment" \
   --num-repetitions 1
@@ -153,7 +153,7 @@ https://smith.langchain.com/
 1. **Make code changes** to improve citation accuracy
 2. **Run evaluation locally**:
    ```bash
-   uv run python scripts/run_langsmith_evaluation.py --num-samples 10 --experiment "improve-citations"
+   uv run python scripts/run_langsmith_evaluation.py --experiment "improve-citations"
    ```
 3. **View results** in LangSmith dashboard
 4. **Compare** with baseline experiment
