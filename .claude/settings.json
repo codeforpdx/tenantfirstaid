@@ -1,7 +1,13 @@
 {
     "permissions": {
         "allow": [
-            "WebFetch(https://docs.langchain.com/*)"
+            "WebFetch(https://docs.langchain.com/*)",
+            "WebFetch(https://reference.langchain.com/*)",
+            "WebFetch(https://ai.google.dev/gemini-api/*)",
+            "WebFetch(https://docs.digitalocean.com/*)",
+            "WebFetch(https://docs.github.com/en/*)",
+            "WebFetch(https://docs.docker.com/*)",
+            "WebFetch(https://docs.astral.sh/*)"
         ]
     }
 }
