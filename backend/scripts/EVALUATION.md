@@ -188,7 +188,7 @@ LLM-as-judge evaluators can have biases. Review specific examples in LangSmith d
 
 ### Evaluation too slow
 - Reduce `max_concurrency` in `run_langsmith_evaluation.py`
-- Use `--num-samples` to evaluate a subset
+- Reduce the dataset size in LangSmith to evaluate a subset
 - Consider running full evaluation only before releases
 
 ### LANGSMITH_API_KEY not set
