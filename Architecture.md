@@ -467,6 +467,8 @@ frontend/
 │   │   └── useLetterContent.tsx    # State management for letter generation
 │   ├── types/
 │   │   └── MessageTypes.ts         # TypeScript types mirroring backend schema (TResponseChunk, etc.)
+│   ├── layouts/                    # Layouts
+│   │   └── PageLayout.tsx          # Layout for pages
 │   ├── pages/
 │   │   ├── Chat/                   # Chat page components
 │   │   │   ├── components/
@@ -519,6 +521,7 @@ frontend/
 │   │   │   ├── Letter.test.ts      # Letter component testing
 │   │   │   ├── LetterDisclaimer.test.ts # LetterDisclaimer component testing
 │   │   │   ├── MessageWindow.test.ts # MessageWindow component testing
+│   │   │   ├── PageLayout.test.tsx # PageLayout component testing
 │   │   │   └── PageSection.test.ts # PageSection component testing
 │   │   └── utils/                  # Utility function testing
 │   │       ├── dompurify.test.ts   # dompurify testing

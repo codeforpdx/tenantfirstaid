@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { NAVBAR_LINKS } from "../../constants/constants";
+import clsx from "clsx";
 
 interface Props {
   sidebarOpen: boolean;
@@ -10,13 +11,13 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: Props) {
   return (
     <>
       <div
-        className={`
-          fixed top-0 right-0
-          h-full w-64
-          bg-paper-background
-          shadow-lg z-50
-          transition-transform duration-300
-          ${sidebarOpen ? "translate-x-0" : "translate-x-full"}`}
+        className={clsx(
+          "fixed top-0 right-0",
+          "h-full w-64",
+          "bg-paper-background shadow-lg",
+          "z-50 transition-transform duration-300",
+          sidebarOpen ? "translate-x-0" : "translate-x-full",
+        )}
       >
         <div className="flex flex-col p-8 gap-6 mt-10">
           {NAVBAR_LINKS.map(({ to, label }) => (
@@ -24,12 +25,10 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: Props) {
               to={to}
               key={label}
               className={({ isActive }) =>
-                `block px-3 py-2
-                rounded no-underline
-                text-gray-dark font-medium hover:text-paper-background
-                transition-colors
-                hover:bg-green-medium
-                ${isActive ? "bg-green-background text-gray-dark " : ""}`
+                clsx(
+                  "block px-3 py-2 rounded no-underline text-gray-dark font-medium hover:text-paper-background transition-colors hover:bg-green-medium",
+                  isActive && "bg-green-background",
+                )
               }
               onClick={() => setSidebarOpen(false)}
             >

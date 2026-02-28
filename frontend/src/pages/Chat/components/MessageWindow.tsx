@@ -6,6 +6,7 @@ import ExportMessagesButton from "./ExportMessagesButton";
 import InitializationForm from "./InitializationForm";
 import FeedbackModal from "./FeedbackModal";
 import { useLocation } from "react-router-dom";
+import clsx from "clsx";
 
 interface Props {
   messages: TChatMessage[];
@@ -60,28 +61,28 @@ export default function MessageWindow({
   return (
     <>
       <div
-        className={`flex-1 ${
-          isOngoing ? "overflow-y-scroll" : "overflow-y-none"
-        }`}
+        className={clsx("flex-1 min-h-0", isOngoing && "overflow-y-scroll")}
         ref={messagesRef}
       >
-        <div className="max-h-[calc(100dvh-var(--message-window-offset)-var(--navbar-height))] mx-auto max-w-[700px]">
+        <div className="mx-auto max-w-[700px]">
           {isOngoing ? (
             <div className="flex flex-col gap-4 relative">
               {displayedMessages.map((message) => {
                 return (
                   <div
-                    className={`flex w-full ${
-                      message.type === "human" ? "justify-end" : "justify-start"
-                    }`}
+                    className={clsx(
+                      "flex w-full",
+                      message.type === "ai" ? "justify-start" : "justify-end",
+                    )}
                     key={message.id}
                   >
                     <div
-                      className={`message-bubble p-3 rounded-2xl max-w-[95%] ${
-                        message.type === "human"
-                          ? "bg-green-dark text-white rounded-tr-sm"
-                          : "bg-slate-200 rounded-tl-sm"
-                      }`}
+                      className={clsx(
+                        "message-bubble p-3 rounded-2xl max-w-[95%]",
+                        message.type === "ai"
+                          ? "bg-slate-200 rounded-tl-sm"
+                          : "bg-green-dark text-white rounded-tr-sm",
+                      )}
                     >
                       <MessageContent message={message} />
                     </div>

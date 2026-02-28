@@ -38,10 +38,10 @@ interface Props {
 export default function MessageContent({ message }: Props) {
   return (
     <>
-      <strong>{message.type === "human" ? "You: " : "Bot: "}</strong>
+      <strong>{message.type === "ai" ? "Bot: " : "You: "}</strong>
       <div>
         {message.text.length === 0 ? (
-          <span className="animate-dot-pulse italic">Typing...</span>
+          <span className="animate-dot-pulse italic">Thinking...</span>
         ) : (
           <>
             {message.type === "ai" ? (

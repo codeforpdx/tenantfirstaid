@@ -14,6 +14,7 @@ import useHousingContext from "./hooks/useHousingContext";
 import { buildChatUserMessage } from "./pages/Chat/utils/formHelper";
 import { ILocation } from "./contexts/HousingContext";
 import FeatureSnippet from "./shared/components/FeatureSnippet";
+import clsx from "clsx";
 
 export default function Letter() {
   const { addMessage, messages, setMessages } = useMessages();
@@ -92,35 +93,41 @@ export default function Letter() {
 
   return (
     <>
-      <div className="flex pt-16 h-screen items-center justify-center">
-        <LetterGenerationDialog ref={dialogRef} />
-        <div className="h-full w-full flex flex-col lg:flex-row gap-4 transition-all duration-300 sm:px-4 max-w-[1400px]">
-          <div className="my-auto w-full flex">
-            <MessageContainer
-              isOngoing={isOngoing}
-              letterContent={letterContent}
+      <LetterGenerationDialog ref={dialogRef} />
+      <div className="h-full w-full flex flex-col lg:flex-row gap-4 transition-all duration-300 sm:px-4 max-w-[1400px]">
+        <div className="my-auto w-full flex">
+          <MessageContainer isOngoing={isOngoing} letterContent={letterContent}>
+            <div
+              className={clsx(
+                "flex flex-col min-h-0",
+                letterContent === "" ? "flex-1" : "flex-1/3",
+              )}
             >
-              <div
-                className={`flex flex-col ${letterContent === "" ? "flex-1" : "flex-1/3"}`}
-              >
-                {isGenerating ? (
-                  <div className="h-full flex items-center justify-center">
-                    <div className="animate-pulse text-lg">
-                      Generating Letter...
-                    </div>
+              {isGenerating ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="animate-pulse text-lg">
+                    Generating Letter...
                   </div>
-                ) : (
-                  <MessageWindow
-                    messages={messages}
-                    addMessage={addMessage}
-                    setMessages={setMessages}
-                    isOngoing={isOngoing}
-                  />
-                )}
-              </div>
-            </MessageContainer>
-          </div>
-          <div className="flex flex-col m-auto lg:h-[620px] lg:max-w-[300px] rounded-lg bg-paper-background">
+                </div>
+              ) : (
+                <MessageWindow
+                  messages={messages}
+                  addMessage={addMessage}
+                  setMessages={setMessages}
+                  isOngoing={isOngoing}
+                />
+              )}
+            </div>
+          </MessageContainer>
+        </div>
+        <div
+          className={clsx(
+            "flex flex-col m-auto w-full rounded-lg bg-paper-background",
+            "lg:self-start lg:max-w-[300px]",
+            "[@media(max-height:800px)]:my-0 [@media(max-height:800px)]:self-stretch [@media(max-height:800px)]:overflow-hidden",
+          )}
+        >
+          <div className="[@media(max-height:800px)]:overflow-y-auto">
             <FeatureSnippet />
             <div className="p-4">
               <LetterDisclaimer isOngoing={isOngoing} />

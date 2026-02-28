@@ -3,6 +3,7 @@ import { HumanMessage } from "@langchain/core/messages";
 import { type TChatMessage } from "../../../hooks/useMessages";
 import { streamText } from "../utils/streamHelper";
 import useHousingContext from "../../../hooks/useHousingContext";
+import clsx from "clsx";
 
 interface Props {
   addMessage: (args: {
@@ -84,11 +85,10 @@ export default function InputField({
         ref={inputRef}
       />
       <button
-        className={`
-          h-10
-          text-sm sm:text-base text-white
-          bg-green-dark hover:bg-green-medium
-          ${isLoading ? "cursor-progress" : "cursor-pointer"}`}
+        className={clsx(
+          "h-10 text-sm sm:text-base text-white bg-green-dark hover:bg-green-medium",
+          isLoading ? "cursor-progress" : "cursor-pointer",
+        )}
         onClick={handleSend}
         disabled={isLoading || !value.trim()}
       >

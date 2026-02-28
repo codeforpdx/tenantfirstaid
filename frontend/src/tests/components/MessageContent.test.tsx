@@ -45,10 +45,10 @@ describe("MessageContent", () => {
     expect(container.textContent).not.toContain("Dear Landlord");
   });
 
-  it("shows Typing... when AI message content is empty", () => {
+  it("shows Thinking... when AI message content is empty", () => {
     const message = new AIMessage({ content: "", id: "4" });
     render(<MessageContent message={message} />);
-    expect(screen.getByText("Typing...")).toBeInTheDocument();
+    expect(screen.getByText("Thinking...")).toBeInTheDocument();
   });
 
   it("renders human message as plain markdown without JSON parsing", () => {
