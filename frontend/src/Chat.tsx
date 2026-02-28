@@ -30,7 +30,13 @@ export default function Chat() {
           </div>
         </MessageContainer>
       </div>
-      <div className="flex flex-col m-auto w-full lg:self-start lg:max-w-[300px] [@media(max-height:800px)]:my-0 [@media(max-height:800px)]:self-stretch [@media(max-height:800px)]:overflow-hidden rounded-lg bg-paper-background">
+      <div
+        className={clsx(
+          "flex flex-col m-auto w-full rounded-lg bg-paper-background",
+          "lg:self-start lg:max-w-[300px]",
+          "[@media(max-height:800px)]:my-0 [@media(max-height:800px)]:self-stretch [@media(max-height:800px)]:overflow-hidden",
+        )}
+      >
         <div className="[@media(max-height:800px)]:overflow-y-auto">
           <FeatureSnippet />
           <div className="p-4">
