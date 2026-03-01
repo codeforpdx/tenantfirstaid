@@ -26,8 +26,7 @@ export function deserializeAiMessage(text: string): string {
     .flatMap((line) => {
       try {
         const chunk = JSON.parse(line);
-        if (chunk.type === "text") return [chunk.text];
-        if (chunk.type === "letter") return [chunk.letter];
+        if (["text", "letter"].includes(chunk.type)) return [chunk.content];
         return [];
       } catch {
         return [line]; // plain text

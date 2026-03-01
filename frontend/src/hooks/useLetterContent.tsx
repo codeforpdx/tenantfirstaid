@@ -20,7 +20,7 @@ export function useLetterContent(messages: TChatMessage[]) {
       });
 
     const letterChunks = chunks.filter((chunk) => chunk.type === "letter");
-    return letterChunks[letterChunks.length - 1]?.letter ?? "";
+    return letterChunks[letterChunks.length - 1]?.content ?? "";
   }, [messages]);
 
   return { letterContent };

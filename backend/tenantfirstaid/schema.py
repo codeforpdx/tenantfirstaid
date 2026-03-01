@@ -5,17 +5,17 @@ from pydantic import BaseModel, Field
 
 class TextChunk(BaseModel):
     type: Literal["text"] = "text"
-    text: str = Field(description="The message text")
+    content: str = Field(description="The message text")
 
 
 class ReasoningChunk(BaseModel):
     type: Literal["reasoning"] = "reasoning"
-    reasoning: str = Field(description="The model reasoning")
+    content: str = Field(description="The model reasoning")
 
 
 class LetterChunk(BaseModel):
     type: Literal["letter"] = "letter"
-    letter: str = Field(description="The letter content")
+    content: str = Field(description="The letter content")
 
 
 ResponseChunk = TextChunk | ReasoningChunk | LetterChunk

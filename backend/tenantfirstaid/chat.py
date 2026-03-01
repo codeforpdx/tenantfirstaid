@@ -25,11 +25,11 @@ def _classify_blocks(
     for content_block in stream:
         match content_block["type"]:
             case "reasoning":
-                yield ReasoningChunk(reasoning=content_block["reasoning"])
+                yield ReasoningChunk(content=content_block["reasoning"])
             case "text":
-                yield TextChunk(text=content_block["text"])
+                yield TextChunk(content=content_block["text"])
             case "letter":
-                yield LetterChunk(letter=content_block["letter"])
+                yield LetterChunk(content=content_block["content"])
             case _:
                 current_app.logger.warning(
                     f"Unhandled block type: {content_block['type']}"

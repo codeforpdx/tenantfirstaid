@@ -1,16 +1,16 @@
 interface ITextChunk {
   type: "text";
-  text: string;
+  content: string;
 }
 
 interface IReasoningChunk {
   type: "reasoning";
-  reasoning: string;
+  content: string;
 }
 
 interface ILetterChunk {
   type: "letter";
-  letter: string;
+  content: string;
 }
 
 type TResponseChunk = ITextChunk | IReasoningChunk | ILetterChunk;

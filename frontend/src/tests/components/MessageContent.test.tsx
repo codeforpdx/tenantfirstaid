@@ -7,7 +7,7 @@ import type { TUiMessage } from "../../hooks/useMessages";
 describe("MessageContent", () => {
   it("renders text chunk for AI message", () => {
     const message = new AIMessage({
-      content: '{"type":"text","text":"Hello, this is the answer."}\n',
+      content: '{"type":"text","content":"Hello, this is the answer."}\n',
       id: "1",
     });
     render(<MessageContent message={message} />);
@@ -16,8 +16,7 @@ describe("MessageContent", () => {
 
   it("renders reasoning chunk with thinking icon", () => {
     const message = new AIMessage({
-      content:
-        '{"type":"reasoning","reasoning":"I need to think about this."}\n',
+      content: '{"type":"reasoning","content":"I need to think about this."}\n',
       id: "2",
     });
     render(<MessageContent message={message} />);
@@ -28,7 +27,7 @@ describe("MessageContent", () => {
   it("renders both reasoning and text chunks when mixed", () => {
     const message = new AIMessage({
       content:
-        '{"type":"reasoning","reasoning":"Let me check the statute."}\n{"type":"text","text":"ORS 90.427 covers this."}\n',
+        '{"type":"reasoning","content":"Let me check the statute."}\n{"type":"text","content":"ORS 90.427 covers this."}\n',
       id: "3",
     });
     render(<MessageContent message={message} />);
@@ -39,7 +38,7 @@ describe("MessageContent", () => {
 
   it("does not render letter chunk inline", () => {
     const message = new AIMessage({
-      content: '{"type":"letter","letter":"Dear Landlord, fix the heat."}\n',
+      content: '{"type":"letter","content":"Dear Landlord, fix the heat."}\n',
       id: "4",
     });
     const { container } = render(<MessageContent message={message} />);

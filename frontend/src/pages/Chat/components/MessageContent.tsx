@@ -9,15 +9,13 @@ interface ChunkProps {
 function RenderedChunk({ chunkObj }: ChunkProps) {
   switch (chunkObj.type) {
     case "text":
-      return <SafeMarkdown>{chunkObj.text}</SafeMarkdown>;
+      return <SafeMarkdown>{chunkObj.content}</SafeMarkdown>;
     case "reasoning":
       return (
         <div className="flex gap-2 my-2">
           {/* reasoning chunk is styled to help differentiate reasoning from text */}
           {`\u{1F914}`}
-          <em className="text-slate-500 leading-relaxed">
-            {chunkObj.reasoning}
-          </em>
+          <em className="text-slate-500 leading-relaxed">{chunkObj.content}</em>
         </div>
       );
     // No letter case (chunk handled in letter panel)
@@ -35,7 +33,7 @@ function hasRenderableContent(text: string): boolean {
       try {
         const parsed = JSON.parse(chunk) as TResponseChunk;
         return (
-          (parsed.type === "text" && parsed.text.length > 0) ||
+          (parsed.type === "text" && parsed.content.length > 0) ||
           parsed.type === "reasoning"
         );
       } catch {

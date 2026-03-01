@@ -23,19 +23,19 @@ class TestClassifyBlocks:
         result = chunks([text_block("Here is some advice.")])
         assert len(result) == 1
         assert result[0].type == "text"
-        assert result[0].text == "Here is some advice."
+        assert result[0].content == "Here is some advice."
 
     def test_reasoning_passthrough(self):
         result = chunks([reasoning_block("Let me think.")])
         assert len(result) == 1
         assert result[0].type == "reasoning"
-        assert result[0].reasoning == "Let me think."
+        assert result[0].content == "Let me think."
 
     def test_letter_passthrough(self):
-        result = chunks([{"type": "letter", "letter": "Dear Landlord,"}])
+        result = chunks([{"type": "letter", "content": "Dear Landlord,"}])
         assert len(result) == 1
         assert result[0].type == "letter"
-        assert result[0].letter == "Dear Landlord,"
+        assert result[0].content == "Dear Landlord,"
 
     def test_unknown_block_type_is_skipped(self, app):
         with app.app_context():

@@ -5,8 +5,8 @@ import { useLetterContent } from "../../hooks/useLetterContent";
 import type { TChatMessage } from "../../hooks/useMessages";
 
 const letterChunk =
-  '{"type":"letter","letter":"Dear Landlord, please fix the heat."}\n';
-const textChunk = '{"type":"text","text":"Here is your letter."}\n';
+  '{"type":"letter","content":"Dear Landlord, please fix the heat."}\n';
+const textChunk = '{"type":"text","content":"Here is your letter."}\n';
 
 describe("useLetterContent", () => {
   it("returns letter content from a letter chunk in an AI message", () => {
@@ -22,11 +22,11 @@ describe("useLetterContent", () => {
   it("returns the last letter chunk when multiple messages contain one", () => {
     const messages: TChatMessage[] = [
       new AIMessage({
-        content: '{"type":"letter","letter":"Old letter."}\n',
+        content: '{"type":"letter","content":"Old letter."}\n',
         id: "1",
       }),
       new AIMessage({
-        content: '{"type":"letter","letter":"New letter."}\n',
+        content: '{"type":"letter","content":"New letter."}\n',
         id: "2",
       }),
     ];

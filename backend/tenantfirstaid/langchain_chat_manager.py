@@ -211,7 +211,7 @@ class LangChainChatManager:
                                         letter = b["args"].get("letter")
                                         if letter:
                                             self.logger.info(b)
-                                            yield {"type": "letter", "letter": letter}
+                                            yield {"type": "letter", "content": letter}
                                         else:
                                             self.logger.warning(
                                                 "generate_letter called with missing or empty letter arg."
