@@ -200,17 +200,24 @@ class LangChainChatManager:
                             match b["type"]:
                                 # text responses from the Model
                                 case "text":
+                                    self.logger.debug(b)
                                     yield b
                                 # reasoning steps (aka "thoughts") from the Model
                                 case "reasoning":
                                     if "reasoning" in b:
+                                        self.logger.debug(b)
                                         yield b
                                 # the Model calling a tool
                                 case "tool_call":
                                     if b["name"] == "generate_letter":
                                         letter = b["args"].get("letter")
                                         if letter:
-                                            self.logger.info(b)
+                                            # Full dump at DEBUG; INFO keeps prod logs lean.
+                                            self.logger.debug(b)
+                                            self.logger.info(
+                                                "generate_letter intercepted: %d chars",
+                                                len(letter),
+                                            )
                                             yield {"type": "letter", "content": letter}
                                         else:
                                             self.logger.warning(

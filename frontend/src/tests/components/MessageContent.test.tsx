@@ -51,6 +51,15 @@ describe("MessageContent", () => {
     expect(screen.getByText("Thinking...")).toBeInTheDocument();
   });
 
+  it("does not show Thinking... when message has only a reasoning chunk", () => {
+    const message = new AIMessage({
+      content: '{"type":"reasoning","content":"Let me think."}\n',
+      id: "5",
+    });
+    render(<MessageContent message={message} />);
+    expect(screen.queryByText("Thinking...")).toBeNull();
+  });
+
   it("renders ui message as plain italic text without a label", () => {
     const message: TUiMessage = {
       type: "ui",
