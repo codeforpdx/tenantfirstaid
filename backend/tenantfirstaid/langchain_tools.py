@@ -98,7 +98,7 @@ class GenerateLetterInputSchema(BaseModel):
 
 
 @tool(args_schema=GenerateLetterInputSchema)
-def generate_letter(_letter: str) -> str:
+def generate_letter(letter: str) -> str:
     """Display the completed or updated letter in the letter panel.
 
     Call this after filling in the letter template or after making any updates.
@@ -109,7 +109,7 @@ def generate_letter(_letter: str) -> str:
     Returns:
         Confirmation that the letter was displayed.
     """
-    # _letter is intercepted from the tool call args in langchain_chat_manager.py
+    # `letter` is intercepted from the tool call args in langchain_chat_manager.py
     # and streamed to the frontend as a letter chunk
     return "Letter generated successfully."
 
