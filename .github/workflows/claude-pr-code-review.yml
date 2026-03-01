@@ -28,6 +28,42 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
+      # from: https://github.com/cli/cli/issues/8409#issuecomment-3896040955
+      - name: Minimize previous Claude Code comments
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          minimize_comment() {
+            local COMMENT_ID=$1
+            echo "Minimizing comment: $COMMENT_ID"
+            gh api graphql -f query="
+              mutation {
+                minimizeComment(input: {
+                  subjectId: \"$COMMENT_ID\"
+                  classifier: OUTDATED
+                }) {
+                  minimizedComment {
+                    isMinimized
+                  }
+                }
+              }
+            " || true
+          }
+
+          # Minimize top-level PR comments from previous invocations of the next step
+          echo "Processing top-level comments..."
+          COMMENTS=$(gh pr view ${{ github.event.pull_request.number }} --json comments --jq '.comments[] | select(.author.login == "github-actions") | select(.isMinimized == false) | select (.body | contains("### PR Review")) | .id')
+          for COMMENT_ID in $COMMENTS; do
+            minimize_comment "$COMMENT_ID"
+          done
+
+          # Minimize inline review comments from previous invocations of the next step
+          echo "Processing inline review comments..."
+          REVIEW_COMMENTS=$(gh api --paginate repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments --jq '.[] | select(.user.login == "github-actions[bot]") | .node_id')
+          for COMMENT_ID in $REVIEW_COMMENTS; do
+            minimize_comment "$COMMENT_ID"
+          done
+
       # Fix 2 & 3: Add github_token and allow fork contributors
       - name: Run Claude Code Review
         uses: anthropics/claude-code-action@v1
@@ -44,17 +80,25 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            Perform a comprehensive code review with the following focus areas:
+            Perform a comprehensive code review of the modified code with the following focus areas:
 
             1. **Code Quality**
                - Clean code principles and best practices
+               - Suggest improvements to modularity, composition and dependency inversion where appropriate
+               - Identify opportunities for refactoring or simplification
+               - Check for code duplication and suggest DRY improvements
+               - Identify and suggest removal of dead code or redundant logic
                - Proper error handling and edge cases
-               - Code readability and maintainability
+               - Code readability and maintainability, including type hints where appropriate
+               - Prefer strongly typed interfaces and data structures over stringly-typed where possible
+               - Check consistency of configuration/secret/environment variables across code/docs/examples and infrastructure
 
             2. **Security**
                - Check for potential security vulnerabilities
                - Validate input sanitization
                - Review authentication/authorization logic
+               - Ensure secrets are handled securely and not exposed in code or logs
+               - Flag obsolete secrets/configuration/environment variables
 
             3. **Performance**
                - Identify potential performance bottlenecks

@@ -58,7 +58,6 @@ uv run pytest -m langchain
 # Run with LangSmith tracing (requires API key)
 LANGSMITH_TRACING=true LANGCHAIN_TRACING_V2=true uv run pytest -m langchain
 
-
 # Run evaluations (see docs/EVALUATION.md)
 uv run python scripts/run_langsmith_evaluation.py --num-samples 20
 ```
@@ -139,3 +138,4 @@ uses: astral-sh/setup-uv@7
 - Consistent style: code formatted with `uv run ruff format`, imports sorted, and type hints passing `make typecheck`.
 - Clear documentation for any public API changes.
 - Clean history and a helpful PR description.
+- Inconsistent environment variables and secrets declarations across GitHub Actions, .env.example, tests, and relevant Markdown documentation; this includes secrets and variables which are declared but never referenced in the code.
