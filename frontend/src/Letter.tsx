@@ -1,4 +1,5 @@
-import { AIMessage, HumanMessage } from "@langchain/core/messages";
+import { HumanMessage } from "@langchain/core/messages";
+import type { TUiMessage } from "./hooks/useMessages";
 import MessageWindow from "./pages/Chat/components/MessageWindow";
 import useMessages from "./hooks/useMessages";
 import { useEffect, useRef, useState } from "react";
@@ -18,12 +19,14 @@ import clsx from "clsx";
 export default function Letter() {
   const { addMessage, messages, setMessages } = useMessages();
   const isOngoing = messages.length > 0;
-  const { letterContent } = useLetterContent(messages, setMessages);
+  const { letterContent } = useLetterContent(messages);
   const { org, loc } = useParams();
   const [startStreaming, setStartStreaming] = useState(false);
   const streamLocationRef = useRef<ILocation | null>(null);
   const [isGenerating, setIsGenerating] = useState(true);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasInitialized = useRef(false);
   const LOADING_DISPLAY_DELAY_MS = 1000;
   const { housingLocation, housingType, tenantTopic, issueDescription } =
     useHousingContext();
@@ -34,9 +37,12 @@ export default function Letter() {
     issueDescription,
   );
 
+  // Adds the initial user message once and triggers streaming.
   useEffect(() => {
+    if (hasInitialized.current) return;
     const output = buildLetterUserMessage(org, loc);
     if (output === null) return;
+    hasInitialized.current = true;
     const hasIssueContext = issueDescription !== "";
 
     const userMessageId = Date.now().toString();
@@ -71,40 +77,32 @@ export default function Letter() {
         const ERROR_MESSAGE =
           "Unable to generate letter. Please try again or refresh the page.";
 
-        if (streamDone) {
-          setMessages((prev) => [
-            ...prev,
-            new AIMessage({
-              content: INITIAL_INSTRUCTION,
-              id: Date.now().toString(),
-            }),
-          ]);
-        } else {
-          setMessages((prev) => [
-            ...prev,
-            new AIMessage({
-              content: ERROR_MESSAGE,
-              id: Date.now().toString(),
-            }),
-          ]);
-        }
+        const text = streamDone ? INITIAL_INSTRUCTION : ERROR_MESSAGE;
+        const uiMessage: TUiMessage = {
+          type: "ui",
+          text,
+          id: Date.now().toString(),
+        };
+        setMessages((prev) => [...prev, uiMessage]);
+        // Clear spinner after a short delay for a smoother transition.
+        timerRef.current = setTimeout(
+          () => setIsGenerating(false),
+          LOADING_DISPLAY_DELAY_MS,
+        );
       }
     };
 
     runGenerateLetter();
   }, [startStreaming, addMessage, setMessages]);
 
+  // Clear any pending timer if the component unmounts before it fires.
   useEffect(() => {
-    // Wait for the second message (index 1) which contains the initial AI response
-    if (messages.length > 1 && messages[1]?.text !== "") {
-      // Include 1s delay for smoother transition
-      const timeoutId = setTimeout(
-        () => setIsGenerating(false),
-        LOADING_DISPLAY_DELAY_MS,
-      );
-      return () => clearTimeout(timeoutId);
-    }
-  }, [messages]);
+    return () => {
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     dialogRef.current?.showModal();

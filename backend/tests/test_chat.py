@@ -2,8 +2,45 @@ import pytest
 from flask import Flask
 from langchain_core.messages.content import create_text_block
 
-from tenantfirstaid.chat import ChatView
+from tenantfirstaid.chat import ChatView, _classify_blocks
 from tenantfirstaid.langchain_chat_manager import LangChainChatManager
+
+
+def text_block(text: str) -> dict:
+    return {"type": "text", "text": text}
+
+
+def reasoning_block(reasoning: str) -> dict:
+    return {"type": "reasoning", "reasoning": reasoning}
+
+
+def chunks(blocks):
+    return list(_classify_blocks(iter(blocks)))
+
+
+class TestClassifyBlocks:
+    def test_plain_text_passthrough(self):
+        result = chunks([text_block("Here is some advice.")])
+        assert len(result) == 1
+        assert result[0].type == "text"
+        assert result[0].content == "Here is some advice."
+
+    def test_reasoning_passthrough(self):
+        result = chunks([reasoning_block("Let me think.")])
+        assert len(result) == 1
+        assert result[0].type == "reasoning"
+        assert result[0].content == "Let me think."
+
+    def test_letter_passthrough(self):
+        result = chunks([{"type": "letter", "content": "Dear Landlord,"}])
+        assert len(result) == 1
+        assert result[0].type == "letter"
+        assert result[0].content == "Dear Landlord,"
+
+    def test_unknown_block_type_is_skipped(self, app):
+        with app.app_context():
+            result = chunks([{"type": "image", "image": "..."}])
+        assert result == []
 
 
 @pytest.fixture

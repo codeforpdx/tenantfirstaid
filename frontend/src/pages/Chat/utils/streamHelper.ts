@@ -1,6 +1,6 @@
 import { AIMessage } from "@langchain/core/messages";
 import { ILocation } from "../../../contexts/HousingContext";
-import { type TChatMessage } from "../../../hooks/useMessages";
+import { type TChatMessage, type TUiMessage } from "../../../hooks/useMessages";
 
 /**
  * Options for streaming AI responses into the chat message list.
@@ -32,7 +32,7 @@ async function streamText({
 
   setIsLoading?.(true);
 
-  // Add empty bot message that will be updated
+  // Add empty bot message immediately so "Typing..." appears before the API responds.
   setMessages((prev) => [
     ...prev,
     new AIMessage({ content: "", id: botMessageId }),
@@ -45,35 +45,61 @@ async function streamText({
     });
     if (!reader) {
       console.error("Stream reader is unavailable");
+      const nullReaderError: TUiMessage = {
+        type: "ui",
+        text: "Sorry, I encountered an error. Please try again.",
+        id: botMessageId,
+      };
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === botMessageId ? nullReaderError : msg)),
+      );
       return;
     }
     const decoder = new TextDecoder();
+    let buffer = "";
     let fullText = "";
+
+    const processLines = (lines: string[]) => {
+      lines
+        .filter((line) => line.trim() !== "")
+        .forEach((processedText) => {
+          fullText += processedText + "\n";
+          // Update only the bot's message
+          const botMessage = new AIMessage({
+            content: fullText,
+            id: botMessageId,
+          });
+          setMessages((prev) =>
+            prev.map((msg) => (msg.id === botMessageId ? botMessage : msg)),
+          );
+        });
+    };
 
     while (true) {
       const { done, value } = await reader.read();
-      if (done) return true;
-      const chunk = decoder.decode(value);
-      fullText += chunk;
+      if (done) {
+        // Flush any remaining content in the buffer.
+        if (buffer.trim() !== "") processLines([buffer]);
+        return true;
+      }
+      buffer += decoder.decode(value, { stream: true });
 
-      // Update only the bot's message
-      const botMessage = new AIMessage({ content: fullText, id: botMessageId });
-      setMessages((prev) =>
-        prev.map((msg) => (msg.id === botMessageId ? botMessage : msg)),
-      );
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      processLines(lines);
     }
   } catch (error) {
     console.error("Error:", error);
-    setMessages((prev) =>
-      prev.map((msg) =>
-        msg.id === botMessageId
-          ? new AIMessage({
-              content: "Sorry, I encountered an error. Please try again.",
-              id: botMessageId,
-            })
-          : msg,
-      ),
-    );
+    const errorMessage: TUiMessage = {
+      type: "ui",
+      text: "Sorry, I encountered an error. Please try again.",
+      id: botMessageId,
+    };
+    setMessages((prev) => [
+      ...prev.filter((msg) => msg.id !== botMessageId),
+      errorMessage,
+    ]);
   } finally {
     setIsLoading?.(false);
   }

@@ -43,7 +43,10 @@ describe("streamText", () => {
   });
 
   it("should stream text chunks and update bot message progressively", async () => {
-    const mockReader = createMockReader(["Hello", " ", "world", "!"]);
+    const mockReader = createMockReader([
+      '{"type":"text","content":"Hello"}\n',
+      '{"type":"text","content":"world"}\n',
+    ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
     const result = await streamText({
@@ -58,7 +61,7 @@ describe("streamText", () => {
       city: "Portland",
       state: "OR",
     });
-    expect(mockSetMessages).toHaveBeenCalledTimes(5); // 1 initial + 4 chunk updates
+    expect(mockSetMessages).toHaveBeenCalledTimes(3); // 1 initial + 2 chunk updates
 
     // Verify loading state management
     expect(mockSetIsLoading).toHaveBeenCalledWith(true);
@@ -67,7 +70,10 @@ describe("streamText", () => {
   });
 
   it("should accumulate text correctly and only update the bot message", async () => {
-    const mockReader = createMockReader(["First", " chunk"]);
+    const mockReader = createMockReader([
+      '{"type":"text","content":"First"}\n',
+      '{"type":"text","content":" chunk"}\n',
+    ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
     await streamText({
@@ -77,7 +83,8 @@ describe("streamText", () => {
       setIsLoading: mockSetIsLoading,
     } as IStreamTextOptions);
 
-    const updateCall = mockSetMessages.mock.calls[2][0]; // Second chunk update
+    const calls = mockSetMessages.mock.calls;
+    const updateCall = calls[calls.length - 1][0];
     const existingMessages = [
       new HumanMessage({ content: "User message", id: "999" }),
       new AIMessage({ content: "First", id: "1000001" }),
@@ -86,7 +93,9 @@ describe("streamText", () => {
     const updated = updateCall(existingMessages);
 
     expect(updated[0]).toEqual(existingMessages[0]); // User message unchanged
-    expect(updated[1].content).toBe("First chunk"); // Bot message updated
+    expect(updated[1].content).toBe(
+      '{"type":"text","content":"First"}\n{"type":"text","content":" chunk"}\n',
+    ); // Bot message updated with accumulated JSON chunks
   });
 
   it("should set loading to false even when error occurs and set error message", async () => {
@@ -102,12 +111,71 @@ describe("streamText", () => {
     expect(mockSetIsLoading).toHaveBeenCalledWith(false);
     expect(console.error).toHaveBeenCalledWith("Error:", expect.any(Error));
 
-    const errorUpdateCall = mockSetMessages.mock.calls.find(([updater]) => {
-      const result = updater([new AIMessage({ content: "", id: "1000001" })]);
-      return result[0].content.includes("Sorry, I encountered an error");
-    });
+    // The empty bot message is added before the API call (calls[0]).
+    // The catch block appends the error message as the second setMessages call (calls[1]).
+    const updateCall = mockSetMessages.mock.calls[1][0];
+    const existingMessages = [
+      new HumanMessage({ content: "User message", id: "999" }),
+    ];
+    const result = updateCall(existingMessages);
+    expect(result).toHaveLength(2);
+    expect(result[1].text).toContain("Sorry, I encountered an error");
+  });
 
-    expect(errorUpdateCall).toBeDefined();
+  it("should accumulate reasoning and text chunks in order", async () => {
+    const mockReader = createMockReader([
+      '{"type":"reasoning","content":"Let me think."}\n',
+      '{"type":"text","content":"Here is the answer."}\n',
+    ]);
+    mockAddMessage.mockResolvedValue(mockReader);
+
+    await streamText({
+      addMessage: mockAddMessage,
+      setMessages: mockSetMessages,
+      housingLocation: { city: "Portland", state: "OR" },
+      setIsLoading: mockSetIsLoading,
+    } as IStreamTextOptions);
+
+    // 1 initial + 2 chunk updates
+    expect(mockSetMessages).toHaveBeenCalledTimes(3);
+
+    const lastCalls = mockSetMessages.mock.calls;
+    const lastUpdateCall = lastCalls[lastCalls.length - 1][0];
+    const updated = lastUpdateCall([
+      new AIMessage({ content: "", id: "1000001" }),
+    ]);
+    expect(updated[0].content).toBe(
+      '{"type":"reasoning","content":"Let me think."}\n{"type":"text","content":"Here is the answer."}\n',
+    );
+  });
+
+  it("should flush buffer when final chunk has no trailing newline", async () => {
+    // The last chunk intentionally omits a trailing newline to exercise the
+    // buffer-flush path that runs when done=true and buffer is non-empty.
+    const mockReader = createMockReader([
+      '{"type":"text","content":"Hello"}\n',
+      '{"type":"text","content":"world"}', // no trailing newline
+    ]);
+    mockAddMessage.mockResolvedValue(mockReader);
+
+    const result = await streamText({
+      addMessage: mockAddMessage,
+      setMessages: mockSetMessages,
+      housingLocation: { city: "Portland", state: "OR" },
+      setIsLoading: mockSetIsLoading,
+    } as IStreamTextOptions);
+
+    expect(result).toBe(true);
+    expect(mockSetMessages).toHaveBeenCalledTimes(3); // 1 initial + 2 chunk updates
+
+    const lastUpdateCall =
+      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0];
+    const updated = lastUpdateCall([
+      new AIMessage({ content: "", id: "1000001" }),
+    ]);
+    expect(updated[0].content).toBe(
+      '{"type":"text","content":"Hello"}\n{"type":"text","content":"world"}\n',
+    );
   });
 
   it("should handle null reader and log error", async () => {
@@ -123,5 +191,13 @@ describe("streamText", () => {
     expect(result).toBeUndefined();
     expect(console.error).toHaveBeenCalledWith("Stream reader is unavailable");
     expect(mockSetIsLoading).toHaveBeenCalledWith(false);
+    // setMessages is called twice: once to add the empty placeholder, once to replace
+    // it with a TUiMessage error so the letter page slice(2) can show the error.
+    expect(mockSetMessages).toHaveBeenCalledTimes(2);
+    const replaceCall = mockSetMessages.mock.calls[1][0];
+    const result2 = replaceCall([
+      new AIMessage({ content: "", id: "1000001" }),
+    ]);
+    expect(result2[0].text).toContain("Sorry, I encountered an error");
   });
 });

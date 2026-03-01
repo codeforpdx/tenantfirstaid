@@ -35,7 +35,8 @@ export default function MessageWindow({
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const loc = useLocation();
 
-  // To hide initial prompt and response for letter generation
+  // Hides the initial user prompt and AI letter response on the letter page
+  // (index 0 = user prompt, index 1 = AI letter generation).
   const LETTER_PAGE_HIDDEN_MESSAGES = 2;
   const displayedMessages = loc.pathname.startsWith("/letter")
     ? messages.slice(LETTER_PAGE_HIDDEN_MESSAGES)
@@ -72,16 +73,19 @@ export default function MessageWindow({
                   <div
                     className={clsx(
                       "flex w-full",
-                      message.type === "ai" ? "justify-start" : "justify-end",
+                      message.type === "ai" && "justify-start",
+                      message.type === "human" && "justify-end",
+                      message.type === "ui" && "justify-start",
                     )}
                     key={message.id}
                   >
                     <div
                       className={clsx(
                         "message-bubble p-3 rounded-2xl max-w-[95%]",
-                        message.type === "ai"
-                          ? "bg-slate-200 rounded-tl-sm"
-                          : "bg-green-dark text-white rounded-tr-sm",
+                        message.type === "ai" && "bg-slate-200 rounded-tl-sm",
+                        message.type === "human" &&
+                          "bg-green-dark text-white rounded-tr-sm",
+                        message.type === "ui" && "bg-slate-200 rounded-tl-sm",
                       )}
                     >
                       <MessageContent message={message} />

@@ -2,17 +2,38 @@
 Module for Flask Chat View
 """
 
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Dict, Generator, List
 
 from flask import Response, current_app, request, stream_with_context
 from flask.views import View
-from langchain_core.messages import (
-    AnyMessage,
-    ContentBlock,
-)
+from langchain_core.messages import ContentBlock
 
 from .langchain_chat_manager import LangChainChatManager
 from .location import OregonCity, UsaState
+from .schema import (
+    LetterChunk,
+    ReasoningChunk,
+    ResponseChunk,
+    TextChunk,
+)
+
+
+def _classify_blocks(
+    stream: Generator[ContentBlock, Any, None],
+) -> Generator[ResponseChunk, Any, None]:
+    """Convert raw LangChain content blocks into typed ResponseChunk objects."""
+    for content_block in stream:
+        match content_block["type"]:
+            case "reasoning":
+                yield ReasoningChunk(content=content_block["reasoning"])
+            case "text":
+                yield TextChunk(content=content_block["text"])
+            case "letter":
+                yield LetterChunk(content=content_block["content"])
+            case _:
+                current_app.logger.warning(
+                    f"Unhandled block type: {content_block['type']}"
+                )
 
 
 class ChatView(View):
@@ -23,24 +44,24 @@ class ChatView(View):
         """
         Handle client POST request
         Expects JSON body with:
-        - messages: List of AnyMessage dicts
+        - messages: List of message dicts from the frontend ({"role": ..., "content": ..., "id": ...})
         - city: Optional city name
         - state: State abbreviation
         """
 
         data: Dict[str, Any] = request.json
 
-        messages: List[AnyMessage] = data["messages"]
-        city: Optional[OregonCity] = OregonCity.from_maybe_str(data["city"])
+        messages: List[Dict[str, Any]] = data["messages"]
+        city: OregonCity | None = OregonCity.from_maybe_str(data["city"])
         state: UsaState = UsaState.from_maybe_str(data["state"])
 
         # Create a stable & unique thread ID based on client IP and endpoint
         # TODO: consider using randomly-generated token stored client-side in
         #       a secure-cookie
-        tid: Optional[str] = None
+        tid: str | None = None
 
         def generate() -> Generator[str, Any, None]:
-            response_stream: Generator[ContentBlock] = (
+            response_stream: Generator[ContentBlock, Any, None] = (
                 self.chat_manager.generate_streaming_response(
                     messages=messages,
                     city=city,
@@ -48,23 +69,11 @@ class ChatView(View):
                     thread_id=tid,
                 )
             )
-
-            for content_block in response_stream:
-                return_text: str = ""
-
+            for content_block in _classify_blocks(response_stream):
                 current_app.logger.debug(f"Received content_block: {content_block}")
+                yield content_block.model_dump_json() + "\n"
 
-                match content_block["type"]:
-                    case "reasoning":
-                        # reasoning-key is not required in the ReasoningContentBlock typed-dict
-                        if "reasoning" in content_block:
-                            return_text += f"\N{THINKING FACE} <em>{content_block['reasoning'].rstrip()}</em> \N{THINKING FACE}\n\n"
-                    case "text":
-                        # These are the Model messages back to the User
-                        return_text += f"{content_block['text']}\n"
-
-                yield return_text
-
+        # text/plain rather than application/x-ndjson: client only reads raw bytes
         return Response(
             stream_with_context(generate()),
             mimetype="text/plain",

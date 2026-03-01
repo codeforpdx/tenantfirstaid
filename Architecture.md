@@ -59,6 +59,7 @@ backend/
 │   ├── __init__.py
 │   ├── app.py                          # Flask application setup and routing
 │   ├── chat.py                         # Flask ChatView
+|   ├── schema.py                       # Pydantic response chunk types (TextChunk, LetterChunk, ReasoningChunk)
 |   ├── constants.py                    # Immutable state and consolidated interface to environment variables
 |   ├── location.py                     # City & State normalization and sanitization
 |   ├── langchain_chat_manager.py       # Chat model configuration and response generation
@@ -104,9 +105,10 @@ The system uses **LangChain agents** with **Vertex AI RAG** tools for document r
 
 #### Tool-Based Retrieval
 
-The agent has access to one retrieval tool:
+The agent has access to two tools:
 
 1. **City-Specific and State Law Retrieval**: Searches documents filtered by city (optional) and state
+2. **Letter Template**: Returns a pre-formatted letter template wrapped in delimiters for the frontend to extract
 
 The LLM decides how to call the tool based on the user's query and location context.
 
@@ -238,7 +240,7 @@ When serializing messages for the backend API, the hook maps these to the format
 ```typescript
 const serializedMsg = messages.map((msg) => ({
   role: msg.type,
-  content: msg.text,
+  content: msg.type === "ai" ? deserializeAiMessage(msg.text) : msg.text,
   id: msg.id,
 }));
 ```
@@ -325,12 +327,6 @@ async function streamText({
 
   setIsLoading?.(true);
 
-  // Add empty bot message that will be updated
-  setMessages((prev) => [
-    ...prev,
-    new AIMessage({ content: "", id: botMessageId }),
-  ]);
-
   try {
     const reader = await addMessage({
       city: housingLocation?.city,
@@ -340,33 +336,49 @@ async function streamText({
       console.error("Stream reader is unavailable");
       return;
     }
+
+    // Add empty bot placeholder only once we have a valid reader
+    setMessages((prev) => [
+      ...prev,
+      new AIMessage({ content: "", id: botMessageId }),
+    ]);
     const decoder = new TextDecoder();
+    let buffer = "";
     let fullText = "";
 
     while (true) {
       const { done, value } = await reader.read();
-      if (done) return true;
-      const chunk = decoder.decode(value);
-      fullText += chunk;
-
-      // Update only the bot's message
-      const botMessage = new AIMessage({ content: fullText, id: botMessageId });
-      setMessages((prev) =>
-        prev.map((msg) => (msg.id === botMessageId ? botMessage : msg)),
-      );
+      if (done) {
+        if (buffer.trim() !== "") processLines([buffer]);
+        return true;
+      }
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      // Accumulate JSONL chunks and update the bot message incrementally
+      lines
+        .filter((line) => line.trim() !== "")
+        .forEach((line) => {
+          fullText += line + "\n";
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === botMessageId
+                ? new AIMessage({ content: fullText, id: botMessageId })
+                : msg,
+            ),
+          );
+        });
     }
   } catch (error) {
     console.error("Error:", error);
-    setMessages((prev) =>
-      prev.map((msg) =>
-        msg.id === botMessageId
-          ? new AIMessage({
-              content: "Sorry, I encountered an error. Please try again.",
-              id: botMessageId,
-            })
-          : msg,
-      ),
-    );
+    // Append error regardless of whether the placeholder was added
+    setMessages((prev) => [
+      ...prev.filter((msg) => msg.id !== botMessageId),
+      new AIMessage({
+        content: JSON.stringify({ type: "text", text: "Sorry, I encountered an error. Please try again." }) + "\n",
+        id: botMessageId,
+      }),
+    ]);
   } finally {
     setIsLoading?.(false);
   }
@@ -453,6 +465,8 @@ frontend/
 │   │   ├── useMessages.tsx         # Message handling logic
 │   │   ├── useHousingContext.tsx   # Custom hook for housing context
 │   │   └── useLetterContent.tsx    # State management for letter generation
+│   ├── types/
+│   │   └── MessageTypes.ts         # TypeScript types mirroring backend schema (TResponseChunk, etc.)
 │   ├── layouts/                    # Layouts
 │   │   └── PageLayout.tsx          # Layout for pages
 │   ├── pages/
