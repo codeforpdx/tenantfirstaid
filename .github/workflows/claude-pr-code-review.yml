@@ -50,23 +50,22 @@ jobs:
             " || true
           }
 
-          # Minimize top-level PR comments from claude bot
+          # Minimize top-level PR comments from previous invocations of the next step
           echo "Processing top-level comments..."
-          COMMENTS=$(gh pr view ${{ github.event.pull_request.number }} --json comments --jq '.comments[] | select(.author.login == "claude") | .id')
+          COMMENTS=$(gh pr view ${{ github.event.pull_request.number }} --json comments --json comments --jq '.comments[] | select(.author.login == "github-actions") | select(.isMinimized == false) | select (.body | contains("## PR Review")) | .id')
           for COMMENT_ID in $COMMENTS; do
             minimize_comment "$COMMENT_ID"
           done
 
-          # Minimize inline review comments from claude[bot]
+          # Minimize inline review comments from previous invocations of the next step
           echo "Processing inline review comments..."
-          REVIEW_COMMENTS=$(gh api --paginate repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments --jq '.[] | select(.user.login == "claude[bot]") | .node_id')
+          REVIEW_COMMENTS=$(gh api --paginate repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments --jq '.[] | select(.user.login == "github-actions[bot]") | select(.isMinimized == false) | .node_id')
           for COMMENT_ID in $REVIEW_COMMENTS; do
             minimize_comment "$COMMENT_ID"
           done
 
       # Fix 2 & 3: Add github_token and allow fork contributors
       - name: Run Claude Code Review
-        id: claude
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -81,11 +80,11 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            Perform a comprehensive code review of the modified codewith the following focus areas:
+            Perform a comprehensive code review of the modified code with the following focus areas:
 
             1. **Code Quality**
                - Clean code principles and best practices
-               - Suggest improvments to modularity, composition and dependency inversion where appropriate
+               - Suggest improvements to modularity, composition and dependency inversion where appropriate
                - Identify opportunities for refactoring or simplification
                - Check for code duplication and suggest DRY improvements
                - Identify and suggest removal of dead code or redundant logic
