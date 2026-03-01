@@ -52,14 +52,14 @@ jobs:
 
           # Minimize top-level PR comments from previous invocations of the next step
           echo "Processing top-level comments..."
-          COMMENTS=$(gh pr view ${{ github.event.pull_request.number }} --json comments --json comments --jq '.comments[] | select(.author.login == "github-actions") | select(.isMinimized == false) | select (.body | contains("## PR Review")) | .id')
+          COMMENTS=$(gh pr view ${{ github.event.pull_request.number }} --json comments --jq '.comments[] | select(.author.login == "github-actions") | select(.isMinimized == false) | select (.body | contains("### PR Review")) | .id')
           for COMMENT_ID in $COMMENTS; do
             minimize_comment "$COMMENT_ID"
           done
 
           # Minimize inline review comments from previous invocations of the next step
           echo "Processing inline review comments..."
-          REVIEW_COMMENTS=$(gh api --paginate repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments --jq '.[] | select(.user.login == "github-actions[bot]") | select(.isMinimized == false) | .node_id')
+          REVIEW_COMMENTS=$(gh api --paginate repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments --jq '.[] | select(.user.login == "github-actions[bot]") | .node_id')
           for COMMENT_ID in $REVIEW_COMMENTS; do
             minimize_comment "$COMMENT_ID"
           done
