@@ -109,6 +109,8 @@ def generate_letter(_letter: str) -> str:
     Returns:
         Confirmation that the letter was displayed.
     """
+    # _letter is intercepted from the tool call args in langchain_chat_manager.py
+    # and streamed to the frontend as a letter chunk
     return "Letter generated successfully."
 
 
