@@ -98,7 +98,7 @@ class GenerateLetterInputSchema(BaseModel):
 
 
 @tool(args_schema=GenerateLetterInputSchema)
-def generate_letter(letter: str) -> str:
+def generate_letter(_letter: str) -> str:
     """Display the completed or updated letter in the letter panel.
 
     Call this after filling in the letter template or after making any updates.
