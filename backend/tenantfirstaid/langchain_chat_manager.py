@@ -210,6 +210,7 @@ class LangChainChatManager:
                                     if b["name"] == "generate_letter":
                                         letter = b["args"].get("letter")
                                         if letter:
+                                            self.logger.info(b)
                                             yield {"type": "letter", "letter": letter}
                                         else:
                                             self.logger.warning(

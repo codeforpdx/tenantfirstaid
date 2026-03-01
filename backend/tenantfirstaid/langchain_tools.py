@@ -85,7 +85,7 @@ def get_letter_template() -> str:
     """Retrieve the letter template when the user asks to draft or generate a letter.
 
     Fill in placeholders with any details the user has provided, leave the rest intact.
-    After filling in the template, call submit_letter with the completed letter.
+    After filling in the template, call generate_letter with the completed letter.
 
     Returns:
         A formatted letter template with placeholder fields.
@@ -104,7 +104,7 @@ def generate_letter(letter: str) -> str:
     Call this after filling in the letter template or after making any updates.
 
     Args:
-        letter: The complete letter content with placeholders filled in.
+        letter: The complete letter content.
 
     Returns:
         Confirmation that the letter was displayed.
