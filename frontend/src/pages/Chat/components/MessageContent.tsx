@@ -33,7 +33,7 @@ function hasRenderableContent(text: string): boolean {
       try {
         const parsed = JSON.parse(chunk) as TResponseChunk;
         return (
-          (parsed.type === "text" && parsed.content.length > 0) ||
+          (parsed.type === "text" && (parsed.content?.length ?? 0) > 0) ||
           parsed.type === "reasoning"
         );
       } catch {

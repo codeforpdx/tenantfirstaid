@@ -44,8 +44,8 @@ describe("streamText", () => {
 
   it("should stream text chunks and update bot message progressively", async () => {
     const mockReader = createMockReader([
-      '{"type":"text","text":"Hello"}\n',
-      '{"type":"text","text":"world"}\n',
+      '{"type":"text","content":"Hello"}\n',
+      '{"type":"text","content":"world"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
@@ -71,8 +71,8 @@ describe("streamText", () => {
 
   it("should accumulate text correctly and only update the bot message", async () => {
     const mockReader = createMockReader([
-      '{"type":"text","text":"First"}\n',
-      '{"type":"text","text":" chunk"}\n',
+      '{"type":"text","content":"First"}\n',
+      '{"type":"text","content":" chunk"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
@@ -94,7 +94,7 @@ describe("streamText", () => {
 
     expect(updated[0]).toEqual(existingMessages[0]); // User message unchanged
     expect(updated[1].content).toBe(
-      '{"type":"text","text":"First"}\n{"type":"text","text":" chunk"}\n',
+      '{"type":"text","content":"First"}\n{"type":"text","content":" chunk"}\n',
     ); // Bot message updated with accumulated JSON chunks
   });
 
@@ -124,8 +124,8 @@ describe("streamText", () => {
 
   it("should accumulate reasoning and text chunks in order", async () => {
     const mockReader = createMockReader([
-      '{"type":"reasoning","reasoning":"Let me think."}\n',
-      '{"type":"text","text":"Here is the answer."}\n',
+      '{"type":"reasoning","content":"Let me think."}\n',
+      '{"type":"text","content":"Here is the answer."}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
@@ -145,7 +145,7 @@ describe("streamText", () => {
       new AIMessage({ content: "", id: "1000001" }),
     ]);
     expect(updated[0].content).toBe(
-      '{"type":"reasoning","reasoning":"Let me think."}\n{"type":"text","text":"Here is the answer."}\n',
+      '{"type":"reasoning","content":"Let me think."}\n{"type":"text","content":"Here is the answer."}\n',
     );
   });
 
@@ -153,8 +153,8 @@ describe("streamText", () => {
     // The last chunk intentionally omits a trailing newline to exercise the
     // buffer-flush path that runs when done=true and buffer is non-empty.
     const mockReader = createMockReader([
-      '{"type":"text","text":"Hello"}\n',
-      '{"type":"text","text":"world"}', // no trailing newline
+      '{"type":"text","content":"Hello"}\n',
+      '{"type":"text","content":"world"}', // no trailing newline
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
@@ -174,7 +174,7 @@ describe("streamText", () => {
       new AIMessage({ content: "", id: "1000001" }),
     ]);
     expect(updated[0].content).toBe(
-      '{"type":"text","text":"Hello"}\n{"type":"text","text":"world"}\n',
+      '{"type":"text","content":"Hello"}\n{"type":"text","content":"world"}\n',
     );
   });
 
