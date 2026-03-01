@@ -3,9 +3,6 @@
 
 :root {
   --navbar-height: 64px;
-  --mobile-offset-message-container: 4rem;
-  --desktop-offset-message-container: 10rem;
-  --message-window-offset: 30rem;
 }
 
 @theme {

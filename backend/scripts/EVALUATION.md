@@ -23,7 +23,6 @@ Tenant First Aid uses LangSmith for automated quality evaluation of legal advice
 Create the LangSmith dataset from existing test scenarios:
 
 ```bash
-cd backend
 uv run python scripts/create_langsmith_dataset.py
 ```
 
@@ -35,19 +34,13 @@ Run evaluation on the full dataset:
 
 ```bash
 cd backend
-uv run scripts/run_langsmith_evaluation.py
-```
-
-Run evaluation on a subset (faster for development):
-
-```bash
-uv run scripts/run_langsmith_evaluation.py --num-samples 4
+uv run python scripts/run_langsmith_evaluation.py
 ```
 
 Run a specific experiment:
 
 ```bash
-uv run scripts/run_langsmith_evaluation.py \
+uv run python scripts/run_langsmith_evaluation.py \
   --dataset "tenant-legal-qa-scenarios" \
   --experiment "my-experiment" \
   --num-repetitions 1
@@ -153,7 +146,7 @@ https://smith.langchain.com/
 1. **Make code changes** to improve citation accuracy
 2. **Run evaluation locally**:
    ```bash
-   uv run python scripts/run_langsmith_evaluation.py --num-samples 10 --experiment "improve-citations"
+   uv run python scripts/run_langsmith_evaluation.py --experiment "improve-citations"
    ```
 3. **View results** in LangSmith dashboard
 4. **Compare** with baseline experiment
@@ -188,7 +181,7 @@ LLM-as-judge evaluators can have biases. Review specific examples in LangSmith d
 
 ### Evaluation too slow
 - Reduce `max_concurrency` in `run_langsmith_evaluation.py`
-- Use `--num-samples` to evaluate a subset
+- Reduce the dataset size in LangSmith to evaluate a subset
 - Consider running full evaluation only before releases
 
 ### LANGSMITH_API_KEY not set
