@@ -76,7 +76,7 @@ backend/
 │   ├── vertex_ai_list_datastores.py    # Utility to get Google Vertex AI Datastore IDs
 │   ├── create_vector_store.py          # RAG corpus setup
 │   ├── convert_csv_to_jsonl.py         # Data conversion utilities
-│   ├── generate_types.py               # Codegen: generates frontend/src/types/{MessageTypes,LocationTypes,HousingTypes}.ts from Pydantic/StrEnum models
+│   ├── generate_types.py               # Codegen: generates frontend/src/types/{MessageTypes,LocationTypes}.ts from Pydantic/StrEnum models
 │   └── documents/                      # Source legal documents
 │       └── or/                         # Oregon state laws
 │           ├── OAR54.txt               # Oregon Administrative Rules
@@ -465,8 +465,7 @@ frontend/
 │   │   └── useLetterContent.tsx    # State management for letter generation
 │   ├── types/                      # Auto-generated TypeScript types — do not edit manually, re-run `make generate-types`
 │   │   ├── MessageTypes.ts         # TResponseChunk union and chunk interfaces (from schema.py)
-│   │   ├── LocationTypes.ts        # TOregonCity and TUsaState string literal types (from location.py)
-│   │   └── HousingTypes.ts         # ILocation interface (from location.py)
+│   │   └── LocationTypes.ts        # TOregonCity, TUsaState, and ILocation (from location.py)
 │   ├── layouts/                    # Layouts
 │   │   └── PageLayout.tsx          # Layout for pages
 │   ├── pages/

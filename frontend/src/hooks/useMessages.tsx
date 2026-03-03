@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import type { AIMessage, HumanMessage } from "@langchain/core/messages";
-import type { ILocation } from "../types/HousingTypes";
+import type { ILocation } from "../types/LocationTypes";
 
 /**
  * Chat message Type aligned with LangChain's message types

@@ -1,5 +1,5 @@
 import { formatLocation } from "../../../shared/utils/formatLocation";
-import type { ILocation } from "../../../types/HousingTypes";
+import type { ILocation } from "../../../types/LocationTypes";
 import type {
   THousingType,
   TTenantTopic,

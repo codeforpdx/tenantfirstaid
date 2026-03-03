@@ -12,7 +12,7 @@ import LetterDisclaimer from "./pages/Letter/components/LetterDisclaimer";
 import MessageContainer from "./shared/components/MessageContainer";
 import useHousingContext from "./hooks/useHousingContext";
 import { buildChatUserMessage } from "./pages/Chat/utils/formHelper";
-import type { ILocation } from "./types/HousingTypes";
+import type { ILocation } from "./types/LocationTypes";
 import FeatureSnippet from "./shared/components/FeatureSnippet";
 import clsx from "clsx";
 

@@ -1,6 +1,6 @@
 import { TChatMessage } from "../../../hooks/useMessages";
 import BeaverIcon from "../../../shared/components/BeaverIcon";
-import type { ILocation } from "../../../types/HousingTypes";
+import type { ILocation } from "../../../types/LocationTypes";
 import { formatLocation } from "../../../shared/utils/formatLocation";
 import { useEffect, useState } from "react";
 import { buildChatUserMessage } from "../utils/formHelper";

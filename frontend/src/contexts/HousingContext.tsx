@@ -1,6 +1,6 @@
 import { createContext, useCallback, useMemo, useState } from "react";
 import DOMPurify, { SANITIZE_USER_SETTINGS } from "../shared/utils/dompurify";
-import type { ILocation } from "../types/HousingTypes";
+import type { ILocation } from "../types/LocationTypes";
 import type {
   TCitySelectKey,
   THousingType,

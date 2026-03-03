@@ -1,7 +1,7 @@
 """Generate frontend TypeScript types from backend Pydantic models and enums.
 
 Run with: uv run python scripts/generate_types.py ../frontend/src/types/
-Output: <types_dir>/MessageTypes.ts, <types_dir>/LocationTypes.ts, <types_dir>/HousingTypes.ts
+Output: <types_dir>/MessageTypes.ts, <types_dir>/LocationTypes.ts
 """
 
 import sys
@@ -90,13 +90,9 @@ if __name__ == "__main__":
             ["TResponseChunk", *ts_names],
         ),
         "LocationTypes.ts": make_file(
-            [enum_to_ts_type(e) for e in LOCATION_ENUMS],
-            [f"T{e.__name__}" for e in LOCATION_ENUMS],
-        ),
-        "HousingTypes.ts": make_file(
-            [model_to_interface(Location)],
-            [f"I{Location.__name__}"],
-            imports='import type { TOregonCity, TUsaState } from "./LocationTypes";',
+            [enum_to_ts_type(e) for e in LOCATION_ENUMS]
+            + [model_to_interface(Location)],
+            [f"T{e.__name__}" for e in LOCATION_ENUMS] + [f"I{Location.__name__}"],
         ),
     }
 

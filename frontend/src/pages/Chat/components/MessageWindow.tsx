@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { TChatMessage } from "../../../hooks/useMessages";
-import type { ILocation } from "../../../types/HousingTypes";
+import type { ILocation } from "../../../types/LocationTypes";
 import InputField from "./InputField";
 import MessageContent from "./MessageContent";
 import ExportMessagesButton from "./ExportMessagesButton";

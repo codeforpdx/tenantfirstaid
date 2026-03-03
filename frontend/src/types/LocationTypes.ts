@@ -5,4 +5,9 @@ type TOregonCity = "portland" | "eugene";
 
 type TUsaState = "or" | "other";
 
-export type { TOregonCity, TUsaState };
+interface ILocation {
+  city: TOregonCity | null;
+  state: TUsaState | null;
+}
+
+export type { TOregonCity, TUsaState, ILocation };

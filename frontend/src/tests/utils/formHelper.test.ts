@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildChatUserMessage } from "../../pages/Chat/utils/formHelper";
-import type { ILocation } from "../../types/HousingTypes";
+import type { ILocation } from "../../types/LocationTypes";
 
 describe("buildChatUserMessage", () => {
   it("builds message with all fields populated", () => {

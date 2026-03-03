@@ -1,5 +1,5 @@
 import { AIMessage } from "@langchain/core/messages";
-import type { ILocation } from "../../../types/HousingTypes";
+import type { ILocation } from "../../../types/LocationTypes";
 import { type TChatMessage, type TUiMessage } from "../../../hooks/useMessages";
 
 /**

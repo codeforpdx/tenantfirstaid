@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { HumanMessage } from "@langchain/core/messages";
 import { type TChatMessage } from "../../../hooks/useMessages";
-import type { ILocation } from "../../../types/HousingTypes";
+import type { ILocation } from "../../../types/LocationTypes";
 import { streamText } from "../utils/streamHelper";
 import useHousingContext from "../../../hooks/useHousingContext";
 import clsx from "clsx";
