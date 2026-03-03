@@ -16,7 +16,10 @@ function buildLetterUserMessage(
   const key = (loc ?? "oregon") as keyof typeof CITY_SELECT_OPTIONS;
   const selectedLocation = CITY_SELECT_OPTIONS[key];
   if (selectedLocation === undefined) return null;
-  const locationString = formatLocation(selectedLocation.city, selectedLocation.state);
+  const locationString = formatLocation(
+    selectedLocation.city,
+    selectedLocation.state,
+  );
 
   const CHARACTER_LIMIT = 100; // Limit character count to prevent token overflow
   const sanitizedOrg = org

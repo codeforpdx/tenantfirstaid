@@ -11,6 +11,7 @@ from types import UnionType
 from typing import Literal, Union, get_args, get_origin
 
 from pydantic import BaseModel
+
 from tenantfirstaid.location import Location, OregonCity, UsaState
 from tenantfirstaid.schema import ResponseChunk
 
@@ -24,7 +25,11 @@ HEADER = (
 
 
 def py_annotation_to_ts(annotation: type) -> str:
-    """Convert a Python type annotation to a TypeScript type string."""
+    """Convert a Python type annotation to a TypeScript type string.
+
+    Supported annotations: str, Literal, StrEnum subclasses, X | None, Optional[X].
+    Extend this function if a new backend type is needed (e.g. list, int, bool).
+    """
     origin = get_origin(annotation)
     args = get_args(annotation)
 

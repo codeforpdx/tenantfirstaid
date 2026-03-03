@@ -8,7 +8,10 @@ interface CitySelectOptionType {
   label: string;
 }
 
-const CITY_SELECT_OPTIONS: Record<TOregonCity | "oregon" | "other", CitySelectOptionType> = {
+const CITY_SELECT_OPTIONS: Record<
+  TOregonCity | "oregon" | "other",
+  CitySelectOptionType
+> = {
   portland: {
     city: "portland",
     state: "or",

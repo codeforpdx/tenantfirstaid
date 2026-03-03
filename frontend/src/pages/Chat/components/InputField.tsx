@@ -7,7 +7,9 @@ import useHousingContext from "../../../hooks/useHousingContext";
 import clsx from "clsx";
 
 interface Props {
-  addMessage: (args: ILocation) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
+  addMessage: (
+    args: ILocation,
+  ) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
   setMessages: React.Dispatch<React.SetStateAction<TChatMessage[]>>;
   isLoading: boolean;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;

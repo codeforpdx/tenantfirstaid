@@ -11,7 +11,9 @@ import clsx from "clsx";
 
 interface Props {
   messages: TChatMessage[];
-  addMessage: (args: ILocation) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
+  addMessage: (
+    args: ILocation,
+  ) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
   setMessages: React.Dispatch<React.SetStateAction<TChatMessage[]>>;
   isOngoing: boolean;
 }

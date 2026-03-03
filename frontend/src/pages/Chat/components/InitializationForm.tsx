@@ -23,10 +23,14 @@ import AutoExpandText from "./AutoExpandText";
 import clsx from "clsx";
 import { HumanMessage } from "@langchain/core/messages";
 
-const NONLETTERABLE_TOPICS = Object.keys(NONLETTERABLE_TOPIC_OPTIONS) as TTenantTopic[];
+const NONLETTERABLE_TOPICS = Object.keys(
+  NONLETTERABLE_TOPIC_OPTIONS,
+) as TTenantTopic[];
 
 interface Props {
-  addMessage: (args: ILocation) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
+  addMessage: (
+    args: ILocation,
+  ) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
   setMessages: React.Dispatch<React.SetStateAction<TChatMessage[]>>;
 }
 
@@ -48,7 +52,10 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
     handleFormReset,
   } = useHousingContext();
   const [initialUserMessage, setInitialUserMessage] = useState("");
-  const locationString = formatLocation(housingLocation.city, housingLocation.state);
+  const locationString = formatLocation(
+    housingLocation.city,
+    housingLocation.state,
+  );
 
   const handleLocationChange = (key: string | null) => {
     handleCityChange(key as TCitySelectKey | null);
@@ -149,7 +156,9 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
         name="housing type"
         value={housingType || ""}
         description="Select your housing type"
-        handleFunction={(option) => handleHousingChange(option as THousingType | null)}
+        handleFunction={(option) =>
+          handleHousingChange(option as THousingType | null)
+        }
       >
         {HOUSING_OPTIONS.map((option) => (
           <option key={option} value={option}>
@@ -162,7 +171,9 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
           name="tenant topic"
           value={tenantTopic || ""}
           description="Select your topic"
-          handleFunction={(option) => handleTenantTopic(option as TTenantTopic | null)}
+          handleFunction={(option) =>
+            handleTenantTopic(option as TTenantTopic | null)
+          }
         >
           <optgroup label="--Letterable--">
             {Object.entries(LETTERABLE_TOPIC_OPTIONS).map(([key, option]) => (
@@ -185,7 +196,10 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
           <div className="px-4">
             Here are some examples of questions I can help with:
             <ul className="list-disc pl-4">
-              {(tenantTopic ? ALL_TOPIC_OPTIONS[tenantTopic] : null)?.example.map((question, index) => (
+              {(tenantTopic
+                ? ALL_TOPIC_OPTIONS[tenantTopic]
+                : null
+              )?.example.map((question, index) => (
                 <li key={`${tenantTopic}-${index}`}>
                   {question.split(/(_)/).map((part, i) => {
                     if (!part.startsWith("_")) return part;
@@ -237,7 +251,7 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
         {housingLocation &&
           housingType &&
           tenantTopic &&
-          !(NONLETTERABLE_TOPICS.includes(tenantTopic)) &&
+          !NONLETTERABLE_TOPICS.includes(tenantTopic) &&
           issueDescription && (
             <Link
               to="letter"

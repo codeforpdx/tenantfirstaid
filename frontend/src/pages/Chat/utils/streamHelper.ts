@@ -6,7 +6,9 @@ import { type TChatMessage, type TUiMessage } from "../../../hooks/useMessages";
  * Options for streaming AI responses into the chat message list.
  */
 export interface IStreamTextOptions {
-  addMessage: (args: ILocation) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
+  addMessage: (
+    args: ILocation,
+  ) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
   setMessages: React.Dispatch<React.SetStateAction<TChatMessage[]>>;
   housingLocation: ILocation;
   setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>;

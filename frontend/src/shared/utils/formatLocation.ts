@@ -5,7 +5,10 @@ import type { TOregonCity, TUsaState } from "../../types/LocationTypes";
  *
  * @returns A display string like "Portland, OR", "OR", or "" if both are null.
  */
-function formatLocation(city: TOregonCity | null, state: TUsaState | null): string {
+function formatLocation(
+  city: TOregonCity | null,
+  state: TUsaState | null,
+): string {
   const cityDisplay = city
     ? city.charAt(0).toUpperCase() + city.slice(1)
     : null;

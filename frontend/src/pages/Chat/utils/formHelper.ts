@@ -1,6 +1,9 @@
 import { formatLocation } from "../../../shared/utils/formatLocation";
 import type { ILocation } from "../../../types/HousingTypes";
-import type { THousingType, TTenantTopic } from "../../../shared/constants/constants";
+import type {
+  THousingType,
+  TTenantTopic,
+} from "../../../shared/constants/constants";
 
 interface IChatFormReturnType {
   userMessage: string;
