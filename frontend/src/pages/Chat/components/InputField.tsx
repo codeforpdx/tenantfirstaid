@@ -1,15 +1,13 @@
 import { useCallback, useEffect } from "react";
 import { HumanMessage } from "@langchain/core/messages";
 import { type TChatMessage } from "../../../hooks/useMessages";
+import type { ILocation } from "../../../types/HousingTypes";
 import { streamText } from "../utils/streamHelper";
 import useHousingContext from "../../../hooks/useHousingContext";
 import clsx from "clsx";
 
 interface Props {
-  addMessage: (args: {
-    city: string | null;
-    state: string;
-  }) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
+  addMessage: (args: ILocation) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
   setMessages: React.Dispatch<React.SetStateAction<TChatMessage[]>>;
   isLoading: boolean;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;

@@ -76,6 +76,7 @@ backend/
 │   ├── vertex_ai_list_datastores.py    # Utility to get Google Vertex AI Datastore IDs
 │   ├── create_vector_store.py          # RAG corpus setup
 │   ├── convert_csv_to_jsonl.py         # Data conversion utilities
+│   ├── generate_types.py               # Codegen: generates frontend/src/types/{MessageTypes,LocationTypes,HousingTypes}.ts from Pydantic/StrEnum models
 │   └── documents/                      # Source legal documents
 │       └── or/                         # Oregon state laws
 │           ├── OAR54.txt               # Oregon Administrative Rules
@@ -335,10 +336,7 @@ async function streamText({
   ]);
 
   try {
-    const reader = await addMessage({
-      city: housingLocation?.city,
-      state: housingLocation?.state || "",
-    });
+    const reader = await addMessage(housingLocation);
     if (!reader) {
       console.error("Stream reader is unavailable");
       const nullReaderError: TUiMessage = {
@@ -465,8 +463,10 @@ frontend/
 │   │   ├── useMessages.tsx         # Message handling logic
 │   │   ├── useHousingContext.tsx   # Custom hook for housing context
 │   │   └── useLetterContent.tsx    # State management for letter generation
-│   ├── types/
-│   │   └── MessageTypes.ts         # TypeScript types mirroring backend schema (TResponseChunk, etc.)
+│   ├── types/                      # Auto-generated TypeScript types — do not edit manually, re-run `make generate-types`
+│   │   ├── MessageTypes.ts         # TResponseChunk union and chunk interfaces (from schema.py)
+│   │   ├── LocationTypes.ts        # TOregonCity and TUsaState string literal types (from location.py)
+│   │   └── HousingTypes.ts         # ILocation interface (from location.py)
 │   ├── layouts/                    # Layouts
 │   │   └── PageLayout.tsx          # Layout for pages
 │   ├── pages/
@@ -511,7 +511,8 @@ frontend/
 │   │   │   └── constants.ts        # File of constants
 │   │   └── utils/
 │   │       ├── scrolling.ts        # Helper function for window scrolling
-│   │       └── dompurify.ts        # Helper function for sanitizing text
+│   │       ├── dompurify.ts        # Helper function for sanitizing text
+│   │       └── formatLocation.ts   # Formats TOregonCity/TUsaState into a display string (e.g. "Portland, OR")
 │   └── tests/                     # Testing suite
 │   │   ├── components/            # Component testing
 │   │   │   ├── About.test.tsx     # About component testing
@@ -536,7 +537,8 @@ frontend/
 │   │       ├── formHelper.test.ts  # formHelper testing
 │   │       ├── letterHelper.test.ts # letterHelper testing
 │   │       ├── sanitizeText.test.ts # sanitizeText testing
-│   │       └── streamHelper.test.ts # streamHelper testing
+│   │       ├── streamHelper.test.ts # streamHelper testing
+│   │       └── formatLocation.test.ts # formatLocation testing
 ├── public/
 │   └── favicon.svg                 # Site favicon
 ├── package.json                    # Dependencies and scripts

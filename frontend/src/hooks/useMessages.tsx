@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import type { AIMessage, HumanMessage } from "@langchain/core/messages";
+import type { ILocation } from "../types/HousingTypes";
 
 /**
  * Chat message Type aligned with LangChain's message types
@@ -37,8 +38,7 @@ export function deserializeAiMessage(text: string): string {
 
 async function addNewMessage(
   messages: TChatMessage[],
-  city: string | null,
-  state: string,
+  { city, state }: ILocation,
 ) {
   const serializedMsg = messages.map((msg) => ({
     role: msg.type,
@@ -62,19 +62,13 @@ export default function useMessages() {
   const [messages, setMessages] = useState<TChatMessage[]>([]);
 
   const addMessage = useMutation({
-    mutationFn: async ({
-      city,
-      state,
-    }: {
-      city: string | null;
-      state: string;
-    }) => {
+    mutationFn: async ({ city, state }: ILocation) => {
       // Exclude UI-only messages and empty placeholders from backend history.
       const filteredMessages = messages.filter(
         (msg): msg is Exclude<TChatMessage, TUiMessage> =>
           msg.type !== "ui" && msg.text.trim() !== "",
       );
-      return await addNewMessage(filteredMessages, city, state);
+      return await addNewMessage(filteredMessages, { city, state });
     },
   });
 

@@ -1,5 +1,7 @@
 import { TChatMessage } from "../../../hooks/useMessages";
 import BeaverIcon from "../../../shared/components/BeaverIcon";
+import type { ILocation } from "../../../types/HousingTypes";
+import { formatLocation } from "../../../shared/utils/formatLocation";
 import { useEffect, useState } from "react";
 import { buildChatUserMessage } from "../utils/formHelper";
 import { streamText } from "../utils/streamHelper";
@@ -12,19 +14,19 @@ import {
   HOUSING_OPTIONS,
   LETTERABLE_TOPIC_OPTIONS,
   NONLETTERABLE_TOPIC_OPTIONS,
+  type TCitySelectKey,
+  type THousingType,
+  type TTenantTopic,
 } from "../../../shared/constants/constants";
 import { scrollToTop } from "../../../shared/utils/scrolling";
 import AutoExpandText from "./AutoExpandText";
 import clsx from "clsx";
 import { HumanMessage } from "@langchain/core/messages";
 
-const NONLETTERABLE_TOPICS = Object.keys(NONLETTERABLE_TOPIC_OPTIONS);
+const NONLETTERABLE_TOPICS = Object.keys(NONLETTERABLE_TOPIC_OPTIONS) as TTenantTopic[];
 
 interface Props {
-  addMessage: (args: {
-    city: string | null;
-    state: string;
-  }) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
+  addMessage: (args: ILocation) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
   setMessages: React.Dispatch<React.SetStateAction<TChatMessage[]>>;
 }
 
@@ -46,12 +48,10 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
     handleFormReset,
   } = useHousingContext();
   const [initialUserMessage, setInitialUserMessage] = useState("");
-  const locationString = city
-    ? city.charAt(0).toUpperCase() + city.slice(1)
-    : null;
+  const locationString = formatLocation(housingLocation.city, housingLocation.state);
 
   const handleLocationChange = (key: string | null) => {
-    handleCityChange(key);
+    handleCityChange(key as TCitySelectKey | null);
     handleHousingLocation({
       city:
         CITY_SELECT_OPTIONS[key as keyof typeof CITY_SELECT_OPTIONS]?.city ||
@@ -149,7 +149,7 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
         name="housing type"
         value={housingType || ""}
         description="Select your housing type"
-        handleFunction={handleHousingChange}
+        handleFunction={(option) => handleHousingChange(option as THousingType | null)}
       >
         {HOUSING_OPTIONS.map((option) => (
           <option key={option} value={option}>
@@ -162,7 +162,7 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
           name="tenant topic"
           value={tenantTopic || ""}
           description="Select your topic"
-          handleFunction={handleTenantTopic}
+          handleFunction={(option) => handleTenantTopic(option as TTenantTopic | null)}
         >
           <optgroup label="--Letterable--">
             {Object.entries(LETTERABLE_TOPIC_OPTIONS).map(([key, option]) => (
@@ -185,9 +185,7 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
           <div className="px-4">
             Here are some examples of questions I can help with:
             <ul className="list-disc pl-4">
-              {ALL_TOPIC_OPTIONS[
-                tenantTopic as keyof typeof ALL_TOPIC_OPTIONS
-              ]?.example.map((question, index) => (
+              {(tenantTopic ? ALL_TOPIC_OPTIONS[tenantTopic] : null)?.example.map((question, index) => (
                 <li key={`${tenantTopic}-${index}`}>
                   {question.split(/(_)/).map((part, i) => {
                     if (!part.startsWith("_")) return part;
@@ -239,7 +237,7 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
         {housingLocation &&
           housingType &&
           tenantTopic &&
-          !NONLETTERABLE_TOPICS.includes(tenantTopic) &&
+          !(NONLETTERABLE_TOPICS.includes(tenantTopic)) &&
           issueDescription && (
             <Link
               to="letter"

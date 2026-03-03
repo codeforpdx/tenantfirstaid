@@ -1,15 +1,12 @@
 import { AIMessage } from "@langchain/core/messages";
-import { ILocation } from "../../../contexts/HousingContext";
+import type { ILocation } from "../../../types/HousingTypes";
 import { type TChatMessage, type TUiMessage } from "../../../hooks/useMessages";
 
 /**
  * Options for streaming AI responses into the chat message list.
  */
 export interface IStreamTextOptions {
-  addMessage: (args: {
-    city: string | null;
-    state: string;
-  }) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
+  addMessage: (args: ILocation) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
   setMessages: React.Dispatch<React.SetStateAction<TChatMessage[]>>;
   housingLocation: ILocation;
   setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>;
@@ -39,10 +36,7 @@ async function streamText({
   ]);
 
   try {
-    const reader = await addMessage({
-      city: housingLocation?.city,
-      state: housingLocation?.state || "",
-    });
+    const reader = await addMessage(housingLocation);
     if (!reader) {
       console.error("Stream reader is unavailable");
       const nullReaderError: TUiMessage = {

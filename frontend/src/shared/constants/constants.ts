@@ -1,25 +1,27 @@
+import type { TOregonCity, TUsaState } from "../../types/LocationTypes";
+
 const CONTACT_EMAIL = "michael@qiu-qiulaw.com";
 
 interface CitySelectOptionType {
-  city: string | null;
-  state: string | null;
+  city: TOregonCity | null;
+  state: TUsaState | null;
   label: string;
 }
 
-const CITY_SELECT_OPTIONS: Record<string, CitySelectOptionType> = {
+const CITY_SELECT_OPTIONS: Record<TOregonCity | "oregon" | "other", CitySelectOptionType> = {
   portland: {
-    city: "Portland",
-    state: "OR",
+    city: "portland",
+    state: "or",
     label: "Portland",
   },
   eugene: {
-    city: "Eugene",
-    state: "OR",
+    city: "eugene",
+    state: "or",
     label: "Eugene",
   },
   oregon: {
     city: null,
-    state: "OR",
+    state: "or",
     label: "Other city in Oregon",
   },
   other: {
@@ -159,3 +161,7 @@ export {
 };
 
 export type { CitySelectOptionType };
+
+export type TCitySelectKey = keyof typeof CITY_SELECT_OPTIONS;
+export type THousingType = (typeof HOUSING_OPTIONS)[number];
+export type TTenantTopic = keyof typeof ALL_TOPIC_OPTIONS;

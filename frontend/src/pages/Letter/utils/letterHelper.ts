@@ -2,6 +2,7 @@ import {
   CITY_SELECT_OPTIONS,
   type CitySelectOptionType,
 } from "../../../shared/constants/constants";
+import { formatLocation } from "../../../shared/utils/formatLocation";
 
 interface IBuildLetterReturnType {
   userMessage: string;
@@ -12,12 +13,10 @@ function buildLetterUserMessage(
   org: string | undefined,
   loc: string | undefined,
 ): IBuildLetterReturnType | null {
-  const selectedLocation = CITY_SELECT_OPTIONS[loc || "oregon"];
+  const key = (loc ?? "oregon") as keyof typeof CITY_SELECT_OPTIONS;
+  const selectedLocation = CITY_SELECT_OPTIONS[key];
   if (selectedLocation === undefined) return null;
-  const locationString =
-    selectedLocation.city && selectedLocation.state
-      ? `${selectedLocation.city}, ${selectedLocation.state}`
-      : selectedLocation.city || selectedLocation.state?.toUpperCase() || "";
+  const locationString = formatLocation(selectedLocation.city, selectedLocation.state);
 
   const CHARACTER_LIMIT = 100; // Limit character count to prevent token overflow
   const sanitizedOrg = org

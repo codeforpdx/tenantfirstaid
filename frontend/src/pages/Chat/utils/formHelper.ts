@@ -1,4 +1,6 @@
-import { ILocation } from "../../../contexts/HousingContext";
+import { formatLocation } from "../../../shared/utils/formatLocation";
+import type { ILocation } from "../../../types/HousingTypes";
+import type { THousingType, TTenantTopic } from "../../../shared/constants/constants";
 
 interface IChatFormReturnType {
   userMessage: string;
@@ -15,14 +17,11 @@ interface IChatFormReturnType {
  */
 function buildChatUserMessage(
   loc: ILocation,
-  housingType: string | null,
-  tenantTopic: string | null,
+  housingType: THousingType | null,
+  tenantTopic: TTenantTopic | null,
   issueDescription: string,
 ): IChatFormReturnType {
-  const locationString =
-    loc.city && loc.state
-      ? `${loc.city}, ${loc.state}`
-      : loc.city || loc.state || "";
+  const locationString = formatLocation(loc.city, loc.state);
 
   const promptParts = [
     `I'm in ${locationString ? `${locationString}` : ""}.`,

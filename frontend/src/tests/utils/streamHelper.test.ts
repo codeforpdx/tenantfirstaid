@@ -52,14 +52,14 @@ describe("streamText", () => {
     const result = await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
-      housingLocation: { city: "Portland", state: "OR" },
+      housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
     } as IStreamTextOptions);
 
     expect(result).toBe(true);
     expect(mockAddMessage).toHaveBeenCalledWith({
-      city: "Portland",
-      state: "OR",
+      city: "portland",
+      state: "or",
     });
     expect(mockSetMessages).toHaveBeenCalledTimes(3); // 1 initial + 2 chunk updates
 
@@ -79,7 +79,7 @@ describe("streamText", () => {
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
-      housingLocation: { city: "Portland", state: "OR" },
+      housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
     } as IStreamTextOptions);
 
@@ -104,7 +104,7 @@ describe("streamText", () => {
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
-      housingLocation: { city: "Portland", state: "OR" },
+      housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
     } as IStreamTextOptions);
 
@@ -132,7 +132,7 @@ describe("streamText", () => {
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
-      housingLocation: { city: "Portland", state: "OR" },
+      housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
     } as IStreamTextOptions);
 
@@ -161,7 +161,7 @@ describe("streamText", () => {
     const result = await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
-      housingLocation: { city: "Portland", state: "OR" },
+      housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
     } as IStreamTextOptions);
 
@@ -184,7 +184,7 @@ describe("streamText", () => {
     const result = await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
-      housingLocation: { city: "Portland", state: "OR" },
+      housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
     } as IStreamTextOptions);
 

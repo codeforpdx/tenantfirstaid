@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { buildChatUserMessage } from "../../pages/Chat/utils/formHelper";
-import { ILocation } from "../../contexts/HousingContext";
+import type { ILocation } from "../../types/HousingTypes";
 
 describe("buildChatUserMessage", () => {
   it("builds message with all fields populated", () => {
     const location: ILocation = {
-      city: "Portland",
-      state: "OR",
+      city: "portland",
+      state: "or",
     };
     const housingType = "Apartment/House Rental";
     const tenantTopic = "Eviction and Notices";
@@ -30,7 +30,7 @@ describe("buildChatUserMessage", () => {
   it("handles null city gracefully", () => {
     const location: ILocation = {
       city: null,
-      state: "OR",
+      state: "or",
     };
     const housingType = "Apartment/House Rental";
     const tenantTopic = "Rent Issues";
@@ -49,8 +49,8 @@ describe("buildChatUserMessage", () => {
 
   it("includes all prompt parts", () => {
     const location: ILocation = {
-      city: "Portland",
-      state: "OR",
+      city: "portland",
+      state: "or",
     };
     const housingType = "Apartment/House Rental";
     const tenantTopic = "Eviction and Notices";

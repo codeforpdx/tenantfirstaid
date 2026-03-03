@@ -13,7 +13,7 @@ function UpdateLocationButton() {
   return (
     <button
       data-testid="update-loc"
-      onClick={() => handleHousingLocation?.({ city: "Test", state: "TS" })}
+      onClick={() => handleHousingLocation?.({ city: "portland", state: "or" })}
     >
       update
     </button>
@@ -43,12 +43,12 @@ describe("HousingContext", () => {
       </HousingContextProvider>,
     );
 
-    expect(screen.getByTestId("ctx").textContent).not.toContain("Test");
+    expect(screen.getByTestId("ctx").textContent).not.toContain("portland");
 
     fireEvent.click(screen.getByTestId("update-loc"));
 
-    expect(screen.getByTestId("ctx").textContent).toContain("Test");
-    expect(screen.getByTestId("ctx").textContent).toContain("TS");
+    expect(screen.getByTestId("ctx").textContent).toContain("portland");
+    expect(screen.getByTestId("ctx").textContent).toContain('"or"');
   });
 
   it("throws error when used outside provider", () => {
