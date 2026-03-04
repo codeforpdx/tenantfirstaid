@@ -5,6 +5,7 @@ automated quality evaluation.
 """
 
 import argparse
+import logging
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -27,6 +28,10 @@ from tenantfirstaid.langchain_chat_manager import (
     OregonCity,
     UsaState,
 )
+
+# Suppress the noisy additionalProperties warning from langchain_google_vertexai
+# https://github.com/langchain-ai/langchain-google/issues/1038#issuecomment-3707773510
+logging.getLogger("langchain_google_vertexai.functions_utils").setLevel(logging.ERROR)
 
 
 def agent_wrapper(inputs) -> Dict[str, str]:
@@ -117,6 +122,7 @@ def run_evaluation(
     # Run evaluation with all evaluators.
     results = evaluate(
         agent_wrapper,
+        client=ls_client,
         data=dataset_name,
         evaluators=evaluators,
         experiment_prefix=experiment_prefix,
@@ -125,12 +131,25 @@ def run_evaluation(
         metadata={
             "LLM model name": SINGLETON.MODEL_NAME,
             "LLM model temperature": SINGLETON.MODEL_TEMPERATURE,
+            "RAG Data Store": SINGLETON.VERTEX_AI_DATASTORE
         },
         max_concurrency=max_concurrency,
     )
 
     # Print summary.
     print("\n=== Evaluation Results ===")
+
+    # Print aggregate summary.
+    print("\n=== Aggregate Summary ===")
+    df = results.to_pandas()
+    score_cols = [c for c in df.columns if c.startswith("feedback.")]
+    if score_cols:
+        scores = df[score_cols].mean() * 100
+        scores.index = scores.index.str.removeprefix("feedback.")
+        print(scores.to_string(float_format=lambda x: f"{x:.1f}%"))
+    else:
+        print("No feedback columns found.")
+
     print(f"Experiment: {results.experiment_name}")
     return results
 
