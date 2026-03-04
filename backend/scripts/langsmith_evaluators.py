@@ -16,14 +16,6 @@ from openevals.types import SimpleEvaluator
 # EVALUATOR_MODEL_NAME: Final = "gemini-2.5-pro"
 EVALUATOR_MODEL_NAME: Final = "gemini-2.5-flash"
 
-SCORING_GUIDELINES: Final = dedent(
-    """
-    - Score 1.0 if response is legally correct and complete
-    - Score 0.5 if response has minor inaccuracies or omissions
-    - Score 0.0 if response is legally incorrect or significantly incomplete
-    """
-)
-
 # NOTE: this is a LITERAL not an f-string, because it is substituted as-is into
 #       an f-string which is then used as a template
 INPUT_OUTPUT: Final = dedent(
@@ -75,7 +67,9 @@ CITATION_PROMPT = dedent(
     - Missing key information
 
     Scoring Guidelines:
-    {SCORING_GUIDELINES}
+    - Score 1.0 if response is legally correct and complete
+    - Score 0.5 if response has minor inaccuracies or omissions
+    - Score 0.0 if response is legally incorrect or significantly incomplete
     </Rubric>
 
     <Instructions>
@@ -93,7 +87,10 @@ CITATION_PROMPT = dedent(
 )
 
 citation_accuracy_evaluator: SimpleEvaluator = create_llm_as_judge(
-    model=EVALUATOR_MODEL_NAME, prompt=CITATION_PROMPT, feedback_key="citation accuracy"
+    model=EVALUATOR_MODEL_NAME,
+    prompt=CITATION_PROMPT,
+    feedback_key="citation accuracy",
+    continuous=True,
 )
 
 # Evaluator 2: Legal Correctness (LLM-as-Judge).
@@ -122,7 +119,9 @@ LEGAL_CORRECTNESS_PROMPT_TEMPLATE: Final = dedent(
     - Missing key information
 
     Scoring Guidelines:
-    {SCORING_GUIDELINES}
+    - Score 1.0 if response is legally correct and complete
+    - Score 0.5 if response has minor inaccuracies or omissions
+    - Score 0.0 if response is legally incorrect or significantly incomplete
     </Rubric>
 
     <Instructions>
@@ -153,6 +152,7 @@ completeness_evaluator = create_llm_as_judge(
     model=EVALUATOR_MODEL_NAME,
     prompt=CORRECTNESS_PROMPT,
     feedback_key="general correctness",
+    continuous=True,
 )
 
 # Evaluator 4: Tone & Professionalism (LLM-as-Judge).
@@ -172,7 +172,9 @@ TONE_PROMPT_TEMPLATE = dedent(
     - overly casual language
 
     Scoring Guidelines:
-    {SCORING_GUIDELINES}
+    - Score 1.0 if response has the appropriate tone for legal advice
+    - Score 0.5 if response has some tonal issues but is generally acceptable
+    - Score 0.0 if response has an inappropriate tone for legal advice
     </Rubric>
 
     <Instructions>
