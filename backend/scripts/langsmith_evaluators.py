@@ -67,9 +67,9 @@ CITATION_PROMPT = dedent(
     - Missing key information
 
     Scoring Guidelines:
-    - Score 1.0 if response is legally correct and complete
-    - Score 0.5 if response has minor inaccuracies or omissions
-    - Score 0.0 if response is legally incorrect or significantly incomplete
+    - Score 1.0 if all citations use proper HTML anchor tags, valid ORS numbers, and link to approved domains
+    - Score 0.5 if citations are present but have formatting or completeness issues
+    - Score 0.0 if citations are missing, malformed, or link to unapproved sources
     </Rubric>
 
     <Instructions>
