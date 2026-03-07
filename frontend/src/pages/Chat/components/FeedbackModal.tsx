@@ -1,9 +1,9 @@
 import { useState } from "react";
 import sendFeedback from "../utils/feedbackHelper";
-import { TChatMessage } from "../../../hooks/useMessages";
+import { ChatMessage } from "../../../hooks/useMessages";
 
 interface Props {
-  messages: TChatMessage[];
+  messages: ChatMessage[];
   setOpenFeedback: React.Dispatch<React.SetStateAction<boolean>>;
 }
 

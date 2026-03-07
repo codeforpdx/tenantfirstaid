@@ -64,6 +64,16 @@ uv run python scripts/run_langsmith_evaluation.py --num-samples 20
 
 ## Local `./frontend` workflow
 
+Frontend TypeScript types in `src/types/` are auto-generated from the backend Python models and are not checked into source control. You must generate them before building or type-checking:
+
+```bash
+npm run generate-types
+# or equivalently:
+make generate-types  # (run from the backend/ directory)
+```
+
+This requires `uv` to be installed (see backend setup).
+
 1. Format, lint and type‑check your changes:
 
    ```bash
@@ -71,7 +81,7 @@ uv run python scripts/run_langsmith_evaluation.py --num-samples 20
    npx run format
    ```
 
-2. Build frontend code
+2. Build frontend code (automatically generates types first)
    ```bash
    npm run build
    ```

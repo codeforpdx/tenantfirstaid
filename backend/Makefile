@@ -1,7 +1,8 @@
 PYTHON := uv
 PIP := $(PYTHON) pip
+FRONTEND_DIR := ../frontend
 
-.PHONY: all install test clean check
+.PHONY: all install test clean check generate-types
 
 all: check
 
@@ -37,6 +38,10 @@ typecheck-pyrefly: uv.lock
 
 test: uv.lock
 	uv run pytest -v -s $(TEST_OPTIONS)
+
+generate-types: uv.lock
+	mkdir -p $(FRONTEND_DIR)/src/types
+	$(PYTHON) run pydantic2ts --module scripts/generate_types.py --output $(FRONTEND_DIR)/src/types/models.ts --json2ts-cmd "npx --prefix $(FRONTEND_DIR) json2ts"
 
 clean:
 	find . -type d -name '__pycache__' -exec rm -r {} +

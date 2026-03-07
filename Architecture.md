@@ -76,6 +76,7 @@ backend/
 │   ├── vertex_ai_list_datastores.py    # Utility to get Google Vertex AI Datastore IDs
 │   ├── create_vector_store.py          # RAG corpus setup
 │   ├── convert_csv_to_jsonl.py         # Data conversion utilities
+│   ├── generate_types.py               # Models exported to the frontend; pydantic2ts generates frontend/src/types/models.ts from this (run via `make generate-types` or `npm run generate-types`)
 │   └── documents/                      # Source legal documents
 │       └── or/                         # Oregon state laws
 │           ├── OAR54.txt               # Oregon Administrative Rules
@@ -335,10 +336,7 @@ async function streamText({
   ]);
 
   try {
-    const reader = await addMessage({
-      city: housingLocation?.city,
-      state: housingLocation?.state || "",
-    });
+    const reader = await addMessage(housingLocation);
     if (!reader) {
       console.error("Stream reader is unavailable");
       const nullReaderError: TUiMessage = {
@@ -465,8 +463,8 @@ frontend/
 │   │   ├── useMessages.tsx         # Message handling logic
 │   │   ├── useHousingContext.tsx   # Custom hook for housing context
 │   │   └── useLetterContent.tsx    # State management for letter generation
-│   ├── types/
-│   │   └── MessageTypes.ts         # TypeScript types mirroring backend schema (TResponseChunk, etc.)
+│   ├── types/                      # Auto-generated TypeScript types (gitignored) — do not edit manually, re-run `make generate-types` or `npm run generate-types`
+│   │   └── models.ts                  # All exported types: ResponseChunk, Location, OregonCity, UsaState, chunk interfaces
 │   ├── layouts/                    # Layouts
 │   │   └── PageLayout.tsx          # Layout for pages
 │   ├── pages/
@@ -491,7 +489,7 @@ frontend/
 │   │   │   │   ├── LetterDisclaimer.tsx # Disclaimer for Letter page
 │   │   │   │   └── LetterGenerationDialog.tsx # Letter page dialog
 │   │   │   └── utils/
-│   │   │       └── letterHelper.tsx    # Letter generation functionality
+│   │   │       └── letterHelper.ts     # Letter generation functionality
 │   │   └── LoadingPage.tsx             # Loading component for routes
 │   ├── shared/                     # Shared components and utils
 │   │   ├── components/
@@ -511,7 +509,8 @@ frontend/
 │   │   │   └── constants.ts        # File of constants
 │   │   └── utils/
 │   │       ├── scrolling.ts        # Helper function for window scrolling
-│   │       └── dompurify.ts        # Helper function for sanitizing text
+│   │       ├── dompurify.ts        # Helper function for sanitizing text
+│   │       └── formatLocation.ts   # Formats OregonCity/UsaState into a display string (e.g. "Portland, OR")
 │   └── tests/                     # Testing suite
 │   │   ├── components/            # Component testing
 │   │   │   ├── About.test.tsx     # About component testing
@@ -536,7 +535,8 @@ frontend/
 │   │       ├── formHelper.test.ts  # formHelper testing
 │   │       ├── letterHelper.test.ts # letterHelper testing
 │   │       ├── sanitizeText.test.ts # sanitizeText testing
-│   │       └── streamHelper.test.ts # streamHelper testing
+│   │       ├── streamHelper.test.ts # streamHelper testing
+│   │       └── formatLocation.test.ts # formatLocation testing
 ├── public/
 │   └── favicon.svg                 # Site favicon
 ├── package.json                    # Dependencies and scripts

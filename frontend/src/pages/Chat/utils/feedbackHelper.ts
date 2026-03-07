@@ -1,7 +1,7 @@
 import {
   deserializeAiMessage,
-  type TChatMessage,
-  type TUiMessage,
+  type ChatMessage,
+  type UiMessage,
 } from "../../../hooks/useMessages";
 import sanitizeText from "../../../shared/utils/sanitizeText";
 
@@ -30,7 +30,7 @@ function redactText(message: string, wordsToRedact: string) {
  * Builds an HTML transcript, applies word redaction, and sends via FormData.
  */
 export default async function sendFeedback(
-  messages: TChatMessage[],
+  messages: ChatMessage[],
   userFeedback: string,
   emailsToCC: string,
   wordsToRedact: string,
@@ -39,7 +39,7 @@ export default async function sendFeedback(
 
   const messageChain = messages
     .filter(
-      (msg): msg is Exclude<TChatMessage, TUiMessage> => msg.type !== "ui",
+      (msg): msg is Exclude<ChatMessage, UiMessage> => msg.type !== "ui",
     )
     .map(
       (msg) =>

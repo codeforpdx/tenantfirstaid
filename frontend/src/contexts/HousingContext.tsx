@@ -1,56 +1,57 @@
 import { createContext, useCallback, useMemo, useState } from "react";
 import DOMPurify, { SANITIZE_USER_SETTINGS } from "../shared/utils/dompurify";
+import type { Location } from "../types/models";
+import type {
+  CitySelectKey,
+  HousingType,
+  TenantTopic,
+} from "../shared/constants/constants";
 
-export interface ILocation {
-  city: string | null;
-  state: string | null;
-}
-
-export interface IHousingContextType {
-  housingLocation: ILocation;
-  city: string | null;
-  housingType: string | null;
-  tenantTopic: string | null;
+export interface HousingContextType {
+  housingLocation: Location;
+  city: CitySelectKey | null;
+  housingType: HousingType | null;
+  tenantTopic: TenantTopic | null;
   issueDescription: string;
-  handleHousingLocation: ({ city, state }: ILocation) => void;
-  handleCityChange: (option: string | null) => void;
-  handleHousingChange: (option: string | null) => void;
-  handleTenantTopic: (option: string | null) => void;
+  handleHousingLocation: ({ city, state }: Location) => void;
+  handleCityChange: (option: CitySelectKey | null) => void;
+  handleHousingChange: (option: HousingType | null) => void;
+  handleTenantTopic: (option: TenantTopic | null) => void;
   handleIssueDescription: (
     event: React.ChangeEvent<HTMLTextAreaElement>,
   ) => void;
   handleFormReset: () => void;
 }
 
-const HousingContext = createContext<IHousingContextType | null>(null);
+const HousingContext = createContext<HousingContextType | null>(null);
 
 interface Props {
   children: React.ReactNode;
 }
 
 export default function HousingContextProvider({ children }: Props) {
-  const [city, setCity] = useState<string | null>(null);
-  const [housingLocation, setHousingLocation] = useState<ILocation>({
+  const [city, setCity] = useState<CitySelectKey | null>(null);
+  const [housingLocation, setHousingLocation] = useState<Location>({
     city: null,
     state: null,
   });
-  const [housingType, setHousingType] = useState<string | null>(null);
-  const [tenantTopic, setTenantTopic] = useState<string | null>(null);
+  const [housingType, setHousingType] = useState<HousingType | null>(null);
+  const [tenantTopic, setTenantTopic] = useState<TenantTopic | null>(null);
   const [issueDescription, setIssueDescription] = useState("");
 
-  const handleHousingLocation = useCallback(({ city, state }: ILocation) => {
+  const handleHousingLocation = useCallback(({ city, state }: Location) => {
     setHousingLocation({ city, state });
   }, []);
 
-  const handleCityChange = useCallback((option: string | null) => {
+  const handleCityChange = useCallback((option: CitySelectKey | null) => {
     setCity(option);
   }, []);
 
-  const handleHousingChange = useCallback((option: string | null) => {
+  const handleHousingChange = useCallback((option: HousingType | null) => {
     setHousingType(option);
   }, []);
 
-  const handleTenantTopic = useCallback((option: string | null) => {
+  const handleTenantTopic = useCallback((option: TenantTopic | null) => {
     setTenantTopic(option);
   }, []);
 

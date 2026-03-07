@@ -1,8 +1,8 @@
-import { TChatMessage } from "../../../hooks/useMessages";
+import { ChatMessage } from "../../../hooks/useMessages";
 import exportMessages from "../utils/exportHelper";
 
 interface Props {
-  messages: TChatMessage[];
+  messages: ChatMessage[];
 }
 
 /**

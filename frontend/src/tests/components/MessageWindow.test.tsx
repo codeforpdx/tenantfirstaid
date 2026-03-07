@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import MessageWindow from "../../pages/Chat/components/MessageWindow";
-import { TChatMessage } from "../../hooks/useMessages";
+import { ChatMessage } from "../../hooks/useMessages";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import HousingContextProvider from "../../contexts/HousingContext";
 
@@ -15,7 +15,7 @@ beforeAll(() => {
 });
 
 describe("MessageWindow component", () => {
-  const messages: TChatMessage[] = [
+  const messages: ChatMessage[] = [
     new HumanMessage({ content: "first message", id: "1" }),
     new AIMessage({
       content: '{"type":"text","content":"second message"}\n',

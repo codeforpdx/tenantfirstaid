@@ -17,7 +17,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { HumanMessage } from "@langchain/core/messages";
-import { TChatMessage } from "../../hooks/useMessages";
+import { ChatMessage } from "../../hooks/useMessages";
 
 beforeAll(() => {
   if (!("scrollTo" in HTMLElement.prototype)) {
@@ -206,7 +206,7 @@ describe("Letter component - effect orchestration", () => {
 
     const setMessagesCall = mockSetMessages.mock.calls.find((call) => {
       const result = call[0]([]);
-      return result.some((msg: TChatMessage) =>
+      return result.some((msg: ChatMessage) =>
         msg.text.includes("Unable to generate letter"),
       );
     });

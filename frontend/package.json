@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "generate-types": "cd ../backend && make generate-types",
+    "build": "npm run generate-types && tsc -b && vite build",
     "lint": "eslint .",
     "format": "prettier --write .",
     "preview": "vite preview",
@@ -39,6 +40,7 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
     "jsdom": "^27.0.1",
+    "json-schema-to-typescript": "^15.0.4",
     "prettier": "^3.6.2",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.26.1",

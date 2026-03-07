@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import sendFeedback from "../../pages/Chat/utils/feedbackHelper";
-import { TChatMessage, TUiMessage } from "../../hooks/useMessages";
+import { ChatMessage, UiMessage } from "../../hooks/useMessages";
 
 describe("sendFeedback", () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
@@ -41,7 +41,7 @@ describe("sendFeedback", () => {
   it("should deserialize JSONL AI message content to plain text", async () => {
     const jsonlContent =
       '{"type":"text","content":"Here is your answer."}\n{"type":"letter","content":"Dear Landlord,\\n\\nPlease fix the heater."}';
-    const messages: TChatMessage[] = [
+    const messages: ChatMessage[] = [
       new HumanMessage({ content: "Write a letter", id: "1" }),
       new AIMessage({ content: jsonlContent, id: "2" }),
     ];
@@ -56,12 +56,12 @@ describe("sendFeedback", () => {
   });
 
   it("should exclude ui messages from the transcript", async () => {
-    const uiMessage: TUiMessage = {
+    const uiMessage: UiMessage = {
       type: "ui",
       text: "Sorry, I encountered an error.",
       id: "3",
     };
-    const messages: TChatMessage[] = [
+    const messages: ChatMessage[] = [
       new HumanMessage({ content: "Hello", id: "1" }),
       new AIMessage({ content: "Hi there", id: "2" }),
       uiMessage,
@@ -76,7 +76,7 @@ describe("sendFeedback", () => {
   });
 
   it("should redact specified words from the transcript", async () => {
-    const messages: TChatMessage[] = [
+    const messages: ChatMessage[] = [
       new HumanMessage({ content: "My name is John Smith", id: "1" }),
       new AIMessage({ content: "Hello John Smith", id: "2" }),
     ];
@@ -89,7 +89,7 @@ describe("sendFeedback", () => {
   });
 
   it("should post to /api/feedback with correct form fields", async () => {
-    const messages: TChatMessage[] = [
+    const messages: ChatMessage[] = [
       new HumanMessage({ content: "Hello", id: "1" }),
       new AIMessage({ content: "Hi", id: "2" }),
     ];

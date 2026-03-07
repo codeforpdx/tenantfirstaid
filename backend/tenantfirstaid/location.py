@@ -7,6 +7,7 @@ from enum import StrEnum
 from typing import Optional
 
 from langchain.agents import AgentState
+from pydantic import BaseModel
 
 
 def city_or_state_input_sanitizer(location: Optional[str], max_len: int = 9) -> str:
@@ -60,6 +61,16 @@ class UsaState(StrEnum):
                 case _:
                     state = cls.OTHER
             return state
+
+
+class Location(BaseModel):
+    """City and state as sent by the frontend.
+
+    state=None is treated as UsaState.OTHER by the backend.
+    """
+
+    city: OregonCity | None = None
+    state: UsaState | None = None
 
 
 class TFAAgentStateSchema(AgentState):

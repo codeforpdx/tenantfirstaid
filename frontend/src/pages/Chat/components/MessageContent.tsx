@@ -1,9 +1,9 @@
 import SafeMarkdown from "../../../shared/components/SafeMarkdown";
-import type { TChatMessage } from "../../../hooks/useMessages";
-import type { TResponseChunk } from "../../../types/MessageTypes";
+import type { ChatMessage } from "../../../hooks/useMessages";
+import type { ResponseChunk } from "../../../types/models";
 
 interface ChunkProps {
-  chunkObj: TResponseChunk;
+  chunkObj: ResponseChunk;
 }
 
 function RenderedChunk({ chunkObj }: ChunkProps) {
@@ -31,7 +31,7 @@ function hasRenderableContent(text: string): boolean {
     .filter(Boolean)
     .some((chunk) => {
       try {
-        const parsed = JSON.parse(chunk) as TResponseChunk;
+        const parsed = JSON.parse(chunk) as ResponseChunk;
         return (
           (parsed.type === "text" && (parsed.content?.length ?? 0) > 0) ||
           (parsed.type === "reasoning" && (parsed.content?.length ?? 0) > 0)
@@ -43,7 +43,7 @@ function hasRenderableContent(text: string): boolean {
 }
 
 interface Props {
-  message: TChatMessage;
+  message: ChatMessage;
 }
 
 /**
@@ -81,11 +81,11 @@ export default function MessageContent({ message }: Props) {
                   .filter((chunk) => chunk.length !== 0)
                   .map((chunk, index) => {
                     try {
-                      const chunkObj = JSON.parse(chunk) as TResponseChunk;
+                      const chunkObj = JSON.parse(chunk) as ResponseChunk;
                       // type prefix avoids bare index, which React warns against
                       return (
                         <RenderedChunk
-                          key={chunkObj.type + index}
+                          key={(chunkObj.type ?? "") + index}
                           chunkObj={chunkObj}
                         />
                       );

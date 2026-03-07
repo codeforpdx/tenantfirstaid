@@ -59,6 +59,7 @@ Live at https://tenantfirstaid.com/
 1. Open a new terminal / tab
 1. `cd ../frontend`
 1. `npm install`
+1. `npm run generate-types`
 1. `npm run dev`
 1. Go to http://localhost:5173
 1. Start chatting

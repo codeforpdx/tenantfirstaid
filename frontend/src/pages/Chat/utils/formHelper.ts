@@ -1,6 +1,11 @@
-import { ILocation } from "../../../contexts/HousingContext";
+import { formatLocation } from "../../../shared/utils/formatLocation";
+import type { Location } from "../../../types/models";
+import type {
+  HousingType,
+  TenantTopic,
+} from "../../../shared/constants/constants";
 
-interface IChatFormReturnType {
+interface ChatFormReturnType {
   userMessage: string;
 }
 
@@ -14,18 +19,15 @@ interface IChatFormReturnType {
  * @returns Object containing the formatted user message
  */
 function buildChatUserMessage(
-  loc: ILocation,
-  housingType: string | null,
-  tenantTopic: string | null,
+  loc: Location,
+  housingType: HousingType | null,
+  tenantTopic: TenantTopic | null,
   issueDescription: string,
-): IChatFormReturnType {
-  const locationString =
-    loc.city && loc.state
-      ? `${loc.city}, ${loc.state}`
-      : loc.city || loc.state || "";
+): ChatFormReturnType {
+  const locationString = formatLocation(loc.city, loc.state);
 
   const promptParts = [
-    `I'm in ${locationString ? `${locationString}` : ""}.`,
+    ...(locationString ? [`I'm in ${locationString}.`] : []),
     `I live in ${housingType}.`,
     `My issue is on ${tenantTopic}: ${issueDescription === "" ? "Non-specific." : issueDescription}`,
   ];

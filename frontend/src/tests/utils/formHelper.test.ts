@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { buildChatUserMessage } from "../../pages/Chat/utils/formHelper";
-import { ILocation } from "../../contexts/HousingContext";
+import type { Location } from "../../types/models";
 
 describe("buildChatUserMessage", () => {
   it("builds message with all fields populated", () => {
-    const location: ILocation = {
-      city: "Portland",
-      state: "OR",
+    const location: Location = {
+      city: "portland",
+      state: "or",
     };
     const housingType = "Apartment/House Rental";
     const tenantTopic = "Eviction and Notices";
@@ -28,9 +28,9 @@ describe("buildChatUserMessage", () => {
   });
 
   it("handles null city gracefully", () => {
-    const location: ILocation = {
+    const location: Location = {
       city: null,
-      state: "OR",
+      state: "or",
     };
     const housingType = "Apartment/House Rental";
     const tenantTopic = "Rent Issues";
@@ -47,10 +47,20 @@ describe("buildChatUserMessage", () => {
     expect(result.userMessage).not.toContain("null");
   });
 
+  it("omits location sentence when city and state are both null", () => {
+    const result = buildChatUserMessage(
+      { city: null, state: null },
+      "Apartment/House Rental",
+      "Eviction and Notices",
+      "Some issue",
+    );
+    expect(result.userMessage).not.toContain("I'm in");
+  });
+
   it("includes all prompt parts", () => {
-    const location: ILocation = {
-      city: "Portland",
-      state: "OR",
+    const location: Location = {
+      city: "portland",
+      state: "or",
     };
     const housingType = "Apartment/House Rental";
     const tenantTopic = "Eviction and Notices";
