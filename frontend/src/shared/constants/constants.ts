@@ -140,7 +140,7 @@ const REFERENCED_LAW_LIST = {
 };
 
 const NAVBAR_LINKS = [
-  { to: "/", label: "Chat" },
+  { to: "/chat", label: "Chat" },
   { to: "/letter", label: "Letter" },
   { to: "/about", label: "About Tenant First Aid" },
   { to: "/disclaimer", label: "Disclaimer" },
