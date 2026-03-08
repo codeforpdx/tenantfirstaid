@@ -1,27 +1,27 @@
-import type { IMessage } from "../../../hooks/useMessages";
+import {
+  deserializeAiMessage,
+  type TChatMessage,
+  type TUiMessage,
+} from "../../../hooks/useMessages";
+import sanitizeText from "../../../shared/utils/sanitizeText";
 
-function sanitizeText(str: string) {
-  // Strips anchor tags
-  str = str.replace(/<a\b[^>]*>(.*?)<\/a>/gi, "$1");
-
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-export default function exportMessages(messages: IMessage[]) {
+/**
+ * Opens a printable window with the conversation history.
+ * Sanitizes message content before rendering to prevent XSS.
+ */
+export default function exportMessages(messages: TChatMessage[]) {
   if (messages.length < 2) return;
 
   const newDocument = window.open("", "", "height=800,width=600");
   const messageChain = messages
+    .filter(
+      (msg): msg is Exclude<TChatMessage, TUiMessage> => msg.type !== "ui",
+    )
     .map(
-      ({ role, content }) =>
+      (msg) =>
         `<p><strong>${
-          role.charAt(0).toUpperCase() + role.slice(1)
-        }</strong>: ${sanitizeText(content)}</p>`,
+          msg.type === "human" ? "User" : "AI"
+        }</strong>: ${sanitizeText(msg.type === "ai" ? deserializeAiMessage(msg.text) : msg.text)}</p>`,
     )
     .join("");
 

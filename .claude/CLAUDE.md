@@ -33,6 +33,35 @@ Welcome to the Tenant First Aid repository. This file contains the main points f
 
 All python commands should be run via `uv run python ...`
 
+## LangChain Agent Architecture
+
+The backend uses LangChain 1.0.8+ for agent-based conversation management with Vertex AI integration.
+
+### Key Components
+- **LangChainChatManager**: Main agent orchestration class (`backend/tenantfirstaid/langchain_chat_manager.py`)
+- **retrieve_city_state_laws**: Tool for city/state-specific legal retrieval
+- **ChatVertexAI**: LangChain wrapper for Google Gemini
+
+### Environment Variables
+```bash
+MODEL_NAME=gemini-2.5-pro                          # LLM model name
+VERTEX_AI_DATASTORE=projects/.../datastores/...    # RAG corpus ID
+SHOW_MODEL_THINKING=false                          # Enable Gemini thinking mode
+LANGSMITH_API_KEY=...                              # Optional: Enable LLM evaluations
+```
+
+### Testing LangChain Components
+```bash
+# Run LangChain-specific tests
+uv run pytest -m langchain
+
+# Run with LangSmith tracing (requires API key)
+LANGSMITH_TRACING=true LANGCHAIN_TRACING_V2=true uv run pytest -m langchain
+
+# Run evaluations (see docs/EVALUATION.md)
+uv run python scripts/run_langsmith_evaluation.py --num-samples 20
+```
+
 ## Local `./frontend` workflow
 
 1. Format, lint and type‑check your changes:
@@ -79,9 +108,34 @@ Write commit messages and PR descriptions as a humble but experienced engineer w
 
 Don't embarrass me with robot speak, marketing buzzwords, or vague fluff. Just leave a meaningful trace so someone can understand the choices later. Assume the reader is able to follow the code perfectly fine.
 
+## GitHub Actions Security
+
+We pin all third-party actions to commit SHAs to prevent supply chain attacks:
+
+```yaml
+# ✅ Good: Commit SHA with inline version comment
+uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345 #v1.0.0
+
+# ❌ Bad: Floating version tags
+uses: appleboy/scp-action@v1.0.0
+```
+
+We allow fully qualified semantic version tag from
+- `Astral` (uv) github actions (note: CodeQL will warn about this)
+- immutable tags
+
+```yaml
+# ✅ Good: semantic version tag
+uses: astral-sh/setup-uv@7.3.0
+
+# ❌ Bad: major-only version tag
+uses: astral-sh/setup-uv@7
+```
+
 ## What reviewers look for
 
 - Tests covering new behaviour.
 - Consistent style: code formatted with `uv run ruff format`, imports sorted, and type hints passing `make typecheck`.
 - Clear documentation for any public API changes.
 - Clean history and a helpful PR description.
+- Inconsistent environment variables and secrets declarations across GitHub Actions, .env.example, tests, and relevant Markdown documentation; this includes secrets and variables which are declared but never referenced in the code.

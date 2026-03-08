@@ -7,18 +7,52 @@ Live at https://tenantfirstaid.com/
 ## Local Development
 
 [![PR Checks](https://github.com/codeforpdx/tenantfirstaid/actions/workflows/pr-check.yml/badge.svg)](https://github.com/codeforpdx/tenantfirstaid/actions/workflows/pr-check.yml)
-[![CI-CD](https://github.com/codeforpdx/tenantfirstaid/actions/workflows/deploy.yml/badge.svg)](https://github.com/codeforpdx/tenantfirstaid/actions/workflows/deploy.yml)
+[![CI-CD (Production)](https://github.com/codeforpdx/tenantfirstaid/actions/workflows/deploy.production.yml/badge.svg)](https://github.com/codeforpdx/tenantfirstaid/actions/workflows/deploy.production.yml)
 
 ### Prerequisites
 
-- [uv](https://docs.astral.sh/uv/getting-started/installation/)
+<details>
+<summary>GitHub account</summary>
 
-1. copy `backend/.env.example` to a new file named `.env` in the same directory. The chatbot now uses Google Gemini instead of OpenAI. You need to authenticate with the gcloud cli to develop, following these instructions:
-   1. [install gcloud](https://cloud.google.com/sdk/docs/install)
-   1. [generate application default credentials file](https://cloud.google.com/docs/authentication/application-default-credentials)
-   1. `gcloud auth application-default login`
-   1. `gcloud auth application-default set-quota-project tenantfirstaid`
-   1. add `GOOGLE_APPLICATION_CREDENTIALS=<PATH_TO_CREDS>` to your `backend/.env` file. The default path will be something like `/home/<USERNAME>/.config/gcloud/application_default_credentials.json` on Unix systems. (HINT: don't use path shortcuts like `~` for home, python won't be able to find it).
+- You will need a GitHub account (free) to contribute to the project.  No account is necessary to browse the source code.
+  - You will be invited to join the [Contributor](https://github.com/orgs/codeforpdx/teams/contributor) team after you complete [step 2 ("Connect on Discord & Request Access") of the Code PDX onboarding](https://www.codepdx.org/volunteer)
+  - Look for the invitation email and click the link in the email to accept the invitation.
+  - You will also have to enable [commit signing](https://docs.github.com/authentication/managing-commit-signature-verification) by adding a key (typically `GPG`) to your GitHub account (click on your avatar -> Settings -> SSH and GPG keys).
+</details>
+
+<details>
+<summary>Astral UV</summary>
+
+- `uv` is used in the *backend* to install/manage Python dependencies and run Python sub-tools (e.g. `pytest`)
+[Install uv](https://docs.astral.sh/uv/getting-started/installation/)
+</details>
+
+<details>
+<summary>Google Cloud application default credentials file</summary>
+
+- This is needed to spin up a local instance of the backend (i.e. API calls to the chat LLM and RAG agent).
+- The chatbot now uses Google Gemini (previously OpenAI's ChatGPT).
+- The `tenantfirstaid` Google project admin will need to manually assign a role to you (gmail account).  Reach out in the Discord channel #[tenantfirstaid-general](https://discord.com/channels/1068260532806766733/1367177752792531115) to arrange this.
+- You need to authenticate with the gcloud cli to develop, following these instructions:
+    1. [install gcloud](https://cloud.google.com/sdk/docs/install)
+    1. [generate application default credentials file](https://cloud.google.com/docs/authentication/application-default-credentials)
+    1. `gcloud auth application-default login`
+    1. `gcloud auth application-default set-quota-project tenantfirstaid`
+    1. add `GOOGLE_APPLICATION_CREDENTIALS=<PATH_TO_CREDS>` to your `backend/.env` file. The default path will be something like `/home/<USERNAME>/.config/gcloud/application_default_credentials.json` on Unix systems. (HINT: don't use path shortcuts like `~` for home, python won't be able to find it).
+</details>
+
+<details>
+<summary>LangChain/LangSmith</summary>
+
+- [langsmith](https://docs.langchain.com/langsmith/create-account-api-key) *Developer* (free) or *Plus* account and API key
+</details>
+
+### Quick Start
+
+1. clone repo
+1. copy `backend/.env.example` to a new file named `.env` in the same directory.
+   1. set `GOOGLE_APPLICATION_CREDENTIALS` as per [Google Cloud application default credentials file](#prerequisites)
+   1. set `LANGSMITH_API_KEY` as per [LangChain/LangSmith](#prerequisites)
 1. `cd backend`
 1. `uv sync`
 1. `uv run python -m tenantfirstaid.app`
@@ -104,10 +138,6 @@ Live at https://tenantfirstaid.com/
 
 We currently have regular project meetups: https://www.meetup.com/codepdx/ . Also check out https://www.codepdx.org/ to find our Discord server.
 
-## Remote server setup
+## Deployment
 
-On DO, we:
-
-1. added our ssh public keys
-2. install nginx
-3. Kent got the tls cert (just ask chatgpt?)
+For information on how the application is deployed, where it runs, how to debug issues, and who has access, see [Deployment.md](Deployment.md).

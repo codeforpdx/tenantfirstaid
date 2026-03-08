@@ -1,4 +1,4 @@
-import { IMessage } from "../../../hooks/useMessages";
+import { TChatMessage } from "../../../hooks/useMessages";
 import BeaverIcon from "../../../shared/components/BeaverIcon";
 import { useEffect, useState } from "react";
 import { buildChatUserMessage } from "../utils/formHelper";
@@ -15,6 +15,8 @@ import {
 } from "../../../shared/constants/constants";
 import { scrollToTop } from "../../../shared/utils/scrolling";
 import AutoExpandText from "./AutoExpandText";
+import clsx from "clsx";
+import { HumanMessage } from "@langchain/core/messages";
 
 const NONLETTERABLE_TOPICS = Object.keys(NONLETTERABLE_TOPIC_OPTIONS);
 
@@ -23,9 +25,12 @@ interface Props {
     city: string | null;
     state: string;
   }) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
-  setMessages: React.Dispatch<React.SetStateAction<IMessage[]>>;
+  setMessages: React.Dispatch<React.SetStateAction<TChatMessage[]>>;
 }
 
+/**
+ * Initial chat form for selecting location, housing type, topic, and issue description.
+ */
 export default function InitializationForm({ addMessage, setMessages }: Props) {
   const {
     housingLocation,
@@ -62,7 +67,7 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
     const userMessageId = Date.now().toString();
     setMessages((prev) => [
       ...prev,
-      { role: "user", content: initialUserMessage, messageId: userMessageId },
+      new HumanMessage({ content: initialUserMessage, id: userMessageId }),
     ]);
 
     await streamText({
@@ -206,22 +211,20 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
 
       <div className="flex justify-center gap-4">
         <button
-          className={`
-            text-red-dark
-            border border-red-medium hover:border-red-dark
-            hover:bg-red-light
-            ${city === "other" ? "opacity-50" : ""}`}
+          className={clsx(
+            "text-red-dark border border-red-medium hover:border-red-dark hover:bg-red-light",
+            city === "other" && "opacity-50",
+          )}
           type="reset"
           onClick={handleFormReset}
         >
           Reset
         </button>
         <button
-          className={`
-            text-green-dark
-            border border-green-medium hover:border-green-dark
-            hover:bg-green-light
-            ${city === "other" ? "opacity-50" : ""}`}
+          className={clsx(
+            "text-green-dark border border-green-medium hover:border-green-dark hover:bg-green-light",
+            city === "other" && "opacity-50",
+          )}
           style={{
             cursor: city === "other" ? "not-allowed" : "pointer",
           }}
@@ -240,13 +243,15 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
           issueDescription && (
             <Link
               to="letter"
-              className={`
-                flex items-center
-                py-1 px-4
-                border rounded-md border-blue-medium hover:border-blue-dark
-                font-semibold text-center text-blue-dark 
-                hover:bg-blue-light no-underline
-                ${city === "other" ? "opacity-50" : ""}`}
+              className={clsx(
+                "flex items-center",
+                "py-1 px-4",
+                "border rounded-md border-blue-medium",
+                "font-semibold text-center text-blue-dark",
+                "hover:border-blue-dark hover:bg-blue-light",
+                "no-underline",
+                city === "other" && "opacity-50",
+              )}
               style={{
                 cursor: city === "other" ? "not-allowed" : "pointer",
               }}

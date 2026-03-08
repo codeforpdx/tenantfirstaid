@@ -1,24 +1,23 @@
 
 [project]
 name = "tenant-first-aid"
-version = "0.2.0"
-requires-python = ">=3.12"
+version = "0.3.1"
+requires-python = ">=3.12,<3.14" # langchain_core triggers a Pydantic V1 warning, https://github.com/langchain-ai/langchain/issues/34441
 dependencies = [
   "flask>=3.1.1",
   "flask-mailman>=1.1.1",
   "Flask_Limiter>=3.12",
-  "xhtml2pdf>=0.2.17",
   "flask-cors>=4.0.0",
+  "xhtml2pdf>=0.2.17",
   "gunicorn>=23.0.0",
-  "google-auth>=2.40.3",
-  "google-genai>=1.38.0",
-  "google-cloud-aiplatform>=1.106.0",
-  "jsonlines",
-  "simplejson",
   "svglib<1.6", # holding version back because 1.6.0 now requires manual platform installation of https://www.cairographics.org/download/
   "python-dotenv",
-  "pandas>=2.3.0",
-  "vertexai>=1.43.0",
+  "langchain>=1.2.10,<2.0.0",
+  "langchain-core>=1.2.11",
+  "langchain-google-community[vertexaisearch]>=3.0.1",
+  "langchain-google-genai>=4.1.2",
+  "google-auth>=2.40.3",
+  "pydantic>=2.12.5",
 ]
 
 [tool.setuptools.packages.find]
@@ -33,17 +32,24 @@ build-backend = "setuptools.build_meta"
 dev = [
     "ipdb>=0.13.13",
     "mypy>=1.16.1",
-    "pandas-stubs>=2.2.3.250527",
-    "pyrefly>=0.21.0",
-    "pytest>=8.4.0",
-    "pytest-cov>=6.1.1",
-    "pytest-mock>=3.14.1",
     "ruff>=0.12.0",
     "ty>=0.0.1a11",
+    "pyrefly>=0.21.0",
+    "polars>=1.35.2",
+    "pytest>=8.4.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=6.1.1",
+    "pytest-mock>=3.14.1",
+    "langsmith[pytest]>=0.6.3",
+    "openevals>=0.1.2",
     "types-Flask>=1.1.6",
-    "types-simplejson>=3.20.0.20250326",
+    "types-flask-cors>=6.0.0.20250809",
+    "google-cloud-discoveryengine>=0.15.0",
+    "langchain-google-vertexai>=3.2.2",
+    "pandas>=3.0.1",
 ]
 
-gen_convo = [
-      "pandas",
+[tool.pytest.ini_options]
+markers = [
+    "require_repo_secrets: mark test as requiring repository secrets to run",
 ]

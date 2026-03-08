@@ -1,16 +1,9 @@
-import type { IMessage } from "../../../hooks/useMessages";
-
-function sanitizeText(str: string) {
-  // Strips anchor tags
-  str = str.replace(/<a\b[^>]*>(.*?)<\/a>/gi, "$1");
-
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+import {
+  deserializeAiMessage,
+  type TChatMessage,
+  type TUiMessage,
+} from "../../../hooks/useMessages";
+import sanitizeText from "../../../shared/utils/sanitizeText";
 
 function redactText(message: string, wordsToRedact: string) {
   let redactedMessage = message;
@@ -32,8 +25,12 @@ function redactText(message: string, wordsToRedact: string) {
   return redactedMessage;
 }
 
+/**
+ * Submits user feedback along with a redacted chat transcript to the backend.
+ * Builds an HTML transcript, applies word redaction, and sends via FormData.
+ */
 export default async function sendFeedback(
-  messages: IMessage[],
+  messages: TChatMessage[],
   userFeedback: string,
   emailsToCC: string,
   wordsToRedact: string,
@@ -41,11 +38,14 @@ export default async function sendFeedback(
   if (messages.length < 2) return;
 
   const messageChain = messages
+    .filter(
+      (msg): msg is Exclude<TChatMessage, TUiMessage> => msg.type !== "ui",
+    )
     .map(
-      ({ role, content }) =>
+      (msg) =>
         `<p><strong>${
-          role.charAt(0).toUpperCase() + role.slice(1)
-        }</strong>: ${redactText(sanitizeText(content), wordsToRedact)}</p>`,
+          msg.type === "human" ? "User" : "AI"
+        }</strong>: ${redactText(sanitizeText(msg.type === "ai" ? deserializeAiMessage(msg.text) : msg.text), wordsToRedact)}</p>`,
     )
     .join("");
 

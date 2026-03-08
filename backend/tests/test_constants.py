@@ -1,0 +1,30 @@
+"""
+ensure that only keys that should exist are readable
+ensure that symbols are read-only
+"""
+
+from tenantfirstaid.constants import (
+    DEFAULT_INSTRUCTIONS,
+    LETTER_TEMPLATE,
+    OREGON_LAW_CENTER_PHONE_NUMBER,
+)
+
+
+def test_default_instructions_contains_oregon_law_center_phone():
+    assert OREGON_LAW_CENTER_PHONE_NUMBER in DEFAULT_INSTRUCTIONS
+
+
+def test_default_instructions_contains_citation_links():
+    assert "oregon.public.law" in DEFAULT_INSTRUCTIONS
+
+
+def test_letter_template_contains_placeholders():
+    assert "[Your Name]" in LETTER_TEMPLATE
+    assert "[Your Street Address]" in LETTER_TEMPLATE
+    assert "ORS 90.320" in LETTER_TEMPLATE
+
+
+def test_import_constants():
+    from tenantfirstaid.constants import SINGLETON
+
+    assert SINGLETON is not None

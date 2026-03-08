@@ -1,23 +1,26 @@
-import { useEffect, useState } from "react";
-import { IMessage } from "./useMessages";
-import DOMPurify, { SANITIZE_AI_SETTINGS } from "../shared/utils/dompurify";
+import { useMemo } from "react";
+import { TChatMessage } from "./useMessages";
+import type { TResponseChunk } from "../types/MessageTypes";
 
-export function useLetterContent(messages: IMessage[]) {
-  const [letterContent, setLetterContent] = useState("");
+/**
+ * Extracts generated letter content from chat messages by scanning all AI
+ * messages and returning the last letter chunk found.
+ */
+export function useLetterContent(messages: TChatMessage[]) {
+  const letterContent = useMemo(() => {
+    const chunks = messages
+      .filter((msg) => msg.type === "ai")
+      .flatMap((msg) => msg.text.split("\n").filter(Boolean))
+      .flatMap((line) => {
+        try {
+          return [JSON.parse(line) as TResponseChunk];
+        } catch {
+          return []; // Not a JSON chunk — skip.
+        }
+      });
 
-  useEffect(() => {
-    const messageLetters = messages?.filter(
-      (message) =>
-        message.content.split("-----generate letter-----").length === 2,
-    );
-    const latestLetter = messageLetters[messageLetters.length - 1];
-    if (latestLetter) {
-      setLetterContent(
-        DOMPurify.sanitize(latestLetter?.content, SANITIZE_AI_SETTINGS)
-          .split("-----generate letter-----")[1]
-          .trim(),
-      );
-    }
+    const letterChunks = chunks.filter((chunk) => chunk.type === "letter");
+    return letterChunks[letterChunks.length - 1]?.content ?? "";
   }, [messages]);
 
   return { letterContent };

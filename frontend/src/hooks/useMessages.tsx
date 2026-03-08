@@ -1,28 +1,65 @@
 import { useMutation } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import type { AIMessage, HumanMessage } from "@langchain/core/messages";
 
-export interface IMessage {
-  role: "user" | "model";
-  content: string;
-  messageId: string;
+/**
+ * Chat message Type aligned with LangChain's message types
+ * to ensure consistency with backend.
+ */
+export type TChatMessage = HumanMessage | AIMessage | TUiMessage;
+
+/** UI-only message for display purposes; excluded from backend history. */
+export type TUiMessage = {
+  type: "ui";
+  text: string;
+  id: string;
+};
+
+/**
+ * Converts a stored AI message (JSONL chunks) back to plain text for backend
+ * history.
+ */
+export function deserializeAiMessage(text: string): string {
+  return text
+    .split("\n")
+    .filter(Boolean)
+    .flatMap((line) => {
+      try {
+        const chunk = JSON.parse(line);
+        if (["text", "letter"].includes(chunk.type)) return [chunk.content];
+        return [];
+      } catch {
+        return [line]; // plain text
+      }
+    })
+    .join("\n");
 }
 
 async function addNewMessage(
-  messages: IMessage[],
+  messages: TChatMessage[],
   city: string | null,
   state: string,
 ) {
+  const serializedMsg = messages.map((msg) => ({
+    role: msg.type,
+    content: msg.type === "ai" ? deserializeAiMessage(msg.text) : msg.text,
+    id: msg.id,
+  }));
   const response = await fetch("/api/query", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ messages: messages, city, state }),
+    body: JSON.stringify({ messages: serializedMsg, city, state }),
   });
   return response.body?.getReader();
 }
 
+/**
+ * Hook for managing chat messages and sending queries to the backend.
+ * Provides message state, a setter, and a mutation for posting new messages.
+ */
 export default function useMessages() {
-  const [messages, setMessages] = useState<IMessage[]>([]);
+  const [messages, setMessages] = useState<TChatMessage[]>([]);
 
   const addMessage = useMutation({
     mutationFn: async ({
@@ -32,16 +69,14 @@ export default function useMessages() {
       city: string | null;
       state: string;
     }) => {
+      // Exclude UI-only messages and empty placeholders from backend history.
       const filteredMessages = messages.filter(
-        (msg) => msg.content.trim() !== "",
-      ); // Filters out empty bot message
+        (msg): msg is Exclude<TChatMessage, TUiMessage> =>
+          msg.type !== "ui" && msg.text.trim() !== "",
+      );
       return await addNewMessage(filteredMessages, city, state);
     },
   });
-
-  useEffect(() => {
-    setMessages([]);
-  }, []);
 
   return {
     messages,

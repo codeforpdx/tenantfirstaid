@@ -1,7 +1,7 @@
 {
   "name": "tenantfirstaid",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,18 +9,22 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@gsap/react": "^2.1.2",
+    "@langchain/core": "^1.1.24",
     "@tailwindcss/vite": "^4.1.6",
     "@tanstack/react-query": "^5.77.2",
+    "clsx": "^2.1.1",
     "dompurify": "^3.3.0",
     "gsap": "^3.14.2",
     "lucide-react": "^0.562.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.12.0",
+    "remark-breaks": "^4.0.0",
     "tailwindcss": "^4.1.6"
   },
   "devDependencies": {
@@ -30,6 +34,7 @@
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^4.0.15",
     "eslint": "^9.22.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-react-hooks": "^5.2.0",

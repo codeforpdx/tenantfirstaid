@@ -3,6 +3,7 @@ import BackLink from "./shared/components/BackLink";
 import { useEffect } from "react";
 import { CONTACT_EMAIL } from "./shared/constants/constants";
 import { scrollToTop } from "./shared/utils/scrolling";
+import PageSection from "./shared/components/PageSection";
 
 export default function Disclaimer() {
   useEffect(() => {
@@ -10,10 +11,10 @@ export default function Disclaimer() {
   }, []);
 
   return (
-    <div className="flex items-center pt-16 sm:pt-32 sm:pb-16">
-      <div className="relative max-w-2xl m-auto p-8 bg-paper-background rounded-lg shadow-md">
-        <BackLink />
-        <h2 className="text-2xl font-semibold mt-6 mb-2">Disclaimer</h2>
+    <div className="relative max-w-2xl m-auto p-8 bg-paper-background rounded-lg shadow-md">
+      <BackLink />
+
+      <PageSection title="Disclaimer" headingLevel={2}>
         <p>
           These Terms of Service ("<span className="underline">Terms</span>")
           apply to your access to and use of the websites, chatbots,
@@ -38,7 +39,9 @@ export default function Disclaimer() {
           </a>
           .
         </p>
-        <h3 className="text-xl font-semibold my-4">1. Eligibility</h3>
+      </PageSection>
+
+      <PageSection title="1. Eligibility" headingLevel={3}>
         <p>
           You must be at least 18 years of age and a resident of Oregon to
           access or use our Services. If you are under 18 years of age, you may
@@ -49,7 +52,9 @@ export default function Disclaimer() {
           person’s behalf and that the person agrees to be responsible to us if
           you or the other person or entity violates these Terms.
         </p>
-        <h3 className="text-xl font-semibold my-4">2. Privacy</h3>
+      </PageSection>
+
+      <PageSection title="2. Privacy" headingLevel={3}>
         <p>
           Please refer to our{" "}
           <Link
@@ -61,7 +66,13 @@ export default function Disclaimer() {
           for information about how we collect, use and disclose information
           about you.
         </p>
-        <h3 className="text-xl font-semibold my-4">3. User Content</h3>
+      </PageSection>
+
+      <PageSection
+        title="3. User Content"
+        headingLevel={3}
+        className="space-y-4"
+      >
         <p>
           Our Services may allow you to create, store and share information,
           including messages, text and other materials (collectively, "
@@ -69,7 +80,7 @@ export default function Disclaimer() {
           license you grant below, you retain all rights in and to your User
           Content, as between you and Tenant First Aid.
         </p>
-        <p className="my-4">
+        <p>
           You grant Tenant First Aid a nonexclusive, royalty-free, worldwide,
           fully-paid, and sub-licensable license to use, reproduce, modify,
           adapt, translate, create derivative works from and distribute your
@@ -86,16 +97,20 @@ export default function Disclaimer() {
           obligation to screen, edit or monitor User Content, we may delete or
           remove User Content at any time and for any reason.
         </p>
-        <h3 className="text-xl font-semibold my-4">
-          4. Prohibited Conduct and Content
-        </h3>
+      </PageSection>
+
+      <PageSection
+        title="4. Prohibited Conduct and Content"
+        headingLevel={3}
+        className="space-y-4"
+      >
         <p>
           You will not violate any applicable law, contract, intellectual
           property or other third-party right or commit a tort, and you are
           solely responsible for your conduct while accessing or using our
           Services. You will not:
         </p>
-        <ul className="list-disc list-outside my-4 pl-4">
+        <ul className="list-disc list-outside pl-6">
           <li>
             Engage in any harassing, threatening, intimidating, predatory or
             stalking conduct
@@ -130,12 +145,12 @@ export default function Disclaimer() {
             in, encourage or promote any activity that violates these Terms
           </li>
         </ul>
-        <p className="my-4">
+        <p>
           You may also only upload User Content that you have all necessary
           rights to disclose. You may not create, or share any User Content
           that:
         </p>
-        <ul className="list-disc list-outside my-4 pl-4">
+        <ul className="list-disc list-outside pl-6">
           <li>
             Is unlawful, libelous, defamatory, obscene, indecent, lewd,
             suggestive, harassing, threatening, invasive of privacy or publicity
@@ -169,9 +184,13 @@ export default function Disclaimer() {
             of any type
           </li>
         </ul>
-        <h3 className="text-xl font-semibold my-4">
-          5. Limited License; Copyright and Trademark
-        </h3>
+      </PageSection>
+
+      <PageSection
+        title="5. Limited License; Copyright and Trademark"
+        headingLevel={3}
+        className="space-y-4"
+      >
         <p>
           Our Services and the legal information, text, graphics, images,
           photographs, videos, illustrations, trademarks, trade names, service
@@ -200,7 +219,9 @@ export default function Disclaimer() {
           authorized herein, without our prior written permission, is strictly
           prohibited and will terminate the license granted herein.
         </p>
-        <h3 className="text-xl font-semibold my-4">6. Feedback</h3>
+      </PageSection>
+
+      <PageSection title="6. Feedback" headingLevel={3}>
         <p>
           Any questions, comments, suggestions, ideas, original or creative
           materials or other information you submit about Tenant First Aid or
@@ -213,9 +234,9 @@ export default function Disclaimer() {
           commercial or otherwise, without acknowledgment or compensation to
           you.
         </p>
-        <h3 className="text-xl font-semibold my-4">
-          7. Information Not Legal Advice
-        </h3>
+      </PageSection>
+
+      <PageSection title="7. Information Not Legal Advice" headingLevel={3}>
         <p>
           The Services and Tenant First Aid Content provided through the
           Services are not legal advice. Legal information is not the same as
@@ -235,7 +256,9 @@ export default function Disclaimer() {
           between you or any user and Qiu Qiu Law or any of its providers,
           partners or affiliated organizations.
         </p>
-        <h3 className="text-xl font-semibold my-4">8. Indemnification</h3>
+      </PageSection>
+
+      <PageSection title="8. Indemnification" headingLevel={3}>
         <p>
           To the fullest extent permitted by applicable law, you will indemnify,
           defend, and hold harmless Tenant First Aid, Qiu Qiu Law, Code PDX, and
@@ -260,12 +283,18 @@ export default function Disclaimer() {
           set forth in a written agreement between you and Tenant First Aid or
           the other Tenant First Aid Parties.
         </p>
-        <h3 className="text-xl font-semibold my-4">9. Disclaimers</h3>
+      </PageSection>
+
+      <PageSection
+        title="9. Disclaimers"
+        headingLevel={3}
+        className="space-y-4"
+      >
         <p>
           We do not control, endorse or take responsibility for any User Content
           or third-party content available on or linked to by our Services.
         </p>
-        <p className="my-4">
+        <p>
           Your use of our Services is at your sole risk. Our Services are
           provided “as is” and “as available” without warranties of any kind,
           either express or implied, including, but not limited to, implied
@@ -278,9 +307,13 @@ export default function Disclaimer() {
           or other harmful components. You assume the entire risk as to the
           quality and performance of the Services.
         </p>
-        <h3 className="text-xl font-semibold my-4">
-          10. Limitation of Liability
-        </h3>
+      </PageSection>
+
+      <PageSection
+        title="10. Limitation of Liability"
+        headingLevel={3}
+        className="space-y-4"
+      >
         <p>
           Tenant First Aid and the other Tenant First Aid Parties will not be
           liable to you under any theory of liability—whether based in contract,
@@ -290,13 +323,13 @@ export default function Disclaimer() {
           First Aid Parties have been advised of the possibility of such
           damages.
         </p>
-        <p className="my-4">
+        <p>
           The total liability of Tenant First Aid and the other Tenant First Aid
           Parties, for any claim arising out of or relating to these Terms or
           our Services, regardless of the form of the action, is limited to the
           amount paid, if any, by you to access or use our Services.
         </p>
-        <p className="my-4">
+        <p>
           The limitations set forth in this section will not limit or exclude
           liability for the gross negligence, fraud or intentional misconduct of
           Tenant First Aid or the other Tenant First Aid Parties or for any
@@ -305,7 +338,9 @@ export default function Disclaimer() {
           exclusion or limitation of incidental or consequential damages, so the
           above limitations or exclusions may not apply to you.
         </p>
-        <h3 className="text-xl font-semibold my-4">11. Release</h3>
+      </PageSection>
+
+      <PageSection title="11. Release" headingLevel={3}>
         <p>
           To the fullest extent permitted by applicable law, you release Tenant
           First Aid and the other Tenant First Aid Parties from responsibility,
@@ -318,18 +353,18 @@ export default function Disclaimer() {
           to include only those claims which you may know or suspect to exist in
           your favor at the time of agreeing to this release.
         </p>
-        <h3 className="text-xl font-semibold my-4">
-          12. Transfer and Processing Data
-        </h3>
+      </PageSection>
+
+      <PageSection title="12. Transfer and Processing Data" headingLevel={3}>
         <p>
           By accessing or using our Services, you consent to the processing,
           transfer and storage of information about you in and to the United
           States and other countries, where you may not have the same rights and
           protections as you do under local law.
         </p>
-        <h3 className="text-xl font-semibold my-4">
-          13. Electronic Communications
-        </h3>
+      </PageSection>
+
+      <PageSection title="13. Electronic Communications" headingLevel={3}>
         <p>
           By creating a Tenant First Aid account or using the Services, you also
           consent to receive electronic communications from Tenant First Aid
@@ -341,15 +376,19 @@ export default function Disclaimer() {
           legal communication requirements, including, but not limited to, that
           such communications be in writing.
         </p>
-        <h3 className="text-xl font-semibold my-4">
-          14. Dispute Resolution; Binding Arbitration
-        </h3>
+      </PageSection>
+
+      <PageSection
+        title="14. Dispute Resolution; Binding Arbitration"
+        headingLevel={3}
+        className="space-y-4"
+      >
         <p>
           Please read the following section carefully because it requires you to
           arbitrate certain disputes and claims with Tenant First Aid and limits
           the manner in which you can seek relief from us.
         </p>
-        <p className="my-4">
+        <p>
           Except for small claims disputes in which you or Tenant First Aid seek
           to bring an individual action in small claims court located in the
           county of your billing address or disputes in which you or Tenant
@@ -362,21 +401,21 @@ export default function Disclaimer() {
           Multnomah County, Oregon in accordance with the Streamlined
           Arbitration Rules and Procedures ("
           <span className="underline">Rules</span>") of the Judicial Arbitration
-          and Mediation Services ("<span className="underline">JAMS</span>"),
-          which are available on the JAMS website and hereby incorporated by
-          reference. You either acknowledge and agree that you have read and
-          understand the rules of JAMS or waive your opportunity to read the
-          rules of JAMS and any claim that the rules of JAMS are unfair or
-          should not apply for any reason.
+          and Mediation Services ("
+          <span className="underline">JAMS</span>"), which are available on the
+          JAMS website and hereby incorporated by reference. You either
+          acknowledge and agree that you have read and understand the rules of
+          JAMS or waive your opportunity to read the rules of JAMS and any claim
+          that the rules of JAMS are unfair or should not apply for any reason.
         </p>
-        <p className="my-4">
+        <p>
           You and Tenant First Aid agree that any dispute arising out of or
           related to these Terms or our Services is personal to you and Tenant
           First Aid and that any dispute will be resolved solely through
           individual arbitration and will not be brought as a class arbitration,
           class action or any other type of representative proceeding.
         </p>
-        <p className="my-4">
+        <p>
           You and Tenant First Aid agree that these Terms affect interstate
           commerce and that the enforceability of this Section 14 will be
           substantively and procedurally governed by the Federal Arbitration
@@ -400,13 +439,13 @@ export default function Disclaimer() {
           jurisdiction over any appeals and the enforcement of an arbitration
           award.
         </p>
-        <p className="my-4">
+        <p className="font-semibold">
           ANY CLAIM ARISING OUT OF OR RELATED TO THESE TERMS OR OUR SERVICES
           MUST BE FILED WITHIN ONE YEAR AFTER SUCH CLAIM AROSE; OTHERWISE, THE
           CLAIM IS PERMANENTLY BARRED, WHICH MEANS THAT YOU AND TENANT FIRST AID
           WILL NOT HAVE THE RIGHT TO ASSERT THE CLAIM.
         </p>
-        <p className="my-4">
+        <p>
           You have the right to opt out of binding arbitration within thirty
           (30) days of the date you first accepted the terms of this Section 14
           by sending an email to{" "}
@@ -422,9 +461,9 @@ export default function Disclaimer() {
           arbitration. By opting out of binding arbitration, you are agreeing to
           resolve Disputes in accordance with this Section 14.
         </p>
-        <h3 className="text-xl font-semibold my-4">
-          15. Governing Law and Venue
-        </h3>
+      </PageSection>
+
+      <PageSection title="15. Governing Law and Venue" headingLevel={3}>
         <p>
           These Terms and your access to and use of our Services will be
           governed by and construed and enforced in accordance with the laws of
@@ -435,9 +474,9 @@ export default function Disclaimer() {
           court will be resolved in the state or federal courts of Oregon and
           the United States, respectively, sitting in Multnomah County, Oregon.
         </p>
-        <h3 className="text-xl font-semibold my-4">
-          16. Changes to these Terms
-        </h3>
+      </PageSection>
+
+      <PageSection title="16. Changes to these Terms" headingLevel={3}>
         <p>
           We may make changes to these Terms from time to time. If we make
           changes, we will post the amended Terms to our Services and update the
@@ -447,9 +486,12 @@ export default function Disclaimer() {
           acceptance of the changes. If you do not agree to the amended Terms,
           you must stop accessing and using our Services.
         </p>
-        <h3 className="text-xl font-semibold my-4">
-          17. Additional Terms for Specific Services
-        </h3>
+      </PageSection>
+
+      <PageSection
+        title="17. Additional Terms for Specific Services"
+        headingLevel={3}
+      >
         <p>
           In addition to these Terms, we may ask you to accept additional terms
           that apply to specific features, products or services. To the extent
@@ -457,21 +499,27 @@ export default function Disclaimer() {
           govern with respect to your access to or use of the applicable
           feature, product or service.
         </p>
-        <h3 className="text-xl font-semibold my-4">18. Termination</h3>
+      </PageSection>
+
+      <PageSection title="18. Termination" headingLevel={3}>
         <p>
           We reserve the right, without notice and in our sole discretion, to
           terminate your right to access or use our Services. We are not
           responsible for any loss or harm related to your inability to access
           or use our Services.
         </p>
-        <h3 className="text-xl font-semibold my-4">19. Severability</h3>
+      </PageSection>
+
+      <PageSection title="19. Severability" headingLevel={3}>
         <p>
           If any provision or part of a provision of these Terms is unlawful,
           void or unenforceable, that provision or part of the provision is
           deemed severable from these Terms and does not affect the validity and
           enforceability of any remaining provisions.
         </p>
-        <h3 className="text-xl font-semibold my-4">20. Miscellaneous</h3>
+      </PageSection>
+
+      <PageSection title="20. Miscellaneous" headingLevel={3}>
         <p>
           These Terms constitute the entire agreement between you and Tenant
           First Aid relating to your access to and use of our Services. The
@@ -483,7 +531,7 @@ export default function Disclaimer() {
           and are not intended to confer third party beneficiary rights upon any
           other person or entity.
         </p>
-      </div>
+      </PageSection>
     </div>
   );
 }

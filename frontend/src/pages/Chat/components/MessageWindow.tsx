@@ -1,22 +1,27 @@
 import { useEffect, useRef, useState } from "react";
-import type { IMessage } from "../../../hooks/useMessages";
+import type { TChatMessage } from "../../../hooks/useMessages";
 import InputField from "./InputField";
 import MessageContent from "./MessageContent";
 import ExportMessagesButton from "./ExportMessagesButton";
 import InitializationForm from "./InitializationForm";
 import FeedbackModal from "./FeedbackModal";
 import { useLocation } from "react-router-dom";
+import clsx from "clsx";
 
 interface Props {
-  messages: IMessage[];
+  messages: TChatMessage[];
   addMessage: (args: {
     city: string | null;
     state: string;
   }) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
-  setMessages: React.Dispatch<React.SetStateAction<IMessage[]>>;
+  setMessages: React.Dispatch<React.SetStateAction<TChatMessage[]>>;
   isOngoing: boolean;
 }
 
+/**
+ * Main chat view that displays the message list, input field, and action buttons.
+ * Shows the initialization form when no messages exist.
+ */
 export default function MessageWindow({
   messages,
   addMessage,
@@ -30,7 +35,8 @@ export default function MessageWindow({
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const loc = useLocation();
 
-  // To hide initial prompt and response for letter generation
+  // Hides the initial user prompt and AI letter response on the letter page
+  // (index 0 = user prompt, index 1 = AI letter generation).
   const LETTER_PAGE_HIDDEN_MESSAGES = 2;
   const displayedMessages = loc.pathname.startsWith("/letter")
     ? messages.slice(LETTER_PAGE_HIDDEN_MESSAGES)
@@ -56,28 +62,31 @@ export default function MessageWindow({
   return (
     <>
       <div
-        className={`flex-1 ${
-          isOngoing ? "overflow-y-scroll" : "overflow-y-none"
-        }`}
+        className={clsx("flex-1 min-h-0", isOngoing && "overflow-y-scroll")}
         ref={messagesRef}
       >
-        <div className="max-h-[calc(100dvh-var(--message-window-offset)-var(--navbar-height))] mx-auto max-w-[700px]">
+        <div className="mx-auto max-w-[700px]">
           {isOngoing ? (
             <div className="flex flex-col gap-4 relative">
               {displayedMessages.map((message) => {
                 return (
                   <div
-                    className={`flex w-full ${
-                      message.role === "model" ? "justify-start" : "justify-end"
-                    }`}
-                    key={message.messageId}
+                    className={clsx(
+                      "flex w-full",
+                      message.type === "ai" && "justify-start",
+                      message.type === "human" && "justify-end",
+                      message.type === "ui" && "justify-start",
+                    )}
+                    key={message.id}
                   >
                     <div
-                      className={`message-bubble p-3 rounded-2xl max-w-[95%] ${
-                        message.role === "model"
-                          ? "bg-slate-200 rounded-tl-sm"
-                          : "bg-green-dark text-white rounded-tr-sm"
-                      }`}
+                      className={clsx(
+                        "message-bubble p-3 rounded-2xl max-w-[95%]",
+                        message.type === "ai" && "bg-slate-200 rounded-tl-sm",
+                        message.type === "human" &&
+                          "bg-green-dark text-white rounded-tr-sm",
+                        message.type === "ui" && "bg-slate-200 rounded-tl-sm",
+                      )}
                     >
                       <MessageContent message={message} />
                     </div>

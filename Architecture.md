@@ -2,7 +2,7 @@
 
 ## Overview
 
-Tenant First Aid is a chatbot application that provides legal information related to housing and eviction in Oregon. The system uses a Retrieval-Augmented Generation (RAG) architecture to provide accurate, contextual responses based on Oregon housing law documents.
+Tenant First Aid is a chatbot application that provides legal information related to housing and eviction in Oregon. The system uses a Retrieval-Augmented Generation (RAG) architecture to provide accurate, contextual responses based on Oregon housing law documents.  The LangChain framework is used to abstract models and agents.
 
 The application follows a modern web architecture with a Flask-based Python backend serving a React frontend, deployed on Digital Ocean infrastructure.
 
@@ -17,9 +17,11 @@ graph TB
     end
 
     subgraph "AI/ML Services"
-        Gemini[Google Gemini 2.5 Pro<br/>LLM]
-        RAG[Vertex AI RAG<br/>Document Retrieval]
-        Corpus[RAG Corpus<br/>Oregon Housing Law]
+        subgraph "LangChain"
+            Gemini[Google Gemini 2.5 Pro<br/>LLM]
+            RAG[Vertex AI RAG<br/>Document Retrieval]
+            Corpus[RAG Corpus<br/>Oregon Housing Law]
+        end
     end
 
     subgraph "Infrastructure"
@@ -47,50 +49,69 @@ graph TB
 
 ### Overview
 
-The backend is a Flask-based Python application that serves as the API layer for the chatbot. It handles user sessions, manages conversations, and orchestrates interactions with Google's Vertex AI services for RAG-based responses.
+The backend is a Flask-based Python application that serves as the API layer for the chatbot. It handles user sessions, manages conversations.  LangChain orchestrates interactions with Google's Gemini and Vertex AI services for RAG-based responses.
 
 ### Directory/File Structure
 
 ```
 backend/
-├── tenantfirstaid/                 # Main application package
+├── tenantfirstaid/                     # Main application package
 │   ├── __init__.py
-│   ├── app.py                      # Flask application setup and routing
-│   ├── chat.py                     # Chat logic and Gemini integration
-│   ├── citations.py                # Citation handling
-│   ├── session.py                  # Session management
-│   ├── feedback.py                 # Message feedback logic and email integration
-│   └── sections.json               # Legal section mappings
-├── scripts/                        # Utility scripts
-│   ├── create_vector_store.py      # RAG corpus setup
-│   ├── convert_csv_to_jsonl.py     # Data conversion utilities
-│   └── documents/                  # Source legal documents
-│       └── or/                     # Oregon state laws
-│           ├── OAR54.txt           # Oregon Administrative Rules
-│           ├── ORS090.txt          # Oregon Revised Statutes
+│   ├── app.py                          # Flask application setup and routing
+│   ├── chat.py                         # Flask ChatView
+|   ├── schema.py                       # Pydantic response chunk types (TextChunk, LetterChunk, ReasoningChunk)
+|   ├── constants.py                    # Immutable state and consolidated interface to environment variables
+|   ├── location.py                     # City & State normalization and sanitization
+|   ├── langchain_chat_manager.py       # Chat model configuration and response generation
+|   ├── langchain_tools.py              # LangChain Agent tools (i.e. RAG retriever)
+|   ├── citations.py                    # Citation handling
+│   ├── session.py                      # Session management
+│   ├── feedback.py                     # Message feedback logic and email integration
+│   └── sections.json                   # Legal section mappings
+├── scripts/                            # Utility scripts
+│   ├── create_langsmith_dataset.py     # Upload corpus to LangSmith
+│   ├── langsmith_evaluators.py         # LLM-as-a-Judge configuration (i.e. scoring, rubric)
+│   ├── run_langsmith_evaluators.py     # LangSmith experiment runner
+│   ├── simple_langchain_demo.py        # LangChain proof-of-concept
+│   ├── vertex_ai_list_datastores.py    # Utility to get Google Vertex AI Datastore IDs
+│   ├── create_vector_store.py          # RAG corpus setup
+│   ├── convert_csv_to_jsonl.py         # Data conversion utilities
+│   └── documents/                      # Source legal documents
+│       └── or/                         # Oregon state laws
+│           ├── OAR54.txt               # Oregon Administrative Rules
+│           ├── ORS090.txt              # Oregon Revised Statutes
 │           ├── ORS091.txt
 │           ├── ORS105.txt
 │           ├── ORS109.txt
 │           ├── ORS659A.txt
-│           ├── portland/           # Portland city codes
+│           ├── portland/               # Portland city codes
 │           │   └── PCC30.01.txt
-│           └── eugene/             # Eugene city codes
+│           └── eugene/                 # Eugene city codes
 │               └── EHC8.425.txt
-├── tests/                          # Test suite
-├── pyproject.toml                  # Python dependencies and config
-└── Makefile                        # Development commands
+├── tests/                              # Test suite
+├── pyproject.toml                      # Python dependencies and config
+└── Makefile                            # Development commands
 ```
 
 ### RAG (Retrieval-Augmented Generation)
 
-The system uses **Vertex AI RAG (Retrieval-Augmented Generation)**, which combines Google's Vertex AI vector search capabilities with the Gemini 2.5 Pro language model. This is specifically a **grounded generation** approach where the LLM has access to a tool-based retrieval system that searches through a curated corpus of Oregon housing law documents.
+The system uses **LangChain agents** with **Vertex AI RAG** tools for document retrieval. This combines LangChain's agent orchestration with Google's Vertex AI vector search capabilities and the Gemini language model.
 
-**RAG Type and Category:**
+**Architecture Type**: Agent-based RAG with tool calling
+- **Framework**: LangChain 1.1+
+- **LLM Integration**: ChatGoogleGenerativeAI (langchain-google-genai 4.0+)
+- **Agent Pattern**: `create_agent()` with custom RAG tools
+- **Retrieval Method**: Dense vector similarity search with metadata filtering (VertexAISearchRetriever)
 
-- **Architecture Type**: Tool-augmented RAG with function calling
-- **Implementation**: Vertex AI managed RAG service
-- **Retrieval Method**: Dense vector similarity search with semantic matching
-- **Grounding**: Tool-based retrieval integrated directly into Gemini's generation process
+#### Tool-Based Retrieval
+
+The agent has access to three tools:
+
+1. **City-Specific and State Law Retrieval**: Searches documents filtered by city (optional) and state
+2. **Letter Template**: Returns a pre-formatted letter template for the model to fill in
+3. **Generate Letter**: Emits the completed letter as a custom stream chunk for the frontend to render separately from chat text
+
+The LLM decides how to call the tool based on the user's query and location context.
 
 #### Data Ingestion Pipeline
 
@@ -125,12 +146,10 @@ graph LR
 **Data Ingestion Process:**
 
 1. **Document Collection**: Legal documents are stored as text files organized by jurisdiction:
-
    - State laws: `documents/or/*.txt`
    - City codes: `documents/or/portland/*.txt`, `documents/or/eugene/*.txt`
 
 2. **Vector Store Creation**: The `create_vector_store.py` script:
-
    - Processes documents by directory structure
    - Adds metadata attributes (city, state) for filtering
    - Uploads files to Vertex AI RAG corpus
@@ -146,8 +165,8 @@ The query pipeline retrieves relevant legal information and generates responses:
 sequenceDiagram
     participant User
     participant Flask as Flask API
-    participant Session as Session Store
-    participant Gemini as Gemini 2.5 Pro
+    participant Session as Chat Manager
+    participant Gemini
     participant RAG as Vertex AI RAG
     participant Corpus as Document Corpus
 
@@ -167,16 +186,17 @@ sequenceDiagram
 
 1. **Context Preparation**: User query is combined with conversation history and location context
 2. **RAG Retrieval**: Vertex AI RAG searches the document corpus for relevant legal passages
-3. **Response Generation**: Gemini 2.5 Pro generates contextual responses using retrieved documents
+3. **Response Generation**: Gemini generates contextual responses using retrieved documents
 4. **Streaming Response**: Response is streamed back to the client in real-time
 5. **Session Update**: Conversation state is persisted for continuity
 
 ## Multi-Turn Conversation Management
 
-The system maintains conversational context across multiple interactions through a sophisticated session management approach that preserves conversation history while enabling contextual responses.
+The system maintains conversational context across multiple interactions by appending human and AI messages (including reasoning) to follow-up queries.
 
 ### Session Architecture
 
+:construction: TODO: update this section
 ```mermaid
 graph TB
     subgraph "Client Session"
@@ -200,6 +220,32 @@ graph TB
 
 ### Conversation Persistence
 
+**Frontend Message Type:**
+
+The frontend uses LangChain's `HumanMessage` and `AIMessage` classes directly to keep message types consistent with the backend:
+
+```typescript
+import type { AIMessage, HumanMessage } from "@langchain/core/messages";
+
+type TChatMessage = HumanMessage | AIMessage;
+```
+
+LangChain's `BaseMessage` exposes several accessors for message data:
+- `.content` — the raw message content (`string | Array<ContentBlock>`)
+- `.text` — a getter that returns `.content` as a `string` (handles content block arrays)
+- `.type` — the message role (`"human"` or `"ai"`)
+- `.id` — unique message identifier
+
+When serializing messages for the backend API, the hook maps these to the format the backend expects:
+
+```typescript
+const serializedMsg = messages.map((msg) => ({
+  role: msg.type,
+  content: msg.type === "ai" ? deserializeAiMessage(msg.text) : msg.text,
+  id: msg.id,
+}));
+```
+
 **Session Data Structure:**
 
 ```typescript
@@ -208,7 +254,7 @@ interface TenantSessionData {
   state: string; // User's state (default: "or")
   messages: Array<{
     // Complete conversation history
-    role: "user" | "model";
+    role: "human" | "ai";
     content: string;
   }>;
 }
@@ -217,21 +263,19 @@ interface TenantSessionData {
 **Multi-Turn Implementation Details:**
 
 1. **Session Initialization** (`/api/init`):
-
-   - Creates UUID v4 session identifier
+   - Creates UUID v4 session identifier :construction:
    - Initializes empty message array
    - Stores user location context (city/state)
-   - Uses Flask secure session cookies
+   - Uses Flask secure session cookies :construction:
 
 2. **Conversation Flow**:
-
    - Each message exchange appends to `messages` array
    - Complete conversation history sent to Gemini for context
    - Location metadata enables jurisdiction-specific legal advice
 
 3. **Context Preservation**:
-
    - Full message history passed to Gemini API on each request
+     - preserving Reasoning and Thought Signatures
    - System instructions include location-specific context
    - Previous legal advice references maintained across turns
    - Citation links and legal precedents remain accessible
@@ -251,7 +295,7 @@ The application implements real-time response streaming to provide immediate fee
 sequenceDiagram
     participant UI as React Frontend
     participant API as Flask API
-    participant Gemini as Gemini 2.5 Pro
+    participant Gemini as Gemini
     participant RAG as Vertex AI RAG
 
     UI->>API: POST /api/query with user message
@@ -269,95 +313,72 @@ sequenceDiagram
     API->>API: Concatenate full response & update session
 ```
 
-### Backend Streaming Implementation
-
-**Stream Generation** (`chat.py:131-157`):
-
-```python
-def generate():
-    response_stream = self.chat_manager.generate_gemini_chat_response(
-        current_session["messages"],
-        current_session["city"],
-        current_session["state"],
-        stream=True,  # Enable streaming
-    )
-
-    assistant_chunks = []
-    for event in response_stream:
-        # Extract text chunk from Gemini response
-        chunk = event.candidates[0].content.parts[0].text
-        assistant_chunks.append(chunk)
-        yield chunk  # Stream to client
-
-    # Persist complete response
-    assistant_msg = "".join(assistant_chunks)
-    current_session["messages"].append({
-        "role": "model",
-        "content": assistant_msg
-    })
-
-return Response(stream_with_context(generate()), mimetype="text/plain")
-```
-
 ### Frontend Streaming Implementation
 
-**Stream Processing** (`streamHelper.ts:15-80`):
+**Stream Processing** (`streamHelper.ts`):
 
 ```typescript
 async function streamText({
   addMessage,
   setMessages,
-  location,
+  housingLocation,
   setIsLoading,
-}: IStreamTextOptions) {
+}: IStreamTextOptions): Promise<boolean | undefined> {
   const botMessageId = (Date.now() + 1).toString();
 
   setIsLoading?.(true);
 
-  // Add empty bot message that will be updated
+  // Add empty bot message immediately so "Typing..." appears before the API responds.
   setMessages((prev) => [
     ...prev,
-    {
-      role: "model",
-      content: "",
-      messageId: botMessageId,
-    },
+    new AIMessage({ content: "", id: botMessageId }),
   ]);
 
   try {
     const reader = await addMessage({
-      city: location?.city,
-      state: location?.state || "",
+      city: housingLocation?.city,
+      state: housingLocation?.state || "",
     });
-    if (!reader) return;
+    if (!reader) {
+      console.error("Stream reader is unavailable");
+      const nullReaderError: TUiMessage = {
+        type: "ui",
+        text: "Sorry, I encountered an error. Please try again.",
+        id: botMessageId,
+      };
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === botMessageId ? nullReaderError : msg)),
+      );
+      return;
+    }
+
     const decoder = new TextDecoder();
+    let buffer = "";
     let fullText = "";
 
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value);
-      fullText += chunk;
-
-      // Update only the bot's message
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.messageId === botMessageId ? { ...msg, content: fullText } : msg
-        )
-      );
+      if (done) {
+        // Flush any remaining content in the buffer.
+        if (buffer.trim() !== "") processLines([buffer]);
+        return true;
+      }
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      processLines(lines);
     }
   } catch (error) {
     console.error("Error:", error);
-    setMessages((prev) =>
-      prev.map((msg) =>
-        msg.messageId === botMessageId
-          ? {
-              ...msg,
-              content: "Sorry, I encountered an error. Please try again.",
-            }
-          : msg
-      )
-    );
+    const errorMessage: TUiMessage = {
+      type: "ui",
+      text: "Sorry, I encountered an error. Please try again.",
+      id: botMessageId,
+    };
+    setMessages((prev) => [
+      ...prev.filter((msg) => msg.id !== botMessageId),
+      errorMessage,
+    ]);
   } finally {
     setIsLoading?.(false);
   }
@@ -444,29 +465,35 @@ frontend/
 │   │   ├── useMessages.tsx         # Message handling logic
 │   │   ├── useHousingContext.tsx   # Custom hook for housing context
 │   │   └── useLetterContent.tsx    # State management for letter generation
-│   ├── pages/Chat/                 # Chat page components
-│   │   ├── components/
-│   │   │   ├── ChatDisclaimer.tsx # Disclaimer for Chat page
-│   │   │   ├── InitializationForm.tsx # Context information from user
-│   │   │   ├── AutoExpandText.tsx  # Animated Text component
-│   │   │   ├── ExportMessagesButton.tsx # Chat export
-│   │   │   ├── InputField.tsx      # Message input
-│   │   │   ├── FeedbackModal.tsx   # Feedback modal
-│   │   │   ├── MessageContent.tsx  # Message display
-│   │   │   ├── MessageWindow.tsx   # Chat window
-│   │   │   └── SelectField.tsx     # Initialization form select field
-│   │   └── utils/
-│   │       ├── exportHelper.ts     # Export functionality
-│   │       ├── feedbackHelper.tsx  # Feedback functionality
-│   │       ├── formHelper.tsx      # Housing context functionality
-│   │       └── streamHelper.tsx    # Stream functionality
-│   ├── pages/Letter/               # Letter page components
-│   │   ├── components/
-│   │   │   ├── LetterDisclaimer.tsx # Disclaimer for Letter page
-│   │   │   └── LetterGenerationDialog.tsx # Letter page dialog
-│   │   └── utils/
-│   │       └── letterHelper.tsx    # Letter generation functionality
-│   └── shared/                     # Shared components and utils
+│   ├── types/
+│   │   └── MessageTypes.ts         # TypeScript types mirroring backend schema (TResponseChunk, etc.)
+│   ├── layouts/                    # Layouts
+│   │   └── PageLayout.tsx          # Layout for pages
+│   ├── pages/
+│   │   ├── Chat/                   # Chat page components
+│   │   │   ├── components/
+│   │   │   │   ├── ChatDisclaimer.tsx # Disclaimer for Chat page
+│   │   │   │   ├── InitializationForm.tsx # Context information from user
+│   │   │   │   ├── AutoExpandText.tsx  # Animated Text component
+│   │   │   │   ├── ExportMessagesButton.tsx # Chat export
+│   │   │   │   ├── InputField.tsx      # Message input
+│   │   │   │   ├── FeedbackModal.tsx   # Feedback modal
+│   │   │   │   ├── MessageContent.tsx  # Message display
+│   │   │   │   ├── MessageWindow.tsx   # Chat window
+│   │   │   │   └── SelectField.tsx     # Initialization form select field
+│   │   │   └── utils/
+│   │   │       ├── exportHelper.ts     # Export functionality
+│   │   │       ├── feedbackHelper.ts   # Feedback functionality
+│   │   │       ├── formHelper.ts       # Housing context functionality
+│   │   │       └── streamHelper.ts     # Stream functionality
+│   │   ├──Letter/               # Letter page components
+│   │   │   ├── components/
+│   │   │   │   ├── LetterDisclaimer.tsx # Disclaimer for Letter page
+│   │   │   │   └── LetterGenerationDialog.tsx # Letter page dialog
+│   │   │   └── utils/
+│   │   │       └── letterHelper.tsx    # Letter generation functionality
+│   │   └── LoadingPage.tsx             # Loading component for routes
+│   ├── shared/                     # Shared components and utils
 │   │   ├── components/
 │   │   │   ├── Navbar/
 │   │   │   │   ├── Sidebar.tsx     # Navigation for mobile
@@ -477,6 +504,8 @@ frontend/
 │   │   │   ├── DisclaimerLayout.tsx  # Layout for disclaimer components
 │   │   │   ├── FeatureSnippet.tsx  # Features and references component
 │   │   │   ├── MessageContainer.tsx  # Layout for main UI component
+│   │   │   ├── PageSection.tsx     # Layout static page sections component
+│   │   │   ├── SafeMarkdown.tsx    # Safe markdown renderer
 │   │   │   └── TenantFirstAidLogo.tsx # Application logo
 │   │   ├── constants/
 │   │   │   └── constants.ts        # File of constants
@@ -485,18 +514,29 @@ frontend/
 │   │       └── dompurify.ts        # Helper function for sanitizing text
 │   └── tests/                     # Testing suite
 │   │   ├── components/            # Component testing
-│   │   │   ├── About.test.ts      # About component testing
-│   │   │   ├── Chat.test.tsx       # Chat component testing
-│   │   │   ├── ChatDisclaimer.test.ts # ChatDisclaimer component testing
-│   │   │   ├── HousingContext.test.ts # HousingContext component testing
-│   │   │   ├── InitializationForm.test.ts # InitializationForm component testing
-│   │   │   ├── Letter.test.ts      # Letter component testing
-│   │   │   ├── LetterDisclaimer.test.ts # LetterDisclaimer component testing
-│   │   │   └── MessageWindow.test.ts # MessageWindow component testing
+│   │   │   ├── About.test.tsx     # About component testing
+│   │   │   ├── ChatDisclaimer.test.tsx # ChatDisclaimer component testing
+│   │   │   ├── HousingContext.test.tsx # HousingContext component testing
+│   │   │   ├── InitializationForm.test.tsx # InitializationForm component testing
+│   │   │   ├── Letter.test.tsx    # Letter component testing
+│   │   │   ├── LetterDisclaimer.test.tsx # LetterDisclaimer component testing
+│   │   │   ├── LoadingPage.test.tsx # LoadingPage component testing
+│   │   │   ├── MessageContainer.test.tsx # MessageContainer component testing
+│   │   │   ├── MessageContent.test.tsx # MessageContent component testing
+│   │   │   ├── MessageWindow.test.tsx # MessageWindow component testing
+│   │   │   ├── PageLayout.test.tsx # PageLayout component testing
+│   │   │   └── PageSection.test.tsx # PageSection component testing
+│   │   ├── hooks/                 # Hook testing
+│   │   │   ├── useLetterContent.test.tsx # useLetterContent testing
+│   │   │   └── useMessages.test.ts # useMessages testing
 │   │   └── utils/                  # Utility function testing
-│   │       ├── letterHelper.test.ts # letterHelper testing
+│   │       ├── dompurify.test.ts   # dompurify testing
+│   │       ├── exportHelper.test.ts # exportHelper testing
+│   │       ├── feedbackHelper.test.ts # feedbackHelper testing
 │   │       ├── formHelper.test.ts  # formHelper testing
-│   │       └── dompurify.test.ts   # dompurify testing
+│   │       ├── letterHelper.test.ts # letterHelper testing
+│   │       ├── sanitizeText.test.ts # sanitizeText testing
+│   │       └── streamHelper.test.ts # streamHelper testing
 ├── public/
 │   └── favicon.svg                 # Site favicon
 ├── package.json                    # Dependencies and scripts
@@ -553,105 +593,4 @@ graph TB
 
 ## Deployment
 
-### Infrastructure
-
-The application is deployed on Digital Ocean infrastructure with the following setup:
-
-**Server Specifications:**
-
-- **Platform**: Ubuntu LTS 24.04
-- **Resources**: 2 CPUs, 2GB RAM
-- **Provider**: Digital Ocean
-
-**Technology Stack:**
-
-```mermaid
-graph TB
-    subgraph "External Services"
-        Users[Users/Clients]
-        Certbot[Let's Encrypt<br/>SSL Certificates]
-        Porkbun[Porkbun<br/>DNS Provider]
-        GCP[Google Cloud Platform<br/>AI Services]
-    end
-
-    subgraph "Digital Ocean Server"
-        Nginx[Nginx<br/>Reverse Proxy & SSL]
-        Systemd[Systemd<br/>Process Manager]
-        Gunicorn[Gunicorn<br/>WSGI Server]
-        Flask[Flask Application]
-    end
-
-    Users --> Nginx
-    Certbot --> Nginx
-    Porkbun --> Users
-    Nginx --> Gunicorn
-    Systemd --> Gunicorn
-    Gunicorn --> Flask
-    Flask --> GCP
-```
-
-**Service Configuration:**
-
-- **Web Server**: Nginx as reverse proxy with SSL termination
-- **Application Server**: Gunicorn with 10 worker processes
-- **Process Management**: Systemd service for automatic restart and monitoring
-
-### Secrets Management
-
-The application uses environment-based secrets management:
-
-**Configuration Files:**
-
-- **Production**: `/etc/tenantfirstaid/env` - Environment file loaded by systemd service
-- **Development**: `backend/.env` - Local environment file (git-ignored)
-
-**Required Secrets:**
-
-- `FLASK_SECRET_KEY` - Session encryption key
-- `GOOGLE_SERVICE_ACCOUNT_CREDENTIALS_FILE` - Path to GCP service account JSON
-- `GEMINI_RAG_CORPUS` - Vertex AI RAG corpus identifier
-- `GEMINI_RAG_CORPUS_[CITY]` - Vertex AI RAG corpus identifier for a specific location (Optional)
-- `OPENAI_API_KEY` - OpenAI API key (used by data ingestion scripts)
-
-**Security Measures:**
-
-- Environment variables loaded at service startup
-- Service account credentials stored as JSON file
-- SSL/TLS encryption via Let's Encrypt certificates
-- Secure session cookies with HttpOnly and SameSite attributes
-
-**Deployment Architecture:**
-
-```mermaid
-graph LR
-    subgraph "Client"
-        Browser[Web Browser]
-    end
-
-    subgraph "Edge"
-        DNS[Porkbun DNS]
-        SSL[Let's Encrypt]
-    end
-
-    subgraph "Digital Ocean"
-        LB[Nginx<br/>Port 443/80]
-        App[Gunicorn + Flask<br/>Unix Socket]
-        Files[Config Files<br/>/etc/tenantfirstaid/]
-    end
-
-    subgraph "Google Cloud"
-        Vertex[Vertex AI<br/>Gemini + RAG]
-        Auth[Service Account<br/>Authentication]
-    end
-
-    Browser --> DNS
-    DNS --> SSL
-    SSL --> LB
-    LB --> App
-    App --> DB
-    App --> Auth
-    Auth --> Vertex
-    Files --> App
-```
-
-This architecture provides a scalable, secure deployment suitable for serving legal advice to tenants in Oregon while maintaining high availability and performance.
+For full deployment documentation — environments, CI/CD pipeline, secrets management, debugging, permissions, and observability — see [Deployment.md](Deployment.md).

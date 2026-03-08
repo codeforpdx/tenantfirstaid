@@ -1,0 +1,39 @@
+const HEADING_SIZES = {
+  2: "text-2xl",
+  3: "text-xl",
+};
+
+interface Props {
+  title: React.ReactNode;
+  headingLevel: 2 | 3;
+  children: React.ReactNode;
+  className?: string;
+}
+
+/**
+ * A reusable page section component with a dynamic heading level.
+ * Renders h2 or h3 header followed by content.
+ *
+ * @returns A section with a heading and content container
+ */
+export default function PageSection({
+  title,
+  headingLevel,
+  children,
+  className = "",
+}: Props) {
+  const HeadingTag = `h${headingLevel}` as "h2" | "h3";
+
+  return (
+    <>
+      <HeadingTag
+        className={`${HEADING_SIZES[headingLevel]} font-semibold mt-6 mb-2`}
+      >
+        {title}
+      </HeadingTag>
+      <div className={className} id="section-content">
+        {children}
+      </div>
+    </>
+  );
+}
