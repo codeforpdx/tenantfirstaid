@@ -331,3 +331,16 @@ LLM-as-judge has its own biases and can be inconsistent on borderline cases. Rev
 ### Evaluation is too slow
 
 Pass `--max-concurrency 3` (or higher) to run multiple scenarios in parallel, or temporarily reduce the dataset size in LangSmith to evaluate a representative subset.
+
+## Roadmap
+
+- [x] demonstrate basic evaluation flow (CLI-only) on single-turn scenarios
+- [x] use LangSmith web UI to view experimental results
+- [x] capture more info in LangSmith experimental results to enable debugging (aka LLM psycho-analysis)
+- [ ] enable additional evaluators (e.g. citation correctness)
+- [ ] enable LangSmith web UI to edit scenarios
+  - [ ] update facts in existing scenarios to enable additional/better evaluators (e.g. citation correctness)
+- [ ] enable LangSmith web UI to edit evaluators(?)
+- [ ] enable LangSmith web UI to launch experiments(?), e.g. A/B testing
+- [ ] demonstrate evaluation of multi-turn scenarios
+- [ ] enable LangSmith web UI to modify System Prompt (aka `DEFAULT_INSTRUCTIONS`)
