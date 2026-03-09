@@ -1,222 +1,333 @@
 # Automated Evaluation with LangSmith
 
-## Overview
+## What is this and why does it matter?
 
-Tenant First Aid uses LangSmith for automated quality evaluation of legal advice responses. This replaces the previous manual conversation generation workflow (`backend/scripts/generate_conversation`).
+The chatbot gives legal information to tenants. Getting that information wrong — citing the wrong statute, misstating a deadline, using a dismissive tone — has real consequences for real people. We need a systematic way to check quality, not just hope spot-checks catch problems.
 
-## Benefits Over Manual Evaluation
+This system runs a suite of test questions through the chatbot automatically, then uses a second AI model ("LLM-as-a-judge") to score the responses against a known-good reference answer. The result is a pass/fail score for each question, surfaced in an online dashboard.
 
-| Aspect | Manual (`generate_conversation`) | Automated (LangSmith) |
-|--------|----------------------------------|----------------------|
-| **Speed** | Hours to days | Minutes |
-| **Scale** | 10-50 scenarios/session | 100s-1000s of scenarios |
-| **Metrics** | Subjective human review | Quantitative scores (0-1) |
-| **Consistency** | Varies by reviewer | Consistent LLM-as-judge |
-| **Regression Detection** | Manual comparison | Automatic alerts |
-| **CI/CD** | Not integrated | Runs on every PR |
-| **Cost** | $50-100/hr (human time) | $5-10 (LLM judge API) |
+Think of it like a mock client. You hand the chatbot a question you already know the answer to, and measure whether it gets it right.
 
-## Running Evaluations
+```mermaid
+flowchart LR
+    Q["Test question\n(from dataset)"]
+    Bot["Tenant First Aid\nchatbot"]
+    Judge["AI judge\n(LLM-as-a-judge)"]
+    Ref["Reference answer\n(written by humans)"]
+    Score["Score\n(0.0 – 1.0)"]
 
-### One-Time Setup
-
-Create the LangSmith dataset from existing test scenarios:
-
-```bash
-uv run python scripts/create_langsmith_dataset.py
+    Q --> Bot
+    Bot --> Judge
+    Ref --> Judge
+    Judge --> Score
 ```
 
-This uploads test scenarios from `scripts/generate_conversation/tenant_questions_facts_full.csv` to LangSmith.
+---
 
-### Local Development
+## The dataset — the source of truth
 
-Run evaluation on the full dataset:
+The file `evaluate/dataset-tenant-legal-qa-scenarios.jsonl` is the authoritative list of test scenarios. Every scenario contains:
+
+- **The question** — exactly what a tenant might type
+- **Context** — city and state, because tenant law varies by jurisdiction
+- **Reference answer** — a human-verified model conversation showing what a correct, well-toned response looks like
+- **Key facts** — the legal facts the response must get right
+
+This file lives in the git repository so that all contributors share the same set of test cases. Changes to scenarios should be committed here, not left only in the cloud.
+
+### What a scenario looks like
+
+```
+inputs:   { "query": "My landlord hasn't fixed my heat for two weeks — what can I do?",
+            "city": null, "state": "OR" }
+
+outputs:  { "facts":  ["Landlord has failed to repair heating for 14 days",
+                       "ORS 90.365 allows rent reduction after 7 days notice"],
+            "reference_conversation": [ {human turn}, {bot turn} ] }
+```
+
+---
+
+## How data flows through the system
+
+### Running an evaluation
+
+```mermaid
+sequenceDiagram
+    participant JSONL as dataset .jsonl<br/>(git repo)
+    participant LS as LangSmith<br/>(cloud)
+    participant Bot as Tenant First Aid<br/>chatbot
+    participant Judge as AI judge
+
+    JSONL->>LS: push (one-time setup,<br/>or after editing locally)
+    LS->>Bot: send each test question
+    Bot->>LS: chatbot response
+    LS->>Judge: question + response + reference answer
+    Judge->>LS: score (0.0 – 1.0)
+    LS->>LS: store results in experiment
+```
+
+1. The dataset is uploaded to LangSmith (only needed once, or after changes).
+2. LangSmith feeds each test question to the chatbot, one at a time.
+3. The chatbot responds just as it would for a real user.
+4. LangSmith sends the question, the chatbot's response, and the reference answer to the AI judge.
+5. The judge scores the response and LangSmith stores the results.
+6. You review scores in the LangSmith dashboard.
+
+### Editing scenarios and keeping the repo in sync
+
+The LangSmith online editor is the most convenient way to refine a reference answer or reword a test question. But edits made in the browser don't automatically flow back into the git repository. The pull step closes that loop.
+
+```mermaid
+flowchart TD
+    JSONL["dataset-tenant-legal-qa-scenarios.jsonl\n(git — source of truth)"]
+    LS["LangSmith dataset\n(cloud — working copy)"]
+    UI["LangSmith UI\n(browser editor)"]
+    Commit["git commit\n(shared with team)"]
+
+    JSONL -- "dataset push" --> LS
+    LS -- "edit in browser" --> UI
+    UI -- "dataset pull" --> JSONL
+    JSONL --> Commit
+```
+
+**The rule:** anything you change in the browser must be pulled back and committed. The JSONL file is what other contributors see.
+
+---
+
+## Setup
+
+1. Sign up for a free account at https://smith.langchain.com/ (Personal workspace is sufficient).
+2. Generate an API key from your account settings.
+3. Add it to `backend/.env`:
+
+```bash
+LANGSMITH_API_KEY=your-api-key
+```
+
+---
+
+## Dataset management
+
+All dataset operations go through `evaluate/langsmith_dataset.py`. Commands below assume you are in the `backend/` directory.
+
+### Initial push (first-time or after local edits)
+
+```bash
+uv run python evaluate/langsmith_dataset.py dataset push \
+  evaluate/dataset-tenant-legal-qa-scenarios.jsonl \
+  tenant-legal-qa-scenarios
+```
+
+Creates the dataset in LangSmith if it doesn't exist, then uploads all scenarios.
+
+### Pull after editing in the browser
+
+```bash
+uv run python evaluate/langsmith_dataset.py dataset pull \
+  tenant-legal-qa-scenarios \
+  evaluate/dataset-tenant-legal-qa-scenarios.jsonl
+```
+
+Overwrites the local file with whatever is currently in LangSmith. Commit the result.
+
+### Validate the local file
+
+```bash
+uv run python evaluate/langsmith_dataset.py dataset validate \
+  evaluate/dataset-tenant-legal-qa-scenarios.jsonl
+```
+
+Checks every line against the schema before pushing, catching formatting mistakes early.
+
+### Fine-grained scenario operations
+
+```bash
+# List all scenarios (shows scenario_id, tags, and the first 80 characters of the question)
+uv run python evaluate/langsmith_dataset.py scenario list tenant-legal-qa-scenarios
+
+# Append new scenarios from a JSONL file without touching existing ones
+uv run python evaluate/langsmith_dataset.py scenario append \
+  tenant-legal-qa-scenarios new-scenarios.jsonl
+
+# Remove a scenario by its scenario_id
+uv run python evaluate/langsmith_dataset.py scenario remove \
+  tenant-legal-qa-scenarios 42
+```
+
+---
+
+## Running evaluations
 
 ```bash
 cd backend
-uv run python scripts/run_langsmith_evaluation.py
-```
 
-Run a specific experiment:
+# Run evaluation on the full dataset
+uv run python evaluate/run_langsmith_evaluation.py
 
-```bash
-uv run python scripts/run_langsmith_evaluation.py \
+# Run with a custom experiment label (useful for comparing before/after a change)
+uv run python evaluate/run_langsmith_evaluation.py \
   --dataset "tenant-legal-qa-scenarios" \
   --experiment "my-experiment" \
   --num-repetitions 1
 ```
 
+Results appear in the LangSmith dashboard under your dataset's Experiments tab.
+
 ### CI/CD
 
-Because CI runs on PRs from forked repos, those jobs do not have access to repo vars/secrets (i.e. API keys).  Therefore PRs cannot automatically run LangSmith evaluations.
+PRs from forked repos don't have access to repository secrets (including `LANGSMITH_API_KEY`), so evaluations cannot run automatically in CI. Run evaluations locally before submitting a pull request for any change that might affect response quality.
 
-## Metrics Explained
+---
 
-### Citation Accuracy (0.0-1.0) :construction:
-Evaluates if responses include proper citations to Oregon laws.
-- **1.0**: Proper ORS citations with HTML anchor tags
-- **0.5**: Citations present but formatting issues
-- **0.0**: Missing or incorrect citations
+## What the scores mean
 
-**Example passing response:**
-```html
-According to <a href="https://oregon.public.law/statutes/ors_90.427" target="_blank">ORS 90.427</a>,
-landlords must provide 30 days notice for no-cause eviction.
+Each scenario gets a score between 0.0 and 1.0 for each active evaluator. The overall pass rate is the average across all scenarios.
+
+### Legal Correctness
+
+Is the legal information accurate under Oregon tenant law?
+
+| Score | Meaning |
+|-------|---------|
+| 1.0 | Legally accurate |
+| 0.5 | Partially correct or missing important nuance |
+| 0.0 | Legally wrong or misleading |
+
+### Tone
+
+Is the response appropriately professional, accessible, and empathetic?
+
+| Score | Meaning |
+|-------|---------|
+| 1.0 | Gets the tone right |
+| 0.5 | Too formal, too casual, or inconsistent |
+| 0.0 | Dismissive, condescending, or inappropriate |
+
+**Patterns that fail tone evaluation:**
+- Opening with "As a legal expert..." (implies the chatbot is giving legal advice, which it isn't)
+- Dense legal jargon without plain-language explanation
+- Dismissive or condescending phrasing
+
+### Under construction 🚧
+
+These evaluators exist in the code but are disabled pending calibration: citation accuracy, citation format, completeness, tool usage, performance.
+
+---
+
+## How the judge sees each scenario
+
+When the AI judge scores a response, it receives:
+
+```mermaid
+flowchart LR
+    subgraph "What the judge receives"
+        I["inputs\n(question, city, state)"]
+        O["chatbot outputs\n(response text, reasoning,\nsystem prompt)"]
+        R["reference outputs\n(facts, reference conversation)"]
+    end
+    I --> Verdict
+    O --> Verdict
+    R --> Verdict
+    Verdict["Score + rationale"]
 ```
 
-### Legal Correctness (0.0-1.0)
-Evaluates if legal advice is accurate based on Oregon tenant law.
-- **1.0**: Legally accurate advice
-- **0.5**: Partially accurate or incomplete
-- **0.0**: Legally incorrect or misleading
+The judge compares what the chatbot actually said against what it should have said, given the same question and context.
 
-### Completeness (0.0-1.0) :construction:
-Evaluates if response fully addresses the user's question.
-- **1.0**: Comprehensive answer with context
-- **0.5**: Partial answer
-- **0.0**: Off-topic or unhelpful
+---
 
-### Tone (0.0-1.0)
-Evaluates if tone is appropriate for legal advice.
-- **1.0**: Professional, accessible, empathetic
-- **0.5**: Tone issues (too formal/casual)
-- **0.0**: Inappropriate tone
+## Viewing and comparing results
 
-**Anti-patterns:**
-- Starting with "As a legal expert..."
-- Overly technical jargon
-- Dismissive or condescending language
+Open https://smith.langchain.com/ → your dataset → **Experiments** tab.
 
-### Citation Format (Binary) :construction:
-Checks HTML anchor tag format compliance.
-- **Pass**: Uses `<a href="..." target="_blank">ORS X.XXX</a>`
-- **Fail**: Missing anchor tags or incorrect format
+From there you can:
+- See per-scenario scores and the judge's written rationale for each score
+- Compare two experiments side-by-side to measure the impact of a code change
+- Filter to failing scenarios to understand where the chatbot struggles
 
-### Tool Usage (Binary) :construction:
-Checks if agent used RAG retrieval appropriately.
-- **Pass**: Used `retrieve_city_law` or `retrieve_state_law`
-- **Fail**: No retrieval tools used for legal question
+To compare two experiments from the command line:
 
-### Performance :construction:
-Tracks latency and token usage.
-- **Good**: < 5 seconds
-- **Acceptable**: 5-10 seconds
-- **Poor**: > 10 seconds
-
-## Adding New Test Scenarios
-
-1. Edit the CSV file:
 ```bash
-# Edit backend/scripts/generate_conversation/tenant_questions_facts_full.csv
-# Add new row with: first_question, facts, city, state
+uv run python evaluate/langsmith_dataset.py experiment compare \
+  tfa-baseline tfa-my-experiment
 ```
 
-2. Re-upload to LangSmith:
-```bash
-cd backend/scripts
-uv run python create_langsmith_dataset.py --dataset-name tenant-legal-qa-scenarios [--overwrite] [--limit-examples 4]
+---
+
+## Typical workflows
+
+### "I want to check quality before a release"
+
+```mermaid
+flowchart LR
+    A["Run evaluation\nrun_langsmith_evaluation.py"] --> B["Review scores\nin LangSmith UI"]
+    B --> C{Passing?}
+    C -- Yes --> D["Ship it"]
+    C -- No --> E["Investigate failing\nscenarios in UI"]
+    E --> F["Fix chatbot code\nor system prompt"]
+    F --> A
 ```
 
-## Viewing Results
+### "I found a chatbot mistake and want to add a test for it"
 
-### LangSmith Dashboard
-https://smith.langchain.com/
+```mermaid
+flowchart LR
+    A["Write the scenario\n(question + reference answer)"]
+    B["Append to JSONL\nscenario append"]
+    C["Push to LangSmith\ndataset push"]
+    D["Run evaluation\nto confirm it fails"]
+    E["Fix the chatbot"]
+    F["Run evaluation\nto confirm it passes"]
+    G["Commit JSONL + code fix"]
 
-- **Experiments**: Compare runs side-by-side
-- **Datasets**: Manage test scenarios
-- **Traces**: Debug individual responses
-- **Metrics**: Track quality over time
-
-## Dataset Structure
-
-- **Inputs**: query, city, state (what the model receives)
-- **Reference Outputs**: facts, reference_conversation (ground truth)
-
-## Evaluator Run Structure
-- Inputs (to the evaluator, e.g. LLM-as-a-Judge)
-  - **inputs** - `dataset.inputs`
-  - **outputs**
-    - `Model-Under-Test Output`: what the chatbot responded with
-    - `Model-Under-Test Reasoning`: what the chatbot was thinking. Optionally captured for debugging (`SHOW_MODEL_THINKING` env var)
-    - `Model-Under-Test System Prompt`: what the chatbot was given as instructions
-  - **reference_outputs** - `dataset.reference outputs`
-
-### Example Workflow
-
-1. **Make code changes** to improve citation accuracy
-2. **Run evaluation locally**:
-   ```bash
-   uv run python scripts/run_langsmith_evaluation.py --experiment "improve-citations"
-   ```
-3. **View results** in LangSmith dashboard
-4. **Compare** with baseline experiment
-5. **Iterate** based on metrics
-
-## A/B Testing Different Models
-
-Compare Gemini 2.5 Pro vs Claude 3.5 Sonnet:
-
-```bash
-# Baseline: Gemini 2.5 Pro
-uv run python scripts/run_langsmith_evaluation.py \
-  --experiment "baseline-gemini-2.5-pro"
-
-# Update MODEL_NAME environment variable to claude-3-5-sonnet-20241022
-# and LangChainChatManager to use ChatAnthropic
-
-# Experiment: Claude 3.5 Sonnet
-uv run python scripts/run_langsmith_evaluation.py \
-  --experiment "experiment-claude-3.5-sonnet"
-
-# View side-by-side comparison in LangSmith dashboard
+    A --> B --> C --> D --> E --> F --> G
 ```
 
-## Troubleshooting
+### "I want to improve a reference answer using the browser editor"
 
-### Evaluation fails with "Dataset not found"
-Run `uv run python scripts/create_langsmith_dataset.py` to create the dataset.
+```mermaid
+flowchart LR
+    A["Edit in\nLangSmith UI"] --> B["Pull back\ndataset pull"]
+    B --> C["Review diff\nin git"]
+    C --> D["Commit\nupdated JSONL"]
+```
 
-### Scores seem inaccurate
-LLM-as-judge evaluators can have biases. Review specific examples in LangSmith dashboard and refine evaluator prompts in `scripts/langsmith_evaluators.py` if needed.
+---
 
-### Evaluation too slow
-- Reduce `max_concurrency` in `run_langsmith_evaluation.py`
-- Reduce the dataset size in LangSmith to evaluate a subset
-- Consider running full evaluation only before releases
-
-### LANGSMITH_API_KEY not set
-1. Create account at https://smith.langchain.com/
-2. Generate API key from settings
-3. Set environment variable in [.env](../.env)
-   ```bash
-  LANGSMITH_API_KEY=your-api-key
-   ```
-
-## Environment Variables
+## Environment variables
 
 ```bash
-# Required for evaluation
+# Required
 GOOGLE_CLOUD_PROJECT=your-project
 GOOGLE_CLOUD_LOCATION=us-central1
 VERTEX_AI_DATASTORE=projects/.../datastores/...
 LANGSMITH_API_KEY=your-api-key
 
 # Optional
-LANGSMITH_PROJECT=tenant-first-aid-dev  # Project name in LangSmith
+LANGSMITH_PROJECT=tenant-first-aid-dev  # LangSmith project name
 LANGSMITH_TRACING=true
 LANGCHAIN_TRACING_V2=true               # Enable detailed tracing
 MODEL_NAME=gemini-2.5-pro               # Model to evaluate
-SHOW_MODEL_THINKING=true                # capture reasoning in LangSmith Evaluator Run view
+SHOW_MODEL_THINKING=true                # Capture model reasoning in the evaluator run view
 ```
 
-## Best Practices
+---
 
-1. **Run evaluations before major releases** to catch regressions
-2. **Track metrics over time** to monitor quality trends
-3. **Add new test scenarios** when bugs are found in production
-4. **Review failed evaluations** to understand edge cases
-5. **Use A/B testing** when considering model changes
-6. **Set quality thresholds** in CI/CD to prevent quality degradation
+## Troubleshooting
 
-## Questions or Issues?
-Contact the maintainers or open an issue on GitHub.
+### "Dataset not found"
+
+The dataset hasn't been pushed yet. Run:
+```bash
+uv run python evaluate/langsmith_dataset.py dataset push \
+  evaluate/dataset-tenant-legal-qa-scenarios.jsonl \
+  tenant-legal-qa-scenarios
+```
+
+### Scores seem wrong or inconsistent
+
+LLM-as-judge has its own biases and can be inconsistent on borderline cases. Review the judge's written rationale for specific failing scenarios in the LangSmith UI, then refine the evaluator prompts in `evaluate/langsmith_evaluators.py` if the scoring logic is the problem.
+
+### Evaluation is too slow
+
+Pass `--max-concurrency 3` (or higher) to run multiple scenarios in parallel, or temporarily reduce the dataset size in LangSmith to evaluate a representative subset.
