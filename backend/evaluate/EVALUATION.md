@@ -10,11 +10,11 @@ Think of it like a mock client. You hand the chatbot a question you already know
 
 ```mermaid
 flowchart LR
-    Q["Test question\n(from dataset)"]
-    Bot["Tenant First Aid\nchatbot"]
-    Judge["AI judge\n(LLM-as-a-judge)"]
-    Ref["Reference answer\n(written by humans)"]
-    Score["Score\n(0.0 – 1.0)"]
+    Q["Test question<br>(from dataset)"]
+    Bot["Tenant First Aid<br>chatbot"]
+    Judge["AI judge<br>(LLM-as-a-judge)"]
+    Ref["Reference answer<br>(written by humans)"]
+    Score["Score<br>(0.0 – 1.0)"]
 
     Q --> Bot
     Bot --> Judge
@@ -80,10 +80,10 @@ The LangSmith online editor is the most convenient way to refine a reference ans
 
 ```mermaid
 flowchart TD
-    JSONL["dataset-tenant-legal-qa-scenarios.jsonl\n(git — source of truth)"]
-    LS["LangSmith dataset\n(cloud — working copy)"]
-    UI["LangSmith UI\n(browser editor)"]
-    Commit["git commit\n(shared with team)"]
+    JSONL["dataset-tenant-legal-qa-scenarios.jsonl<br>(git — source of truth)"]
+    LS["LangSmith dataset<br>(cloud — working copy)"]
+    UI["LangSmith UI<br>(browser editor)"]
+    Commit["git commit<br>(shared with team)"]
 
     JSONL -- "dataset push" --> LS
     LS -- "edit in browser" --> UI
@@ -222,9 +222,9 @@ When the AI judge scores a response, it receives:
 ```mermaid
 flowchart LR
     subgraph "What the judge receives"
-        I["inputs\n(question, city, state)"]
-        O["chatbot outputs\n(response text, reasoning,\nsystem prompt)"]
-        R["reference outputs\n(facts, reference conversation)"]
+        I["inputs<br>(question, city, state)"]
+        O["chatbot outputs<br>(response text, reasoning,<br>system prompt)"]
+        R["reference outputs<br>(facts, reference conversation)"]
     end
     I --> Verdict
     O --> Verdict
@@ -260,11 +260,11 @@ uv run python evaluate/langsmith_dataset.py experiment compare \
 
 ```mermaid
 flowchart LR
-    A["Run evaluation\nrun_langsmith_evaluation.py"] --> B["Review scores\nin LangSmith UI"]
+    A["Run evaluation<br>run_langsmith_evaluation.py"] --> B["Review scores<br>in LangSmith UI"]
     B --> C{Passing?}
     C -- Yes --> D["Ship it"]
-    C -- No --> E["Investigate failing\nscenarios in UI"]
-    E --> F["Fix chatbot code\nor system prompt"]
+    C -- No --> E["Investigate failing<br>scenarios in UI"]
+    E --> F["Fix chatbot code<br>or system prompt"]
     F --> A
 ```
 
@@ -272,12 +272,12 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A["Write the scenario\n(question + reference answer)"]
-    B["Append to JSONL\nscenario append"]
-    C["Push to LangSmith\ndataset push"]
-    D["Run evaluation\nto confirm it fails"]
+    A["Write the scenario<br>(question + reference answer)"]
+    B["Append to JSONL<br>scenario append"]
+    C["Push to LangSmith<br>dataset push"]
+    D["Run evaluation<br>to confirm it fails"]
     E["Fix the chatbot"]
-    F["Run evaluation\nto confirm it passes"]
+    F["Run evaluation<br>to confirm it passes"]
     G["Commit JSONL + code fix"]
 
     A --> B --> C --> D --> E --> F --> G
@@ -287,9 +287,9 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A["Edit in\nLangSmith UI"] --> B["Pull back\ndataset pull"]
-    B --> C["Review diff\nin git"]
-    C --> D["Commit\nupdated JSONL"]
+    A["Edit in<br>LangSmith UI"] --> B["Pull back<br>dataset pull"]
+    B --> C["Review diff<br>in git"]
+    C --> D["Commit<br>updated JSONL"]
 ```
 
 ---
