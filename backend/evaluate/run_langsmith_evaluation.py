@@ -12,8 +12,7 @@ from typing import Any, Dict, List, Optional
 
 from langchain_core.messages import HumanMessage
 from langsmith import Client, evaluate
-
-from backend.evaluate.langsmith_evaluators import (
+from langsmith_evaluators import (
     # citation_accuracy_evaluator,
     # citation_format_evaluator,
     # completeness_evaluator,
@@ -22,6 +21,7 @@ from backend.evaluate.langsmith_evaluators import (
     tone_evaluator,
     # tool_usage_evaluator,
 )
+
 from tenantfirstaid.constants import SINGLETON
 from tenantfirstaid.langchain_chat_manager import (
     LangChainChatManager,
