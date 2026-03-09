@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 from langchain_core.messages import HumanMessage
 from langsmith import Client, evaluate
 
-from scripts.langsmith_evaluators import (
+from backend.evaluate.langsmith_evaluators import (
     # citation_accuracy_evaluator,
     # citation_format_evaluator,
     # completeness_evaluator,

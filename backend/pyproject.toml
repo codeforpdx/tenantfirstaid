@@ -47,6 +47,7 @@ dev = [
     "google-cloud-discoveryengine>=0.15.0",
     "langchain-google-vertexai>=3.2.2",
     "pandas>=3.0.1",
+    "jsonschema>=4.26.0",
 ]
 
 [tool.pytest.ini_options]
