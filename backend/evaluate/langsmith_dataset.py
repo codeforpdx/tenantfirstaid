@@ -32,6 +32,7 @@ def make_client() -> Client:
     # To target a different workspace, pass its UUID via the workspace_id
     # parameter — there is no name-based workspace resolution in the SDK.
     import dotenv
+
     dotenv.load_dotenv(override=True)
     return Client(api_key=os.getenv("LANGSMITH_API_KEY"))
 
@@ -54,9 +55,10 @@ def cmd_dataset_create(args: argparse.Namespace) -> None:
     if client.has_dataset(dataset_name=args.name):
         print(f"Dataset '{args.name}' already exists.")
         sys.exit(1)
-    else:        
+    else:
         ds = client.create_dataset(dataset_name=args.name)
         print(f"Created '{args.name}' (id: {ds.id}).")
+
 
 def cmd_dataset_delete(args: argparse.Namespace) -> None:
     client = make_client()
@@ -103,11 +105,16 @@ def cmd_dataset_pull(args: argparse.Namespace) -> None:
 
     with local.open("w") as f:
         for ex in examples:
-            f.write(json.dumps({
-                "metadata": ex.metadata,
-                "inputs": ex.inputs,
-                "outputs": ex.outputs,
-            }) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "metadata": ex.metadata,
+                        "inputs": ex.inputs,
+                        "outputs": ex.outputs,
+                    }
+                )
+                + "\n"
+            )
 
     print(f"Pulled {len(examples)} examples from '{args.remote}' to {local}.")
 
@@ -166,7 +173,10 @@ def cmd_dataset_merge(args: argparse.Namespace) -> None:
             metadata=ex.get("metadata"),
             dataset_id=target_ds.id,
         )
-    print(f"Merged {len(to_add)} new examples into '{args.target}' ({len(source_examples) - len(to_add)} already present).")
+    print(
+        f"Merged {len(to_add)} new examples into '{args.target}' ({len(source_examples) - len(to_add)} already present)."
+    )
+
 
 def cmd_dataset_validate(args: argparse.Namespace) -> None:
     schema = json.loads(args.schema.read_text())
@@ -181,6 +191,7 @@ def cmd_dataset_validate(args: argparse.Namespace) -> None:
         print("\n".join(errors), file=sys.stderr)
         sys.exit(1)
     print(f"All records in {args.file} are valid.")
+
 
 # ── scenario subcommands ───────────────────────────────────────────────────────
 
@@ -201,14 +212,20 @@ def cmd_scenario_show(args: argparse.Namespace) -> None:
     ds = client.read_dataset(dataset_name=args.dataset)
     examples = list(client.list_examples(dataset_id=ds.id))
     matches = [
-        ex for ex in examples
+        ex
+        for ex in examples
         if (ex.metadata or {}).get("scenario_id") == args.scenario_id
     ]
     if not matches:
         print(f"Scenario {args.scenario_id} not found.", file=sys.stderr)
         sys.exit(1)
     ex = matches[0]
-    print(json.dumps({"metadata": ex.metadata, "inputs": ex.inputs, "outputs": ex.outputs}, indent=2))
+    print(
+        json.dumps(
+            {"metadata": ex.metadata, "inputs": ex.inputs, "outputs": ex.outputs},
+            indent=2,
+        )
+    )
 
 
 def cmd_scenario_append(args: argparse.Namespace) -> None:
@@ -236,7 +253,8 @@ def cmd_scenario_remove(args: argparse.Namespace) -> None:
     ds = client.read_dataset(dataset_name=args.dataset)
     examples = list(client.list_examples(dataset_id=ds.id))
     matches = [
-        ex for ex in examples
+        ex
+        for ex in examples
         if (ex.metadata or {}).get("scenario_id") == args.scenario_id
     ]
     if not matches:
@@ -251,7 +269,8 @@ def cmd_scenario_update(args: argparse.Namespace) -> None:
     ds = client.read_dataset(dataset_name=args.dataset)
     examples = list(client.list_examples(dataset_id=ds.id))
     matches = [
-        ex for ex in examples
+        ex
+        for ex in examples
         if (ex.metadata or {}).get("scenario_id") == args.scenario_id
     ]
     if not matches:
@@ -284,14 +303,19 @@ def cmd_experiment_list(args: argparse.Namespace) -> None:
 def cmd_experiment_show(args: argparse.Namespace) -> None:
     client = make_client()
     p = client.read_project(project_name=args.experiment)
-    print(json.dumps({
-        "name": p.name,
-        "id": str(p.id),
-        "start_time": str(p.start_time),
-        "end_time": str(p.end_time),
-        "run_count": p.run_count,
-        "feedback_stats": p.feedback_stats,
-    }, indent=2))
+    print(
+        json.dumps(
+            {
+                "name": p.name,
+                "id": str(p.id),
+                "start_time": str(p.start_time),
+                "end_time": str(p.end_time),
+                "run_count": p.run_count,
+                "feedback_stats": p.feedback_stats,
+            },
+            indent=2,
+        )
+    )
 
 
 def cmd_experiment_compare(args: argparse.Namespace) -> None:
@@ -311,12 +335,16 @@ def cmd_experiment_results(args: argparse.Namespace) -> None:
     client = make_client()
     p = client.read_project(project_name=args.experiment)
     for run in client.list_runs(project_id=p.id, execution_order=1):
-        print(json.dumps({
-            "run_id": str(run.id),
-            "inputs": run.inputs,
-            "outputs": run.outputs,
-            "feedback": run.feedback_stats,
-        }))
+        print(
+            json.dumps(
+                {
+                    "run_id": str(run.id),
+                    "inputs": run.inputs,
+                    "outputs": run.outputs,
+                    "feedback": run.feedback_stats,
+                }
+            )
+        )
 
 
 # ── run subcommands ────────────────────────────────────────────────────────────
@@ -332,24 +360,34 @@ def cmd_run_list(args: argparse.Namespace) -> None:
 def cmd_run_show(args: argparse.Namespace) -> None:
     client = make_client()
     run = client.read_run(args.run_id)
-    print(json.dumps({
-        "id": str(run.id),
-        "name": run.name,
-        "status": run.status,
-        "inputs": run.inputs,
-        "outputs": run.outputs,
-        "error": run.error,
-    }, indent=2))
+    print(
+        json.dumps(
+            {
+                "id": str(run.id),
+                "name": run.name,
+                "status": run.status,
+                "inputs": run.inputs,
+                "outputs": run.outputs,
+                "error": run.error,
+            },
+            indent=2,
+        )
+    )
 
 
 def cmd_run_feedback(args: argparse.Namespace) -> None:
     client = make_client()
     for fb in client.list_feedback(run_ids=[args.run_id]):
-        print(json.dumps({
-            "key": fb.key,
-            "score": fb.score,
-            "comment": fb.comment,
-        }, indent=2))
+        print(
+            json.dumps(
+                {
+                    "key": fb.key,
+                    "score": fb.score,
+                    "comment": fb.comment,
+                },
+                indent=2,
+            )
+        )
 
 
 def cmd_run_trace(args: argparse.Namespace) -> None:
@@ -417,9 +455,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("target", metavar="name")
     p.set_defaults(func=cmd_dataset_merge)
 
-    p = ds_sub.add_parser("validate", help="Validate a local JSONL file against the schema.")
+    p = ds_sub.add_parser(
+        "validate", help="Validate a local JSONL file against the schema."
+    )
     p.add_argument("file", type=Path, metavar="file.jsonl")
-    p.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA, help="JSON Schema file (default: %(default)s)")
+    p.add_argument(
+        "--schema",
+        type=Path,
+        default=DEFAULT_SCHEMA,
+        help="JSON Schema file (default: %(default)s)",
+    )
     p.set_defaults(func=cmd_dataset_validate)
 
     # ── scenario ─────────────────────────────────────────────────────────────
@@ -436,7 +481,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("scenario_id", type=int)
     p.set_defaults(func=cmd_scenario_show)
 
-    p = sc_sub.add_parser("append", help="Append scenarios from a JSONL file to a dataset.")
+    p = sc_sub.add_parser(
+        "append", help="Append scenarios from a JSONL file to a dataset."
+    )
     p.add_argument("dataset", metavar="name")
     p.add_argument("file", type=Path, metavar="file.jsonl")
     p.set_defaults(func=cmd_scenario_append)
@@ -502,7 +549,6 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
     args.func(args)
-
 
 
 if __name__ == "__main__":
