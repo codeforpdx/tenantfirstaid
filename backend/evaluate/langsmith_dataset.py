@@ -16,6 +16,7 @@ Usage examples:
 import argparse
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -48,6 +49,17 @@ def _tabulate(
         print("  " + "  ".join("-" * w for w in widths))
     for row in rows:
         print(fmt(row))
+
+
+def _git_is_clean(path: Path) -> bool:
+    """Return True if path has no uncommitted changes according to git."""
+    result = subprocess.run(
+        ["git", "status", "--porcelain", str(path.resolve())],
+        capture_output=True,
+        text=True,
+        cwd=EVALUATE_DIR,
+    )
+    return result.returncode == 0 and not result.stdout.strip()
 
 
 def make_client() -> Client:
@@ -126,13 +138,24 @@ def cmd_dataset_push(args: argparse.Namespace) -> None:
 
 def cmd_dataset_pull(args: argparse.Namespace) -> None:
     local: Path = args.file
-    client = make_client()
 
+    if local.exists() and not args.force and not _git_is_clean(local):
+        print(
+            f"error: {local.name} has uncommitted changes. Commit first or pass --force.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    client = make_client()
     ds = client.read_dataset(dataset_name=args.remote)
     examples = sorted(
         client.list_examples(dataset_id=ds.id),
         key=lambda e: (e.metadata or {}).get("scenario_id", 0),
     )
+
+    if args.dry_run:
+        print(f"Would pull {len(examples)} examples from '{args.remote}' to {local}.")
+        return
 
     with local.open("w") as f:
         for ex in examples:
@@ -351,15 +374,30 @@ def cmd_experiment_show(args: argparse.Namespace) -> None:
 
 def cmd_experiment_compare(args: argparse.Namespace) -> None:
     client = make_client()
-    projects = [
+    p1, p2 = [
         client.read_project(project_name=name)
         for name in (args.experiment1, args.experiment2)
     ]
-    for p in projects:
-        print(f"\n{p.name}")
-        print(f"  runs:     {p.run_count}")
-        for key, stats in (p.feedback_stats or {}).items():
-            print(f"  {key}: {stats}")
+
+    def fmt_stats(stats: dict | None) -> str:
+        if not stats:
+            return "—"
+        avg = stats.get("avg")
+        return f"{avg:.1%}" if avg is not None else str(stats)
+
+    all_keys = sorted(
+        set((p1.feedback_stats or {}).keys()) | set((p2.feedback_stats or {}).keys())
+    )
+    rows: list[tuple[str, ...]] = [
+        ("runs", str(p1.run_count or 0), str(p2.run_count or 0))
+    ]
+    for key in all_keys:
+        rows.append((
+            key.removeprefix("feedback."),
+            fmt_stats((p1.feedback_stats or {}).get(key)),
+            fmt_stats((p2.feedback_stats or {}).get(key)),
+        ))
+    _tabulate(rows, headers=("METRIC", p1.name or args.experiment1, p2.name or args.experiment2))
 
 
 def cmd_experiment_results(args: argparse.Namespace) -> None:
@@ -516,6 +554,16 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_JSONL,
         metavar="file.jsonl",
         help=f"Local file to write (default: {DEFAULT_JSONL.name})",
+    )
+    p.add_argument(
+        "--force", "-f",
+        action="store_true",
+        help="Overwrite local file even if it has uncommitted changes.",
+    )
+    p.add_argument(
+        "--dry-run", "-n",
+        action="store_true",
+        help="Show what would be pulled without writing the file.",
     )
     p.set_defaults(func=cmd_dataset_pull)
 
