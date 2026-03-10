@@ -45,7 +45,15 @@ See `backend/.env.example`. Key ones: `MODEL_NAME`, `GOOGLE_APPLICATION_CREDENTI
 ### LangSmith evaluations
 
 ```bash
-uv run python scripts/run_langsmith_evaluation.py --num-samples 20
+# Run LangChain-specific tests
+uv run pytest -m langchain
+
+# Run with LangSmith tracing (requires API key)
+LANGSMITH_TRACING=true LANGCHAIN_TRACING_V2=true uv run pytest -m langchain
+
+# Run evaluations (see backend/evaluate/EVALUATION.md)
+cd evaluate
+uv run run_langsmith_evaluation.py --num-repetitions 20
 ```
 
 See `docs/EVALUATION.md` for details.
