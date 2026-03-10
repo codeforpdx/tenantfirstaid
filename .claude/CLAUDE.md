@@ -52,8 +52,7 @@ uv run pytest -m langchain
 LANGSMITH_TRACING=true LANGCHAIN_TRACING_V2=true uv run pytest -m langchain
 
 # Run evaluations (see backend/evaluate/EVALUATION.md)
-cd evaluate
-uv run run_langsmith_evaluation.py --num-repetitions 20
+uv run python -m evaluate.run_langsmith_evaluation --num-repetitions 20
 ```
 
 See `docs/EVALUATION.md` for details.

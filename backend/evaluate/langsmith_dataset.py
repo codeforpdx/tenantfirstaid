@@ -19,6 +19,7 @@ import os
 import sys
 from pathlib import Path
 
+import dotenv
 import jsonschema
 from langsmith import Client
 from langsmith import utils as langsmith_utils
@@ -31,8 +32,6 @@ def make_client() -> Client:
     # The Client targets the workspace associated with LANGSMITH_API_KEY.
     # To target a different workspace, pass its UUID via the workspace_id
     # parameter — there is no name-based workspace resolution in the SDK.
-    import dotenv
-
     dotenv.load_dotenv(override=True)
     return Client(api_key=os.getenv("LANGSMITH_API_KEY"))
 
@@ -83,17 +82,24 @@ def cmd_dataset_push(args: argparse.Namespace) -> None:
 
     try:
         ds = client.read_dataset(dataset_name=args.remote)
-    except Exception:
+    except langsmith_utils.LangSmithNotFoundError:
         ds = client.create_dataset(dataset_name=args.remote)
 
-    for ex in examples:
+    existing_ids = {
+        _scenario_id({"metadata": ex.metadata})
+        for ex in client.list_examples(dataset_id=ds.id)
+    }
+    to_add = [ex for ex in examples if _scenario_id(ex) not in existing_ids]
+    for ex in to_add:
         client.create_example(
             inputs=ex["inputs"],
             outputs=ex["outputs"],
             metadata=ex.get("metadata"),
             dataset_id=ds.id,
         )
-    print(f"Pushed {len(examples)} examples to '{args.remote}'.")
+    print(
+        f"Pushed {len(to_add)} new examples to '{args.remote}' ({len(examples) - len(to_add)} already present)."
+    )
 
 
 def cmd_dataset_pull(args: argparse.Namespace) -> None:
@@ -101,7 +107,10 @@ def cmd_dataset_pull(args: argparse.Namespace) -> None:
     client = make_client()
 
     ds = client.read_dataset(dataset_name=args.remote)
-    examples = list(client.list_examples(dataset_id=ds.id))
+    examples = sorted(
+        client.list_examples(dataset_id=ds.id),
+        key=lambda e: (e.metadata or {}).get("scenario_id", 0),
+    )
 
     with local.open("w") as f:
         for ex in examples:
