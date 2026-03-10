@@ -26,6 +26,28 @@ from langsmith import utils as langsmith_utils
 
 EVALUATE_DIR = Path(__file__).parent
 DEFAULT_SCHEMA = EVALUATE_DIR / "langsmith_scenario_schema.json"
+DEFAULT_DATASET_NAME = "tenant-legal-qa-scenarios"
+DEFAULT_JSONL = EVALUATE_DIR / "dataset-tenant-legal-qa-scenarios.jsonl"
+
+
+def _tabulate(
+    rows: list[tuple[str, ...]], headers: tuple[str, ...] | None = None
+) -> None:
+    """Print rows in aligned columns, optionally with a header row and separator."""
+    all_rows = (([headers] if headers else []) + rows) or []
+    if not all_rows:
+        return
+    ncols = len(all_rows[0])
+    widths = [max(len(r[i]) for r in all_rows) for i in range(ncols)]
+
+    def fmt(row: tuple[str, ...]) -> str:
+        return "  " + "  ".join(cell.ljust(widths[i]) for i, cell in enumerate(row))
+
+    if headers:
+        print(fmt(headers))
+        print("  " + "  ".join("-" * w for w in widths))
+    for row in rows:
+        print(fmt(row))
 
 
 def make_client() -> Client:
@@ -45,8 +67,8 @@ def cmd_dataset_list(args: argparse.Namespace) -> None:
     if not datasets:
         print("No datasets found.")
         return
-    for ds in datasets:
-        print(f"  {ds.name}   (id: {ds.id})")
+    headers = None if args.no_header else ("NAME", "UUID")
+    _tabulate([(ds.name or "", str(ds.id)) for ds in datasets], headers=headers)
 
 
 def cmd_dataset_create(args: argparse.Namespace) -> None:
@@ -56,7 +78,7 @@ def cmd_dataset_create(args: argparse.Namespace) -> None:
         sys.exit(1)
     else:
         ds = client.create_dataset(dataset_name=args.name)
-        print(f"Created '{args.name}' (id: {ds.id}).")
+        print(f"Created '{args.name}' (uuid: {ds.id}).")
 
 
 def cmd_dataset_delete(args: argparse.Namespace) -> None:
@@ -209,32 +231,32 @@ def cmd_scenario_list(args: argparse.Namespace) -> None:
     client = make_client()
     ds = client.read_dataset(dataset_name=args.dataset)
     examples = list(client.list_examples(dataset_id=ds.id))
+    rows = []
     for ex in sorted(examples, key=lambda e: (e.metadata or {}).get("scenario_id", 0)):
-        sid = (ex.metadata or {}).get("scenario_id", "?")
-        tags = (ex.metadata or {}).get("tags", [])
+        sid = str((ex.metadata or {}).get("scenario_id", "?")).rjust(4)
+        tags = str((ex.metadata or {}).get("tags", []))
         query = (ex.inputs or {}).get("query", "")[:80]
-        print(f"  {sid:>4}  {str(tags):<40}  {query}")
+        rows.append((sid, tags, query))
+    headers = None if args.no_header else ("ID", "TAGS", "QUERY")
+    _tabulate(rows, headers=headers)
 
 
 def cmd_scenario_show(args: argparse.Namespace) -> None:
-    client = make_client()
-    ds = client.read_dataset(dataset_name=args.dataset)
-    examples = list(client.list_examples(dataset_id=ds.id))
-    matches = [
-        ex
-        for ex in examples
-        if (ex.metadata or {}).get("scenario_id") == args.scenario_id
-    ]
+    ref = args.dataset
+    if isinstance(ref, Path):
+        examples = [
+            json.loads(line)
+            for line in ref.read_text().splitlines()
+            if line.strip() and not line.startswith("//")
+        ]
+    else:
+        examples = _load_examples(ref, make_client())
+
+    matches = [ex for ex in examples if _scenario_id(ex) == args.scenario_id]
     if not matches:
         print(f"Scenario {args.scenario_id} not found.", file=sys.stderr)
         sys.exit(1)
-    ex = matches[0]
-    print(
-        json.dumps(
-            {"metadata": ex.metadata, "inputs": ex.inputs, "outputs": ex.outputs},
-            indent=2,
-        )
-    )
+    print(json.dumps(matches[0], indent=2))
 
 
 def cmd_scenario_append(args: argparse.Namespace) -> None:
@@ -305,8 +327,8 @@ def cmd_experiment_list(args: argparse.Namespace) -> None:
     if not projects:
         print("No experiments found.")
         return
-    for p in projects:
-        print(f"  {p.name}  (id: {p.id})")
+    headers = None if args.no_header else ("NAME", "UUID")
+    _tabulate([(p.name or "", str(p.id)) for p in projects], headers=headers)
 
 
 def cmd_experiment_show(args: argparse.Namespace) -> None:
@@ -362,8 +384,14 @@ def cmd_experiment_results(args: argparse.Namespace) -> None:
 def cmd_run_list(args: argparse.Namespace) -> None:
     client = make_client()
     p = client.read_project(project_name=args.experiment)
-    for run in client.list_runs(project_id=p.id, execution_order=1):
-        print(f"  {run.id}  {run.name}  status={run.status}")
+    headers = None if args.no_header else ("UUID", "NAME", "STATUS")
+    _tabulate(
+        [
+            (str(run.id), run.name or "", run.status or "")
+            for run in client.list_runs(project_id=p.id, execution_order=1)
+        ],
+        headers=headers,
+    )
 
 
 def cmd_run_show(args: argparse.Namespace) -> None:
@@ -434,40 +462,105 @@ def build_parser() -> argparse.ArgumentParser:
     ds_sub.required = True
 
     p = ds_sub.add_parser("list", help="List datasets.")
+    p.add_argument("--no-header", action="store_true", help="Suppress column headers.")
     p.set_defaults(func=cmd_dataset_list)
 
     p = ds_sub.add_parser("create", help="Create a new empty dataset.")
-    p.add_argument("name", metavar="name")
+    p.add_argument(
+        "name",
+        nargs="?",
+        default=DEFAULT_DATASET_NAME,
+        help=f"LangSmith dataset name (default: {DEFAULT_DATASET_NAME})",
+    )
     p.set_defaults(func=cmd_dataset_create)
 
     p = ds_sub.add_parser("delete", help="Delete a dataset.")
-    p.add_argument("name", metavar="name")
+    p.add_argument(
+        "name",
+        nargs="?",
+        default=DEFAULT_DATASET_NAME,
+        help=f"LangSmith dataset name (default: {DEFAULT_DATASET_NAME})",
+    )
     p.set_defaults(func=cmd_dataset_delete)
 
     p = ds_sub.add_parser("push", help="Upload a local JSONL file to a dataset.")
-    p.add_argument("file", type=Path, metavar="file.jsonl")
-    p.add_argument("remote", metavar="name")
+    p.add_argument(
+        "file",
+        type=Path,
+        nargs="?",
+        default=DEFAULT_JSONL,
+        metavar="file.jsonl",
+        help=f"Local JSONL file to upload (default: {DEFAULT_JSONL.name})",
+    )
+    p.add_argument(
+        "remote",
+        nargs="?",
+        default=DEFAULT_DATASET_NAME,
+        metavar="name",
+        help=f"LangSmith dataset name (default: {DEFAULT_DATASET_NAME})",
+    )
     p.set_defaults(func=cmd_dataset_push)
 
     p = ds_sub.add_parser("pull", help="Download a dataset to a local JSONL file.")
-    p.add_argument("remote", metavar="name")
-    p.add_argument("file", type=Path, metavar="file.jsonl")
+    p.add_argument(
+        "remote",
+        nargs="?",
+        default=DEFAULT_DATASET_NAME,
+        metavar="name",
+        help=f"LangSmith dataset name (default: {DEFAULT_DATASET_NAME})",
+    )
+    p.add_argument(
+        "file",
+        type=Path,
+        nargs="?",
+        default=DEFAULT_JSONL,
+        metavar="file.jsonl",
+        help=f"Local file to write (default: {DEFAULT_JSONL.name})",
+    )
     p.set_defaults(func=cmd_dataset_pull)
 
     p = ds_sub.add_parser("diff", help="Diff two datasets by scenario_id.")
-    p.add_argument("left", type=local_or_remote, metavar="name|file.jsonl")
-    p.add_argument("right", type=local_or_remote, metavar="name|file.jsonl")
+    p.add_argument(
+        "left",
+        type=local_or_remote,
+        metavar="name|file.jsonl",
+        help="Left side: dataset name or local JSONL file.",
+    )
+    p.add_argument(
+        "right",
+        type=local_or_remote,
+        metavar="name|file.jsonl",
+        help="Right side: dataset name or local JSONL file.",
+    )
     p.set_defaults(func=cmd_dataset_diff)
 
     p = ds_sub.add_parser("merge", help="Copy new scenarios from source into target.")
-    p.add_argument("source", type=local_or_remote, metavar="name|file.jsonl")
-    p.add_argument("target", metavar="name")
+    p.add_argument(
+        "source",
+        type=local_or_remote,
+        metavar="name|file.jsonl",
+        help="Source dataset name or local JSONL file to copy from.",
+    )
+    p.add_argument(
+        "target",
+        nargs="?",
+        default=DEFAULT_DATASET_NAME,
+        metavar="name",
+        help=f"Target LangSmith dataset name (default: {DEFAULT_DATASET_NAME})",
+    )
     p.set_defaults(func=cmd_dataset_merge)
 
     p = ds_sub.add_parser(
         "validate", help="Validate a local JSONL file against the schema."
     )
-    p.add_argument("file", type=Path, metavar="file.jsonl")
+    p.add_argument(
+        "file",
+        type=Path,
+        nargs="?",
+        default=DEFAULT_JSONL,
+        metavar="file.jsonl",
+        help=f"Local JSONL file to validate (default: {DEFAULT_JSONL.name})",
+    )
     p.add_argument(
         "--schema",
         type=Path,
@@ -482,30 +575,76 @@ def build_parser() -> argparse.ArgumentParser:
     sc_sub.required = True
 
     p = sc_sub.add_parser("list", help="List scenarios in a dataset.")
-    p.add_argument("dataset", metavar="name")
+    p.add_argument(
+        "dataset",
+        nargs="?",
+        default=DEFAULT_DATASET_NAME,
+        metavar="name",
+        help=f"LangSmith dataset name (default: {DEFAULT_DATASET_NAME})",
+    )
+    p.add_argument("--no-header", action="store_true", help="Suppress column headers.")
     p.set_defaults(func=cmd_scenario_list)
 
     p = sc_sub.add_parser("show", help="Print a single scenario.")
-    p.add_argument("dataset", metavar="name")
-    p.add_argument("scenario_id", type=int)
+    p.add_argument(
+        "dataset",
+        type=local_or_remote,
+        nargs="?",
+        default=DEFAULT_JSONL,
+        metavar="name|file.jsonl",
+        help=f"Dataset name or local JSONL file (default: {DEFAULT_JSONL.name})",
+    )
+    p.add_argument("scenario_id", type=int, help="scenario_id from metadata.")
     p.set_defaults(func=cmd_scenario_show)
 
     p = sc_sub.add_parser(
         "append", help="Append scenarios from a JSONL file to a dataset."
     )
-    p.add_argument("dataset", metavar="name")
-    p.add_argument("file", type=Path, metavar="file.jsonl")
+    p.add_argument(
+        "dataset",
+        nargs="?",
+        default=DEFAULT_DATASET_NAME,
+        metavar="name",
+        help=f"LangSmith dataset name (default: {DEFAULT_DATASET_NAME})",
+    )
+    p.add_argument(
+        "file",
+        type=Path,
+        nargs="?",
+        default=DEFAULT_JSONL,
+        metavar="file.jsonl",
+        help=f"Local JSONL file containing scenarios to append (default: {DEFAULT_JSONL.name})",
+    )
     p.set_defaults(func=cmd_scenario_append)
 
     p = sc_sub.add_parser("remove", help="Remove a scenario by scenario_id.")
-    p.add_argument("dataset", metavar="name")
-    p.add_argument("scenario_id", type=int)
+    p.add_argument(
+        "dataset",
+        nargs="?",
+        default=DEFAULT_DATASET_NAME,
+        metavar="name",
+        help=f"LangSmith dataset name (default: {DEFAULT_DATASET_NAME})",
+    )
+    p.add_argument("scenario_id", type=int, help="scenario_id from metadata.")
     p.set_defaults(func=cmd_scenario_remove)
 
     p = sc_sub.add_parser("update", help="Update a scenario from a JSONL file.")
-    p.add_argument("dataset", metavar="name")
-    p.add_argument("scenario_id", type=int)
-    p.add_argument("file", type=Path, metavar="file.jsonl")
+    p.add_argument(
+        "dataset",
+        nargs="?",
+        default=DEFAULT_DATASET_NAME,
+        metavar="name",
+        help=f"LangSmith dataset name (default: {DEFAULT_DATASET_NAME})",
+    )
+    p.add_argument("scenario_id", type=int, help="scenario_id from metadata.")
+    p.add_argument(
+        "file",
+        type=Path,
+        nargs="?",
+        default=DEFAULT_JSONL,
+        metavar="file.jsonl",
+        help=f"Local JSONL file containing the updated scenario (default: {DEFAULT_JSONL.name})",
+    )
     p.set_defaults(func=cmd_scenario_update)
 
     # ── experiment ───────────────────────────────────────────────────────────
@@ -514,41 +653,49 @@ def build_parser() -> argparse.ArgumentParser:
     ex_sub.required = True
 
     p = ex_sub.add_parser("list", help="List experiments run against a dataset.")
-    p.add_argument("dataset", metavar="name")
+    p.add_argument(
+        "dataset",
+        nargs="?",
+        default=DEFAULT_DATASET_NAME,
+        metavar="name",
+        help=f"LangSmith dataset name (default: {DEFAULT_DATASET_NAME})",
+    )
+    p.add_argument("--no-header", action="store_true", help="Suppress column headers.")
     p.set_defaults(func=cmd_experiment_list)
 
     p = ex_sub.add_parser("show", help="Print aggregate results for an experiment.")
-    p.add_argument("experiment", metavar="name")
+    p.add_argument("experiment", metavar="name", help="LangSmith experiment name.")
     p.set_defaults(func=cmd_experiment_show)
 
     p = ex_sub.add_parser("compare", help="Compare scores for two experiments.")
-    p.add_argument("experiment1", metavar="name")
-    p.add_argument("experiment2", metavar="name")
+    p.add_argument("experiment1", metavar="name", help="First experiment name.")
+    p.add_argument("experiment2", metavar="name", help="Second experiment name.")
     p.set_defaults(func=cmd_experiment_compare)
 
     p = ex_sub.add_parser("results", help="Print per-scenario results as JSONL.")
-    p.add_argument("experiment", metavar="name")
+    p.add_argument("experiment", metavar="name", help="LangSmith experiment name.")
     p.set_defaults(func=cmd_experiment_results)
 
-    # ── run ──────────────────────────────────────────────────────────────────
-    run_parser = nouns.add_parser("run", help="Inspect individual runs.")
-    run_sub = run_parser.add_subparsers(dest="verb", metavar="SUBCOMMAND")
-    run_sub.required = True
+    # ── runs ──────────────────────────────────────────────────────────────────
+    runs_parser = nouns.add_parser("runs", help="Inspect individual runs.")
+    runs_sub = runs_parser.add_subparsers(dest="verb", metavar="SUBCOMMAND")
+    runs_sub.required = True
 
-    p = run_sub.add_parser("list", help="List runs in an experiment.")
-    p.add_argument("experiment", metavar="name")
+    p = runs_sub.add_parser("list", help="List runs in an experiment.")
+    p.add_argument("experiment", metavar="name", help="LangSmith experiment name.")
+    p.add_argument("--no-header", action="store_true", help="Suppress column headers.")
     p.set_defaults(func=cmd_run_list)
 
-    p = run_sub.add_parser("show", help="Print inputs, outputs, and status for a run.")
-    p.add_argument("run_id")
+    p = runs_sub.add_parser("show", help="Print inputs, outputs, and status for a run.")
+    p.add_argument("run_id", help="LangSmith run UUID.")
     p.set_defaults(func=cmd_run_show)
 
-    p = run_sub.add_parser("feedback", help="Print evaluator scores for a run.")
-    p.add_argument("run_id")
+    p = runs_sub.add_parser("feedback", help="Print evaluator scores for a run.")
+    p.add_argument("run_id", help="LangSmith run UUID.")
     p.set_defaults(func=cmd_run_feedback)
 
-    p = run_sub.add_parser("trace", help="Print the full call tree for a run.")
-    p.add_argument("run_id")
+    p = runs_sub.add_parser("trace", help="Print the full call tree for a run.")
+    p.add_argument("run_id", help="LangSmith run UUID.")
     p.set_defaults(func=cmd_run_trace)
 
     return parser
