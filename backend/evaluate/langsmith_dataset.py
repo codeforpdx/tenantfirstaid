@@ -24,7 +24,7 @@ from langsmith import Client
 from langsmith import utils as langsmith_utils
 
 EVALUATE_DIR = Path(__file__).parent
-DEFAULT_SCHEMA = EVALUATE_DIR / "langsmith_dataset_schema.json"
+DEFAULT_SCHEMA = EVALUATE_DIR / "langsmith_scenario_schema.json"
 
 
 def make_client() -> Client:

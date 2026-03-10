@@ -58,8 +58,9 @@ uv run pytest -m langchain
 # Run with LangSmith tracing (requires API key)
 LANGSMITH_TRACING=true LANGCHAIN_TRACING_V2=true uv run pytest -m langchain
 
-# Run evaluations (see docs/EVALUATION.md)
-uv run python scripts/run_langsmith_evaluation.py --num-samples 20
+# Run evaluations (see backend/evaluate/EVALUATION.md)
+cd evaluate
+uv run run_langsmith_evaluation.py --num-repetitions 20
 ```
 
 ## Local `./frontend` workflow

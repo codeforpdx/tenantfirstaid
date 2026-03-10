@@ -26,7 +26,7 @@ flowchart LR
 
 ## The dataset — the source of truth
 
-The file `evaluate/dataset-tenant-legal-qa-scenarios.jsonl` is the authoritative list of test scenarios. Every scenario contains:
+The file `dataset-tenant-legal-qa-scenarios.jsonl` is the authoritative list of test scenarios. Every scenario contains:
 
 - **The question** — exactly what a tenant might type
 - **Context** — city and state, because tenant law varies by jurisdiction
@@ -109,13 +109,13 @@ LANGSMITH_API_KEY=your-api-key
 
 ## Dataset management
 
-All dataset operations go through `evaluate/langsmith_dataset.py`. Commands below assume you are in the `backend/` directory.
+All dataset operations go through `langsmith_dataset.py`. Commands below assume you are in the `backend/` directory.
 
 ### Initial push (first-time or after local edits)
 
 ```bash
-uv run python evaluate/langsmith_dataset.py dataset push \
-  evaluate/dataset-tenant-legal-qa-scenarios.jsonl \
+uv run langsmith_dataset.py dataset push \
+  dataset-tenant-legal-qa-scenarios.jsonl \
   tenant-legal-qa-scenarios
 ```
 
@@ -124,9 +124,9 @@ Creates the dataset in LangSmith if it doesn't exist, then uploads all scenarios
 ### Pull after editing in the browser
 
 ```bash
-uv run python evaluate/langsmith_dataset.py dataset pull \
+uv run langsmith_dataset.py dataset pull \
   tenant-legal-qa-scenarios \
-  evaluate/dataset-tenant-legal-qa-scenarios.jsonl
+  dataset-tenant-legal-qa-scenarios.jsonl
 ```
 
 Overwrites the local file with whatever is currently in LangSmith. Commit the result.
@@ -134,8 +134,8 @@ Overwrites the local file with whatever is currently in LangSmith. Commit the re
 ### Validate the local file
 
 ```bash
-uv run python evaluate/langsmith_dataset.py dataset validate \
-  evaluate/dataset-tenant-legal-qa-scenarios.jsonl
+uv run langsmith_dataset.py dataset validate \
+  dataset-tenant-legal-qa-scenarios.jsonl
 ```
 
 Checks every line against the schema before pushing, catching formatting mistakes early.
@@ -144,14 +144,14 @@ Checks every line against the schema before pushing, catching formatting mistake
 
 ```bash
 # List all scenarios (shows scenario_id, tags, and the first 80 characters of the question)
-uv run python evaluate/langsmith_dataset.py scenario list tenant-legal-qa-scenarios
+uv run langsmith_dataset.py scenario list tenant-legal-qa-scenarios
 
 # Append new scenarios from a JSONL file without touching existing ones
-uv run python evaluate/langsmith_dataset.py scenario append \
+uv run langsmith_dataset.py scenario append \
   tenant-legal-qa-scenarios new-scenarios.jsonl
 
 # Remove a scenario by its scenario_id
-uv run python evaluate/langsmith_dataset.py scenario remove \
+uv run langsmith_dataset.py scenario remove \
   tenant-legal-qa-scenarios 42
 ```
 
@@ -160,13 +160,13 @@ uv run python evaluate/langsmith_dataset.py scenario remove \
 ## Running evaluations
 
 ```bash
-cd backend
+cd backend/evaluate
 
 # Run evaluation on the full dataset
-uv run python evaluate/run_langsmith_evaluation.py
+uv run run_langsmith_evaluation.py
 
 # Run with a custom experiment label (useful for comparing before/after a change)
-uv run python evaluate/run_langsmith_evaluation.py \
+uv run run_langsmith_evaluation.py \
   --dataset "tenant-legal-qa-scenarios" \
   --experiment "my-experiment" \
   --num-repetitions 1
@@ -319,14 +319,14 @@ SHOW_MODEL_THINKING=true                # Capture model reasoning in the evaluat
 
 The dataset hasn't been pushed yet. Run:
 ```bash
-uv run python evaluate/langsmith_dataset.py dataset push \
-  evaluate/dataset-tenant-legal-qa-scenarios.jsonl \
+uv run langsmith_dataset.py dataset push \
+  dataset-tenant-legal-qa-scenarios.jsonl \
   tenant-legal-qa-scenarios
 ```
 
 ### Scores seem wrong or inconsistent
 
-LLM-as-judge has its own biases and can be inconsistent on borderline cases. Review the judge's written rationale for specific failing scenarios in the LangSmith UI, then refine the evaluator prompts in `evaluate/langsmith_evaluators.py` if the scoring logic is the problem.
+LLM-as-judge has its own biases and can be inconsistent on borderline cases. Review the judge's written rationale for specific failing scenarios in the LangSmith UI, then refine the evaluator prompts in `langsmith_evaluators.py` if the scoring logic is the problem.
 
 ### Evaluation is too slow
 
