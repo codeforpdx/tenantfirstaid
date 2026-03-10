@@ -68,10 +68,15 @@ backend/
 │   ├── session.py                      # Session management
 │   ├── feedback.py                     # Message feedback logic and email integration
 │   └── sections.json                   # Legal section mappings
+├── evaluate/                           # LangSmith evaluation tooling
+│   ├── __init__.py
+│   ├── langsmith_dataset.py            # Dataset and experiment CLI (push/pull/validate/diff)
+│   ├── langsmith_evaluators.py         # LLM-as-a-judge configuration (scoring rubrics)
+│   ├── run_langsmith_evaluation.py     # LangSmith experiment runner
+│   ├── langsmith_scenario_schema.json  # JSON schema for scenario validation
+│   ├── dataset-tenant-legal-qa-scenarios.jsonl  # Source-of-truth evaluation dataset
+│   └── EVALUATION.md                  # Evaluation documentation
 ├── scripts/                            # Utility scripts
-│   ├── create_langsmith_dataset.py     # Upload corpus to LangSmith
-│   ├── langsmith_evaluators.py         # LLM-as-a-Judge configuration (i.e. scoring, rubric)
-│   ├── run_langsmith_evaluators.py     # LangSmith experiment runner
 │   ├── simple_langchain_demo.py        # LangChain proof-of-concept
 │   ├── vertex_ai_list_datastores.py    # Utility to get Google Vertex AI Datastore IDs
 │   ├── create_vector_store.py          # RAG corpus setup
