@@ -334,15 +334,40 @@ Pass `--max-concurrency 3` (or higher) to run multiple scenarios in parallel, or
 
 ## Editing the system prompt
 
-The chatbot's system prompt lives in `tenantfirstaid/system_prompt.md`. This is a plain-text markdown file that anyone can edit — no Python knowledge required.
+The chatbot's system prompt lives in `tenantfirstaid/system_prompt.md`. This is a plain-text markdown file that anyone can edit — no Python knowledge required. It controls the chatbot's personality, tone, citation style, and legal guardrails.
 
 The file uses two placeholders that are substituted at runtime:
 - `{RESPONSE_WORD_LIMIT}` — currently 350
 - `{OREGON_LAW_CENTER_PHONE_NUMBER}` — currently 888-585-9638
 
-Everything else is literal text. Edit the wording, commit the change, and run an evaluation to measure the impact.
+Everything else is literal text. **Do not** add other `{...}` placeholders — Python's `str.format()` will break on stray curly braces.
 
-**Do not** add other `{...}` placeholders — Python's `str.format()` will break on stray curly braces.
+### Iterating on the system prompt in Studio
+
+You don't have to commit every tweak to test it. LangGraph Studio (available via Cloud deployment or `langgraph dev`) exposes the system prompt in a **:gear: Manage Assistants** panel next to the chat window. The full prompt from `system_prompt.md` is pre-populated as the default — you just edit in place and chat.
+
+```mermaid
+flowchart LR
+    A["Open Studio"] --> B["Edit prompt in<br>Configuration panel"]
+    B --> C["Chat with<br>the agent"]
+    C --> D{Happy?}
+    D -- No --> B
+    D -- Yes --> E["Copy final prompt<br>into system_prompt.md"]
+    E --> F["Commit & push"]
+    F --> G["Run evaluation<br>to confirm"]
+```
+
+Step by step:
+
+1. **Open Studio.** Either open LangSmith Cloud → Deployments → your deployment → Studio, or run `langgraph dev` locally and open `http://localhost:2024`.
+2. **Find the Configuration panel.** It's in the sidebar or top bar, depending on your Studio version. You'll see a text field labeled **system_prompt** with the full current prompt.
+3. **Edit the prompt.** Change whatever you want — rephrase a rule, add a guideline, adjust the tone. The edit applies immediately to the next message you send.
+4. **Chat with the agent.** Send a test question and see how the agent responds with your updated prompt. Try several questions to check different behaviors.
+5. **Iterate.** Tweak the prompt again, send another question. Repeat until you're satisfied. Each conversation thread remembers your config, so you can go back and compare.
+6. **Save your work.** Once you have wording you like, copy the prompt text from the Configuration panel and paste it into `tenantfirstaid/system_prompt.md` (remember to keep the `{RESPONSE_WORD_LIMIT}` and `{OREGON_LAW_CENTER_PHONE_NUMBER}` placeholders). Commit and push.
+7. **Run an evaluation** to verify the change didn't break anything across the full scenario suite.
+
+The Configuration panel is per-conversation — resetting it or starting a new thread reverts to the default from `system_prompt.md`. Your changes aren't permanent until you commit the file.
 
 ---
 
@@ -365,35 +390,32 @@ Heuristic evaluators (citation format, tool usage, performance) are Python code 
 
 ---
 
-## Testing the agent locally with LangGraph Studio
+## Testing the agent with LangGraph Studio
 
-You can run the full agent locally — with tools, RAG retrieval, and all — using `langgraph dev`. This does **not** require a LangSmith account or paid seat.
+Studio lets you chat with the full agent — tools, RAG retrieval, and all — in an interactive UI. There are two ways to access it depending on your setup.
 
-### One-time setup
+### Option A: LangSmith Cloud (Plus-tier seat holders)
 
-```bash
-pip install -U "langgraph-cli[inmem]"
-```
+No local setup needed. Go to LangSmith → Deployments → your deployment → **Studio**. The agent is deployed from the `langgraph.json` manifest in `backend/`, and secrets (GCP credentials, etc.) are configured in the LangSmith Deployment settings.
 
-### Running the dev server
-
-```bash
-cd backend
-langgraph dev
-```
-
-This starts a local server on `http://localhost:2024` with an interactive Studio UI. You can chat with the agent, see tool calls and RAG results, and inspect the graph execution step by step.
-
-The `langgraph.json` file in `backend/` tells the dev server where to find the agent graph. The graph entry point is `tenantfirstaid/graph.py`.
-
-### LangSmith Cloud deployment
-
-For Plus-tier seat holders, the same `langgraph.json` can be used to deploy the agent to LangSmith Cloud, which enables:
-- **Studio**: interactive testing in the browser without any local setup
+Cloud deployment also enables:
 - **Bound evaluators**: LLM-as-judge evaluators configured in the UI that auto-run on new experiments
 - **Experiment comparison**: side-by-side scoring across prompt or code changes
 
-See the LangSmith deployment docs for setup instructions.
+### Option B: Local dev server (no LangSmith account required)
+
+For contributors without a Plus-tier seat, `langgraph dev` runs the same agent locally.
+
+```bash
+cd backend
+uv run langgraph dev [--no-browser]
+```
+
+This starts a local server on `http://localhost:2024` with an interactive Studio UI. You can chat with the agent, see tool calls and RAG results, inspect the graph execution step by step, and use the Configuration panel to iterate on the system prompt — the same workflow as Cloud Studio.
+
+Requires `langgraph-cli[inmem]` (already in dev dependencies) and GCP credentials in your local `.env`.
+
+**NOTE**: Safari blocks the `http` redirect, so use Vivaldi/Chrome (`--no-browser` runs without automatically opening up your default browser ... navigate to the `Studio UI` URL)
 
 ---
 
@@ -405,6 +427,7 @@ See the LangSmith deployment docs for setup instructions.
 - [x] externalize system prompt to editable markdown file
 - [x] externalize evaluator rubrics to editable markdown files
 - [x] LangGraph entry point for `langgraph dev` and Cloud deployment
+- [x] configurable system prompt in LangGraph Studio (no redeploy needed to iterate)
 - [ ] enable additional evaluators (e.g. citation correctness)
 - [ ] enable LangSmith web UI to edit scenarios
   - [ ] update facts in existing scenarios to enable additional/better evaluators (e.g. citation correctness)
