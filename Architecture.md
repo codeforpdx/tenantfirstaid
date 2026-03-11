@@ -62,8 +62,11 @@ backend/
 |   ├── schema.py                       # Pydantic response chunk types (TextChunk, LetterChunk, ReasoningChunk)
 |   ├── constants.py                    # Immutable state and consolidated interface to environment variables
 |   ├── location.py                     # City & State normalization and sanitization
-|   ├── langchain_chat_manager.py       # Chat model configuration and response generation
+|   ├── graph.py                        # Shared LLM, tools, and graph factory (used by chat manager and langgraph dev)
+|   ├── langchain_chat_manager.py       # Per-session agent wrapper with streaming support
 |   ├── langchain_tools.py              # LangChain Agent tools (i.e. RAG retriever)
+|   ├── system_prompt.md                # System prompt (editable without Python knowledge)
+|   ├── letter_template.md              # Letter template (editable without Python knowledge)
 |   ├── citations.py                    # Citation handling
 │   ├── session.py                      # Session management
 │   ├── feedback.py                     # Message feedback logic and email integration
@@ -71,11 +74,15 @@ backend/
 ├── evaluate/                           # LangSmith evaluation tooling
 │   ├── __init__.py
 │   ├── langsmith_dataset.py            # Dataset and experiment CLI (push/pull/validate/diff)
-│   ├── langsmith_evaluators.py         # LLM-as-a-judge configuration (scoring rubrics)
+│   ├── langsmith_evaluators.py         # LLM-as-a-judge configuration (loads rubrics from evaluators/)
 │   ├── run_langsmith_evaluation.py     # LangSmith experiment runner
 │   ├── langsmith_scenario_schema.json  # JSON schema for scenario validation
 │   ├── dataset-tenant-legal-qa-scenarios.jsonl  # Source-of-truth evaluation dataset
-│   └── EVALUATION.md                  # Evaluation documentation
+│   ├── evaluators/                     # Scoring rubrics as editable markdown files
+│   │   ├── legal_correctness.md        # Legal accuracy rubric
+│   │   ├── tone.md                     # Tone and professionalism rubric
+│   │   └── citation_accuracy.md        # Citation formatting rubric
+│   └── EVALUATION.md                   # Evaluation documentation
 ├── scripts/                            # Utility scripts
 │   ├── simple_langchain_demo.py        # LangChain proof-of-concept
 │   ├── vertex_ai_list_datastores.py    # Utility to get Google Vertex AI Datastore IDs
@@ -95,6 +102,7 @@ backend/
 │           └── eugene/                 # Eugene city codes
 │               └── EHC8.425.txt
 ├── tests/                              # Test suite
+├── langgraph.json                      # LangGraph deployment manifest (for langgraph dev and LangSmith Cloud)
 ├── pyproject.toml                      # Python dependencies and config
 └── Makefile                            # Development commands
 ```
@@ -118,6 +126,13 @@ The agent has access to three tools:
 3. **Generate Letter**: Emits the completed letter as a custom stream chunk for the frontend to render separately from chat text
 
 The LLM decides how to call the tool based on the user's query and location context.
+
+#### Agent Entry Points
+
+The agent graph is defined once in `graph.py` and consumed by two entry points:
+
+- **Web application**: `LangChainChatManager` calls `create_graph()` with a per-session system prompt that includes the user's city/state. It handles streaming response chunks back to the Flask API.
+- **LangGraph dev / Cloud**: `langgraph.json` points to the module-level `graph` instance in `graph.py`. This enables `langgraph dev` for local Studio testing and LangSmith Cloud deployment for browser-based evaluation. See `evaluate/EVALUATION.md` for details.
 
 #### Data Ingestion Pipeline
 
