@@ -3,6 +3,7 @@
   "graphs": {
     "tenant_first_aid": "./tenantfirstaid/graph.py:graph"
   },
+  "python_version": "3.13",
   "dependencies": ["."],
   "image_distro": "wolfi",
   "env": ".env"
