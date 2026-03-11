@@ -6,5 +6,8 @@
   "python_version": "3.13",
   "dependencies": ["."],
   "image_distro": "wolfi",
-  "env": ".env"
+  "env": ".env",
+  "system_env": {
+    "GOOGLE_APPLICATION_CREDENTIALS": "{{GOOGLE_APPLICATION_CREDENTIALS}}"
+  }
 }
