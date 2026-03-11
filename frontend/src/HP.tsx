@@ -5,6 +5,7 @@ import LetterTemplate from '../public/LetterTemplate.png';
 import ChatExample from '../public/ChatExample.png';
 import LetterExample from '../public/LetterExample.png';
 import { REFERENCED_LAW_LIST } from './shared/constants/constants';
+import HPFeedbackForm from './HPFeedbackForm';
 
 // -----------------------------------------------------------------------------
 // ICONS
@@ -84,6 +85,7 @@ const HP = () => {
   };
 
   return (
+    <>
     <div ref={mainRef} style={styles.pageContainer}>
       <style>{`
         html, body { margin: 0; padding: 0; overflow-x: hidden; width: 100%; background-color: #022C22; }
@@ -255,6 +257,7 @@ const HP = () => {
       </section>
 
       <section id="compare" style={styles.compareSection}>
+        <h2 style={{...styles.narrativeHeader, textAlign: 'center', marginBottom: '20px', color: '#F4F4F2'}}>Which approach is right for you?</h2>
         <div className="mobile-scroll-x" style={styles.compareCard}>
           <div className="mobile-min-width comparison-grid" style={styles.tableGrid}>
             <div style={styles.tableHeader}></div>
@@ -332,16 +335,9 @@ const HP = () => {
         </div>
       </section>
 
-      <section style={styles.formSection}>
-        <form style={styles.contactForm}>
-          <input type="text" name="name" placeholder="Name" style={styles.formInput} required />
-          <input type="text" name="subject" placeholder="Subject" style={styles.formInput} required />
-          <textarea name="message" placeholder="Message" style={styles.formTextarea} required></textarea>
-          <button type="submit" className="btn-hover" style={styles.formSubmit}>Submit</button>
-        </form>
-      </section>
-
+      <HPFeedbackForm nameValue="" subjectValue="" feedbackValue="" />
     </div>
+    </>
   );
 };
 
