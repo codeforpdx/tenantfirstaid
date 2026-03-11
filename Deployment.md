@@ -36,6 +36,15 @@ flowchart TD
 | **Staging** | Internal URL (see GitHub environment settings) | Manual (`workflow_dispatch`) | Pre-production validation |
 | **Local** | `http://localhost:5173` | Manual (`uv run python -m tenantfirstaid.app` + `npm run dev`) | Developer iteration and testing |
 
+Additionally, the agent can be run locally or deployed to LangSmith Cloud for evaluation and interactive testing:
+
+| Environment | URL | Deployment trigger | Purpose |
+|-------------|-----|--------------------|---------|
+| **LangGraph dev** | `http://localhost:2024` | Manual (`langgraph dev` in `backend/`) | Local Studio testing with full agent (tools, RAG). No LangSmith account required |
+| **LangSmith Cloud** | LangSmith dashboard | Git push (auto-deploy) | Browser-based evaluation and Studio for Plus-tier seat holders |
+
+The `langgraph.json` manifest in `backend/` configures both. See [`backend/evaluate/EVALUATION.md`](backend/evaluate/EVALUATION.md) for setup instructions.
+
 Both production and staging have independent sets of secrets and variables managed in GitHub Actions [environment settings](https://github.com/codeforpdx/tenantfirstaid/settings/environments). This means staging can be pointed at a different server or datastore without affecting production.
 
 For local development setup, see the [Quick Start in README.md](README.md#quick-start). The local environment reads credentials from `backend/.env` (git-ignored) and connects to the same Google Cloud services as production by default, using developer-scoped GCP credentials.
@@ -554,7 +563,7 @@ The DataDog agent and its API key are configured directly on the server by a ser
 
 [LangSmith](https://smith.langchain.com/) can optionally trace LLM calls for debugging and evaluation when a `LANGSMITH_API_KEY` is set. See `backend/.env.example` for the relevant variables. LangSmith tracing is **not** enabled in the production deployment.
 
-For running evaluations, see [`backend/scripts/EVALUATION.md`](backend/scripts/EVALUATION.md).
+For running evaluations, see [`backend/evaluate/EVALUATION.md`](backend/evaluate/EVALUATION.md).
 
 ### Future plans
 
@@ -569,4 +578,4 @@ See issues tagged [`observability`](https://github.com/codeforpdx/tenantfirstaid
 - [`config/`](config/) — server configuration files (Nginx, systemd)
 - [`.github/workflows/deploy.production.yml`](.github/workflows/deploy.production.yml) — production CI/CD workflow
 - [`.github/workflows/deploy.staging.yml`](.github/workflows/deploy.staging.yml) — staging CI/CD workflow
-- [`backend/scripts/EVALUATION.md`](backend/scripts/EVALUATION.md) — LLM evaluation with LangSmith
+- [`backend/evaluate/EVALUATION.md`](backend/evaluate/EVALUATION.md) — LLM evaluation with LangSmith
