@@ -1,7 +1,7 @@
 {
   "$schema": "https://langgra.ph/schema.json",
   "graphs": {
-    "tenant_first_aid": "./tenantfirstaid/graph.py:graph"
+    "tenant_first_aid": "tenantfirstaid.graph:graph"
   },
   "python_version": "3.13",
   "dependencies": ["."],
