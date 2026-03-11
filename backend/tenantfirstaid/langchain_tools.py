@@ -18,6 +18,32 @@ from .constants import LETTER_TEMPLATE, SINGLETON
 from .location import OregonCity, UsaState
 
 
+def _load_gcp_credentials(
+    raw: str,
+) -> Credentials | service_account.Credentials:
+    """Load GCP credentials from a file path or inline JSON string.
+
+    Accepts either a path to a credentials file (the traditional approach)
+    or the JSON content itself (for environments like LangSmith Cloud where
+    secrets are injected as env var values, not files).
+    """
+    cred_path = Path(raw)
+    if cred_path.is_file():
+        with cred_path.open("r") as f:
+            info = json.load(f)
+    else:
+        # Treat the value as inline JSON.
+        info = json.loads(raw)
+
+    match info.get("type"):
+        case "authorized_user":
+            return Credentials.from_authorized_user_info(info)
+        case "service_account":
+            return service_account.Credentials.from_service_account_info(info)
+        case other:
+            raise ValueError(f"Unsupported credential type: {other}")
+
+
 class Rag_Builder:
     """
     Helper class to construct a Rag tool from VertexAISearchRetriever
@@ -36,20 +62,9 @@ class Rag_Builder:
         if SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is None:
             raise ValueError("GOOGLE_APPLICATION_CREDENTIALS is not set")
 
-        cred_path = Path(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
-
-        with cred_path.open("r") as f:
-            match json.load(f).get("type"):
-                case "authorized_user":
-                    self.__credentials = Credentials.from_authorized_user_file(
-                        SINGLETON.GOOGLE_APPLICATION_CREDENTIALS
-                    )
-                case "service_account":
-                    self.__credentials = (
-                        service_account.Credentials.from_service_account_file(
-                            SINGLETON.GOOGLE_APPLICATION_CREDENTIALS
-                        )
-                    )
+        self.__credentials = _load_gcp_credentials(
+            SINGLETON.GOOGLE_APPLICATION_CREDENTIALS
+        )
 
         self.rag = VertexAISearchRetriever(
             beta=True,  # required for this implementation
