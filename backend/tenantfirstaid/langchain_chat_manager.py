@@ -1,38 +1,27 @@
 """LangChain-based chat manager for tenant legal advice.
 
-This module provides a LangChain implementation that replaces the direct
-Google Gemini API calls with a standardized agent-based architecture.
+This module provides the web application's chat interface, wrapping the shared
+agent graph with per-session location context and streaming support.
 """
 
 import logging
 import sys
 from typing import Any, Dict, Generator, List, Optional, cast
 
-from langchain.agents import create_agent
-
-# from langgraph.checkpoint.memory import InMemorySaver
 from langchain_core.messages import (
     AIMessage,
     AnyMessage,
     ContentBlock,
     HumanMessage,
     NonStandardContentBlock,
-    SystemMessage,
     ToolMessage,
 )
 from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import BaseTool
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph.state import CompiledStateGraph
 
-from .constants import DEFAULT_INSTRUCTIONS, SINGLETON
-from .langchain_tools import (
-    generate_letter,
-    get_letter_template,
-    retrieve_city_state_laws,
-)
-from .location import OregonCity, TFAAgentStateSchema, UsaState
+from .graph import create_graph, prepare_system_prompt
+from .location import OregonCity, UsaState
 
 
 def starting_message_helper(content: str) -> HumanMessage:
@@ -45,12 +34,10 @@ class LangChainChatManager:
     """
 
     logger: logging.Logger
-    llm: ChatGoogleGenerativeAI
-    tools: List[BaseTool]
     agent: Optional[CompiledStateGraph] = None
 
     def __init__(self) -> None:
-        """Initialize the LangChain chat manager with Vertex AI integration."""
+        """Initialize the LangChain chat manager."""
 
         # configure logging
         logging.basicConfig(
@@ -59,25 +46,6 @@ class LangChainChatManager:
             format="%(levelname)s: %(message)s (%(filename)s:%(lineno)d)",
         )
         self.logger = logging.getLogger("LangChainChatManager")
-
-        # Initialize ChatVertexAI with same config as current implementation.
-        self.llm = ChatGoogleGenerativeAI(
-            model=SINGLETON.MODEL_NAME,  # main chat model
-            max_tokens=SINGLETON.MAX_TOKENS,  # budget
-            project=SINGLETON.GOOGLE_CLOUD_PROJECT,
-            location=SINGLETON.GOOGLE_CLOUD_LOCATION,
-            safety_settings=SINGLETON.SAFETY_SETTINGS,
-            # consistency
-            temperature=SINGLETON.MODEL_TEMPERATURE,  # 1.0 is default for Gemini 3+, https://docs.langchain.com/oss/python/integrations/chat/google_generative_ai#instantiation
-            top_p=SINGLETON.TOP_P,
-            seed=0,
-            # reasoning
-            thinking_budget=-1,  # gemini 2.5 specific (use thinking_level for 3+ https://docs.langchain.com/oss/python/integrations/chat/google_generative_ai#thinking-support)
-            include_thoughts=SINGLETON.SHOW_MODEL_THINKING,
-        )
-
-        # Specify tools for RAG retrieval.
-        self.tools = [retrieve_city_state_laws, get_letter_template, generate_letter]
 
         # defer agent instantiation until 'generate_stream_response'
         self.agent = None
@@ -95,41 +63,14 @@ class LangChainChatManager:
             AgentExecutor configured with tools and system prompt
         """
 
-        self.system_prompt = SystemMessage(self._prepare_system_prompt(city, state))
+        self.system_prompt = prepare_system_prompt(city, state)
 
-        if thread_id is None:
-            checkpointer_or_none = None
-        else:
-            checkpointer_or_none = InMemorySaver()
+        checkpointer = InMemorySaver() if thread_id is not None else None
 
-        # Create agent with tools.
-        return create_agent(
-            self.llm,
-            self.tools,
+        return create_graph(
             system_prompt=self.system_prompt,
-            state_schema=TFAAgentStateSchema,
-            checkpointer=checkpointer_or_none,
+            checkpointer=checkpointer,
         )
-
-    def _prepare_system_prompt(
-        self, city: Optional[OregonCity], state: UsaState
-    ) -> str:
-        """Prepare detailed system instructions for the agent.
-
-        This matches the current DEFAULT_INSTRUCTIONS with location context.
-
-        Args:
-            city: User's city
-            state: User's state
-
-        Returns:
-            System prompt string with instructions and location context
-        """
-
-        # Add city and state filters if they are set
-        instructions = DEFAULT_INSTRUCTIONS
-        instructions += f"\nThe user is in {city.title() if city is not None else ''} {state.upper()}.\n"
-        return instructions
 
     # TODO
     def generate_response(

@@ -326,21 +326,89 @@ uv run langsmith_dataset.py dataset push \
 
 ### Scores seem wrong or inconsistent
 
-LLM-as-judge has its own biases and can be inconsistent on borderline cases. Review the judge's written rationale for specific failing scenarios in the LangSmith UI, then refine the evaluator prompts in `langsmith_evaluators.py` if the scoring logic is the problem.
+LLM-as-judge has its own biases and can be inconsistent on borderline cases. Review the judge's written rationale for specific failing scenarios in the LangSmith UI, then refine the evaluator rubrics in `evaluators/*.md` if the scoring logic is the problem (see [Editing evaluator rubrics](#editing-evaluator-rubrics) below).
 
 ### Evaluation is too slow
 
 Pass `--max-concurrency 3` (or higher) to run multiple scenarios in parallel, or temporarily reduce the dataset size in LangSmith to evaluate a representative subset.
+
+## Editing the system prompt
+
+The chatbot's system prompt lives in `tenantfirstaid/system_prompt.md`. This is a plain-text markdown file that anyone can edit — no Python knowledge required.
+
+The file uses two placeholders that are substituted at runtime:
+- `{RESPONSE_WORD_LIMIT}` — currently 350
+- `{OREGON_LAW_CENTER_PHONE_NUMBER}` — currently 888-585-9638
+
+Everything else is literal text. Edit the wording, commit the change, and run an evaluation to measure the impact.
+
+**Do not** add other `{...}` placeholders — Python's `str.format()` will break on stray curly braces.
+
+---
+
+## Editing evaluator rubrics
+
+LLM-as-judge evaluators (legal correctness, tone, citation accuracy) use scoring rubrics stored as markdown files in `evaluators/`:
+
+```
+evaluators/
+  legal_correctness.md
+  tone.md
+  citation_accuracy.md
+```
+
+Each file describes what a good answer looks like and the scoring guidelines (1.0 / 0.5 / 0.0). The Python code in `langsmith_evaluators.py` loads these files and wraps them in the structural boilerplate the AI judge needs.
+
+To refine how the judge scores responses, edit the rubric file and commit. You can also experiment with rubric wording in the LangSmith UI by binding an LLM-as-judge evaluator to your dataset — when you find wording you like, copy it back into the `.md` file and commit so everyone shares the same criteria.
+
+Heuristic evaluators (citation format, tool usage, performance) are Python code in `langsmith_evaluators.py` and require a developer to modify.
+
+---
+
+## Testing the agent locally with LangGraph Studio
+
+You can run the full agent locally — with tools, RAG retrieval, and all — using `langgraph dev`. This does **not** require a LangSmith account or paid seat.
+
+### One-time setup
+
+```bash
+pip install -U "langgraph-cli[inmem]"
+```
+
+### Running the dev server
+
+```bash
+cd backend
+langgraph dev
+```
+
+This starts a local server on `http://localhost:2024` with an interactive Studio UI. You can chat with the agent, see tool calls and RAG results, and inspect the graph execution step by step.
+
+The `langgraph.json` file in `backend/` tells the dev server where to find the agent graph. The graph entry point is `tenantfirstaid/graph.py`.
+
+### LangSmith Cloud deployment
+
+For Plus-tier seat holders, the same `langgraph.json` can be used to deploy the agent to LangSmith Cloud, which enables:
+- **Studio**: interactive testing in the browser without any local setup
+- **Bound evaluators**: LLM-as-judge evaluators configured in the UI that auto-run on new experiments
+- **Experiment comparison**: side-by-side scoring across prompt or code changes
+
+See the LangSmith deployment docs for setup instructions.
+
+---
 
 ## Roadmap
 
 - [x] demonstrate basic evaluation flow (CLI-only) on single-turn scenarios
 - [x] use LangSmith web UI to view experimental results
 - [x] capture more info in LangSmith experimental results to enable debugging (aka LLM psycho-analysis)
+- [x] externalize system prompt to editable markdown file
+- [x] externalize evaluator rubrics to editable markdown files
+- [x] LangGraph entry point for `langgraph dev` and Cloud deployment
 - [ ] enable additional evaluators (e.g. citation correctness)
 - [ ] enable LangSmith web UI to edit scenarios
   - [ ] update facts in existing scenarios to enable additional/better evaluators (e.g. citation correctness)
-- [ ] enable LangSmith web UI to edit evaluators(?)
-- [ ] enable LangSmith web UI to launch experiments(?), e.g. A/B testing
+- [ ] enable LangSmith web UI to edit evaluators via bound evaluators
+- [ ] enable LangSmith web UI to launch experiments via Cloud deployment
 - [ ] demonstrate evaluation of multi-turn scenarios
-- [ ] enable LangSmith web UI to modify System Prompt (aka `DEFAULT_INSTRUCTIONS`)
+- [ ] A/B testing of system prompt variants

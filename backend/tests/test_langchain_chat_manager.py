@@ -4,27 +4,44 @@ from unittest.mock import MagicMock, patch
 
 from langchain_core.messages import AIMessage
 
-from tenantfirstaid.langchain_chat_manager import (
-    LangChainChatManager,
-)
-from tenantfirstaid.location import UsaState
+from tenantfirstaid.graph import prepare_system_prompt, tools
+from tenantfirstaid.location import OregonCity, UsaState
 
 
-def test_system_prompt_includes_city_and_state(oregon_state, portland_city):
+@pytest.fixture
+def oregon_state():
+    return UsaState.from_maybe_str("or")
+
+
+@pytest.fixture
+def portland_city():
+    return OregonCity.from_maybe_str("Portland")
+
+
+@pytest.fixture
+def eugene_city():
+    return OregonCity.from_maybe_str("Eugene")
+
+
+def test_system_prompt_includes_location(oregon_state, portland_city):
     """Test that system prompt includes user location."""
-    chat_manager = LangChainChatManager()
-    prompt = chat_manager._prepare_system_prompt(portland_city, oregon_state)
+    prompt = prepare_system_prompt(portland_city, oregon_state)
 
-    assert "Portland" in prompt
-    assert "OR" in prompt
+    assert "Portland OR" in prompt.content
+
+
+def test_prepare_system_prompt_includes_city_state(oregon_state, portland_city):
+    prompt = prepare_system_prompt(portland_city, oregon_state)
+    assert (
+        f"The user is in {portland_city.capitalize()} {oregon_state.upper()}."
+        in prompt.content
+    )
 
 
 def test_tools_include_rag_retrieval():
     """Test that tools list includes RAG retrieval and letter template tools."""
-    chat_manager = LangChainChatManager()
-
-    assert len(chat_manager.tools) == 3
-    tool_names = [tool.name for tool in chat_manager.tools]
+    assert len(tools) == 3
+    tool_names = [tool.name for tool in tools]
     assert "retrieve_city_state_laws" in tool_names
     assert "generate_letter" in tool_names
     assert "get_letter_template" in tool_names

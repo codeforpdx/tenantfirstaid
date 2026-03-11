@@ -2,19 +2,25 @@
 
 This module defines automated evaluators that assess the quality of legal
 advice responses across multiple dimensions.
+
+LLM-as-judge rubrics are loaded from markdown files in the evaluators/
+directory so that non-technical contributors can edit the scoring criteria
+without touching Python code.
 """
 
 import re
+from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, Final
 
 from openevals import create_llm_as_judge
-from openevals.prompts import CORRECTNESS_PROMPT
 from openevals.types import SimpleEvaluator
 
 # NOTE: can (should?) use different models for chatbot LLM & evaluator
 # EVALUATOR_MODEL_NAME: Final = "gemini-2.5-pro"
 EVALUATOR_MODEL_NAME: Final = "gemini-2.5-flash"
+
+EVALUATORS_DIR: Final = Path(__file__).parent / "evaluators"
 
 # NOTE: this is a LITERAL not an f-string, because it is substituted as-is into
 #       an f-string which is then used as a template
@@ -27,7 +33,7 @@ INPUT_OUTPUT: Final = dedent(
     Use the Model-Under-Test Output below to evaluate the response.  Disregard
     other Model-Under-Test sections, which are for evaluation debugging only
     and should not affect the scores.
-    
+
     <output>
     {outputs}
     </output>
@@ -41,165 +47,54 @@ INPUT_OUTPUT: Final = dedent(
 )
 
 
-# Evaluator 1: Citation Accuracy (LLM-as-Judge).
-CITATION_PROMPT = dedent(
-    f"""
-    You are an expert data labeler evaluating model outputs for correctness.
-    Your task is to assign a score based on the following rubric:
-    <Rubric>
-    A correct answer:
-    - Include proper citations to applicable state and local laws
-    - Must cite specific ORS (Oregon Revised Statutes) numbers
-    - Must use HTML anchor tags with target="_blank"
-    - Citations should link to oregon.public.law or city code websites
-    - Provides accurate and complete information
-    - Contains no factual errors
-    - Addresses all parts of the question
-    - Is logically consistent
-    - Uses precise and accurate terminology
+def _load_rubric(name: str) -> str:
+    """Load a rubric from evaluators/{name}.md and return the full judge prompt."""
+    rubric_path = EVALUATORS_DIR / f"{name}.md"
+    rubric_text = rubric_path.read_text()
+    return dedent(
+        f"""
+        You are an expert data labeler evaluating model outputs for correctness.
+        Your task is to assign a score based on the following rubric:
+        <Rubric>
+        {rubric_text}
+        </Rubric>
 
-    When scoring, you should penalize:
-    - Factual errors or inaccuracies
-    - Incomplete or partial answers
-    - Misleading or ambiguous statements
-    - Incorrect terminology
-    - Logical inconsistencies
-    - Missing key information
+        <Instructions>
+        - Carefully read the input and output
+        - Check for factual accuracy and completeness
+        </Instructions>
 
-    Scoring Guidelines:
-    - Score 1.0 if all citations use proper HTML anchor tags, valid ORS numbers, and link to approved domains
-    - Score 0.5 if citations are present but have formatting or completeness issues
-    - Score 0.0 if citations are missing, malformed, or link to unapproved sources
-    </Rubric>
+        {INPUT_OUTPUT}
+        """
+    )
 
-    <Instructions>
-    - Carefully read the input and output
-    - Check for factual accuracy and completeness
-    - Focus on correctness of information rather than style or verbosity
-    </Instructions>
 
-    <Reminders>
-    The goal is to evaluate citation accuracy, formatting and completeness of the citations.
-    </Reminders>
-
-    {INPUT_OUTPUT}
-    """
-)
-
+# Evaluator: Citation Accuracy (LLM-as-Judge).
 citation_accuracy_evaluator: SimpleEvaluator = create_llm_as_judge(
     model=EVALUATOR_MODEL_NAME,
-    prompt=CITATION_PROMPT,
+    prompt=_load_rubric("citation_accuracy"),
     feedback_key="citation accuracy",
     continuous=True,
 )
 
-# Evaluator 2: Legal Correctness (LLM-as-Judge).
-LEGAL_CORRECTNESS_PROMPT_TEMPLATE: Final = dedent(
-    f"""
-    You are an expert data labeler evaluating model outputs for correctness.
-    Your task is to assign a score based on the following rubric:
-    <Rubric>
-    A correct answer:
-    - legal advice correctly based on Oregon tenant law
-    - Check if advice aligns with ORS 90 (Landlord-Tenant)
-    - Verify city-specific rules are correctly applied
-    - Ensure no false statements about tenant rights
-    - Provides accurate and complete information
-    - Contains no factual errors
-    - Addresses all parts of the question
-    - Is logically consistent
-    - Uses precise and accurate terminology
-
-    When scoring, you should penalize:
-    - Factual errors or inaccuracies
-    - Incomplete or partial answers
-    - Misleading or ambiguous statements
-    - Incorrect terminology
-    - Logical inconsistencies
-    - Missing key information
-
-    Scoring Guidelines:
-    - Score 1.0 if response is legally correct and complete
-    - Score 0.5 if response has minor inaccuracies or omissions
-    - Score 0.0 if response is legally incorrect or significantly incomplete
-    </Rubric>
-
-    <Instructions>
-    - Carefully read the input and output
-    - Check for factual accuracy and completeness
-    - Focus on correctness of information rather than style or verbosity
-    </Instructions>
-
-    <Reminders>
-    The goal is to evaluate factual correctness and completeness of the response.
-    </Reminders>
-
-    {INPUT_OUTPUT}
-    """
-)
-
+# Evaluator: Legal Correctness (LLM-as-Judge).
 legal_correctness_evaluator: SimpleEvaluator = create_llm_as_judge(
     model=EVALUATOR_MODEL_NAME,
-    prompt=LEGAL_CORRECTNESS_PROMPT_TEMPLATE,
+    prompt=_load_rubric("legal_correctness"),
     feedback_key="legal correctness",
     continuous=True,
-    # choices=[0.0, 0.5, 1.0],
 )
 
-
-# Evaluator 3: Response Completeness (LLM-as-Judge).
-completeness_evaluator = create_llm_as_judge(
-    model=EVALUATOR_MODEL_NAME,
-    prompt=CORRECTNESS_PROMPT,
-    feedback_key="general correctness",
-    continuous=True,
-)
-
-# Evaluator 4: Tone & Professionalism (LLM-as-Judge).
-TONE_PROMPT_TEMPLATE = dedent(
-    f"""
-    You are an expert data labeler evaluating model outputs for correctness. Your task is to assign a score based on the following rubric:
-    <Rubric>
-    A good answer:
-    - has a tone appropriate for legal advice
-    - Professional but accessible language
-    - Empathetic to tenant's situation
-    - Not overly formal or robotic
-    - Doesn't start with "As a legal expert..."
-
-    When scoring, you should penalize:
-    - uncommon legal jargon
-    - overly casual language
-
-    Scoring Guidelines:
-    - Score 1.0 if response has the appropriate tone for legal advice
-    - Score 0.5 if response has some tonal issues but is generally acceptable
-    - Score 0.0 if response has an inappropriate tone for legal advice
-    </Rubric>
-
-    <Instructions>
-    - Check for inappropriate tone or style
-    - Focus on tone, style and verbosity rather than correctness of information
-    </Instructions>
-
-    <Reminders>
-    The goal is to evaluate the tone of the response.
-    </Reminders>
-
-    {INPUT_OUTPUT}
-    """
-)
-
+# Evaluator: Tone & Professionalism (LLM-as-Judge).
 tone_evaluator: SimpleEvaluator = create_llm_as_judge(
     model=EVALUATOR_MODEL_NAME,
-    prompt=TONE_PROMPT_TEMPLATE,
+    prompt=_load_rubric("tone"),
     feedback_key="appropriate tone",
     continuous=True,
-    # choices=[0.0, 0.5, 1.0],
 )
 
 
-# Evaluator 5: Citation Format (Heuristic).
+# Evaluator: Citation Format (Heuristic).
 def citation_format_evaluator(run, example) -> Dict[str, Any]:
     """Check if citations use proper HTML anchor tag format.
 
@@ -239,7 +134,7 @@ def citation_format_evaluator(run, example) -> Dict[str, Any]:
     }
 
 
-# Evaluator 6: Tool Usage (Heuristic).
+# Evaluator: Tool Usage (Heuristic).
 def tool_usage_evaluator(run, example) -> Dict[str, Any]:
     """Check if agent used RAG tools appropriately.
 
@@ -276,7 +171,7 @@ def tool_usage_evaluator(run, example) -> Dict[str, Any]:
     }
 
 
-# Evaluator 7: Performance Metrics (Heuristic).
+# Evaluator: Performance Metrics (Heuristic).
 def performance_evaluator(run, example) -> Dict[str, Any]:
     """Track latency and token usage.
 
