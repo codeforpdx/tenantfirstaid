@@ -392,12 +392,17 @@ def cmd_experiment_compare(args: argparse.Namespace) -> None:
         ("runs", str(p1.run_count or 0), str(p2.run_count or 0))
     ]
     for key in all_keys:
-        rows.append((
-            key.removeprefix("feedback."),
-            fmt_stats((p1.feedback_stats or {}).get(key)),
-            fmt_stats((p2.feedback_stats or {}).get(key)),
-        ))
-    _tabulate(rows, headers=("METRIC", p1.name or args.experiment1, p2.name or args.experiment2))
+        rows.append(
+            (
+                key.removeprefix("feedback."),
+                fmt_stats((p1.feedback_stats or {}).get(key)),
+                fmt_stats((p2.feedback_stats or {}).get(key)),
+            )
+        )
+    _tabulate(
+        rows,
+        headers=("METRIC", p1.name or args.experiment1, p2.name or args.experiment2),
+    )
 
 
 def cmd_experiment_results(args: argparse.Namespace) -> None:
@@ -556,12 +561,14 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"Local file to write (default: {DEFAULT_JSONL.name})",
     )
     p.add_argument(
-        "--force", "-f",
+        "--force",
+        "-f",
         action="store_true",
         help="Overwrite local file even if it has uncommitted changes.",
     )
     p.add_argument(
-        "--dry-run", "-n",
+        "--dry-run",
+        "-n",
         action="store_true",
         help="Show what would be pulled without writing the file.",
     )

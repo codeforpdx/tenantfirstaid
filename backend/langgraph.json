@@ -1,0 +1,8 @@
+{
+  "$schema": "https://langgra.ph/schema.json",
+  "graphs": {
+    "tenant_first_aid": "./tenantfirstaid/graph.py:graph"
+  },
+  "dependencies": ["."],
+  "env": ".env"
+}

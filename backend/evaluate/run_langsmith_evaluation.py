@@ -14,11 +14,8 @@ from langchain_core.messages import HumanMessage
 from langsmith import Client, evaluate
 
 from tenantfirstaid.constants import SINGLETON
-from tenantfirstaid.langchain_chat_manager import (
-    LangChainChatManager,
-    OregonCity,
-    UsaState,
-)
+from tenantfirstaid.langchain_chat_manager import LangChainChatManager
+from tenantfirstaid.location import OregonCity, UsaState
 
 from .langsmith_evaluators import (
     # citation_accuracy_evaluator,

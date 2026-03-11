@@ -2,9 +2,7 @@
 
 import pytest
 
-from tenantfirstaid.langchain_chat_manager import (
-    LangChainChatManager,
-)
+from tenantfirstaid.graph import prepare_system_prompt, tools
 from tenantfirstaid.location import OregonCity, UsaState
 
 
@@ -24,32 +22,24 @@ def eugene_city():
 
 
 def test_system_prompt_includes_location(oregon_state, portland_city):
-    state = oregon_state
-    city = portland_city
-
-    chat_manager = LangChainChatManager()
-
     """Test that system prompt includes user location."""
-    prompt = chat_manager._prepare_system_prompt(city, state)
+    prompt = prepare_system_prompt(portland_city, oregon_state)
 
-    assert "Portland OR" in prompt
+    assert "Portland OR" in prompt.content
 
 
 def test_prepare_system_prompt_includes_city_state(oregon_state, portland_city):
-    state = oregon_state
-    city = portland_city
-    chat_manager = LangChainChatManager()
-
-    instructions = chat_manager._prepare_system_prompt(city, state)
-    assert f"The user is in {city.capitalize()} {state.upper()}." in instructions
+    prompt = prepare_system_prompt(portland_city, oregon_state)
+    assert (
+        f"The user is in {portland_city.capitalize()} {oregon_state.upper()}."
+        in prompt.content
+    )
 
 
 def test_tools_include_rag_retrieval():
     """Test that tools list includes RAG retrieval and letter template tools."""
-    chat_manager = LangChainChatManager()
-
-    assert len(chat_manager.tools) == 3
-    tool_names = [tool.name for tool in chat_manager.tools]
+    assert len(tools) == 3
+    tool_names = [tool.name for tool in tools]
     assert "retrieve_city_state_laws" in tool_names
     assert "generate_letter" in tool_names
     assert "get_letter_template" in tool_names
