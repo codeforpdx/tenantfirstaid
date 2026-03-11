@@ -4,5 +4,6 @@
     "tenant_first_aid": "./tenantfirstaid/graph.py:graph"
   },
   "dependencies": ["."],
+  "image_distro": "wolfi",
   "env": ".env"
 }
