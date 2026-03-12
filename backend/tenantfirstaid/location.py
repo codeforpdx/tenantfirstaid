@@ -4,7 +4,7 @@ and normalize inputs to enumerated values
 """
 
 from enum import StrEnum
-from typing import Optional
+from typing import NotRequired, Optional
 
 from langchain.agents import AgentState
 from pydantic import BaseModel
@@ -75,4 +75,4 @@ class Location(BaseModel):
 
 class TFAAgentStateSchema(AgentState):
     state: UsaState
-    city: Optional[OregonCity]
+    city: NotRequired[Optional[OregonCity]]
