@@ -1,19 +1,19 @@
 import { useMemo } from "react";
-import { TChatMessage } from "./useMessages";
-import type { TResponseChunk } from "../types/MessageTypes";
+import type { ChatMessage } from "../shared/types/messages";
+import type { ResponseChunk } from "../types/models";
 
 /**
  * Extracts generated letter content from chat messages by scanning all AI
  * messages and returning the last letter chunk found.
  */
-export function useLetterContent(messages: TChatMessage[]) {
+export function useLetterContent(messages: ChatMessage[]) {
   const letterContent = useMemo(() => {
     const chunks = messages
       .filter((msg) => msg.type === "ai")
       .flatMap((msg) => msg.text.split("\n").filter(Boolean))
       .flatMap((line) => {
         try {
-          return [JSON.parse(line) as TResponseChunk];
+          return [JSON.parse(line) as ResponseChunk];
         } catch {
           return []; // Not a JSON chunk — skip.
         }

@@ -1,19 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import type { AIMessage, HumanMessage } from "@langchain/core/messages";
-
-/**
- * Chat message Type aligned with LangChain's message types
- * to ensure consistency with backend.
- */
-export type TChatMessage = HumanMessage | AIMessage | TUiMessage;
-
-/** UI-only message for display purposes; excluded from backend history. */
-export type TUiMessage = {
-  type: "ui";
-  text: string;
-  id: string;
-};
+import type { Location } from "../types/models";
+import type { ChatMessage, UiMessage } from "../shared/types/messages";
 
 /**
  * Converts a stored AI message (JSONL chunks) back to plain text for backend
@@ -36,9 +24,8 @@ export function deserializeAiMessage(text: string): string {
 }
 
 async function addNewMessage(
-  messages: TChatMessage[],
-  city: string | null,
-  state: string,
+  messages: ChatMessage[],
+  { city, state }: Location,
 ) {
   const serializedMsg = messages.map((msg) => ({
     role: msg.type,
@@ -59,22 +46,16 @@ async function addNewMessage(
  * Provides message state, a setter, and a mutation for posting new messages.
  */
 export default function useMessages() {
-  const [messages, setMessages] = useState<TChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   const addMessage = useMutation({
-    mutationFn: async ({
-      city,
-      state,
-    }: {
-      city: string | null;
-      state: string;
-    }) => {
+    mutationFn: async ({ city, state }: Location) => {
       // Exclude UI-only messages and empty placeholders from backend history.
       const filteredMessages = messages.filter(
-        (msg): msg is Exclude<TChatMessage, TUiMessage> =>
+        (msg): msg is Exclude<ChatMessage, UiMessage> =>
           msg.type !== "ui" && msg.text.trim() !== "",
       );
-      return await addNewMessage(filteredMessages, city, state);
+      return await addNewMessage(filteredMessages, { city, state });
     },
   });
 

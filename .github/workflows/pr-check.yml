@@ -103,8 +103,26 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7.3.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+          version: "0.10.0"
+
+      - name: Set up Python
+        run: uv python install 3.13
+        working-directory: backend
+
+      - name: Sync backend dependencies
+        run: uv sync
+        working-directory: backend
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Generate types
+        run: npm run generate-types
 
       - name: Run linting checks
         run: npm run lint

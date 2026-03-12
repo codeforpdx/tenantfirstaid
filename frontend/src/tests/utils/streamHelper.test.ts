@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import {
   streamText,
-  type IStreamTextOptions,
+  type StreamTextOptions,
 } from "../../pages/Chat/utils/streamHelper";
 
 function createMockReader(
@@ -52,14 +52,14 @@ describe("streamText", () => {
     const result = await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
-      housingLocation: { city: "Portland", state: "OR" },
+      housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
-    } as IStreamTextOptions);
+    } as StreamTextOptions);
 
     expect(result).toBe(true);
     expect(mockAddMessage).toHaveBeenCalledWith({
-      city: "Portland",
-      state: "OR",
+      city: "portland",
+      state: "or",
     });
     expect(mockSetMessages).toHaveBeenCalledTimes(3); // 1 initial + 2 chunk updates
 
@@ -79,9 +79,9 @@ describe("streamText", () => {
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
-      housingLocation: { city: "Portland", state: "OR" },
+      housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
-    } as IStreamTextOptions);
+    } as StreamTextOptions);
 
     const calls = mockSetMessages.mock.calls;
     const updateCall = calls[calls.length - 1][0];
@@ -104,9 +104,9 @@ describe("streamText", () => {
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
-      housingLocation: { city: "Portland", state: "OR" },
+      housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
-    } as IStreamTextOptions);
+    } as StreamTextOptions);
 
     expect(mockSetIsLoading).toHaveBeenCalledWith(false);
     expect(console.error).toHaveBeenCalledWith("Error:", expect.any(Error));
@@ -132,9 +132,9 @@ describe("streamText", () => {
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
-      housingLocation: { city: "Portland", state: "OR" },
+      housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
-    } as IStreamTextOptions);
+    } as StreamTextOptions);
 
     // 1 initial + 2 chunk updates
     expect(mockSetMessages).toHaveBeenCalledTimes(3);
@@ -161,9 +161,9 @@ describe("streamText", () => {
     const result = await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
-      housingLocation: { city: "Portland", state: "OR" },
+      housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
-    } as IStreamTextOptions);
+    } as StreamTextOptions);
 
     expect(result).toBe(true);
     expect(mockSetMessages).toHaveBeenCalledTimes(3); // 1 initial + 2 chunk updates
@@ -184,15 +184,15 @@ describe("streamText", () => {
     const result = await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
-      housingLocation: { city: "Portland", state: "OR" },
+      housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
-    } as IStreamTextOptions);
+    } as StreamTextOptions);
 
     expect(result).toBeUndefined();
     expect(console.error).toHaveBeenCalledWith("Stream reader is unavailable");
     expect(mockSetIsLoading).toHaveBeenCalledWith(false);
     // setMessages is called twice: once to add the empty placeholder, once to replace
-    // it with a TUiMessage error so the letter page slice(2) can show the error.
+    // it with a UiMessage error so the letter page slice(2) can show the error.
     expect(mockSetMessages).toHaveBeenCalledTimes(2);
     const replaceCall = mockSetMessages.mock.calls[1][0];
     const result2 = replaceCall([

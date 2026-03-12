@@ -2,7 +2,7 @@ import { renderHook } from "@testing-library/react";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import { describe, it, expect } from "vitest";
 import { useLetterContent } from "../../hooks/useLetterContent";
-import type { TChatMessage } from "../../hooks/useMessages";
+import type { ChatMessage } from "../../shared/types/messages";
 
 const letterChunk =
   '{"type":"letter","content":"Dear Landlord, please fix the heat."}\n';
@@ -10,7 +10,7 @@ const textChunk = '{"type":"text","content":"Here is your letter."}\n';
 
 describe("useLetterContent", () => {
   it("returns letter content from a letter chunk in an AI message", () => {
-    const messages: TChatMessage[] = [
+    const messages: ChatMessage[] = [
       new AIMessage({ content: textChunk + letterChunk, id: "1" }),
     ];
     const { result } = renderHook(() => useLetterContent(messages));
@@ -20,7 +20,7 @@ describe("useLetterContent", () => {
   });
 
   it("returns the last letter chunk when multiple messages contain one", () => {
-    const messages: TChatMessage[] = [
+    const messages: ChatMessage[] = [
       new AIMessage({
         content: '{"type":"letter","content":"Old letter."}\n',
         id: "1",
@@ -35,7 +35,7 @@ describe("useLetterContent", () => {
   });
 
   it("returns empty string when no message contains a letter chunk", () => {
-    const messages: TChatMessage[] = [
+    const messages: ChatMessage[] = [
       new HumanMessage({ content: "Write me a letter.", id: "1" }),
       new AIMessage({ content: textChunk, id: "2" }),
     ];

@@ -1,7 +1,6 @@
 PYTHON := uv
 PIP := $(PYTHON) pip
-
-.PHONY: all install test clean check
+.PHONY: all install test clean check generate-types
 
 all: check
 
@@ -37,6 +36,9 @@ typecheck-pyrefly: uv.lock
 
 test: uv.lock
 	uv run pytest -v -s $(TEST_OPTIONS)
+
+generate-types: uv.lock
+	cd ../frontend && npm run generate-types
 
 clean:
 	find . -type d -name '__pycache__' -exec rm -r {} +

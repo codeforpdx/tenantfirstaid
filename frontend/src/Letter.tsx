@@ -1,5 +1,5 @@
 import { HumanMessage } from "@langchain/core/messages";
-import type { TUiMessage } from "./hooks/useMessages";
+import type { UiMessage } from "./shared/types/messages";
 import MessageWindow from "./pages/Chat/components/MessageWindow";
 import useMessages from "./hooks/useMessages";
 import { useEffect, useRef, useState } from "react";
@@ -12,7 +12,7 @@ import LetterDisclaimer from "./pages/Letter/components/LetterDisclaimer";
 import MessageContainer from "./shared/components/MessageContainer";
 import useHousingContext from "./hooks/useHousingContext";
 import { buildChatUserMessage } from "./pages/Chat/utils/formHelper";
-import { ILocation } from "./contexts/HousingContext";
+import type { Location } from "./types/models";
 import FeatureSnippet from "./shared/components/FeatureSnippet";
 import clsx from "clsx";
 
@@ -22,7 +22,7 @@ export default function Letter() {
   const { letterContent } = useLetterContent(messages);
   const { org, loc } = useParams();
   const [startStreaming, setStartStreaming] = useState(false);
-  const streamLocationRef = useRef<ILocation | null>(null);
+  const streamLocationRef = useRef<Location | null>(null);
   const [isGenerating, setIsGenerating] = useState(true);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -78,7 +78,7 @@ export default function Letter() {
           "Unable to generate letter. Please try again or refresh the page.";
 
         const text = streamDone ? INITIAL_INSTRUCTION : ERROR_MESSAGE;
-        const uiMessage: TUiMessage = {
+        const uiMessage: UiMessage = {
           type: "ui",
           text,
           id: Date.now().toString(),

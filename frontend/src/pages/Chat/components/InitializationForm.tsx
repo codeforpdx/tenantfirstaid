@@ -1,5 +1,7 @@
-import { TChatMessage } from "../../../hooks/useMessages";
+import type { ChatMessage } from "../../../shared/types/messages";
 import BeaverIcon from "../../../shared/components/BeaverIcon";
+import type { Location } from "../../../types/models";
+import { formatLocation } from "../../../shared/utils/formatLocation";
 import { useEffect, useState } from "react";
 import { buildChatUserMessage } from "../utils/formHelper";
 import { streamText } from "../utils/streamHelper";
@@ -12,20 +14,24 @@ import {
   HOUSING_OPTIONS,
   LETTERABLE_TOPIC_OPTIONS,
   NONLETTERABLE_TOPIC_OPTIONS,
+  type CitySelectKey,
+  type HousingType,
+  type TenantTopic,
 } from "../../../shared/constants/constants";
 import { scrollToTop } from "../../../shared/utils/scrolling";
 import AutoExpandText from "./AutoExpandText";
 import clsx from "clsx";
 import { HumanMessage } from "@langchain/core/messages";
 
-const NONLETTERABLE_TOPICS = Object.keys(NONLETTERABLE_TOPIC_OPTIONS);
+const NONLETTERABLE_TOPICS = Object.keys(
+  NONLETTERABLE_TOPIC_OPTIONS,
+) as TenantTopic[];
 
 interface Props {
-  addMessage: (args: {
-    city: string | null;
-    state: string;
-  }) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
-  setMessages: React.Dispatch<React.SetStateAction<TChatMessage[]>>;
+  addMessage: (
+    args: Location,
+  ) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
 }
 
 /**
@@ -46,19 +52,18 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
     handleFormReset,
   } = useHousingContext();
   const [initialUserMessage, setInitialUserMessage] = useState("");
-  const locationString = city
-    ? city.charAt(0).toUpperCase() + city.slice(1)
-    : null;
+  const locationString = formatLocation(
+    housingLocation.city,
+    housingLocation.state,
+  );
 
   const handleLocationChange = (key: string | null) => {
-    handleCityChange(key);
+    const typedKey = key as CitySelectKey | null;
+    const selected = typedKey !== null ? CITY_SELECT_OPTIONS[typedKey] : null;
+    handleCityChange(typedKey);
     handleHousingLocation({
-      city:
-        CITY_SELECT_OPTIONS[key as keyof typeof CITY_SELECT_OPTIONS]?.city ||
-        null,
-      state:
-        CITY_SELECT_OPTIONS[key as keyof typeof CITY_SELECT_OPTIONS]?.state ||
-        null,
+      city: selected?.city ?? null,
+      state: selected?.state ?? null,
     });
   };
 
@@ -142,14 +147,18 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
         <AutoExpandText isExpanded={Boolean(city)}>
           {city === "other"
             ? "Unfortunately, we can only answer questions related to tenant rights in Oregon at this time."
-            : `${locationString ? `I can help answer your questions about tenant rights in ${locationString}.` : ""}`}
+            : locationString
+              ? `I can help answer your questions about tenant rights in ${locationString}.`
+              : ""}
         </AutoExpandText>
       </div>
       <SelectField
         name="housing type"
         value={housingType || ""}
         description="Select your housing type"
-        handleFunction={handleHousingChange}
+        handleFunction={(option) =>
+          handleHousingChange(option as HousingType | null)
+        }
       >
         {HOUSING_OPTIONS.map((option) => (
           <option key={option} value={option}>
@@ -162,7 +171,9 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
           name="tenant topic"
           value={tenantTopic || ""}
           description="Select your topic"
-          handleFunction={handleTenantTopic}
+          handleFunction={(option) =>
+            handleTenantTopic(option as TenantTopic | null)
+          }
         >
           <optgroup label="--Letterable--">
             {Object.entries(LETTERABLE_TOPIC_OPTIONS).map(([key, option]) => (
@@ -185,9 +196,10 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
           <div className="px-4">
             Here are some examples of questions I can help with:
             <ul className="list-disc pl-4">
-              {ALL_TOPIC_OPTIONS[
-                tenantTopic as keyof typeof ALL_TOPIC_OPTIONS
-              ]?.example.map((question, index) => (
+              {(tenantTopic
+                ? ALL_TOPIC_OPTIONS[tenantTopic]
+                : null
+              )?.example.map((question, index) => (
                 <li key={`${tenantTopic}-${index}`}>
                   {question.split(/(_)/).map((part, i) => {
                     if (!part.startsWith("_")) return part;

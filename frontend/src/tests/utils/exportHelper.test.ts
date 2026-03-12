@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import exportMessages from "../../pages/Chat/utils/exportHelper";
-import { TChatMessage, TUiMessage } from "../../hooks/useMessages";
+import type { ChatMessage, UiMessage } from "../../shared/types/messages";
 
 function createMockDocument() {
   const writelnCalls: string[] = [];
@@ -46,7 +46,7 @@ describe("exportMessages", () => {
   });
 
   it("should open window, generate HTML with sanitized content, and trigger print", () => {
-    const messages: TChatMessage[] = [
+    const messages: ChatMessage[] = [
       new HumanMessage({
         content: '<script>alert("xss")</script>',
         id: "1",
@@ -89,7 +89,7 @@ describe("exportMessages", () => {
   it("should deserialize JSONL AI message content to plain text", () => {
     const jsonlContent =
       '{"type":"text","content":"Here is your answer."}\n{"type":"letter","content":"Dear Landlord,\\n\\nPlease fix the heater."}';
-    const messages: TChatMessage[] = [
+    const messages: ChatMessage[] = [
       new HumanMessage({ content: "Write a letter", id: "1" }),
       new AIMessage({ content: jsonlContent, id: "2" }),
     ];
@@ -104,12 +104,12 @@ describe("exportMessages", () => {
   });
 
   it("should exclude ui messages from export", () => {
-    const uiMessage: TUiMessage = {
+    const uiMessage: UiMessage = {
       type: "ui",
       text: "Sorry, I encountered an error.",
       id: "3",
     };
-    const messages: TChatMessage[] = [
+    const messages: ChatMessage[] = [
       new HumanMessage({ content: "Hello", id: "1" }),
       new AIMessage({ content: "Hi there", id: "2" }),
       uiMessage,

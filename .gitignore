@@ -28,6 +28,9 @@ dist/
 .vite/
 *.log
 
+# Auto-generated frontend types (run `make generate-types` to regenerate)
+frontend/src/types/
+
 # Coverage reports
 .coverage
 htmlcov/

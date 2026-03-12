@@ -1,22 +1,17 @@
-import {
-  deserializeAiMessage,
-  type TChatMessage,
-  type TUiMessage,
-} from "../../../hooks/useMessages";
+import { deserializeAiMessage } from "../../../hooks/useMessages";
+import type { ChatMessage, UiMessage } from "../../../shared/types/messages";
 import sanitizeText from "../../../shared/utils/sanitizeText";
 
 /**
  * Opens a printable window with the conversation history.
  * Sanitizes message content before rendering to prevent XSS.
  */
-export default function exportMessages(messages: TChatMessage[]) {
+export default function exportMessages(messages: ChatMessage[]) {
   if (messages.length < 2) return;
 
   const newDocument = window.open("", "", "height=800,width=600");
   const messageChain = messages
-    .filter(
-      (msg): msg is Exclude<TChatMessage, TUiMessage> => msg.type !== "ui",
-    )
+    .filter((msg): msg is Exclude<ChatMessage, UiMessage> => msg.type !== "ui")
     .map(
       (msg) =>
         `<p><strong>${
