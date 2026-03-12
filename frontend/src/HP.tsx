@@ -257,7 +257,7 @@ const HP = () => {
       </section>
 
       <section id="compare" style={styles.compareSection}>
-        <h2 style={{...styles.narrativeHeader, textAlign: 'center', marginBottom: '20px', color: '#F4F4F2'}}>Which approach is right for you?</h2>
+        <h2 style={{...styles.narrativeHeader, textAlign: 'center', paddingLeft: '10vw', paddingRight: '10vw', marginBottom: '20px', color: '#F4F4F2'}}>Which approach is right for you?</h2>
         <div className="mobile-scroll-x" style={styles.compareCard}>
           <div className="mobile-min-width comparison-grid" style={styles.tableGrid}>
             <div style={styles.tableHeader}></div>

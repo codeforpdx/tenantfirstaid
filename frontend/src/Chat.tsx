@@ -3,8 +3,6 @@ import useMessages from "./hooks/useMessages";
 import { useLetterContent } from "./hooks/useLetterContent";
 import ChatDisclaimer from "./pages/Chat/components/ChatDisclaimer";
 import MessageContainer from "./shared/components/MessageContainer";
-import BeaverIcon from "./shared/components/BeaverIcon";
-import TenantFirstAidLogo from "./shared/components/TenantFirstAidLogo";
 import FeatureSnippet from "./shared/components/FeatureSnippet";
 import clsx from "clsx";
 
@@ -12,8 +10,6 @@ export default function Chat() {
   const { addMessage, messages, setMessages } = useMessages();
   const isOngoing = messages.length > 0;
   const { letterContent } = useLetterContent(messages);
-  let city = 'Portland';
-  let locationString = 'Oregon';
 
   return (
     <div className="h-full w-full flex flex-col lg:flex-row gap-4 transition-all duration-300 md:px-4 max-w-[1400px]">

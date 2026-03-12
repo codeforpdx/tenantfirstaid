@@ -1,5 +1,3 @@
-import React from 'react';
-
 const TFALAbbreviated = ({ className = "h-10", ...props }) => (
   <svg
     className={className}
