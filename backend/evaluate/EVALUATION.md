@@ -97,12 +97,14 @@ flowchart TD
 
 ## Setup
 
-1. Sign up for a free account at https://smith.langchain.com/ (Personal workspace is sufficient).
+1. Sign up for a free account at https://smith.langchain.com/ (Personal workspace is sufficient for running evaluations).
 2. Generate an API key from your account settings.
-3. Add it to `backend/.env`:
+3. Copy `.env.example` to `.env` and fill in the values (see [Environment variables](#environment-variables) for the full list):
 
 ```bash
-LANGSMITH_API_KEY=your-api-key
+cd backend
+cp .env.example .env
+# Edit .env with your values
 ```
 
 ---
@@ -296,20 +298,69 @@ flowchart LR
 
 ## Environment variables
 
-```bash
-# Required
-GOOGLE_CLOUD_PROJECT=your-project
-GOOGLE_CLOUD_LOCATION=us-central1
-VERTEX_AI_DATASTORE=projects/.../datastores/...
-LANGSMITH_API_KEY=your-api-key
+The agent needs the same set of variables regardless of where it runs. How you provide them differs between local development and Cloud deployment.
 
-# Optional
-LANGSMITH_PROJECT=tenant-first-aid-dev  # LangSmith project name
-LANGSMITH_TRACING=true
-LANGCHAIN_TRACING_V2=true               # Enable detailed tracing
-MODEL_NAME=gemini-2.5-pro               # Model to evaluate
-SHOW_MODEL_THINKING=true                # Capture model reasoning in the evaluator run view
+### Variable reference
+
+| Variable | Required | Example | Description |
+|---|---|---|---|
+| `MODEL_NAME` | yes | `gemini-2.5-pro` | LLM model name |
+| `GOOGLE_CLOUD_PROJECT` | yes | `tenantfirstaid` | GCP project ID |
+| `GOOGLE_CLOUD_LOCATION` | yes | `global` | Vertex AI location |
+| `GOOGLE_APPLICATION_CREDENTIALS` | yes | *(see below)* | GCP credentials — file path locally, inline JSON in Cloud |
+| `VERTEX_AI_DATASTORE` | yes | `tenantfirstaid-corpora_...` | Vertex AI Search datastore ID |
+| `LANGSMITH_API_KEY` | for evals | `lsv2_pt_...` | LangSmith API key (not needed for `langgraph dev` itself) |
+| `LANGSMITH_TRACING` | no | `true` | Enable LangSmith tracing |
+| `LANGCHAIN_TRACING_V2` | no | `true` | Enable detailed tracing |
+| `LANGSMITH_PROJECT` | no | `tenant-first-aid-dev` | LangSmith project name for traces |
+| `SHOW_MODEL_THINKING` | no | `false` | Capture Gemini reasoning in responses |
+
+### Local development (`langgraph dev` and evaluations)
+
+All variables go in `backend/.env`. Copy `.env.example` and fill in the values:
+
+```bash
+cp .env.example .env
 ```
+
+`GOOGLE_APPLICATION_CREDENTIALS` is the **file path** to your GCP credentials JSON, typically `~/.config/gcloud/application_default_credentials.json`. See the project README for how to set up GCP credentials locally.
+
+### LangSmith Cloud deployment
+
+Cloud deployments don't use a `.env` file. Instead, environment variables are configured in the LangSmith UI.
+
+**Setting up the GCP credential as a workspace secret:**
+
+`GOOGLE_APPLICATION_CREDENTIALS` contains sensitive service account JSON. To avoid exposing it in the deployment settings (which are viewable by all workspace members):
+
+1. Go to **LangSmith → Settings → Workspace Secrets**.
+2. Create a secret named `GOOGLE_APPLICATION_CREDENTIALS` with the full JSON content of the service account key file (paste the raw JSON, not a file path).
+3. Save.
+
+**Configuring the deployment's environment:**
+
+1. Go to **Deployments → your deployment → Settings → Environment Variables**.
+2. Add each variable. For most, paste the value directly:
+
+   | Key | Value |
+   |---|---|
+   | `MODEL_NAME` | `gemini-2.5-pro` |
+   | `GOOGLE_CLOUD_PROJECT` | `tenantfirstaid` |
+   | `GOOGLE_CLOUD_LOCATION` | `global` |
+   | `VERTEX_AI_DATASTORE` | `tenantfirstaid-corpora_...` |
+   | `SHOW_MODEL_THINKING` | `false` |
+
+3. For the credential, reference the workspace secret instead of pasting the value:
+
+   | Key | Value |
+   |---|---|
+   | `GOOGLE_APPLICATION_CREDENTIALS` | `{{GOOGLE_APPLICATION_CREDENTIALS}}` |
+
+   The `{{...}}` syntax tells LangSmith to resolve the value from the workspace secret at runtime. If you later rotate the credential, update the workspace secret — no redeployment needed.
+
+4. Save and redeploy.
+
+`LANGSMITH_API_KEY` is **not** needed in the deployment environment — the Cloud runtime provides it automatically.
 
 ---
 
@@ -396,7 +447,7 @@ Studio lets you chat with the full agent — tools, RAG retrieval, and all — i
 
 ### Option A: LangSmith Cloud (Plus-tier seat holders)
 
-No local setup needed. Go to LangSmith → Deployments → your deployment → **Studio**. The agent is deployed from the `langgraph.json` manifest in `backend/`, and secrets (GCP credentials, etc.) are configured in the LangSmith Deployment settings.
+No local setup needed. Go to LangSmith → Deployments → your deployment → **Studio**. The agent is deployed from the `langgraph.json` manifest in `backend/`, and environment variables are configured in the deployment settings (see [Environment variables → LangSmith Cloud deployment](#langsmith-cloud-deployment) above).
 
 Cloud deployment also enables:
 - **Bound evaluators**: LLM-as-judge evaluators configured in the UI that auto-run on new experiments
