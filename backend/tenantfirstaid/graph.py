@@ -21,16 +21,25 @@ from langgraph.graph.state import CompiledStateGraph
 
 from .constants import DEFAULT_INSTRUCTIONS, SINGLETON
 from .langchain_tools import (
+    _load_gcp_credentials,
     generate_letter,
     get_letter_template,
     retrieve_city_state_laws,
 )
 from .location import OregonCity, TFAAgentStateSchema, UsaState
 
+# Load GCP credentials once — works with both file paths (local dev)
+# and inline JSON (LangSmith Cloud).
+assert (
+    SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is not None
+)  # validated in _GoogEnvAndPolicy
+_gcp_credentials = _load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
+
 # Shared LLM instance.
 llm = ChatGoogleGenerativeAI(
     model=SINGLETON.MODEL_NAME,
     max_tokens=SINGLETON.MAX_TOKENS,
+    credentials=_gcp_credentials,
     project=SINGLETON.GOOGLE_CLOUD_PROJECT,
     location=SINGLETON.GOOGLE_CLOUD_LOCATION,
     safety_settings=SINGLETON.SAFETY_SETTINGS,
