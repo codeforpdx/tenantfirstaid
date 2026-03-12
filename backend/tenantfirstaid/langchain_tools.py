@@ -27,12 +27,17 @@ def _load_gcp_credentials(
     or the JSON content itself (for environments like LangSmith Cloud where
     secrets are injected as env var values, not files).
     """
-    cred_path = Path(raw)
-    if cred_path.is_file():
-        with cred_path.open("r") as f:
-            info = json.load(f)
-    else:
-        # Treat the value as inline JSON.
+    # Try as a file path first. Guard against OSError for strings that are
+    # too long or otherwise invalid as paths (e.g. inline JSON blobs).
+    try:
+        cred_path = Path(raw)
+        if cred_path.is_file():
+            with cred_path.open("r") as f:
+                info = json.load(f)
+        else:
+            info = json.loads(raw)
+    except OSError:
+        # Not a valid path — treat as inline JSON.
         info = json.loads(raw)
 
     match info.get("type"):
