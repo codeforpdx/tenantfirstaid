@@ -44,7 +44,7 @@ export default async function sendHPFeedback(
   formData.append("name", name);
   formData.append("subject", subject);
   formData.append("feedback", feedback);
-  formData.append("message", blob, "message.html");
+  formData.append("transcript", blob, "transcript.html");
 
   await fetch("/api/feedback", {
     method: "POST",
