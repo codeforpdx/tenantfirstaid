@@ -18,6 +18,20 @@ from .constants import LETTER_TEMPLATE, SINGLETON
 from .location import OregonCity, UsaState
 
 
+def _parse_inline_json(raw: str) -> dict:
+    """Parse inline JSON, with a helpful error message on failure."""
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as e:
+        # Show the first 80 chars to help diagnose without leaking the full secret.
+        preview = raw[:80] + ("..." if len(raw) > 80 else "")
+        raise ValueError(
+            f"GOOGLE_APPLICATION_CREDENTIALS is not a valid file path and "
+            f"could not be parsed as JSON: {e}. "
+            f"Value starts with: {preview!r}"
+        ) from e
+
+
 def _load_gcp_credentials(
     raw: str,
 ) -> Credentials | service_account.Credentials:
@@ -35,10 +49,10 @@ def _load_gcp_credentials(
             with cred_path.open("r") as f:
                 info = json.load(f)
         else:
-            info = json.loads(raw)
+            info = _parse_inline_json(raw)
     except OSError:
         # Not a valid path — treat as inline JSON.
-        info = json.loads(raw)
+        info = _parse_inline_json(raw)
 
     match info.get("type"):
         case "authorized_user":
