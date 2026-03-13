@@ -58,7 +58,10 @@ def _load_gcp_credentials(
         case "authorized_user":
             return Credentials.from_authorized_user_info(info)
         case "service_account":
-            return service_account.Credentials.from_service_account_info(info)
+            return service_account.Credentials.from_service_account_info(
+                info,
+                scopes=["https://www.googleapis.com/auth/cloud-platform"],
+            )
         case other:
             raise ValueError(f"Unsupported credential type: {other}")
 
