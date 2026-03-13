@@ -180,6 +180,9 @@ def test_load_gcp_credentials_inline_service_account(mock_from_info):
     call_info = mock_from_info.call_args[0][0]
     assert call_info["type"] == "service_account"
     assert call_info["project_id"] == "fake-project"
+    # Verify OAuth scopes are set (required for Vertex AI API).
+    call_scopes = mock_from_info.call_args[1]["scopes"]
+    assert "https://www.googleapis.com/auth/cloud-platform" in call_scopes
     assert isinstance(creds, service_account.Credentials)
 
 
