@@ -28,27 +28,34 @@ from .langchain_tools import (
 )
 from .location import OregonCity, TFAAgentStateSchema, UsaState
 
-# Load GCP credentials once — works with both file paths (local dev)
-# and inline JSON (LangSmith Cloud).
-assert (
-    SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is not None
-)  # validated in _GoogEnvAndPolicy
-_gcp_credentials = _load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
+# Deferred LLM — built on first use so the module can be imported without
+# valid GCP credentials (e.g. fork CI that only runs unit tests).
+_llm: Optional[ChatGoogleGenerativeAI] = None
 
-# Shared LLM instance.
-llm = ChatGoogleGenerativeAI(
-    model=SINGLETON.MODEL_NAME,
-    max_tokens=SINGLETON.MAX_TOKENS,
-    credentials=_gcp_credentials,
-    project=SINGLETON.GOOGLE_CLOUD_PROJECT,
-    location=SINGLETON.GOOGLE_CLOUD_LOCATION,
-    safety_settings=SINGLETON.SAFETY_SETTINGS,
-    temperature=SINGLETON.MODEL_TEMPERATURE,
-    top_p=SINGLETON.TOP_P,
-    seed=0,
-    thinking_budget=-1,
-    include_thoughts=SINGLETON.SHOW_MODEL_THINKING,
-)
+
+def _get_llm() -> ChatGoogleGenerativeAI:
+    """Return the shared LLM instance, creating it on first call."""
+    global _llm
+    if _llm is None:
+        assert SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is not None, (
+            "GOOGLE_APPLICATION_CREDENTIALS is not set"
+        )
+        creds = _load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
+        _llm = ChatGoogleGenerativeAI(
+            model=SINGLETON.MODEL_NAME,
+            max_tokens=SINGLETON.MAX_TOKENS,
+            credentials=creds,
+            project=SINGLETON.GOOGLE_CLOUD_PROJECT,
+            location=SINGLETON.GOOGLE_CLOUD_LOCATION,
+            safety_settings=SINGLETON.SAFETY_SETTINGS,
+            temperature=SINGLETON.MODEL_TEMPERATURE,
+            top_p=SINGLETON.TOP_P,
+            seed=0,
+            thinking_budget=-1,
+            include_thoughts=SINGLETON.SHOW_MODEL_THINKING,
+        )
+    return _llm
+
 
 # Shared tool list.
 tools: List[BaseTool] = [retrieve_city_state_laws, get_letter_template, generate_letter]
@@ -115,10 +122,12 @@ def create_graph(
     Returns:
         A compiled LangGraph state graph.
     """
+    model = _get_llm()
+
     if system_prompt is not None:
         # Web app path: system prompt has location context baked in.
         return create_agent(
-            llm,
+            model,
             tools,
             system_prompt=system_prompt,
             state_schema=TFAAgentStateSchema,
@@ -127,7 +136,7 @@ def create_graph(
     # LangGraph deployment path: middleware injects the prompt from
     # Studio's editable configuration panel.
     return create_agent(
-        llm,
+        model,
         tools,
         middleware=[_SystemPromptFromContext()],
         context_schema=TFAContext,
@@ -135,5 +144,21 @@ def create_graph(
     )
 
 
-# Module-level graph instance for langgraph.json to reference.
-graph = create_graph(checkpointer=InMemorySaver())
+# Lazy graph instance for langgraph.json to reference. Built on first
+# attribute access so that importing this module doesn't require credentials.
+class _LazyGraph:
+    """Proxy that builds the graph on first attribute access."""
+
+    def __init__(self) -> None:
+        self._graph: Optional[CompiledStateGraph[Any, Any, Any, Any]] = None
+
+    def _ensure(self) -> CompiledStateGraph[Any, Any, Any, Any]:
+        if self._graph is None:
+            self._graph = create_graph(checkpointer=InMemorySaver())
+        return self._graph
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._ensure(), name)
+
+
+graph = _LazyGraph()
