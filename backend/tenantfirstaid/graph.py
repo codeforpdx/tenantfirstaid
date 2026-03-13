@@ -143,21 +143,8 @@ def create_graph(
     )
 
 
-# Lazy graph instance for langgraph.json to reference. Built on first
-# attribute access so that importing this module doesn't require credentials.
-class _LazyGraph:
-    """Proxy that builds the graph on first attribute access."""
-
-    def __init__(self) -> None:
-        self._graph: Optional[CompiledStateGraph[Any, Any, Any, Any]] = None
-
-    def _ensure(self) -> CompiledStateGraph[Any, Any, Any, Any]:
-        if self._graph is None:
-            self._graph = create_graph(checkpointer=InMemorySaver())
-        return self._graph
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._ensure(), name)
-
-
-graph = _LazyGraph()
+# Graph factory for langgraph.json to reference. LangGraph's loader accepts
+# callables, so this defers credential loading until the runtime actually
+# builds the graph (keeping the module importable without valid GCP creds).
+def graph() -> CompiledStateGraph[Any, Any, Any, Any]:
+    return create_graph(checkpointer=InMemorySaver())
