@@ -4,6 +4,7 @@ Provides the LLM, tools, and graph factory used by both LangChainChatManager
 (web app) and `langgraph dev` / LangSmith Cloud deployment.
 """
 
+from collections.abc import Awaitable
 from dataclasses import dataclass, field
 from typing import Any, Callable, List, Optional
 
@@ -20,8 +21,8 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph.state import CompiledStateGraph
 
 from .constants import DEFAULT_INSTRUCTIONS, SINGLETON
+from .google_auth import load_gcp_credentials
 from .langchain_tools import (
-    _load_gcp_credentials,
     generate_letter,
     get_letter_template,
     retrieve_city_state_laws,
@@ -40,7 +41,7 @@ def _get_llm() -> ChatGoogleGenerativeAI:
         assert SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is not None, (
             "GOOGLE_APPLICATION_CREDENTIALS is not set"
         )
-        creds = _load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
+        creds = load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
         _llm = ChatGoogleGenerativeAI(
             model=SINGLETON.MODEL_NAME,
             max_tokens=SINGLETON.MAX_TOKENS,
@@ -73,37 +74,48 @@ class TFAContext:
 
 
 class _SystemPromptFromContext(AgentMiddleware[Any, TFAContext]):
-    """Middleware that reads the system prompt from runtime context.
+    """Middleware that builds the system prompt from context and agent state.
 
-    This allows the system prompt to be overridden per-run via Studio's
-    configuration panel, while still defaulting to system_prompt.md.
+    Reads the base prompt from Studio's configuration panel and appends
+    location context (city/state) from the agent state, mirroring what
+    the web app does via prepare_system_prompt().
     """
+
+    def _build(self, request: ModelRequest[TFAContext]) -> SystemMessage:
+        base = request.runtime.context.system_prompt
+        state = UsaState.from_maybe_str(request.state.get("state"))
+        city = OregonCity.from_maybe_str(request.state.get("city"))
+        return _build_system_message(base, city, state)
 
     def wrap_model_call(
         self,
         request: ModelRequest[TFAContext],
         handler: Callable[[ModelRequest[TFAContext]], ModelResponse],
     ) -> ModelResponse:
-        request.system_message = SystemMessage(
-            content=request.runtime.context.system_prompt
-        )
+        request.system_message = self._build(request)
         return handler(request)
 
     async def awrap_model_call(
         self,
         request: ModelRequest[TFAContext],
-        handler: Callable,
+        handler: Callable[[ModelRequest[TFAContext]], Awaitable[ModelResponse]],
     ) -> ModelResponse:
-        request.system_message = SystemMessage(
-            content=request.runtime.context.system_prompt
-        )
+        request.system_message = self._build(request)
         return await handler(request)
 
 
+def _build_system_message(
+    base_prompt: str, city: Optional[OregonCity], state: UsaState
+) -> SystemMessage:
+    """Build a SystemMessage with location context appended."""
+    parts = [city.title() for city in [city] if city is not None] + [state.upper()]
+    location = " ".join(parts)
+    return SystemMessage(base_prompt + f"\nThe user is in {location}.\n")
+
+
 def prepare_system_prompt(city: Optional[OregonCity], state: UsaState) -> SystemMessage:
-    """Build the system prompt with location context appended."""
-    location = f"{city.title() if city is not None else ''} {state.upper()}"
-    return SystemMessage(DEFAULT_INSTRUCTIONS + f"\nThe user is in {location}.\n")
+    """Build the default system prompt with location context appended."""
+    return _build_system_message(DEFAULT_INSTRUCTIONS, city, state)
 
 
 def create_graph(
@@ -131,6 +143,7 @@ def create_graph(
             tools,
             system_prompt=system_prompt,
             state_schema=TFAAgentStateSchema,
+            checkpointer=checkpointer,
         )
 
     # LangGraph deployment path: middleware injects the prompt from
@@ -141,6 +154,7 @@ def create_graph(
         middleware=[_SystemPromptFromContext()],
         context_schema=TFAContext,
         state_schema=TFAAgentStateSchema,
+        checkpointer=checkpointer,
     )
 
 
