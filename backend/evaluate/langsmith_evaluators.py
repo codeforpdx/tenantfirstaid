@@ -53,7 +53,7 @@ def _load_rubric(name: str) -> str:
     rubric_text = rubric_path.read_text()
     return dedent(
         f"""
-        You are an expert data labeler evaluating model outputs for correctness.
+        You are an expert data labeler evaluating model outputs.
         Your task is to assign a score based on the following rubric:
         <Rubric>
         {rubric_text}
