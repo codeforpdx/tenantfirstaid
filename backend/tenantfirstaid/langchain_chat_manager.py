@@ -16,7 +16,6 @@ from langchain_core.messages import (
     ToolMessage,
 )
 from langchain_core.runnables import RunnableConfig
-from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph.state import CompiledStateGraph
 
 from .graph import create_graph, prepare_system_prompt
@@ -64,11 +63,8 @@ class LangChainChatManager:
 
         self.system_prompt = prepare_system_prompt(city, state)
 
-        checkpointer = InMemorySaver() if thread_id is not None else None
-
         return create_graph(
             system_prompt=self.system_prompt,
-            checkpointer=checkpointer,
         )
 
     # TODO

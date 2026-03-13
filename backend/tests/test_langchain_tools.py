@@ -11,10 +11,10 @@ import pytest
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 
+from tenantfirstaid.google_auth import load_gcp_credentials
 from tenantfirstaid.langchain_tools import (
     CityStateLawsInputSchema,
     __filter_builder,
-    _load_gcp_credentials,
     generate_letter,
     get_letter_template,
     retrieve_city_state_laws,
@@ -164,7 +164,7 @@ _SERVICE_ACCOUNT_JSON = json.dumps(
 
 def test_load_gcp_credentials_inline_authorized_user():
     """Inline JSON with type=authorized_user returns Credentials."""
-    creds = _load_gcp_credentials(_AUTHORIZED_USER_JSON)
+    creds = load_gcp_credentials(_AUTHORIZED_USER_JSON)
     assert isinstance(creds, Credentials)
 
 
@@ -173,7 +173,7 @@ def test_load_gcp_credentials_inline_service_account(mock_from_info):
     """Inline JSON with type=service_account calls the right factory."""
     mock_from_info.return_value = MagicMock(spec=service_account.Credentials)
 
-    creds = _load_gcp_credentials(_SERVICE_ACCOUNT_JSON)
+    creds = load_gcp_credentials(_SERVICE_ACCOUNT_JSON)
 
     mock_from_info.assert_called_once()
     # Verify the parsed JSON was passed through.
@@ -191,7 +191,7 @@ def test_load_gcp_credentials_from_file(tmp_path):
     cred_file = tmp_path / "creds.json"
     cred_file.write_text(_AUTHORIZED_USER_JSON)
 
-    creds = _load_gcp_credentials(str(cred_file))
+    creds = load_gcp_credentials(str(cred_file))
     assert isinstance(creds, Credentials)
 
 
@@ -199,10 +199,10 @@ def test_load_gcp_credentials_unsupported_type():
     """Unsupported credential type raises ValueError."""
     bad_json = json.dumps({"type": "external_account", "audience": "test"})
     with pytest.raises(ValueError, match="Unsupported credential type"):
-        _load_gcp_credentials(bad_json)
+        load_gcp_credentials(bad_json)
 
 
 def test_load_gcp_credentials_invalid_json():
     """Non-JSON string that isn't a file path raises."""
     with pytest.raises((json.JSONDecodeError, ValueError)):
-        _load_gcp_credentials("not-json-and-not-a-file")
+        load_gcp_credentials("not-json-and-not-a-file")

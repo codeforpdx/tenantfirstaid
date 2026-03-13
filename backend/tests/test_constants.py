@@ -28,3 +28,18 @@ def test_import_constants():
     from tenantfirstaid.constants import SINGLETON
 
     assert SINGLETON is not None
+
+
+def test_system_prompt_placeholders_are_substituted():
+    """Ensure str.format() placeholders are resolved, not left raw."""
+    assert "{RESPONSE_WORD_LIMIT}" not in DEFAULT_INSTRUCTIONS
+    assert "{OREGON_LAW_CENTER_PHONE_NUMBER}" not in DEFAULT_INSTRUCTIONS
+
+
+def test_system_prompt_has_no_stray_placeholders():
+    """Guard against someone adding an unrecognised {placeholder} to system_prompt.md."""
+    import re
+
+    # Match {WORD} but not markdown links like [text](url) or tool names like `{text}`.
+    stray = re.findall(r"(?<!\[)(?<!`)\{[A-Z_]+\}(?!`)(?!\])", DEFAULT_INSTRUCTIONS)
+    assert stray == [], f"Unsubstituted placeholders found: {stray}"
