@@ -23,10 +23,6 @@ from .graph import create_graph, prepare_system_prompt
 from .location import OregonCity, UsaState
 
 
-def starting_message_helper(content: str) -> HumanMessage:
-    return HumanMessage(content=content)
-
-
 class LangChainChatManager:
     """
     Manages simultaneous chat interactions using LangChain agent architecture.
