@@ -1,4 +1,4 @@
-"""CLI for manipulating LangSmith datasets, scenarios, experiments, and runs.
+"""CLI for manipulating LangSmith datasets, scenarios, experiments, runs, and evaluators.
 
 Remote references are bare dataset/experiment names as they appear in LangSmith.
 Local references are file paths ending in .jsonl.
@@ -11,6 +11,11 @@ Usage examples:
     scenario list my-dataset
     experiment list my-dataset
     run show <run-id>
+    evaluator list
+    evaluator push
+    evaluator push legal_correctness
+    evaluator pull
+    evaluator pull tone
 """
 
 import argparse
@@ -483,6 +488,114 @@ def cmd_run_trace(args: argparse.Namespace) -> None:
     print_run(run)
 
 
+# ── evaluator subcommands ─────────────────────────────────────────────────────
+
+
+def _get_evaluator_registry() -> tuple:
+    """Import the evaluator registry from langsmith_evaluators to avoid circular imports."""
+    from evaluate.langsmith_evaluators import (
+        LLM_JUDGE_EVALUATORS,
+        load_rubric,
+    )
+
+    return LLM_JUDGE_EVALUATORS, load_rubric
+
+
+def cmd_evaluator_list(args: argparse.Namespace) -> None:
+    registry, _ = _get_evaluator_registry()
+    rows = [(ev["rubric"], ev["feedback_key"], ev["hub_name"]) for ev in registry]
+    headers = None if args.no_header else ("RUBRIC", "FEEDBACK KEY", "HUB NAME")
+    _tabulate(rows, headers=headers)
+
+
+def cmd_evaluator_push(args: argparse.Namespace) -> None:
+    from langchain_core.prompts import ChatPromptTemplate
+
+    registry, load_rubric = _get_evaluator_registry()
+
+    if args.rubric:
+        matches = [ev for ev in registry if ev["rubric"] == args.rubric]
+        if not matches:
+            valid = ", ".join(ev["rubric"] for ev in registry)
+            print(
+                f"Unknown rubric '{args.rubric}'. Valid rubrics: {valid}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        to_push = matches
+    else:
+        to_push = list(registry)
+
+    client = make_client()
+    for ev in to_push:
+        prompt_text = load_rubric(ev["rubric"])
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", prompt_text),
+            ]
+        )
+        url = client.push_prompt(
+            ev["hub_name"],
+            object=prompt,
+            is_public=False,
+            description=f"LLM-as-judge evaluator for '{ev['feedback_key']}'. "
+            f"Assembled from evaluators/{ev['rubric']}.md.",
+        )
+        print(f"Pushed '{ev['hub_name']}' → {url}")
+
+
+def _extract_rubric(prompt_text: str) -> str:
+    """Extract the rubric content from between <Rubric> tags in a full judge prompt."""
+    import re
+
+    match = re.search(r"<Rubric>\s*\n(.*?)\s*</Rubric>", prompt_text, re.DOTALL)
+    if not match:
+        raise ValueError("Could not find <Rubric>...</Rubric> tags in the prompt.")
+    return match.group(1).strip() + "\n"
+
+
+def cmd_evaluator_pull(args: argparse.Namespace) -> None:
+    from evaluate.langsmith_evaluators import EVALUATORS_DIR
+
+    registry, _ = _get_evaluator_registry()
+
+    if args.rubric:
+        matches = [ev for ev in registry if ev["rubric"] == args.rubric]
+        if not matches:
+            valid = ", ".join(ev["rubric"] for ev in registry)
+            print(
+                f"Unknown rubric '{args.rubric}'. Valid rubrics: {valid}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        to_pull = matches
+    else:
+        to_pull = list(registry)
+
+    client = make_client()
+    for ev in to_pull:
+        rubric_path = EVALUATORS_DIR / f"{ev['rubric']}.md"
+
+        if rubric_path.exists() and not args.force and not _git_is_clean(rubric_path):
+            print(
+                f"error: {rubric_path.name} has uncommitted changes. Commit first or pass --force.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        prompt = client.pull_prompt(ev["hub_name"])
+        # The prompt is a ChatPromptTemplate; extract the system message content.
+        system_msg = prompt.messages[0].prompt.template
+        rubric_text = _extract_rubric(system_msg)
+
+        if args.dry_run:
+            print(f"Would write {len(rubric_text)} chars to {rubric_path.name}")
+            continue
+
+        rubric_path.write_text(rubric_text)
+        print(f"Pulled '{ev['hub_name']}' → {rubric_path.name}")
+
+
 # ── argument parser ────────────────────────────────────────────────────────────
 
 
@@ -752,6 +865,55 @@ def build_parser() -> argparse.ArgumentParser:
     p = runs_sub.add_parser("trace", help="Print the full call tree for a run.")
     p.add_argument("run_id", help="LangSmith run UUID.")
     p.set_defaults(func=cmd_run_trace)
+
+    # ── evaluator ────────────────────────────────────────────────────────────
+    ev_parser = nouns.add_parser(
+        "evaluator", help="Manage LLM-as-judge evaluator prompts in the Prompt Hub."
+    )
+    ev_sub = ev_parser.add_subparsers(dest="verb", metavar="SUBCOMMAND")
+    ev_sub.required = True
+
+    p = ev_sub.add_parser("list", help="List available evaluator rubrics.")
+    p.add_argument("--no-header", action="store_true", help="Suppress column headers.")
+    p.set_defaults(func=cmd_evaluator_list)
+
+    p = ev_sub.add_parser(
+        "push",
+        help="Push evaluator prompts to the Prompt Hub.",
+    )
+    p.add_argument(
+        "rubric",
+        nargs="?",
+        default=None,
+        metavar="name",
+        help="Rubric name to push (e.g. legal_correctness). Omit to push all.",
+    )
+    p.set_defaults(func=cmd_evaluator_push)
+
+    p = ev_sub.add_parser(
+        "pull",
+        help="Pull evaluator rubrics from the Prompt Hub back to local files.",
+    )
+    p.add_argument(
+        "rubric",
+        nargs="?",
+        default=None,
+        metavar="name",
+        help="Rubric name to pull (e.g. legal_correctness). Omit to pull all.",
+    )
+    p.add_argument(
+        "--force",
+        "-f",
+        action="store_true",
+        help="Overwrite local file even if it has uncommitted changes.",
+    )
+    p.add_argument(
+        "--dry-run",
+        "-n",
+        action="store_true",
+        help="Show what would be pulled without writing files.",
+    )
+    p.set_defaults(func=cmd_evaluator_pull)
 
     return parser
 

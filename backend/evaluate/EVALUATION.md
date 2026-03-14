@@ -441,6 +441,189 @@ Heuristic evaluators (citation format, tool usage, performance) are Python code 
 
 ---
 
+## Bound evaluators (running evaluations from the LangSmith UI)
+
+Instead of running `run_langsmith_evaluation.py` locally, you can bind an LLM-as-judge evaluator directly to the dataset in LangSmith and run experiments from the browser against your Cloud deployment. This is useful for non-developers who want to iterate on the system prompt or test scenarios without a local Python setup.
+
+### How it works
+
+```mermaid
+sequenceDiagram
+    participant UI as LangSmith UI
+    participant DS as Dataset<br/>(tenant-legal-qa-scenarios)
+    participant Deploy as Cloud deployment<br/>(LangGraph)
+    participant Judge as Bound evaluator<br/>(LLM-as-judge)
+
+    UI->>DS: start experiment
+    DS->>Deploy: send each test question
+    Deploy->>DS: chatbot response
+    DS->>Judge: inputs + outputs + reference outputs
+    Judge->>DS: score (0.0 – 1.0)
+    UI->>UI: display results in Experiments tab
+```
+
+### Prerequisites
+
+- A LangSmith **Plus-tier** seat (bound evaluators are not available on the free tier).
+- The dataset `tenant-legal-qa-scenarios` already pushed to LangSmith (see [Dataset management](#dataset-management)).
+- A working Cloud deployment of the agent (see [Testing the agent with LangGraph Studio → Option A](#option-a-langsmith-cloud-plus-tier-seat-holders)).
+
+### Setting up a bound evaluator (example: Legal Correctness)
+
+1. Go to **LangSmith → Datasets → `tenant-legal-qa-scenarios`**.
+2. Open the **Evaluators** tab and click **+ Add Evaluator**.
+3. Choose **LLM-as-Judge**.
+
+#### Prompt
+
+You can either create a prompt inline or pull one from the Prompt Hub.
+
+Choose **Create your own prompt** and paste the prompt below. This is the same rubric used by the offline evaluator (`evaluators/legal_correctness.md`) wrapped in the structural template from `langsmith_evaluators.py`. The prompt uses f-string syntax — `{variable}` placeholders that LangSmith fills at evaluation time.
+
+```text
+You are an expert data labeler evaluating model outputs.
+Your task is to assign a score based on the following rubric:
+<Rubric>
+A correct answer:
+- Legal advice correctly based on Oregon tenant law
+- Check if advice aligns with ORS 90 (Landlord-Tenant)
+- Verify city-specific rules are correctly applied
+- Ensure no false statements about tenant rights
+- Provides accurate and complete information
+- Contains no factual errors
+- Addresses all parts of the question
+- Is logically consistent
+- Uses precise and accurate terminology
+
+When scoring, you should penalize:
+- Factual errors or inaccuracies
+- Incomplete or partial answers
+- Misleading or ambiguous statements
+- Incorrect terminology
+- Logical inconsistencies
+- Missing key information
+
+Scoring Guidelines:
+- Score 1.0 if response is legally correct and complete
+- Score 0.5 if response has minor inaccuracies or omissions
+- Score 0.0 if response is legally incorrect or significantly incomplete
+</Rubric>
+
+<Instructions>
+- Carefully read the input and output
+</Instructions>
+
+<input>
+{inputs}
+</input>
+
+Use the Model-Under-Test Output below to evaluate the response.  Disregard
+other Model-Under-Test sections, which are for evaluation debugging only
+and should not affect the scores.
+
+<output>
+{outputs}
+</output>
+
+Use the reference outputs below to help you evaluate the response:
+
+<reference_outputs>
+{reference_outputs}
+</reference_outputs>
+```
+
+The three placeholder variables — `{inputs}`, `{outputs}`, `{reference_outputs}` — are populated automatically by LangSmith from the dataset example and the deployment's response. You do not need to map them manually. LangSmith serializes the full dict into each placeholder, so the judge sees the structured data (query, city, state, facts, reference conversation) as-is.
+
+**Prompt commits.** Every time you save or edit the prompt, LangSmith creates a new commit with a unique hash. This gives you a version history you can browse, compare, and revert. If you iterate on the prompt wording in the Playground first, commit the version there, then pull it into the evaluator using the **Select a prompt** dropdown instead of pasting inline.
+
+#### Model configuration
+
+Select the model the judge will use. To match the offline evaluator, use:
+
+| Setting | Value | Notes |
+|---|---|---|
+| **Model** | `gemini-2.5-flash` | Matches `EVALUATOR_MODEL_NAME` in `langsmith_evaluators.py`. |
+| **Temperature** | `0.0` | Lower temperature = more deterministic scoring. The offline `openevals` evaluator defaults to `0.0`. |
+
+LangSmith runs the judge model through its own API keys — your `GOOGLE_APPLICATION_CREDENTIALS` are not used (see [Cost](#cost) below).
+
+#### Feedback configuration
+
+Feedback configuration defines the scoring rubric the judge outputs. Scores are attached as feedback to each run in the experiment.
+
+| Setting | Value | Notes |
+|---|---|---|
+| **Feedback key** | `legal correctness` | The name shown in experiment results. Use the same key as the offline evaluator so scores are comparable across UI and CLI experiments. |
+| **Description** | `Is the legal information accurate under Oregon tenant law?` | Optional but helpful for collaborators. |
+| **Feedback type** | **Continuous** | Numerical score within a range. The other options are **Boolean** (true/false) and **Categorical** (predefined labels). |
+| **Range** | `0.0` – `1.0` | Matches the offline evaluator's three-level scale (0.0 / 0.5 / 1.0). |
+
+LangSmith adds the feedback configuration as structured output instructions to the judge prompt behind the scenes, so the model knows what format to return.
+
+#### Save
+
+Click **Save**. The evaluator is now bound to the dataset and will automatically run on any new experiment created against this dataset — whether started from the UI or from the SDK.
+
+#### Adding the tone evaluator
+
+Repeat the steps above using the rubric from `evaluators/tone.md`, feedback key `appropriate tone`, and the same prompt template structure.
+
+### Running an experiment from the UI
+
+1. Go to the dataset's **Experiments** tab.
+2. Click **+ New Experiment**.
+3. Select your **Cloud deployment** as the target.
+4. Run. LangSmith sends each dataset example to the deployment, collects responses, and scores them with the bound evaluator automatically.
+
+Results appear in the same Experiments view used by the offline CLI, with the same feedback keys, so scores are directly comparable.
+
+### Keeping bound evaluators in sync with the codebase
+
+The bound evaluator prompt in the LangSmith UI does not automatically update when you edit a rubric in `evaluators/`. To keep things in sync, push the evaluator prompts to the Prompt Hub after editing a rubric:
+
+```bash
+# Push all evaluator prompts to the Prompt Hub.
+uv run langsmith_dataset.py evaluator push
+
+# Push a single evaluator.
+uv run langsmith_dataset.py evaluator push legal_correctness
+```
+
+This assembles the full judge prompt from the rubric markdown file (the same template used by the offline evaluator in `langsmith_evaluators.py`) and pushes it to the Prompt Hub under a versioned name (e.g. `tfa-legal-correctness`). Each push creates a new commit in the Hub's version history.
+
+To use the Hub prompt in a bound evaluator, choose **Select a prompt** instead of **Create your own prompt** when configuring the evaluator in the UI, and pick the corresponding `tfa-*` prompt. The bound evaluator will always use the latest committed version.
+
+If someone edits the rubric in the LangSmith Playground (e.g. a lawyer testing scoring tweaks), pull the changes back to the local rubric files:
+
+```bash
+# Pull all evaluator rubrics from the Prompt Hub.
+uv run langsmith_dataset.py evaluator pull
+
+# Pull a single evaluator.
+uv run langsmith_dataset.py evaluator pull legal_correctness
+```
+
+This extracts the rubric text from the Hub prompt and overwrites the corresponding `evaluators/*.md` file. Like `dataset pull`, it refuses to overwrite files with uncommitted changes unless you pass `--force`. Commit the result so the rest of the team gets the updated rubric.
+
+```mermaid
+flowchart LR
+    A["Edit rubric in<br>evaluators/*.md"] -- "evaluator push" --> B["Prompt Hub<br>(tfa-*)"]
+    B -- "evaluator pull" --> A
+    A --> C["git commit"]
+```
+
+To see which evaluators are available:
+
+```bash
+uv run langsmith_dataset.py evaluator list
+```
+
+### Cost
+
+Bound evaluators use LangSmith's own LLM infrastructure, not your GCP credentials. Judge model calls are billed through your LangSmith plan, not your Google Cloud account. Check LangSmith's current pricing for details on how evaluator usage is metered.
+
+---
+
 ## Testing the agent with LangGraph Studio
 
 Studio lets you chat with the full agent — tools, RAG retrieval, and all — in an interactive UI. There are two ways to access it depending on your setup.
@@ -482,7 +665,7 @@ Requires `langgraph-cli[inmem]` (already in dev dependencies) and GCP credential
 - [ ] enable additional evaluators (e.g. citation correctness)
 - [ ] enable LangSmith web UI to edit scenarios
   - [ ] update facts in existing scenarios to enable additional/better evaluators (e.g. citation correctness)
-- [ ] enable LangSmith web UI to edit evaluators via bound evaluators
-- [ ] enable LangSmith web UI to launch experiments via Cloud deployment
+- [x] enable LangSmith web UI to edit evaluators via bound evaluators
+- [x] enable LangSmith web UI to launch experiments via Cloud deployment
 - [ ] demonstrate evaluation of multi-turn scenarios
 - [ ] A/B testing of system prompt variants
