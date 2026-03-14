@@ -38,7 +38,7 @@ INPUT_OUTPUT: Final = dedent(
     {outputs}
     </output>
 
-    Use the reference outputs below to help you evaluate the correctness of the response:
+    Use the reference outputs below to help you evaluate the response:
 
     <reference_outputs>
     {reference_outputs}
@@ -61,7 +61,6 @@ def _load_rubric(name: str) -> str:
 
         <Instructions>
         - Carefully read the input and output
-        - Check for factual accuracy and completeness
         </Instructions>
 
         {INPUT_OUTPUT}
@@ -182,15 +181,15 @@ def performance_evaluator(run, example) -> Dict[str, Any]:
     Returns:
         Dictionary with evaluation results
     """
-    latency = run.end_time - run.start_time
+    latency_seconds = (run.end_time - run.start_time).total_seconds()
     token_usage = run.usage.get("total_tokens", 0) if run.usage else 0
 
     # Flag if response is too slow (> 5 seconds).
-    latency_score = 1.0 if latency < 5.0 else 0.5 if latency < 10.0 else 0.0
+    latency_score = 1.0 if latency_seconds < 5.0 else 0.5 if latency_seconds < 10.0 else 0.0
 
     return {
         "key": "performance",
         "score": latency_score,
-        "comment": f"Latency: {latency:.2f}s, Tokens: {token_usage}",
-        "metadata": {"latency_seconds": latency, "total_tokens": token_usage},
+        "comment": f"Latency: {latency_seconds:.2f}s, Tokens: {token_usage}",
+        "metadata": {"latency_seconds": latency_seconds, "total_tokens": token_usage},
     }
