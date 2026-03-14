@@ -17,15 +17,24 @@ Usage examples:
 """
 
 import argparse
+import difflib
 import json
 import os
+import re
 import subprocess
 import sys
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 import dotenv
 import jsonschema
+from langchain_core.prompts import (
+    ChatPromptTemplate,
+    PromptTemplate,
+    SystemMessagePromptTemplate,
+)
+from langchain_core.runnables import RunnableSequence
 from langsmith import Client
 from langsmith import utils as langsmith_utils
 
@@ -514,8 +523,6 @@ DEFAULT_PROMPT_COLUMNS = "name,date,commit,type"
 
 
 def cmd_prompt_list(args: argparse.Namespace) -> None:
-    from typing import Any
-
     col_registry = _prompt_columns()
     col_keys = [k.strip() for k in args.columns.split(",")]
     unknown = [k for k in col_keys if k not in col_registry]
@@ -548,8 +555,6 @@ def cmd_prompt_list(args: argparse.Namespace) -> None:
 
 def _extract_rubric(prompt_text: str) -> str:
     """Extract the rubric content from between <Rubric> tags in a full judge prompt."""
-    import re
-
     match = re.search(r"<Rubric>\s*\n(.*?)\s*</Rubric>", prompt_text, re.DOTALL)
     if not match:
         raise ValueError("Could not find <Rubric>...</Rubric> tags in the prompt.")
@@ -562,8 +567,6 @@ def cmd_prompt_pull(args: argparse.Namespace) -> None:
     The prompt must use <Rubric>…</Rubric> tags around the rubric text.
     Use 'prompt list' to find available prompt names.
     """
-    import difflib
-
     local: Path = args.file
 
     if local.exists() and not args.force and not _git_is_clean(local):
@@ -577,13 +580,6 @@ def cmd_prompt_pull(args: argparse.Namespace) -> None:
     pulled = client.pull_prompt(args.name)
 
     # pull_prompt returns different types depending on how the prompt was created.
-    from langchain_core.prompts import (
-        ChatPromptTemplate,
-        PromptTemplate,
-        SystemMessagePromptTemplate,
-    )
-    from langchain_core.runnables import RunnableSequence
-
     if isinstance(pulled, RunnableSequence):
         chat_prompt = pulled.first
         if not isinstance(chat_prompt, ChatPromptTemplate):

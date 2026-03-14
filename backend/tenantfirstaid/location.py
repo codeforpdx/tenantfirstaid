@@ -77,4 +77,4 @@ class TFAAgentStateSchema(AgentState):
     state: UsaState
     city: NotRequired[
         Optional[OregonCity]
-    ]  # "NotRequred" makes this field optional in LangSmith Studio input panel
+    ]  # "NotRequired" makes this field optional in LangSmith Studio input panel
