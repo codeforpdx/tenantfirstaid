@@ -530,19 +530,19 @@ If a lawyer edits the rubric wording in the LangSmith Playground, pull the chang
 First, find the prompt name:
 
 ```bash
-uv run python -m evaluate.langsmith_dataset prompt list
+uv run langsmith_dataset.py prompt list
 ```
 
 Then dry-run to review the diff:
 
 ```bash
-uv run python -m evaluate.langsmith_dataset prompt pull tfa-legal-correctness evaluators/legal_correctness.md --dry-run
+uv run langsmith_dataset.py prompt pull tfa-legal-correctness evaluators/legal_correctness.md --dry-run
 ```
 
 Then write and commit:
 
 ```bash
-uv run python -m evaluate.langsmith_dataset prompt pull tfa-legal-correctness evaluators/legal_correctness.md
+uv run langsmith_dataset.py prompt pull tfa-legal-correctness evaluators/legal_correctness.md
 git add evaluate/evaluators/legal_correctness.md
 git commit -m "update legal correctness rubric from Prompt Hub"
 ```

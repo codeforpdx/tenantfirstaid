@@ -22,7 +22,7 @@ EVALUATOR_MODEL_NAME: Final = "gemini-2.5-flash"
 
 EVALUATORS_DIR: Final = Path(__file__).parent / "evaluators"
 
-# Registry of LLM-as-judge evaluators, used by the CLI evaluator list command.
+# Registry of LLM-as-judge evaluators consumed by run_langsmith_evaluation.py.
 LLM_JUDGE_EVALUATORS: Final = (
     {"rubric": "legal_correctness", "feedback_key": "legal correctness"},
     {"rubric": "tone", "feedback_key": "appropriate tone"},

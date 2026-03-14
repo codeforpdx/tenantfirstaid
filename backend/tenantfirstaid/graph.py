@@ -4,6 +4,7 @@ Provides the LLM, tools, and graph factory used by both LangChainChatManager
 (web app) and `langgraph dev` / LangSmith Cloud deployment.
 """
 
+import threading
 from collections.abc import Awaitable
 from dataclasses import dataclass, field
 from typing import Any, Callable, List, Optional
@@ -32,29 +33,31 @@ from .location import OregonCity, TFAAgentStateSchema, UsaState
 # Deferred LLM — built on first use so the module can be imported without
 # valid GCP credentials (e.g. fork CI that only runs unit tests).
 _llm: Optional[ChatGoogleGenerativeAI] = None
+_llm_lock = threading.Lock()
 
 
 def _get_llm() -> ChatGoogleGenerativeAI:
     """Return the shared LLM instance, creating it on first call."""
     global _llm
-    if _llm is None:
-        assert SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is not None, (
-            "GOOGLE_APPLICATION_CREDENTIALS is not set"
-        )
-        creds = load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
-        _llm = ChatGoogleGenerativeAI(
-            model=SINGLETON.MODEL_NAME,
-            max_tokens=SINGLETON.MAX_TOKENS,
-            credentials=creds,
-            project=SINGLETON.GOOGLE_CLOUD_PROJECT,
-            location=SINGLETON.GOOGLE_CLOUD_LOCATION,
-            safety_settings=SINGLETON.SAFETY_SETTINGS,
-            temperature=SINGLETON.MODEL_TEMPERATURE,
-            seed=0,
-            thinking_budget=-1,
-            include_thoughts=SINGLETON.SHOW_MODEL_THINKING,
-        )
-    return _llm
+    with _llm_lock:
+        if _llm is None:
+            assert SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is not None, (
+                "GOOGLE_APPLICATION_CREDENTIALS is not set"
+            )
+            creds = load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
+            _llm = ChatGoogleGenerativeAI(
+                model=SINGLETON.MODEL_NAME,
+                max_tokens=SINGLETON.MAX_TOKENS,
+                credentials=creds,
+                project=SINGLETON.GOOGLE_CLOUD_PROJECT,
+                location=SINGLETON.GOOGLE_CLOUD_LOCATION,
+                safety_settings=SINGLETON.SAFETY_SETTINGS,
+                temperature=SINGLETON.MODEL_TEMPERATURE,
+                seed=0,
+                thinking_budget=-1,
+                include_thoughts=SINGLETON.SHOW_MODEL_THINKING,
+            )
+        return _llm
 
 
 # Shared tool list.
