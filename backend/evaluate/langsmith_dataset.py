@@ -188,8 +188,11 @@ def _load_examples(ref: str | Path, client: Client) -> list[dict]:
     ]
 
 
-def _scenario_id(example: dict) -> int | None:
-    return (example.get("metadata") or {}).get("scenario_id")
+def _scenario_id(example: dict) -> int:
+    id = (example.get("metadata") or {}).get("scenario_id")
+    if id is None:
+        raise ValueError(f"Example is missing scenario_id in metadata: {example}")
+    return id
 
 
 def cmd_dataset_diff(args: argparse.Namespace) -> None:
