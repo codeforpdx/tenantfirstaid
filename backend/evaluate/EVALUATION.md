@@ -476,65 +476,13 @@ sequenceDiagram
 
 #### Prompt
 
-You can either create a prompt inline or pull one from the Prompt Hub.
+Use the Prompt Hub prompt rather than pasting inline — it stays in sync with the codebase automatically (see [Keeping bound evaluators in sync](#keeping-bound-evaluators-in-sync-with-the-codebase)).
 
-Choose **Create your own prompt** and paste the prompt below. This is the same rubric used by the offline evaluator (`evaluators/legal_correctness.md`) wrapped in the structural template from `langsmith_evaluators.py`. The prompt uses f-string syntax — `{variable}` placeholders that LangSmith fills at evaluation time.
+Choose **Select a prompt** and pick `tfa-legal-correctness` (or the appropriate `tfa-*` name for the evaluator you're adding). If it doesn't exist yet, run `evaluator push` first to create it.
 
-```text
-You are an expert data labeler evaluating model outputs.
-Your task is to assign a score based on the following rubric:
-<Rubric>
-A correct answer:
-- Legal advice correctly based on Oregon tenant law
-- Check if advice aligns with ORS 90 (Landlord-Tenant)
-- Verify city-specific rules are correctly applied
-- Ensure no false statements about tenant rights
-- Provides accurate and complete information
-- Contains no factual errors
-- Addresses all parts of the question
-- Is logically consistent
-- Uses precise and accurate terminology
+The prompt is assembled from the rubric file (`evaluators/legal_correctness.md`) wrapped in the boilerplate template in `langsmith_evaluators.py`. Three placeholder variables — `{inputs}`, `{outputs}`, `{reference_outputs}` — are populated automatically by LangSmith from the dataset example and the deployment's response.
 
-When scoring, you should penalize:
-- Factual errors or inaccuracies
-- Incomplete or partial answers
-- Misleading or ambiguous statements
-- Incorrect terminology
-- Logical inconsistencies
-- Missing key information
-
-Scoring Guidelines:
-- Score 1.0 if response is legally correct and complete
-- Score 0.5 if response has minor inaccuracies or omissions
-- Score 0.0 if response is legally incorrect or significantly incomplete
-</Rubric>
-
-<Instructions>
-- Carefully read the input and output
-</Instructions>
-
-<input>
-{inputs}
-</input>
-
-Use the Model-Under-Test Output below to evaluate the response.  Disregard
-other Model-Under-Test sections, which are for evaluation debugging only
-and should not affect the scores.
-
-<output>
-{outputs}
-</output>
-
-Use the reference outputs below to help you evaluate the response:
-
-<reference_outputs>
-{reference_outputs}
-</reference_outputs>
-```
-
-The three placeholder variables — `{inputs}`, `{outputs}`, `{reference_outputs}` — are populated automatically by LangSmith from the dataset example and the deployment's response. You do not need to map them manually. LangSmith serializes the full dict into each placeholder, so the judge sees the structured data (query, city, state, facts, reference conversation) as-is.
-
-**Prompt commits.** Every time you save or edit the prompt, LangSmith creates a new commit with a unique hash. This gives you a version history you can browse, compare, and revert. If you iterate on the prompt wording in the Playground first, commit the version there, then pull it into the evaluator using the **Select a prompt** dropdown instead of pasting inline.
+**Prompt commits.** Every time you save or edit the prompt in the Playground, LangSmith creates a new commit with a unique hash. This gives you a version history you can browse, compare, and revert. The bound evaluator always uses the latest committed version of the selected prompt.
 
 #### Model configuration
 
@@ -589,7 +537,18 @@ uv run langsmith_dataset.py evaluator push
 uv run langsmith_dataset.py evaluator push legal_correctness
 ```
 
-This assembles the full judge prompt from the rubric markdown file (the same template used by the offline evaluator in `langsmith_evaluators.py`) and pushes it to the Prompt Hub under a versioned name (e.g. `tfa-legal-correctness`). Each push creates a new commit in the Hub's version history.
+This assembles the full judge prompt from the rubric markdown file (the same template used by the offline evaluator in `langsmith_evaluators.py`) and pushes it to the Prompt Hub under a versioned name (e.g. `tfa-legal-correctness`). Each push creates a new commit in the Hub's version history. The prompt is pushed with the Gemini model configuration attached but **without** an output schema (see below).
+
+**One-time setup — adding the output schema.** A bound evaluator requires the prompt to be a "StructuredPrompt" type, which means it needs an output schema. Due to a LangSmith SDK limitation with Gemini (the SDK requires `json_schema` structured output, which Gemini does not support), the schema cannot be attached programmatically. After the first `evaluator push` for a given rubric, do this once in the UI:
+
+1. Go to **LangSmith → Prompts → `tfa-<rubric-name>`**.
+2. Open in the **Playground**.
+3. Click the **Output Schema** button and add two fields:
+   - `score` — type `number`, description `Score between 0.0 and 1.0`
+   - `reasoning` — type `string`, description `Explanation for the score`
+4. **Save** (this commits the schema to the Hub and converts the type to StructuredPrompt).
+
+This one-time step only needs to be repeated if you delete and recreate the prompt in the Hub. Subsequent `evaluator push` commands update the rubric text in a new commit while preserving the schema — the StructuredPrompt type is retained.
 
 To use the Hub prompt in a bound evaluator, choose **Select a prompt** instead of **Create your own prompt** when configuring the evaluator in the UI, and pick the corresponding `tfa-*` prompt. The bound evaluator will always use the latest committed version.
 

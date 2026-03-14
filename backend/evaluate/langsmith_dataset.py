@@ -514,6 +514,9 @@ def cmd_evaluator_list(args: argparse.Namespace) -> None:
 
 def cmd_evaluator_push(args: argparse.Namespace) -> None:
     from langchain_core.prompts import ChatPromptTemplate
+    from langchain_google_genai import ChatGoogleGenerativeAI
+
+    from evaluate.langsmith_evaluators import EVALUATOR_MODEL_NAME
 
     registry, load_rubric = _get_evaluator_registry()
 
@@ -530,6 +533,22 @@ def cmd_evaluator_push(args: argparse.Namespace) -> None:
     else:
         to_push = list(registry)
 
+    # The model is never invoked — it only provides the model configuration
+    # metadata (provider, model name, temperature) that gets saved with the
+    # prompt in the Hub.  The placeholder API key is ignored at push time.
+    #
+    # NOTE: We cannot programmatically attach an output schema (StructuredPrompt)
+    # when using Gemini because LangSmith's prep_obj_for_push internally calls
+    # model.with_structured_output(schema, method='json_schema'), which Gemini
+    # does not support.  After pushing, open the prompt in the Playground, add
+    # the output schema (score: float, reasoning: str) via the UI, and save —
+    # that converts it to a StructuredPrompt, which is required for evaluator binding.
+    model = ChatGoogleGenerativeAI(
+        model=EVALUATOR_MODEL_NAME,
+        temperature=0.0,
+        api_key="placeholder",
+    )
+
     client = make_client()
     for ev in to_push:
         prompt_text = load_rubric(ev["rubric"])
@@ -538,9 +557,10 @@ def cmd_evaluator_push(args: argparse.Namespace) -> None:
                 ("system", prompt_text),
             ]
         )
+        chain = prompt | model
         url = client.push_prompt(
             ev["hub_name"],
-            object=prompt,
+            object=chain,
             is_public=False,
             description=f"LLM-as-judge evaluator for '{ev['feedback_key']}'. "
             f"Assembled from evaluators/{ev['rubric']}.md.",
@@ -587,9 +607,17 @@ def cmd_evaluator_pull(args: argparse.Namespace) -> None:
             )
             sys.exit(1)
 
-        prompt = client.pull_prompt(ev["hub_name"])
-        # The prompt is a ChatPromptTemplate; extract the system message content.
-        system_msg = prompt.messages[0].prompt.template
+        pulled = client.pull_prompt(ev["hub_name"])
+        from langchain_core.runnables import RunnableSequence
+
+        if not isinstance(pulled, RunnableSequence):
+            print(
+                f"error: unexpected prompt type '{type(pulled).__name__}' for '{ev['hub_name']}'."
+                " Re-run 'evaluator push' to restore the expected prompt | model chain.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        system_msg = pulled.first.messages[0].prompt.template
         rubric_text = _extract_rubric(system_msg)
 
         if args.dry_run:
