@@ -59,3 +59,6 @@ def load_gcp_credentials(
             )
         case other:
             raise ValueError(f"Unsupported credential type: {other}")
+    # Unreachable: the wildcard case above is exhaustive and always raises.
+    # The assertion silences CodeQL py/mixed-returns (implicit None return warning).
+    raise AssertionError("unreachable")  # pragma: no cover
