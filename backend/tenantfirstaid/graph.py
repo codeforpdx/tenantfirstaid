@@ -107,7 +107,7 @@ def _build_system_message(
     base_prompt: str, city: Optional[OregonCity], state: UsaState
 ) -> SystemMessage:
     """Build a SystemMessage with location context appended."""
-    parts = [c.title() for c in [city] if c is not None] + [state.upper()]
+    parts = ([city.title()] if city is not None else []) + [state.upper()]
     location = " ".join(parts)
     return SystemMessage(base_prompt + f"\nThe user is in {location}.\n")
 
