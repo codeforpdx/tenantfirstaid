@@ -185,7 +185,9 @@ def performance_evaluator(run, example) -> Dict[str, Any]:
     token_usage = run.usage.get("total_tokens", 0) if run.usage else 0
 
     # Flag if response is too slow (> 5 seconds).
-    latency_score = 1.0 if latency_seconds < 5.0 else 0.5 if latency_seconds < 10.0 else 0.0
+    latency_score = (
+        1.0 if latency_seconds < 5.0 else 0.5 if latency_seconds < 10.0 else 0.0
+    )
 
     return {
         "key": "performance",
