@@ -22,6 +22,23 @@ EVALUATOR_MODEL_NAME: Final = "gemini-2.5-flash"
 
 EVALUATORS_DIR: Final = Path(__file__).parent / "evaluators"
 
+# Registry of LLM-as-judge evaluators. Each entry maps a rubric file name to its
+# feedback key and Prompt Hub name so the CLI can push prompts that stay in sync
+# with the offline evaluators.
+LLM_JUDGE_EVALUATORS: Final = (
+    {
+        "rubric": "legal_correctness",
+        "feedback_key": "legal correctness",
+        "hub_name": "tfa-legal-correctness",
+    },
+    {"rubric": "tone", "feedback_key": "appropriate tone", "hub_name": "tfa-tone"},
+    {
+        "rubric": "citation_accuracy",
+        "feedback_key": "citation accuracy",
+        "hub_name": "tfa-citation-accuracy",
+    },
+)
+
 # NOTE: this is a LITERAL not an f-string, because it is substituted as-is into
 #       an f-string which is then used as a template
 INPUT_OUTPUT: Final = dedent(
@@ -47,7 +64,7 @@ INPUT_OUTPUT: Final = dedent(
 )
 
 
-def _load_rubric(name: str) -> str:
+def load_rubric(name: str) -> str:
     """Load a rubric from evaluators/{name}.md and return the full judge prompt."""
     rubric_path = EVALUATORS_DIR / f"{name}.md"
     rubric_text = rubric_path.read_text()
@@ -71,7 +88,7 @@ def _load_rubric(name: str) -> str:
 # Evaluator: Citation Accuracy (LLM-as-Judge).
 citation_accuracy_evaluator: SimpleEvaluator = create_llm_as_judge(
     model=EVALUATOR_MODEL_NAME,
-    prompt=_load_rubric("citation_accuracy"),
+    prompt=load_rubric("citation_accuracy"),
     feedback_key="citation accuracy",
     continuous=True,
 )
@@ -79,7 +96,7 @@ citation_accuracy_evaluator: SimpleEvaluator = create_llm_as_judge(
 # Evaluator: Legal Correctness (LLM-as-Judge).
 legal_correctness_evaluator: SimpleEvaluator = create_llm_as_judge(
     model=EVALUATOR_MODEL_NAME,
-    prompt=_load_rubric("legal_correctness"),
+    prompt=load_rubric("legal_correctness"),
     feedback_key="legal correctness",
     continuous=True,
 )
@@ -87,7 +104,7 @@ legal_correctness_evaluator: SimpleEvaluator = create_llm_as_judge(
 # Evaluator: Tone & Professionalism (LLM-as-Judge).
 tone_evaluator: SimpleEvaluator = create_llm_as_judge(
     model=EVALUATOR_MODEL_NAME,
-    prompt=_load_rubric("tone"),
+    prompt=load_rubric("tone"),
     feedback_key="appropriate tone",
     continuous=True,
 )
