@@ -503,7 +503,10 @@ def _get_evaluator_registry() -> tuple:
 
 def cmd_evaluator_list(args: argparse.Namespace) -> None:
     registry, _ = _get_evaluator_registry()
-    rows = [(str(ev["rubric"]), str(ev["feedback_key"]), str(ev["hub_name"])) for ev in registry]
+    rows = [
+        (str(ev["rubric"]), str(ev["feedback_key"]), str(ev["hub_name"]))
+        for ev in registry
+    ]
     headers = None if args.no_header else ("RUBRIC", "FEEDBACK KEY", "HUB NAME")
     _tabulate(rows, headers=headers)
 
