@@ -23,6 +23,7 @@ import json
 import os
 import subprocess
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 
 import dotenv
@@ -37,16 +38,16 @@ DEFAULT_JSONL = EVALUATE_DIR / "dataset-tenant-legal-qa-scenarios.jsonl"
 
 
 def _tabulate(
-    rows: list[tuple[str, ...]], headers: tuple[str, ...] | None = None
+    rows: Sequence[Sequence[str]], headers: Sequence[str] | None = None
 ) -> None:
     """Print rows in aligned columns, optionally with a header row and separator."""
-    all_rows = (([headers] if headers else []) + rows) or []
+    all_rows: list[Sequence[str]] = list(([headers] if headers else []) + list(rows))
     if not all_rows:
         return
     ncols = len(all_rows[0])
     widths = [max(len(r[i]) for r in all_rows) for i in range(ncols)]
 
-    def fmt(row: tuple[str, ...]) -> str:
+    def fmt(row: Sequence[str]) -> str:
         return "  " + "  ".join(cell.ljust(widths[i]) for i, cell in enumerate(row))
 
     if headers:
