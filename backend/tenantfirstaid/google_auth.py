@@ -18,7 +18,7 @@ def _parse_inline_json(raw: str) -> dict:
     except json.JSONDecodeError as e:
         # Show the first 40 chars to help diagnose without leaking the full secret.
         preview = "*" * 40 + "(redacted, secret is too short to preview)"
-        if len(raw) > 20:
+        if len(raw) > 80:
             preview = raw[:40] + ("..." if len(raw) > 40 else "")
         raise ValueError(
             f"GOOGLE_APPLICATION_CREDENTIALS is not a valid file path and "
