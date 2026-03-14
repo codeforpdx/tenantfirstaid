@@ -12,7 +12,6 @@ from langchain_core.messages import (
     AIMessage,
     AnyMessage,
     ContentBlock,
-    HumanMessage,
     ToolMessage,
 )
 from langchain_core.runnables import RunnableConfig
@@ -20,10 +19,6 @@ from langgraph.graph.state import CompiledStateGraph
 
 from .graph import create_graph, prepare_system_prompt
 from .location import OregonCity, UsaState
-
-
-def starting_message_helper(content: str) -> HumanMessage:
-    return HumanMessage(content=content)
 
 
 class LangChainChatManager:
