@@ -22,21 +22,11 @@ EVALUATOR_MODEL_NAME: Final = "gemini-2.5-flash"
 
 EVALUATORS_DIR: Final = Path(__file__).parent / "evaluators"
 
-# Registry of LLM-as-judge evaluators. Each entry maps a rubric file name to its
-# feedback key and Prompt Hub name so the CLI can push prompts that stay in sync
-# with the offline evaluators.
+# Registry of LLM-as-judge evaluators, used by the CLI evaluator list command.
 LLM_JUDGE_EVALUATORS: Final = (
-    {
-        "rubric": "legal_correctness",
-        "feedback_key": "legal correctness",
-        "hub_name": "tfa-legal-correctness",
-    },
-    {"rubric": "tone", "feedback_key": "appropriate tone", "hub_name": "tfa-tone"},
-    {
-        "rubric": "citation_accuracy",
-        "feedback_key": "citation accuracy",
-        "hub_name": "tfa-citation-accuracy",
-    },
+    {"rubric": "legal_correctness", "feedback_key": "legal correctness"},
+    {"rubric": "tone", "feedback_key": "appropriate tone"},
+    {"rubric": "citation_accuracy", "feedback_key": "citation accuracy"},
 )
 
 # NOTE: this is a LITERAL not an f-string, because it is substituted as-is into

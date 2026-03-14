@@ -476,13 +476,9 @@ sequenceDiagram
 
 #### Prompt
 
-Use the Prompt Hub prompt rather than pasting inline — it stays in sync with the codebase automatically (see [Keeping bound evaluators in sync](#keeping-bound-evaluators-in-sync-with-the-codebase)).
+Choose **Create your own prompt** and paste the contents of `evaluators/legal_correctness.md` wrapped in the boilerplate from `langsmith_evaluators.py:load_rubric`. Three placeholder variables — `{inputs}`, `{outputs}`, `{reference_outputs}` — are populated automatically by LangSmith from the dataset example and the deployment's response.
 
-Choose **Select a prompt** and pick `tfa-legal-correctness` (or the appropriate `tfa-*` name for the evaluator you're adding). If it doesn't exist yet, run `evaluator push` first to create it.
-
-The prompt is assembled from the rubric file (`evaluators/legal_correctness.md`) wrapped in the boilerplate template in `langsmith_evaluators.py`. Three placeholder variables — `{inputs}`, `{outputs}`, `{reference_outputs}` — are populated automatically by LangSmith from the dataset example and the deployment's response.
-
-**Prompt commits.** Every time you save or edit the prompt in the Playground, LangSmith creates a new commit with a unique hash. This gives you a version history you can browse, compare, and revert. The bound evaluator always uses the latest committed version of the selected prompt.
+**Prompt commits.** Every time you save or edit the prompt, LangSmith creates a new commit with a unique hash, giving you a version history you can browse and revert.
 
 #### Model configuration
 
@@ -527,55 +523,31 @@ Results appear in the same Experiments view used by the offline CLI, with the sa
 
 ### Keeping bound evaluators in sync with the codebase
 
-The bound evaluator prompt in the LangSmith UI does not automatically update when you edit a rubric in `evaluators/`. To keep things in sync, push the evaluator prompts to the Prompt Hub after editing a rubric:
+There is no API to update a bound evaluator prompt programmatically. When you edit a rubric in `evaluators/`, update the bound evaluator prompt manually in the LangSmith UI (Datasets → `tenant-legal-qa-scenarios` → Evaluators → edit the evaluator).
+
+If a lawyer edits the rubric wording in the LangSmith Playground, pull the changes back to the local files. First check what changed with a dry run:
+
+First, find the prompt name:
 
 ```bash
-# Push all evaluator prompts to the Prompt Hub.
-uv run langsmith_dataset.py evaluator push
-
-# Push a single evaluator.
-uv run langsmith_dataset.py evaluator push legal_correctness
+uv run python -m evaluate.langsmith_dataset prompt list
 ```
 
-This assembles the full judge prompt from the rubric markdown file (the same template used by the offline evaluator in `langsmith_evaluators.py`) and pushes it to the Prompt Hub under a versioned name (e.g. `tfa-legal-correctness`). Each push creates a new commit in the Hub's version history. The prompt is pushed with the Gemini model configuration attached but **without** an output schema (see below).
-
-**One-time setup — adding the output schema.** A bound evaluator requires the prompt to be a "StructuredPrompt" type, which means it needs an output schema. Due to a LangSmith SDK limitation with Gemini (the SDK requires `json_schema` structured output, which Gemini does not support), the schema cannot be attached programmatically. After the first `evaluator push` for a given rubric, do this once in the UI:
-
-1. Go to **LangSmith → Prompts → `tfa-<rubric-name>`**.
-2. Open in the **Playground**.
-3. Click the **Output Schema** button and add two fields:
-   - `score` — type `number`, description `Score between 0.0 and 1.0`
-   - `reasoning` — type `string`, description `Explanation for the score`
-4. **Save** (this commits the schema to the Hub and converts the type to StructuredPrompt).
-
-This one-time step only needs to be repeated if you delete and recreate the prompt in the Hub. Subsequent `evaluator push` commands update the rubric text in a new commit while preserving the schema — the StructuredPrompt type is retained.
-
-To use the Hub prompt in a bound evaluator, choose **Select a prompt** instead of **Create your own prompt** when configuring the evaluator in the UI, and pick the corresponding `tfa-*` prompt. The bound evaluator will always use the latest committed version.
-
-If someone edits the rubric in the LangSmith Playground (e.g. a lawyer testing scoring tweaks), pull the changes back to the local rubric files:
+Then dry-run to review the diff:
 
 ```bash
-# Pull all evaluator rubrics from the Prompt Hub.
-uv run langsmith_dataset.py evaluator pull
-
-# Pull a single evaluator.
-uv run langsmith_dataset.py evaluator pull legal_correctness
+uv run python -m evaluate.langsmith_dataset prompt pull tfa-legal-correctness evaluators/legal_correctness.md --dry-run
 ```
 
-This extracts the rubric text from the Hub prompt and overwrites the corresponding `evaluators/*.md` file. Like `dataset pull`, it refuses to overwrite files with uncommitted changes unless you pass `--force`. Commit the result so the rest of the team gets the updated rubric.
-
-```mermaid
-flowchart LR
-    A["Edit rubric in<br>evaluators/*.md"] -- "evaluator push" --> B["Prompt Hub<br>(tfa-*)"]
-    B -- "evaluator pull" --> A
-    A --> C["git commit"]
-```
-
-To see which evaluators are available:
+Then write and commit:
 
 ```bash
-uv run langsmith_dataset.py evaluator list
+uv run python -m evaluate.langsmith_dataset prompt pull tfa-legal-correctness evaluators/legal_correctness.md
+git add evaluate/evaluators/legal_correctness.md
+git commit -m "update legal correctness rubric from Prompt Hub"
 ```
+
+This only works if the prompt uses `<Rubric>…</Rubric>` tags around the rubric text.
 
 ### Cost
 
