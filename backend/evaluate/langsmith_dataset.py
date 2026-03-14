@@ -51,13 +51,19 @@ def _tabulate(
         print(fmt(row))
 
 
-def _read_jsonl(path: Path) -> list[dict]:
-    """Parse a JSONL file, skipping blank lines and // comments."""
-    return [
-        json.loads(line)
-        for line in path.read_text().splitlines()
-        if line.strip() and not line.startswith("//")
-    ]
+def _read_jsonl(path: Path, *, with_line_numbers: bool = False) -> list:
+    """Parse a JSONL file, skipping blank lines and // comments.
+
+    When with_line_numbers is True, returns list of (line_number, dict) tuples
+    so callers can report errors with file positions.
+    """
+    results = []
+    for i, line in enumerate(path.read_text().splitlines(), 1):
+        if not line.strip() or line.startswith("//"):
+            continue
+        parsed = json.loads(line)
+        results.append((i, parsed) if with_line_numbers else parsed)
+    return results
 
 
 def _git_is_clean(path: Path) -> bool:
@@ -240,10 +246,8 @@ def cmd_dataset_validate(args: argparse.Namespace) -> None:
     schema = json.loads(args.schema.read_text())
     validator = jsonschema.Draft7Validator(schema)
     errors = []
-    for i, line in enumerate(args.file.read_text().splitlines(), 1):
-        if not line.strip() or line.startswith("//"):
-            continue
-        for error in validator.iter_errors(json.loads(line)):
+    for i, record in _read_jsonl(args.file, with_line_numbers=True):
+        for error in validator.iter_errors(record):
             errors.append(f"Line {i}: {error.message}")
     if errors:
         print("\n".join(errors), file=sys.stderr)
