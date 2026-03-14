@@ -51,6 +51,15 @@ def _tabulate(
         print(fmt(row))
 
 
+def _read_jsonl(path: Path) -> list[dict]:
+    """Parse a JSONL file, skipping blank lines and // comments."""
+    return [
+        json.loads(line)
+        for line in path.read_text().splitlines()
+        if line.strip() and not line.startswith("//")
+    ]
+
+
 def _git_is_clean(path: Path) -> bool:
     """Return True if path has no uncommitted changes according to git."""
     result = subprocess.run(
@@ -108,11 +117,7 @@ def cmd_dataset_push(args: argparse.Namespace) -> None:
     local: Path = args.file
     client = make_client()
 
-    examples = [
-        json.loads(line)
-        for line in local.read_text().splitlines()
-        if line.strip() and not line.startswith("//")
-    ]
+    examples = _read_jsonl(local)
 
     try:
         ds = client.read_dataset(dataset_name=args.remote)
@@ -176,11 +181,7 @@ def cmd_dataset_pull(args: argparse.Namespace) -> None:
 def _load_examples(ref: str | Path, client: Client) -> list[dict]:
     """Load examples from a remote dataset name or local JSONL file."""
     if isinstance(ref, Path):
-        return [
-            json.loads(line)
-            for line in ref.read_text().splitlines()
-            if line.strip() and not line.startswith("//")
-        ]
+        return _read_jsonl(ref)
     ds = client.read_dataset(dataset_name=ref)
     return [
         {"metadata": ex.metadata, "inputs": ex.inputs, "outputs": ex.outputs}
@@ -189,10 +190,10 @@ def _load_examples(ref: str | Path, client: Client) -> list[dict]:
 
 
 def _scenario_id(example: dict) -> int:
-    id = (example.get("metadata") or {}).get("scenario_id")
-    if id is None:
+    sc_id = (example.get("metadata") or {}).get("scenario_id")
+    if sc_id is None:
         raise ValueError(f"Example is missing scenario_id in metadata: {example}")
-    return id
+    return sc_id
 
 
 def cmd_dataset_diff(args: argparse.Namespace) -> None:
@@ -270,11 +271,7 @@ def cmd_scenario_list(args: argparse.Namespace) -> None:
 def cmd_scenario_show(args: argparse.Namespace) -> None:
     ref = args.dataset
     if isinstance(ref, Path):
-        examples = [
-            json.loads(line)
-            for line in ref.read_text().splitlines()
-            if line.strip() and not line.startswith("//")
-        ]
+        examples = _read_jsonl(ref)
     else:
         examples = _load_examples(ref, make_client())
 
@@ -290,11 +287,7 @@ def cmd_scenario_append(args: argparse.Namespace) -> None:
     client = make_client()
     ds = client.read_dataset(dataset_name=args.dataset)
 
-    examples = [
-        json.loads(line)
-        for line in local.read_text().splitlines()
-        if line.strip() and not line.startswith("//")
-    ]
+    examples = _read_jsonl(local)
     for ex in examples:
         client.create_example(
             inputs=ex["inputs"],
