@@ -3330,7 +3330,7 @@ dev = [
     { name = "jsonschema", specifier = ">=4.26.0" },
     { name = "langchain-google-vertexai", specifier = ">=3.2.2" },
     { name = "langgraph-cli", extras = ["inmem"], specifier = ">=0.4.15" },
-    { name = "langsmith", extras = ["pytest"], specifier = ">=0.6.3" },
+    { name = "langsmith", extras = ["pytest"], specifier = ">=0.7.17" },
     { name = "mypy", specifier = ">=1.16.1" },
     { name = "openevals", specifier = ">=0.1.2" },
     { name = "pandas", specifier = ">=3.0.1" },
