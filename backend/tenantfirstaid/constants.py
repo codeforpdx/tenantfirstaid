@@ -106,6 +106,8 @@ class _GoogEnvAndPolicy:
 # TODO: rename to VERTEX_CONFIG?
 SINGLETON: Final = _GoogEnvAndPolicy()
 
+LANGSMITH_API_KEY: Final = os.getenv("LANGSMITH_API_KEY")
+
 OREGON_LAW_CENTER_PHONE_NUMBER: Final = "888-585-9638"
 RESPONSE_WORD_LIMIT: Final = 350
 
