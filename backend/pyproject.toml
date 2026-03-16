@@ -50,6 +50,7 @@ dev = [
     "jsonschema>=4.26.0",
     "types-jsonschema>=4.26.0.20260202",
     "langgraph-cli[inmem]>=0.4.15",
+    "langgraph>=1.0.10",
 ]
 
 [tool.pytest.ini_options]

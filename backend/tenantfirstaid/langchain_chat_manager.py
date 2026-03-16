@@ -12,6 +12,7 @@ from langchain_core.messages import (
     AIMessage,
     AnyMessage,
     ContentBlock,
+    SystemMessage,
     ToolMessage,
 )
 from langchain_core.runnables import RunnableConfig
@@ -42,6 +43,7 @@ class LangChainChatManager:
 
         # defer agent instantiation until 'generate_stream_response'
         self.agent = None
+        self.system_prompt: Optional[SystemMessage] = None
 
     def __create_agent_for_session(
         self, city: Optional[OregonCity], state: UsaState, thread_id: Optional[str]
