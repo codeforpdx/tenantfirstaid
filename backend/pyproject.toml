@@ -18,6 +18,7 @@ dependencies = [
   "langchain-google-genai>=4.1.2",
   "google-auth>=2.40.3",
   "pydantic>=2.12.5",
+  "langgraph>=1.0.10",
 ]
 
 [tool.setuptools.packages.find]
@@ -50,7 +51,6 @@ dev = [
     "jsonschema>=4.26.0",
     "types-jsonschema>=4.26.0.20260202",
     "langgraph-cli[inmem]>=0.4.15",
-    "langgraph>=1.0.10",
 ]
 
 [tool.pytest.ini_options]
