@@ -1,8 +1,6 @@
 """Tests for evaluate/langsmith_dataset.py."""
 
 import json
-import sys
-from io import StringIO
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
@@ -22,7 +20,6 @@ from evaluate.langsmith_dataset import (
     cmd_scenario_update,
     local_or_remote,
 )
-
 
 # ── _read_jsonl ────────────────────────────────────────────────────────────────
 
@@ -47,7 +44,7 @@ def test_read_jsonl_skips_comment_lines(tmp_path):
 
 def test_read_jsonl_with_line_numbers(tmp_path):
     f = tmp_path / "data.jsonl"
-    f.write_text("// comment\n\n{\"a\": 1}\n{\"a\": 2}\n")
+    f.write_text('// comment\n\n{"a": 1}\n{"a": 2}\n')
     result = _read_jsonl(f, with_line_numbers=True)
     assert result == [(3, {"a": 1}), (4, {"a": 2})]
 
@@ -184,7 +181,11 @@ def _make_valid_record(scenario_id: int = 1) -> dict:
             "tags": ["city-Portland", "state-OR"],
             "dataset_split": ["train"],
         },
-        "inputs": {"city": "Portland", "state": "OR", "query": "Can my landlord evict me?"},
+        "inputs": {
+            "city": "Portland",
+            "state": "OR",
+            "query": "Can my landlord evict me?",
+        },
         "outputs": {
             "facts": ["ORS 90.394 requires written notice."],
             "reference_conversation": [
@@ -234,8 +235,10 @@ def test_cmd_dataset_validate_multiple_records(tmp_path):
 
     f = tmp_path / "data.jsonl"
     f.write_text(
-        json.dumps(_make_valid_record(1)) + "\n"
-        + json.dumps(_make_valid_record(2)) + "\n"
+        json.dumps(_make_valid_record(1))
+        + "\n"
+        + json.dumps(_make_valid_record(2))
+        + "\n"
     )
 
     args = MagicMock()
