@@ -335,18 +335,26 @@ def cmd_scenario_remove(args: argparse.Namespace) -> None:
 
 
 def cmd_scenario_update(args: argparse.Namespace) -> None:
+    local_scenarios = {_scenario_id(ex): ex for ex in _read_jsonl(args.file)}
+    if args.scenario_id not in local_scenarios:
+        print(f"Scenario {args.scenario_id} not found in {args.file}.", file=sys.stderr)
+        sys.exit(1)
+    patch = local_scenarios[args.scenario_id]
+
     client = make_client()
     ds = client.read_dataset(dataset_name=args.dataset)
-    examples = list(client.list_examples(dataset_id=ds.id))
+    remote = list(client.list_examples(dataset_id=ds.id))
     matches = [
         ex
-        for ex in examples
+        for ex in remote
         if (ex.metadata or {}).get("scenario_id") == args.scenario_id
     ]
     if not matches:
-        print(f"Scenario {args.scenario_id} not found.", file=sys.stderr)
+        print(
+            f"Scenario {args.scenario_id} not found in '{args.dataset}'.",
+            file=sys.stderr,
+        )
         sys.exit(1)
-    patch = json.loads(args.file.read_text().strip())
     client.update_example(
         example_id=matches[0].id,
         inputs=patch.get("inputs"),
@@ -855,7 +863,7 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         default=DEFAULT_JSONL,
         metavar="file.jsonl",
-        help=f"Local JSONL file containing the updated scenario (default: {DEFAULT_JSONL.name})",
+        help=f"Local JSONL file to read the updated scenario from (default: {DEFAULT_JSONL.name})",
     )
     p.set_defaults(func=cmd_scenario_update)
 

@@ -41,6 +41,7 @@ class _GoogEnvAndPolicy:
         "MODEL_TEMPERATURE",
         "TOP_P",
         "MAX_TOKENS",
+        "THINKING_BUDGET",
     )
 
     def __init__(self) -> None:
@@ -100,6 +101,8 @@ class _GoogEnvAndPolicy:
         self.MODEL_TEMPERATURE: Final = float(0.1)
         self.TOP_P: Final = float(0.1)
         self.MAX_TOKENS: Final = 65535
+        # -1 tells the Gemini API to set the thinking budget dynamically.
+        self.THINKING_BUDGET: Final = -1
 
 
 # Module singleton
