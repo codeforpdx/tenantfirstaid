@@ -36,7 +36,7 @@ from langchain_core.runnables import RunnableSequence
 from langsmith import Client
 from langsmith import utils as langsmith_utils
 
-from ..tenantfirstaid.constants import LANGSMITH_API_KEY
+from tenantfirstaid.constants import LANGSMITH_API_KEY
 
 EVALUATE_DIR = Path(__file__).parent
 DEFAULT_SCHEMA = EVALUATE_DIR / "langsmith_scenario_schema.json"
@@ -97,7 +97,7 @@ def make_client() -> Client:
     if LANGSMITH_API_KEY is None:
         raise RuntimeError(
             "LANGSMITH_API_KEY environment variable not set. Cannot create LangSmith Client."
-        )    
+        )
     return Client(api_key=LANGSMITH_API_KEY)
 
 
