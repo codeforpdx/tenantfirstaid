@@ -19,7 +19,6 @@ Usage examples:
 import argparse
 import difflib
 import json
-import os
 import re
 import subprocess
 import sys
@@ -27,7 +26,6 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-import dotenv
 import jsonschema
 from langchain_core.prompts import (
     ChatPromptTemplate,
@@ -37,6 +35,8 @@ from langchain_core.prompts import (
 from langchain_core.runnables import RunnableSequence
 from langsmith import Client
 from langsmith import utils as langsmith_utils
+
+from ..tenantfirstaid.constants import LANGSMITH_API_KEY
 
 EVALUATE_DIR = Path(__file__).parent
 DEFAULT_SCHEMA = EVALUATE_DIR / "langsmith_scenario_schema.json"
@@ -94,8 +94,11 @@ def make_client() -> Client:
     # The Client targets the workspace associated with LANGSMITH_API_KEY.
     # To target a different workspace, pass its UUID via the workspace_id
     # parameter — there is no name-based workspace resolution in the SDK.
-    dotenv.load_dotenv(override=True)
-    return Client(api_key=os.getenv("LANGSMITH_API_KEY"))
+    if LANGSMITH_API_KEY is None:
+        raise RuntimeError(
+            "LANGSMITH_API_KEY environment variable not set. Cannot create LangSmith Client."
+        )    
+    return Client(api_key=LANGSMITH_API_KEY)
 
 
 # ── dataset subcommands ────────────────────────────────────────────────────────
