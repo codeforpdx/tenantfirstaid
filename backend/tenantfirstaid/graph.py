@@ -54,7 +54,7 @@ def _get_llm() -> ChatGoogleGenerativeAI:
                 safety_settings=SINGLETON.SAFETY_SETTINGS,
                 temperature=SINGLETON.MODEL_TEMPERATURE,
                 seed=0,
-                thinking_budget=-1,
+                thinking_budget=SINGLETON.THINKING_BUDGET,
                 include_thoughts=SINGLETON.SHOW_MODEL_THINKING,
             )
         return _llm

@@ -14,7 +14,7 @@ from google.oauth2.credentials import Credentials
 from tenantfirstaid.google_auth import load_gcp_credentials
 from tenantfirstaid.langchain_tools import (
     CityStateLawsInputSchema,
-    __filter_builder,
+    _filter_builder,
     generate_letter,
     get_letter_template,
     retrieve_city_state_laws,
@@ -59,7 +59,7 @@ def test_retrieve_city_law_filters_correctly():
     state = UsaState.from_maybe_str("or")
     city = OregonCity.from_maybe_str("portland")
 
-    filter = __filter_builder(state, city)
+    filter = _filter_builder(state, city)
 
     # Verify filter was constructed correctly.
     assert 'city: ANY("portland")' in str(filter)
@@ -71,7 +71,7 @@ def test_retrieve_state_law_filters_correctly():
     state = UsaState.from_maybe_str("or")
     city = None
 
-    filter = __filter_builder(state, city)
+    filter = _filter_builder(state, city)
 
     # Verify filter was constructed correctly.
     assert 'city: ANY("null")' in str(filter)
@@ -98,7 +98,7 @@ def test_get_letter_template_returns_template():
     assert "ORS 90.320" in result
 
 
-@patch("tenantfirstaid.langchain_tools.Rag_Builder")
+@patch("tenantfirstaid.langchain_tools.RagBuilder")
 def test_retrieve_city_state_laws_state_only(mock_rag_class):
     """Test tool can be invoked with only state parameter."""
     mock_rag_class.return_value.search.return_value = ""
@@ -109,7 +109,7 @@ def test_retrieve_city_state_laws_state_only(mock_rag_class):
     )
 
 
-@patch("tenantfirstaid.langchain_tools.Rag_Builder")
+@patch("tenantfirstaid.langchain_tools.RagBuilder")
 def test_retrieve_city_state_laws_parameter_order(mock_rag_class):
     """Test that parameters are correctly ordered."""
     mock_rag_class.return_value.search.return_value = ""

@@ -40,6 +40,7 @@ class _GoogEnvAndPolicy:
         "SAFETY_SETTINGS",
         "MODEL_TEMPERATURE",
         "MAX_TOKENS",
+        "THINKING_BUDGET",
     )
 
     def __init__(self) -> None:
@@ -98,6 +99,8 @@ class _GoogEnvAndPolicy:
         # https://reference.langchain.com/python/integrations/langchain_google_genai/ChatGoogleGenerativeAI/#langchain_google_genai.ChatGoogleGenerativeAI.temperature
         self.MODEL_TEMPERATURE: Final = float(0.7)
         self.MAX_TOKENS: Final = 65535
+        # -1 tells the Gemini API to set the thinking budget dynamically.
+        self.THINKING_BUDGET: Final = -1
 
 
 # Module singleton

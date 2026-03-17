@@ -17,7 +17,7 @@ from .google_auth import load_gcp_credentials
 from .location import OregonCity, UsaState
 
 
-class Rag_Builder:
+class RagBuilder:
     """
     Helper class to construct a Rag tool from VertexAISearchRetriever
     The helper class handles creds, project, location, datastore, etc.
@@ -60,7 +60,7 @@ class Rag_Builder:
         return "\n".join([doc.page_content for doc in docs])
 
 
-def __filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
+def _filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
     if city is None:
         city_or_null = "null"
     else:
@@ -133,10 +133,10 @@ def retrieve_city_state_laws(
         Relevant legal passages from city-specific laws
     """
 
-    helper = Rag_Builder(
+    helper = RagBuilder(
         name="retrieve_city_law",
         max_documents=1,
-        filter=__filter_builder(city=city, state=state),
+        filter=_filter_builder(city=city, state=state),
     )
 
     return helper.search(
