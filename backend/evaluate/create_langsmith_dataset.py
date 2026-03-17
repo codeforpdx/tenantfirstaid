@@ -101,7 +101,10 @@ def create_langsmith_dataset(
                     if stripped_line == "":
                         continue
                     # continue last message
-                    reference_conversation[-1].content += "\n" + stripped_line
+                    if isinstance(reference_conversation[-1].content, str):
+                        reference_conversation[-1].content += "\n" + stripped_line
+                    else:
+                        reference_conversation[-1].content.append(stripped_line)
 
         # Each example has inputs and expected metadata.
         client.create_example(
