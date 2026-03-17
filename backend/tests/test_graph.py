@@ -13,6 +13,8 @@ from tenantfirstaid.graph import (
 )
 from tenantfirstaid.location import OregonCity, UsaState
 
+pytestmark = pytest.mark.langchain
+
 
 @pytest.fixture
 def oregon_state():

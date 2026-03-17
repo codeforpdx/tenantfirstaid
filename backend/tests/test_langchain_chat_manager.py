@@ -7,6 +7,8 @@ from langchain_core.messages import AIMessage
 from tenantfirstaid.graph import prepare_system_prompt, tools
 from tenantfirstaid.location import OregonCity, UsaState
 
+pytestmark = pytest.mark.langchain
+
 
 @pytest.fixture
 def oregon_state():
