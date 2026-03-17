@@ -28,18 +28,21 @@ def _arbitrary_case(s: str) -> st.SearchStrategy[str]:
     )
 
 
+@pytest.mark.property
 @given(data=st.data(), word=st.sampled_from(_TRUTHY))
 def test_strtobool_truthy_any_case(data, word):
     """All recognized truthy strings should return True in any casing."""
     assert _strtobool(data.draw(_arbitrary_case(word))) is True
 
 
+@pytest.mark.property
 @given(data=st.data(), word=st.sampled_from(_FALSY))
 def test_strtobool_falsy_any_case(data, word):
     """All recognized falsy strings should return False in any casing."""
     assert _strtobool(data.draw(_arbitrary_case(word))) is False
 
 
+@pytest.mark.property
 @given(st.text().filter(lambda s: s.lower() not in _RECOGNIZED))
 def test_strtobool_unrecognized_raises(s):
     """Any string outside the recognized set should raise ValueError."""

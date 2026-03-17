@@ -371,6 +371,7 @@ _json_value = st.recursive(
 )
 
 
+@pytest.mark.property
 @given(records=st.lists(_json_value.filter(lambda v: isinstance(v, dict)), max_size=20))
 @settings(max_examples=200)
 def test_read_jsonl_roundtrip(records):
@@ -386,6 +387,7 @@ def test_read_jsonl_roundtrip(records):
         tmp.unlink()
 
 
+@pytest.mark.property
 @given(
     before=st.text(alphabet=st.characters(exclude_characters="<>")),
     rubric=st.text(alphabet=st.characters(exclude_characters="<>")),
@@ -398,6 +400,7 @@ def test_extract_rubric_roundtrip(before, rubric, after):
     assert result == rubric.strip() + "\n"
 
 
+@pytest.mark.property
 @given(st.text())
 def test_local_or_remote_classification(value):
     """Strings ending in .jsonl always return Path; all others return str."""

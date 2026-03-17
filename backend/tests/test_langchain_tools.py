@@ -21,6 +21,8 @@ from tenantfirstaid.langchain_tools import (
 )
 from tenantfirstaid.location import OregonCity, UsaState
 
+pytestmark = pytest.mark.langchain
+
 
 def test_only_oregon_json_serialization():
     city = None

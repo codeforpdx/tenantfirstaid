@@ -83,12 +83,14 @@ def test_sanitization():
 _alpha_chars = st.characters(categories=["L"])
 
 
+@pytest.mark.property
 @given(st.text(alphabet=_alpha_chars, min_size=2, max_size=9))
 def test_sanitizer_valid_input_returns_lowercase(s):
     """Any 2-9 letter string should be accepted and returned lowercased."""
     assert city_or_state_input_sanitizer(s) == s.lower()
 
 
+@pytest.mark.property
 @given(st.text(alphabet=_alpha_chars, min_size=10))
 def test_sanitizer_too_long_raises(s):
     """Strings longer than 9 characters should be rejected."""
@@ -96,6 +98,7 @@ def test_sanitizer_too_long_raises(s):
         city_or_state_input_sanitizer(s)
 
 
+@pytest.mark.property
 @given(st.text(alphabet=_alpha_chars, max_size=1))
 def test_sanitizer_too_short_raises(s):
     """Strings shorter than 2 characters (including empty) should be rejected."""
@@ -103,6 +106,7 @@ def test_sanitizer_too_short_raises(s):
         city_or_state_input_sanitizer(s)
 
 
+@pytest.mark.property
 @given(st.text().filter(lambda s: not s.isalpha()))
 def test_sanitizer_non_alpha_raises(s):
     """Strings with any non-alpha character should be rejected."""
@@ -110,11 +114,13 @@ def test_sanitizer_non_alpha_raises(s):
         city_or_state_input_sanitizer(s)
 
 
+@pytest.mark.property
 @given(st.just(None))
 def test_sanitizer_none_returns_empty(s):
     assert city_or_state_input_sanitizer(s) == ""
 
 
+@pytest.mark.property
 @given(data=st.data(), city=st.sampled_from(list(OregonCity)))
 def test_oregon_city_from_maybe_str_case_invariant(data, city):
     """OregonCity.from_maybe_str should accept any casing of a recognized city."""
@@ -122,12 +128,14 @@ def test_oregon_city_from_maybe_str_case_invariant(data, city):
     assert OregonCity.from_maybe_str(mixed) == city
 
 
+@pytest.mark.property
 @given(st.text().filter(lambda s: s.strip().lower() not in {"portland", "eugene"}))
 def test_oregon_city_from_maybe_str_unrecognized_returns_none(s):
     """Any string that is not a recognized city name should return None."""
     assert OregonCity.from_maybe_str(s) is None
 
 
+@pytest.mark.property
 @given(data=st.data())
 def test_usa_state_from_maybe_str_or_case_invariant(data):
     """UsaState.from_maybe_str should accept 'or' in any casing."""
@@ -135,6 +143,7 @@ def test_usa_state_from_maybe_str_or_case_invariant(data):
     assert UsaState.from_maybe_str(mixed) is UsaState.OREGON
 
 
+@pytest.mark.property
 @given(st.text().filter(lambda s: s.strip().upper() != "OR"))
 def test_usa_state_from_maybe_str_non_oregon_returns_other(s):
     """Any string that is not 'or' (case-insensitive) should return OTHER."""

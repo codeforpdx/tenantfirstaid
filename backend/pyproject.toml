@@ -60,4 +60,6 @@ select = ["E4", "E7", "E9", "F", "N"]
 [tool.pytest.ini_options]
 markers = [
     "require_repo_secrets: mark test as requiring repository secrets to run",
+    "langchain: mark test as testing the LangChain/LangGraph API interface (may be mocked or live)",
+    "property: mark test as a property-based (Hypothesis) test",
 ]
