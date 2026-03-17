@@ -61,6 +61,10 @@ gha-creds-*.json
 # MyPy
 .mypy_cache/
 
+# Hypothesis — keep the examples database (replays found failures as regressions)
+/backend/.hypothesis/*
+!/backend/.hypothesis/examples/
+
 # LangChain/LangSmith/LangGraph
 /backend/.langgraph_api/
 

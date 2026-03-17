@@ -99,9 +99,12 @@ class _GoogEnvAndPolicy:
         # https://reference.langchain.com/python/integrations/langchain_google_genai/ChatGoogleGenerativeAI/#langchain_google_genai.ChatGoogleGenerativeAI.temperature
         self.MODEL_TEMPERATURE: Final = float(0.7)
         self.MAX_TOKENS: Final = 65535
-        # -1 tells the Gemini API to set the thinking budget dynamically.
-        self.THINKING_BUDGET: Final = -1
+        self.THINKING_BUDGET: Final = GEMINI_THINKING_BUDGET_DYNAMIC
 
+
+# Sentinel value for the Gemini API's thinking_budget parameter: -1 means
+# the model sets the budget dynamically based on query complexity.
+GEMINI_THINKING_BUDGET_DYNAMIC: Final = -1
 
 # Module singleton
 # TODO: rename to VERTEX_CONFIG?
