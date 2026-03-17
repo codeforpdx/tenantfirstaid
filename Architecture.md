@@ -65,10 +65,9 @@ backend/
 |   ├── graph.py                        # Shared LLM, tools, and graph factory (used by chat manager and langgraph dev)
 |   ├── langchain_chat_manager.py       # Per-session agent wrapper with streaming support
 |   ├── langchain_tools.py              # LangChain Agent tools (i.e. RAG retriever)
+|   ├── google_auth.py                  # GCP credential loading (inline JSON or file path)
 |   ├── system_prompt.md                # System prompt (editable without Python knowledge)
 |   ├── letter_template.md              # Letter template (editable without Python knowledge)
-|   ├── citations.py                    # Citation handling
-│   ├── session.py                      # Session management
 │   ├── feedback.py                     # Message feedback logic and email integration
 │   └── sections.json                   # Legal section mappings
 ├── evaluate/                           # LangSmith evaluation tooling
@@ -86,9 +85,9 @@ backend/
 ├── scripts/                            # Utility scripts
 │   ├── simple_langchain_demo.py        # LangChain proof-of-concept
 │   ├── vertex_ai_list_datastores.py    # Utility to get Google Vertex AI Datastore IDs
-│   ├── create_vector_store.py          # RAG corpus setup
 │   ├── convert_csv_to_jsonl.py         # Data conversion utilities
 │   ├── generate_types.py               # Generates a JSON Schema for Pydantic models exported to the frontend; piped through json-schema-to-typescript to produce frontend/src/types/models.ts (run via `make generate-types` or `npm run generate-types`)
+│   ├── generate_conversation/          # Source data for synthetic conversation generation
 │   └── documents/                      # Source legal documents
 │       └── or/                         # Oregon state laws
 │           ├── OAR54.txt               # Oregon Administrative Rules
@@ -147,8 +146,8 @@ graph LR
     end
 
     subgraph "Processing Pipeline"
-        Script[create_vector_store.py]
-        Upload[File Upload<br/>to OpenAI]
+        Script[RAG corpus setup]
+        Upload[File Upload<br/>to Vertex AI]
         Metadata[Attribute Tagging<br/>city, state]
     end
 
@@ -170,11 +169,7 @@ graph LR
    - State laws: `documents/or/*.txt`
    - City codes: `documents/or/portland/*.txt`, `documents/or/eugene/*.txt`
 
-2. **Vector Store Creation**: The `create_vector_store.py` script:
-   - Processes documents by directory structure
-   - Adds metadata attributes (city, state) for filtering
-   - Uploads files to Vertex AI RAG corpus
-   - Handles UTF-8 encoding requirements
+2. **Vector Store Creation**: :construction: The corpus was set up via a one-time script that is no longer in the repository. Documents are processed by directory structure, tagged with city/state metadata, and uploaded to the Vertex AI RAG corpus with UTF-8 encoding.
 
 3. **Metadata Attribution**: Documents are tagged with jurisdiction metadata to enable location-specific queries
 
