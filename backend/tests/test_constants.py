@@ -14,7 +14,6 @@ from tenantfirstaid.constants import (
     _strtobool,
 )
 
-
 # ── _strtobool property-based tests ───────────────────────────────────────────
 
 _TRUTHY = ["y", "yes", "t", "true", "on", "1"]
@@ -24,9 +23,9 @@ _RECOGNIZED = frozenset(_TRUTHY + _FALSY)
 
 def _arbitrary_case(s: str) -> st.SearchStrategy[str]:
     """Strategy that generates arbitrary upper/lower casings of a fixed string."""
-    return st.lists(
-        st.booleans(), min_size=len(s), max_size=len(s)
-    ).map(lambda mask: "".join(c.upper() if up else c.lower() for c, up in zip(s, mask)))
+    return st.lists(st.booleans(), min_size=len(s), max_size=len(s)).map(
+        lambda mask: "".join(c.upper() if up else c.lower() for c, up in zip(s, mask))
+    )
 
 
 @given(data=st.data(), word=st.sampled_from(_TRUTHY))

@@ -7,9 +7,9 @@ from tenantfirstaid.location import OregonCity, UsaState, city_or_state_input_sa
 
 def _arbitrary_case(s: str) -> st.SearchStrategy[str]:
     """Strategy that generates arbitrary upper/lower casings of a fixed string."""
-    return st.lists(
-        st.booleans(), min_size=len(s), max_size=len(s)
-    ).map(lambda mask: "".join(c.upper() if up else c.lower() for c, up in zip(s, mask)))
+    return st.lists(st.booleans(), min_size=len(s), max_size=len(s)).map(
+        lambda mask: "".join(c.upper() if up else c.lower() for c, up in zip(s, mask))
+    )
 
 
 def test_city_from_none():
