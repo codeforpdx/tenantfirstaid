@@ -32,6 +32,7 @@ class OregonCity(StrEnum):
         if c is None:
             return None
         else:
+            city: Optional[OregonCity]
             match c.strip().lower():
                 case "eugene":
                     city = cls.EUGENE
