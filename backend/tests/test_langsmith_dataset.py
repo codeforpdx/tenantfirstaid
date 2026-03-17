@@ -12,9 +12,12 @@ from hypothesis import strategies as st
 from evaluate.langsmith_dataset import (
     _extract_rubric,
     _read_jsonl,
+    _scenario_content_diff,
     _scenario_id,
     _tabulate,
+    _Validate,
     build_parser,
+    cmd_dataset_diff,
     cmd_dataset_validate,
     cmd_scenario_show,
     cmd_scenario_update,
@@ -53,6 +56,57 @@ def test_read_jsonl_empty_file(tmp_path):
     f = tmp_path / "data.jsonl"
     f.write_text("")
     assert _read_jsonl(f) == []
+
+
+def test_read_jsonl_validate_valid(tmp_path):
+    from evaluate.langsmith_dataset import DEFAULT_SCHEMA
+
+    f = tmp_path / "data.jsonl"
+    f.write_text(json.dumps(_make_valid_record()) + "\n")
+    # Should not raise or warn.
+    _read_jsonl(f, validate=_Validate("error", schema=DEFAULT_SCHEMA))
+
+
+def test_read_jsonl_validate_error_raises(tmp_path):
+    from evaluate.langsmith_dataset import DEFAULT_SCHEMA
+
+    f = tmp_path / "data.jsonl"
+    f.write_text(json.dumps({"metadata": {"scenario_id": 1}, "outputs": {}}) + "\n")
+    with pytest.raises(ValueError, match="Line 1"):
+        _read_jsonl(f, validate=_Validate("error", schema=DEFAULT_SCHEMA))
+
+
+def test_read_jsonl_validate_reports_all_errors(tmp_path):
+    """All invalid records are reported, not just the first."""
+    from evaluate.langsmith_dataset import DEFAULT_SCHEMA
+
+    f = tmp_path / "data.jsonl"
+    bad = {"metadata": {"scenario_id": 1}, "outputs": {}}
+    f.write_text(
+        json.dumps(bad)
+        + "\n"
+        + json.dumps({**bad, "metadata": {"scenario_id": 2}})
+        + "\n"
+    )
+    with pytest.raises(ValueError) as exc:
+        _read_jsonl(f, validate=_Validate("error", schema=DEFAULT_SCHEMA))
+    msg = str(exc.value)
+    assert "Line 1" in msg
+    assert "Line 2" in msg
+
+
+def test_read_jsonl_validate_warn_continues(tmp_path, capsys):
+    """validate='warn' prints to stderr but still returns all records."""
+    from evaluate.langsmith_dataset import DEFAULT_SCHEMA
+
+    f = tmp_path / "data.jsonl"
+    bad = {"metadata": {"scenario_id": 1}, "outputs": {}}
+    f.write_text(json.dumps(bad) + "\n")
+    result = _read_jsonl(f, validate=_Validate("warn", schema=DEFAULT_SCHEMA))
+    err = capsys.readouterr().err
+    assert result == [bad]
+    assert "warning" in err
+    assert "Line 1" in err
 
 
 # ── _scenario_id ───────────────────────────────────────────────────────────────
@@ -200,7 +254,7 @@ def _make_valid_record(scenario_id: int = 1) -> dict:
     }
 
 
-def test_cmd_dataset_validate_valid_file(tmp_path):
+def test_cmd_dataset_validate_valid_file(tmp_path, capsys):
     from evaluate.langsmith_dataset import DEFAULT_SCHEMA
 
     f = tmp_path / "data.jsonl"
@@ -210,11 +264,11 @@ def test_cmd_dataset_validate_valid_file(tmp_path):
     args.file = f
     args.schema = DEFAULT_SCHEMA
 
-    # Should not raise or call sys.exit.
     cmd_dataset_validate(args)
+    assert "valid" in capsys.readouterr().out
 
 
-def test_cmd_dataset_validate_invalid_file_exits(tmp_path):
+def test_cmd_dataset_validate_invalid_file_exits(tmp_path, capsys):
     from evaluate.langsmith_dataset import DEFAULT_SCHEMA
 
     f = tmp_path / "data.jsonl"
@@ -228,9 +282,10 @@ def test_cmd_dataset_validate_invalid_file_exits(tmp_path):
     with pytest.raises(SystemExit) as exc:
         cmd_dataset_validate(args)
     assert exc.value.code == 1
+    assert "Line 1" in capsys.readouterr().err
 
 
-def test_cmd_dataset_validate_multiple_records(tmp_path):
+def test_cmd_dataset_validate_multiple_records(tmp_path, capsys):
     from evaluate.langsmith_dataset import DEFAULT_SCHEMA
 
     f = tmp_path / "data.jsonl"
@@ -246,6 +301,7 @@ def test_cmd_dataset_validate_multiple_records(tmp_path):
     args.schema = DEFAULT_SCHEMA
 
     cmd_dataset_validate(args)
+    capsys.readouterr()  # suppress output
 
 
 # ── cmd_scenario_show ──────────────────────────────────────────────────────────
@@ -266,7 +322,7 @@ def test_cmd_scenario_show_local_found(tmp_path, capsys):
     assert '"scenario_id": 7' in out
 
 
-def test_cmd_scenario_show_local_not_found_exits(tmp_path):
+def test_cmd_scenario_show_local_not_found_exits(tmp_path, capsys):
     f = tmp_path / "data.jsonl"
     f.write_text(json.dumps(_make_valid_record(1)) + "\n")
 
@@ -277,6 +333,7 @@ def test_cmd_scenario_show_local_not_found_exits(tmp_path):
     with pytest.raises(SystemExit) as exc:
         cmd_scenario_show(args)
     assert exc.value.code == 1
+    assert "99" in capsys.readouterr().err
 
 
 # ── cmd_scenario_update ────────────────────────────────────────────────────────
@@ -289,7 +346,7 @@ def _make_remote_example(scenario_id: int):
     return ex
 
 
-def test_cmd_scenario_update_applies_patch(tmp_path):
+def test_cmd_scenario_update_applies_patch(tmp_path, capsys):
     record = _make_valid_record(3)
     f = tmp_path / "data.jsonl"
     f.write_text(json.dumps(record) + "\n")
@@ -308,6 +365,7 @@ def test_cmd_scenario_update_applies_patch(tmp_path):
     with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
         cmd_scenario_update(args)
 
+    assert "Updated scenario 3" in capsys.readouterr().out
     mock_client.update_example.assert_called_once_with(
         example_id=remote_ex.id,
         inputs=record["inputs"],
@@ -316,7 +374,7 @@ def test_cmd_scenario_update_applies_patch(tmp_path):
     )
 
 
-def test_cmd_scenario_update_not_in_local_file_exits(tmp_path):
+def test_cmd_scenario_update_not_in_local_file_exits(tmp_path, capsys):
     f = tmp_path / "data.jsonl"
     f.write_text(json.dumps(_make_valid_record(1)) + "\n")
 
@@ -328,9 +386,10 @@ def test_cmd_scenario_update_not_in_local_file_exits(tmp_path):
     with pytest.raises(SystemExit) as exc:
         cmd_scenario_update(args)
     assert exc.value.code == 1
+    assert "99" in capsys.readouterr().err
 
 
-def test_cmd_scenario_update_not_in_remote_exits(tmp_path):
+def test_cmd_scenario_update_not_in_remote_exits(tmp_path, capsys):
     f = tmp_path / "data.jsonl"
     f.write_text(json.dumps(_make_valid_record(5)) + "\n")
 
@@ -347,6 +406,170 @@ def test_cmd_scenario_update_not_in_remote_exits(tmp_path):
         with pytest.raises(SystemExit) as exc:
             cmd_scenario_update(args)
     assert exc.value.code == 1
+    assert "5" in capsys.readouterr().err
+
+
+# ── _scenario_content_diff ────────────────────────────────────────────────────
+
+
+def _make_scenario(scenario_id: int = 1, query: str = "test query") -> dict:
+    return {
+        "metadata": {"scenario_id": scenario_id, "city": "Portland", "state": "OR"},
+        "inputs": {"query": query, "city": "Portland", "state": "OR"},
+        "outputs": {"facts": ["fact 1"], "reference_conversation": []},
+    }
+
+
+def test_scenario_content_diff_identical():
+    assert _scenario_content_diff(_make_scenario(), _make_scenario()) == []
+
+
+def test_scenario_content_diff_inputs_differ():
+    left = _make_scenario(query="old query")
+    right = _make_scenario(query="new query")
+    combined = "".join(_scenario_content_diff(left, right))
+    assert "old query" in combined
+    assert "new query" in combined
+    assert "left/inputs" in combined
+    assert "right/inputs" in combined
+
+
+def test_scenario_content_diff_outputs_differ():
+    left = {
+        **_make_scenario(),
+        "outputs": {"facts": ["fact A"], "reference_conversation": []},
+    }
+    right = {
+        **_make_scenario(),
+        "outputs": {"facts": ["fact B"], "reference_conversation": []},
+    }
+    combined = "".join(_scenario_content_diff(left, right))
+    assert "fact A" in combined
+    assert "fact B" in combined
+    assert "left/outputs" in combined
+
+
+def test_scenario_content_diff_multiple_fields():
+    left = _make_scenario(query="old")
+    right = {
+        **_make_scenario(query="new"),
+        "outputs": {"facts": ["changed"], "reference_conversation": []},
+    }
+    combined = "".join(_scenario_content_diff(left, right))
+    assert "left/inputs" in combined
+    assert "left/outputs" in combined
+
+
+def test_scenario_content_diff_metadata_differ():
+    left = _make_scenario()
+    right = {
+        **_make_scenario(),
+        "metadata": {"scenario_id": 1, "city": "Eugene", "state": "OR"},
+    }
+    combined = "".join(_scenario_content_diff(left, right))
+    assert "left/metadata" in combined
+    assert "Eugene" in combined
+
+
+# ── cmd_dataset_diff ──────────────────────────────────────────────────────────
+
+
+def test_cmd_dataset_diff_no_differences(tmp_path, capsys):
+    f = tmp_path / "data.jsonl"
+    f.write_text(json.dumps(_make_valid_record()) + "\n")
+
+    args = MagicMock()
+    args.left = f
+    args.right = f
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=MagicMock()):
+        cmd_dataset_diff(args)
+
+    assert "No differences." in capsys.readouterr().out
+
+
+def test_cmd_dataset_diff_invalid_file_exits(tmp_path, capsys):
+    f = tmp_path / "data.jsonl"
+    f.write_text(json.dumps({"metadata": {"scenario_id": 1}, "outputs": {}}) + "\n")
+
+    args = MagicMock()
+    args.left = f
+    args.right = f
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=MagicMock()):
+        with pytest.raises(SystemExit) as exc:
+            cmd_dataset_diff(args)
+    assert exc.value.code == 1
+    assert "Line 1" in capsys.readouterr().err
+
+
+def test_cmd_dataset_diff_existence_only(tmp_path, capsys):
+    left_file = tmp_path / "left.jsonl"
+    right_file = tmp_path / "right.jsonl"
+    left_file.write_text(json.dumps(_make_valid_record(1)) + "\n")
+    right_file.write_text(json.dumps(_make_valid_record(2)) + "\n")
+
+    args = MagicMock()
+    args.left = left_file
+    args.right = right_file
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=MagicMock()):
+        cmd_dataset_diff(args)
+
+    out = capsys.readouterr().out
+    assert "< scenario_id=1" in out
+    assert "> scenario_id=2" in out
+
+
+def test_cmd_dataset_diff_content_change(tmp_path, capsys):
+    left_record = _make_valid_record(1)
+    right_record = _make_valid_record(1)
+    right_record["inputs"]["query"] = "updated question"
+
+    left_file = tmp_path / "left.jsonl"
+    right_file = tmp_path / "right.jsonl"
+    left_file.write_text(json.dumps(left_record) + "\n")
+    right_file.write_text(json.dumps(right_record) + "\n")
+
+    args = MagicMock()
+    args.left = left_file
+    args.right = right_file
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=MagicMock()):
+        cmd_dataset_diff(args)
+
+    out = capsys.readouterr().out
+    assert "~ scenario_id=1" in out
+    assert "[content differs]" in out
+    assert "updated question" in out
+
+
+def test_cmd_dataset_diff_mixed(tmp_path, capsys):
+    """Left-only, right-only, and content-changed scenarios all appear together."""
+    only_left = _make_valid_record(1)
+    changed_left = _make_valid_record(2)
+    changed_right = _make_valid_record(2)
+    changed_right["inputs"]["query"] = "changed"
+    only_right = _make_valid_record(3)
+
+    left_file = tmp_path / "left.jsonl"
+    right_file = tmp_path / "right.jsonl"
+    left_file.write_text(json.dumps(only_left) + "\n" + json.dumps(changed_left) + "\n")
+    right_file.write_text(
+        json.dumps(changed_right) + "\n" + json.dumps(only_right) + "\n"
+    )
+
+    args = MagicMock()
+    args.left = left_file
+    args.right = right_file
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=MagicMock()):
+        cmd_dataset_diff(args)
+
+    out = capsys.readouterr().out
+    assert "< scenario_id=1" in out
+    assert "~ scenario_id=2" in out
+    assert "> scenario_id=3" in out
 
 
 # ── property-based tests ───────────────────────────────────────────────────────

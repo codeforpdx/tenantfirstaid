@@ -8,6 +8,42 @@ This system runs a suite of test questions through the chatbot automatically, th
 
 Think of it like a mock client. You hand the chatbot a question you already know the answer to, and measure whether it gets it right.
 
+---
+
+## Definitions
+
+**RAG (Retrieval-Augmented Generation)**
+A technique where the AI looks up relevant documents before writing a response, instead of relying solely on what it learned during training. In this project, "retrieval" means searching Oregon housing law texts; "generation" means composing the answer using those passages. This grounds responses in actual statutes rather than the model's general knowledge.
+
+**Agent**
+An AI that can do more than answer in one step — it can decide what tools to use, call them, and use the results to compose a final response. Tenant First Aid's chatbot is an agent: when a question comes in, it decides whether to search the legal corpus (the RAG retrieval tool), fetches relevant statutes, and then writes the response.
+
+**System prompt**
+A set of instructions given to the agent before any conversation starts. It defines the agent's role, tone, citation style, and legal guardrails ("you are a tenant rights assistant; always cite Oregon statutes; never give legal advice"). The user never sees it. In this codebase it lives in `tenantfirstaid/system_prompt.md`.
+
+**Prompt** (in the context of evaluations)
+The text sent to the AI judge telling it how to evaluate a response. Not to be confused with the system prompt above. An evaluator prompt is constructed from the rubric and the scenario data, and instructs the judge what criteria to apply and what format to return scores in.
+
+**Rubric**
+A plain-text document that defines the scoring criteria for one evaluator. It describes what earns a 1.0, 0.5, or 0.0 — for example, a legal correctness rubric says "1.0 = legally accurate; 0.0 = legally wrong or misleading." Rubrics live in `evaluate/evaluators/*.md` so lawyers and non-developers can edit them without touching Python code.
+
+**Evaluator**
+A piece of scoring logic that reads the chatbot's response to a scenario and assigns a score between 0.0 and 1.0. There are two kinds: *LLM-as-judge* evaluators use a second AI model guided by a rubric; *heuristic* evaluators use deterministic code (e.g. checking whether a citation link is well-formed). Each evaluator measures one dimension of quality — legal accuracy, tone, citation format, and so on.
+
+**Scenario**
+One test case. A scenario contains: the question a tenant asks, city/state context (because tenant law varies by jurisdiction), a reference conversation showing what a correct and well-toned response looks like, and a list of key legal facts the response must get right. Scenarios are the unit of work the evaluators score.
+
+**Dataset**
+The full collection of scenarios, stored locally in `evaluate/dataset-tenant-legal-qa-scenarios.jsonl` and uploaded to LangSmith for evaluation runs. The JSONL file in the git repository is the source of truth — the LangSmith copy is a working copy that is synced from it.
+
+**Experiment**
+One complete run of the dataset through the chatbot. Each experiment records which version of the code and system prompt was used, the chatbot's response to every scenario, and the evaluator scores. Experiments are compared side-by-side in the LangSmith UI to measure the impact of a code or prompt change.
+
+**Deployment**
+A version of the agent hosted in LangSmith Cloud, defined by `backend/langgraph.json`. A deployment is needed to run experiments from the LangSmith browser UI (so LangSmith can send test questions to a live endpoint) and to use Cloud Studio. Local development uses `langgraph dev` instead of a full deployment.
+
+---
+
 ```mermaid
 flowchart LR
     Q["Test question<br>(from dataset)"]
@@ -91,7 +127,7 @@ flowchart TD
     JSONL --> Commit
 ```
 
-**The rule:** anything you change in the browser must be pulled back and committed. The JSONL file is what other contributors see.
+**The rule:** anything you change in the browser must be pulled back and committed. The JSONL file is what other contributors see. Run `dataset diff` first to see what changed before overwriting either side.
 
 ---
 
@@ -141,6 +177,43 @@ uv run langsmith_dataset.py dataset validate \
 ```
 
 Checks every line against the schema before pushing, catching formatting mistakes early.
+
+### Check for content drift between local and remote
+
+```bash
+# Show which scenarios differ between the local file and LangSmith
+uv run langsmith_dataset.py dataset diff \
+  dataset-tenant-legal-qa-scenarios.jsonl \
+  tenant-legal-qa-scenarios
+```
+
+Reports three categories:
+
+| Symbol | Meaning |
+|--------|---------|
+| `<` | scenario exists only on the left (would be lost on a pull, missing on a push) |
+| `>` | scenario exists only on the right |
+| `~` | same `scenario_id` on both sides but content differs — shows a field-level unified diff |
+
+Example output:
+
+```
+< scenario_id=5
+~ scenario_id=12  [content differs]
+  --- left/outputs
+  +++ right/outputs
+  @@ -3,7 +3,7 @@
+       "facts": [
+  -      "ORS 90.365 allows rent reduction after 7 days notice",
+  +      "ORS 90.365 allows rent reduction after 7 days written notice",
+         "Landlord must repair within reasonable time"
+       ],
+> scenario_id=18
+```
+
+`dataset diff` is the right first step before pushing or pulling — it tells you exactly what would change. Content changes (`~`) require a human decision: use `scenario update` to push a local fix to LangSmith, or `dataset pull` followed by `git diff` to review before accepting a remote edit.
+
+---
 
 ### Fine-grained scenario operations
 

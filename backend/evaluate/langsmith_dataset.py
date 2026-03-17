@@ -7,6 +7,7 @@ Usage examples:
     dataset list
     dataset push ./my-dataset.jsonl my-dataset
     dataset pull my-dataset ./my-dataset.jsonl
+    dataset diff ./my-dataset.jsonl my-dataset
     dataset validate ./my-dataset.jsonl
     scenario list my-dataset
     experiment list my-dataset
@@ -23,8 +24,9 @@ import re
 import subprocess
 import sys
 from collections.abc import Sequence
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import jsonschema
 from langchain_core.prompts import (
@@ -42,6 +44,18 @@ EVALUATE_DIR = Path(__file__).parent
 DEFAULT_SCHEMA = EVALUATE_DIR / "langsmith_scenario_schema.json"
 DEFAULT_DATASET_NAME = "tenant-legal-qa-scenarios"
 DEFAULT_JSONL = EVALUATE_DIR / "dataset-tenant-legal-qa-scenarios.jsonl"
+
+
+@dataclass(frozen=True)
+class _Validate:
+    """Validation configuration for _read_jsonl.
+
+    mode="error"  raises ValueError listing all violations with line numbers.
+    mode="warn"   prints the same information to stderr and continues.
+    """
+
+    mode: Literal["error", "warn"]
+    schema: Path = field(default_factory=lambda: DEFAULT_SCHEMA)
 
 
 def _tabulate(
@@ -64,19 +78,45 @@ def _tabulate(
         print(fmt(row))
 
 
-def _read_jsonl(path: Path, *, with_line_numbers: bool = False) -> list:
+def _read_jsonl(
+    path: Path,
+    *,
+    with_line_numbers: bool = False,
+    validate: _Validate | None = None,
+) -> list:
     """Parse a JSONL file, skipping blank lines and // comments.
 
-    When with_line_numbers is True, returns list of (line_number, dict) tuples
+    Pass a Validate instance to check records against a schema.  Validate("error")
+    raises ValueError listing all violations with line numbers; Validate("warn")
+    prints the same information to stderr and continues.
+    When with_line_numbers=True, returns list of (line_number, dict) tuples
     so callers can report errors with file positions.
     """
-    results = []
+    numbered: list[tuple[int, dict]] = []
     for i, line in enumerate(path.read_text().splitlines(), 1):
         if not line.strip() or line.startswith("//"):
             continue
-        parsed = json.loads(line)
-        results.append((i, parsed) if with_line_numbers else parsed)
-    return results
+        numbered.append((i, json.loads(line)))
+
+    if validate is not None:
+        schema_obj = json.loads(validate.schema.read_text())
+        validator = jsonschema.Draft7Validator(schema_obj)
+        errors = [
+            f"Line {i}: {error.message}"
+            for i, record in numbered
+            for error in validator.iter_errors(record)
+        ]
+        if errors:
+            msg = "\n".join(errors)
+            if validate.mode == "warn":
+                print(
+                    f"warning: {path.name} has schema violations:\n{msg}",
+                    file=sys.stderr,
+                )
+            else:
+                raise ValueError(msg)
+
+    return numbered if with_line_numbers else [record for _, record in numbered]
 
 
 def _git_is_clean(path: Path) -> bool:
@@ -139,7 +179,11 @@ def cmd_dataset_push(args: argparse.Namespace) -> None:
     local: Path = args.file
     client = make_client()
 
-    examples = _read_jsonl(local)
+    try:
+        examples = _read_jsonl(local, validate=_Validate("error"))
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        sys.exit(1)
 
     try:
         ds = client.read_dataset(dataset_name=args.remote)
@@ -200,10 +244,15 @@ def cmd_dataset_pull(args: argparse.Namespace) -> None:
     print(f"Pulled {len(examples)} examples from '{args.remote}' to {local}.")
 
 
-def _load_examples(ref: str | Path, client: Client) -> list[dict]:
+def _load_examples(
+    ref: str | Path,
+    client: Client,
+    *,
+    validate: _Validate | None = None,
+) -> list[dict]:
     """Load examples from a remote dataset name or local JSONL file."""
     if isinstance(ref, Path):
-        return _read_jsonl(ref)
+        return _read_jsonl(ref, validate=validate)
     ds = client.read_dataset(dataset_name=ref)
     return [
         {"metadata": ex.metadata, "inputs": ex.inputs, "outputs": ex.outputs}
@@ -218,28 +267,79 @@ def _scenario_id(example: dict) -> int:
     return sc_id
 
 
+_SCENARIO_DIFF_FIELDS = ("inputs", "outputs", "metadata")
+
+
+def _scenario_content_diff(left: dict, right: dict) -> list[str]:
+    """Return unified diff lines for every field that differs between two scenario dicts.
+
+    Compares inputs, outputs, and metadata field by field so that callers can see
+    exactly what changed rather than diffing a serialised blob.  Returns an empty
+    list when the scenarios are content-identical.
+    """
+    lines: list[str] = []
+    for key in _SCENARIO_DIFF_FIELDS:
+        left_val = left.get(key)
+        right_val = right.get(key)
+        if left_val == right_val:
+            continue
+        left_text = json.dumps(left_val, indent=2, sort_keys=True)
+        right_text = json.dumps(right_val, indent=2, sort_keys=True)
+        lines.extend(
+            difflib.unified_diff(
+                left_text.splitlines(keepends=True),
+                right_text.splitlines(keepends=True),
+                fromfile=f"left/{key}",
+                tofile=f"right/{key}",
+            )
+        )
+    return lines
+
+
 def cmd_dataset_diff(args: argparse.Namespace) -> None:
     client = make_client()
-    left = _load_examples(args.left, client)
-    right = _load_examples(args.right, client)
+    try:
+        left = _load_examples(args.left, client, validate=_Validate("error"))
+        right = _load_examples(args.right, client, validate=_Validate("error"))
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        sys.exit(1)
 
     left_by_id = {_scenario_id(ex): ex for ex in left}
     right_by_id = {_scenario_id(ex): ex for ex in right}
 
     only_left = sorted(left_by_id.keys() - right_by_id.keys())
     only_right = sorted(right_by_id.keys() - left_by_id.keys())
+    common = sorted(left_by_id.keys() & right_by_id.keys())
 
+    found_diff = False
     for sid in only_left:
         print(f"< scenario_id={sid}")
+        found_diff = True
     for sid in only_right:
         print(f"> scenario_id={sid}")
-    if not only_left and not only_right:
+        found_diff = True
+    for sid in common:
+        diff_lines = _scenario_content_diff(left_by_id[sid], right_by_id[sid])
+        if diff_lines:
+            print(f"~ scenario_id={sid}  [content differs]")
+            for line in diff_lines:
+                print("  " + line.rstrip("\n"))
+            found_diff = True
+
+    if not found_diff:
         print("No differences.")
 
 
 def cmd_dataset_merge(args: argparse.Namespace) -> None:
     client = make_client()
-    source_examples = _load_examples(args.source, client)
+    try:
+        source_examples = _load_examples(
+            args.source, client, validate=_Validate("error")
+        )
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        sys.exit(1)
 
     target_ds = client.read_dataset(dataset_name=args.target)
     existing = list(client.list_examples(dataset_id=target_ds.id))
@@ -259,14 +359,10 @@ def cmd_dataset_merge(args: argparse.Namespace) -> None:
 
 
 def cmd_dataset_validate(args: argparse.Namespace) -> None:
-    schema = json.loads(args.schema.read_text())
-    validator = jsonschema.Draft7Validator(schema)
-    errors = []
-    for i, record in _read_jsonl(args.file, with_line_numbers=True):
-        for error in validator.iter_errors(record):
-            errors.append(f"Line {i}: {error.message}")
-    if errors:
-        print("\n".join(errors), file=sys.stderr)
+    try:
+        _read_jsonl(args.file, validate=_Validate("error", schema=args.schema))
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
         sys.exit(1)
     print(f"All records in {args.file} are valid.")
 
@@ -291,7 +387,7 @@ def cmd_scenario_list(args: argparse.Namespace) -> None:
 def cmd_scenario_show(args: argparse.Namespace) -> None:
     ref = args.dataset
     if isinstance(ref, Path):
-        examples = _read_jsonl(ref)
+        examples = _read_jsonl(ref, validate=_Validate("warn"))
     else:
         examples = _load_examples(ref, make_client())
 
@@ -307,7 +403,11 @@ def cmd_scenario_append(args: argparse.Namespace) -> None:
     client = make_client()
     ds = client.read_dataset(dataset_name=args.dataset)
 
-    examples = _read_jsonl(local)
+    try:
+        examples = _read_jsonl(local, validate=_Validate("error"))
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        sys.exit(1)
     for ex in examples:
         client.create_example(
             inputs=ex["inputs"],
@@ -335,7 +435,10 @@ def cmd_scenario_remove(args: argparse.Namespace) -> None:
 
 
 def cmd_scenario_update(args: argparse.Namespace) -> None:
-    local_scenarios = {_scenario_id(ex): ex for ex in _read_jsonl(args.file)}
+    local_scenarios = {
+        _scenario_id(ex): ex
+        for ex in _read_jsonl(args.file, validate=_Validate("warn"))
+    }
     if args.scenario_id not in local_scenarios:
         print(f"Scenario {args.scenario_id} not found in {args.file}.", file=sys.stderr)
         sys.exit(1)
