@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import BeaverIcon from '../../shared/components/BeaverIcon';
 import TenantFirstAidLogo from "../../shared/components/TenantFirstAidLogo";
 import LetterTemplate from '../../../public/LetterTemplate.png';
