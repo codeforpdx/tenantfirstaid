@@ -4,7 +4,7 @@ import Navbar from "./shared/components/Navbar/Navbar";
 import Chat from "./Chat";
 import LoadingPage from "./pages/LoadingPage";
 import PageLayout from "./layouts/PageLayout";
-import HP from "./HP";
+import HomePage from "./pages/HomePage/HomePage";
 
 // Lazy-loading for less frequented pages
 const About = lazy(() => import("./About"));
@@ -18,7 +18,7 @@ export default function App() {
       <Navbar />
       <PageLayout>
         <Routes>
-          <Route path="/" element={<HP />} />
+          <Route path="/" element={<HomePage />} />
           <Route
             path="/*"
             element={
