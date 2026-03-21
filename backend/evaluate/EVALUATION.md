@@ -559,10 +559,10 @@ Select the model the judge will use. To match the offline evaluator, use:
 
 | Setting | Value | Notes |
 |---|---|---|
+| **Provider** | `Cloud providers: Google Vertex AI` | Routes judge calls through Vertex AI using the workspace provider secret. |
+| **API Key Name** | `GOOGLE_VERTEX_AI_WEB_CREDENTIALS` | The provider secret defined in **Settings → Workspace → Integrations → Provider secrets**. This is the same service account credential as `GOOGLE_APPLICATION_CREDENTIALS`, registered under the name LangSmith expects for Vertex AI. |
 | **Model** | `gemini-2.5-flash` | Matches `EVALUATOR_MODEL_NAME` in `langsmith_evaluators.py`. |
 | **Temperature** | `0.0` | Lower temperature = more deterministic scoring. The offline `openevals` evaluator defaults to `0.0`. |
-
-LangSmith runs the judge model through its own API keys — your `GOOGLE_APPLICATION_CREDENTIALS` are not used (see [Cost](#cost) below).
 
 #### Feedback configuration
 
@@ -624,7 +624,7 @@ This only works if the prompt uses `<Rubric>…</Rubric>` tags around the rubric
 
 ### Cost
 
-Bound evaluators use LangSmith's own LLM infrastructure, not your GCP credentials. Judge model calls are billed through your LangSmith plan, not your Google Cloud account. Check LangSmith's current pricing for details on how evaluator usage is metered.
+Bound evaluators use your GCP service account (`GOOGLE_VERTEX_AI_WEB_CREDENTIALS`) to call the judge model on Vertex AI. Judge model calls are billed to your Google Cloud account, not your LangSmith plan.
 
 ---
 
