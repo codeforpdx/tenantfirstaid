@@ -13,8 +13,10 @@ export default function DisclaimerLayout({ isOngoing, children }: Props) {
         !isOngoing && "max-w-[600px]",
       )}
     >
+      <p>
         <strong>Disclaimer</strong>:&nbsp;
         {children}
+      </p>
     </div>
   );
 }
