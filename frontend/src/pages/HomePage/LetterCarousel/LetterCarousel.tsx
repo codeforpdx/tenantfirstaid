@@ -2,7 +2,7 @@ import { useState } from "react";
 import letterImages from "./LetterImages";
 import ChevronRight from "../../../shared/components/ChevronRight";
 
-const LetterCarousel = () => {
+export default function LetterCarousel() {
   const [activeLetterIndex, setActiveLetterIndex] = useState(0);
 
   const handleNextLetter = () => {
@@ -66,6 +66,4 @@ const LetterCarousel = () => {
       </div>
     </div>
   );
-};
-
-export default LetterCarousel;
+}

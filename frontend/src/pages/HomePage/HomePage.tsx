@@ -7,15 +7,12 @@ import AirVentIcon from "../../shared/components/AirVentIcon";
 import ChartIcon from "../../shared/components/ChartIcon";
 import ActivityIcon from "../../shared/components/ActivityIcon";
 import ComparisonGrid from "./ComparisonGrid/ComparisonGrid";
-import clsx from "clsx";
 import LetterCarousel from "./LetterCarousel/LetterCarousel";
-const HomePage = () => {
 
+export default function HomePage() {
   return (
     <>
-      <div
-        className="bg-emerald-950 w-full overflow-x-hidden relative text-[#F4F4F2] selection:bg-emerald-500 selection:text-white"
-      >
+      <div className="bg-emerald-950 w-full overflow-x-hidden relative text-[#F4F4F2] selection:bg-emerald-500 selection:text-white">
         <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150vw] h-auto opacity-5 z-0 pointer-events-none flex items-center justify-center text-emerald-500">
           <TenantFirstAidLogo />
         </div>
@@ -68,35 +65,20 @@ const HomePage = () => {
               </h3>
               <div className="flex flex-col">
                 {brainyFeatures.map((item, i) => (
-                  <div key={item.id} className={clsx("flex gap-[30px]")}>
-                    <div
-                      className={clsx("flex flex-col items-center w-[30px]")}
-                    >
-                      <div
-                        className={clsx(
-                          "w-5 h-5 rounded-full border-2 z-2",
-                          "bg-emerald-500 border-emerald-900",
-                        )}
-                      ></div>
-
+                  <div key={item.id} className="flex gap-[30px]">
+                    <div className="flex flex-col items-center w-[30px]">
+                      <div className="w-5 h-5 rounded-full border-2 z-2 bg-emerald-500 border-emerald-900"></div>
                       {i === 0 && (
-                        <div className={clsx("w-0.5 flex-1 bg-white/20")}></div>
+                        <div className="w-0.5 flex-1 bg-white/20"></div>
                       )}
                     </div>
 
-                    <div className={clsx("flex-1 pb-10")}>
-                      <h4
-                        className={clsx("text-[1.6rem] my-2", "text-[#F4F4F2]")}
-                      >
+                    <div className="flex-1 pb-10">
+                      <h4 className="text-[1.6rem] my-2 text-[#F4F4F2]">
                         {item.title}
                       </h4>
 
-                      <p
-                        className={clsx(
-                          "leading-[1.6] opacity-90",
-                          "text-[#F4F4F2]",
-                        )}
-                      >
+                      <p className="leading-[1.6] opacity-90 text-[#F4F4F2]">
                         {item.desc}
                       </p>
                     </div>
@@ -264,6 +246,4 @@ const HomePage = () => {
       </div>
     </>
   );
-};
-
-export default HomePage;
+}

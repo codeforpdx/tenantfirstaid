@@ -3,7 +3,7 @@ import CheckCircle from "../../../shared/components/CheckCircleIcon";
 import XCircle from "../../../shared/components/XCircleIcon";
 import { headers, comparisonData } from "./ComparisonData";
 
-const ComparisonGrid = () => {
+export default function ComparisonGrid() {
   const renderIcon = (hasFeature: boolean) =>
     hasFeature ? <CheckCircle /> : <XCircle />;
 
@@ -48,6 +48,4 @@ const ComparisonGrid = () => {
       </div>
     </div>
   );
-};
-
-export default ComparisonGrid;
+}

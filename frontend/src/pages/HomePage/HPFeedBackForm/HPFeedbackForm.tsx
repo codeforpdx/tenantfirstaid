@@ -1,15 +1,8 @@
 import { useState, ChangeEvent, FormEvent } from "react";
 import sendHPFeedback from "./feedbackHPHelper";
-import clsx from "clsx";
 
-const inputClasses = clsx(
-  "m-0 border-none outline-none",
-  "bg-[#E6D5B8]/5 text-[#F4F4F2]",
-  "p-4 text-base rounded-xl",
-  "transition-colors duration-300 ease-in-out",
-  "shadow-[inset_0_2px_4px_rgba(255,255,255,0.05),0_1px_3px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.06)]",
-  "focus:ring-0",
-);
+const inputClasses =
+  "m-0 border-none outline-none bg-[#E6D5B8]/5 text-[#F4F4F2] p-4 text-base rounded-xl transition-colors duration-300 ease-in-out shadow-[inset_0_2px_4px_rgba(255,255,255,0.05),0_1px_3px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.06)] focus:ring-0";
 
 export default function HPFeedbackForm() {
   const [form, setForm] = useState({
@@ -62,7 +55,7 @@ export default function HPFeedbackForm() {
         <textarea
           name="feedback"
           placeholder="Message"
-          className={clsx(inputClasses, "min-h-40 resize-y")}
+          className={`${inputClasses} min-h-40 resize-y`}
           required
           value={form.feedback}
           onChange={handleChange}
@@ -70,11 +63,7 @@ export default function HPFeedbackForm() {
 
         <button
           type="submit"
-          className={clsx(
-            "m-0 cursor-pointer border-none rounded-xl p-4 transition-all duration-200 ease-in-out hover:opacity-90",
-            "bg-[#E6D5B8]/70 text-[#00FF8F] text-[1.2rem] font-bold",
-            "shadow-[0_4px_15px_rgba(16,185,129,0.3)]",
-          )}
+          className="m-0 cursor-pointer border-none rounded-xl p-4 transition-all duration-200 ease-in-out hover:opacity-90 bg-[#E6D5B8]/70 text-[#00FF8F] text-[1.2rem] font-bold shadow-[0_4px_15px_rgba(16,185,129,0.3)]"
         >
           Submit
         </button>
