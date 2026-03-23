@@ -46,11 +46,11 @@ export default function LetterCarousel() {
           />
         </div>
 
-        {letterImages.map((img, id) => (
+        {letterImages.map((img, index: number) => (
           <div
             key={img.id}
             className="absolute top-2.5 left-0 w-full h-auto transition-all duration-[1270ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer shadow-[0_25px_50px_rgba(0,0,0,0.4)] border border-[#E6D5B8]/30 bg-[#E6D5B8]/70 backdrop-blur-md p-[15px] rounded-2xl box-border"
-            style={getCardStyle(id)}
+            style={getCardStyle(index)}
             onClick={handleNextLetter}
           >
             <img src={img.src} alt="Letter" className="w-full h-auto block" />
