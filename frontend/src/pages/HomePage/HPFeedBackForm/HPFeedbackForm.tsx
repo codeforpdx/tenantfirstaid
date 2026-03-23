@@ -2,12 +2,6 @@ import { useState, ChangeEvent, FormEvent } from "react";
 import sendHPFeedback from "./feedbackHPHelper";
 import clsx from "clsx";
 
-interface Props {
-  nameValue: string;
-  subjectValue: string;
-  feedbackValue: string;
-}
-
 const inputClasses = clsx(
   "m-0 border-none outline-none",
   "bg-[#E6D5B8]/5 text-[#F4F4F2]",
@@ -17,15 +11,11 @@ const inputClasses = clsx(
   "focus:ring-0",
 );
 
-export default function HPFeedbackForm({
-  nameValue,
-  subjectValue,
-  feedbackValue,
-}: Props) {
+export default function HPFeedbackForm() {
   const [form, setForm] = useState({
-    name: nameValue,
-    subject: subjectValue,
-    feedback: feedbackValue,
+    name: "",
+    subject: "",
+    feedback: "",
   });
 
   const handleChange = (
@@ -40,6 +30,8 @@ export default function HPFeedbackForm({
 
     if (result.success) {
       setForm({ name: "", subject: "", feedback: "" });
+    } else {
+      console.error("Failed to submit feedback:", result.message);
     }
   };
 

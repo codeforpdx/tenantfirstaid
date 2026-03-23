@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import BeaverIcon from "../../shared/components/BeaverIcon";
 import TenantFirstAidLogo from "../../shared/components/TenantFirstAidLogo";
 import brainyFeatures from "./BrainyFeatures";
@@ -11,12 +10,10 @@ import ComparisonGrid from "./ComparisonGrid/ComparisonGrid";
 import clsx from "clsx";
 import LetterCarousel from "./LetterCarousel/LetterCarousel";
 const HomePage = () => {
-  const mainRef = useRef(null);
 
   return (
     <>
       <div
-        ref={mainRef}
         className="bg-emerald-950 w-full overflow-x-hidden relative text-[#F4F4F2] selection:bg-emerald-500 selection:text-white"
       >
         <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150vw] h-auto opacity-5 z-0 pointer-events-none flex items-center justify-center text-emerald-500">
@@ -263,7 +260,7 @@ const HomePage = () => {
           </div>
         </section>
 
-        <HPFeedbackForm nameValue="" subjectValue="" feedbackValue="" />
+        <HPFeedbackForm />
       </div>
     </>
   );
