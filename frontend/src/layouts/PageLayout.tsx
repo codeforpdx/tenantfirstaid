@@ -7,7 +7,7 @@ interface Props {
 
 export default function PageLayout({ children }: Props) {
   const { pathname } = useLocation();
-  const isHomePages = pathname === "/" || pathname.startsWith("/letter");
+  const isHomePages = pathname === "/" || pathname.startsWith("/letter") || pathname.startsWith("/chat");
 
   return (
     <div
