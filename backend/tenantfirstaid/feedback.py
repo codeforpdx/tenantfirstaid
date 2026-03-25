@@ -33,18 +33,18 @@ def send_feedback() -> Tuple[str, int]:
             if (stripped_email := email.strip())
         ]
 
-    if not file:                                                                                                
+    if not file:
         name = request.form.get("name")
-        subject = request.form.get("subject")                                                                   
-        email_params = {                  
-             "subject": subject or "Homepage Feedback",
-             "from_email": os.getenv("SENDER_EMAIL"),
-             "to": [os.getenv("RECIPIENT_EMAIL")],                                                               
-             "body": f"From: {name}\n\n{feedback}",
-        }                                                                                                       
-        try:                              
+        subject = request.form.get("subject")
+        email_params = {
+            "subject": subject or "Homepage Feedback",
+            "from_email": os.getenv("SENDER_EMAIL"),
+            "to": [os.getenv("RECIPIENT_EMAIL")],
+            "body": f"From: {name}\n\n{feedback}",
+        }
+        try:
             EmailMessage(**email_params).send()
-            return "Message sent", 200                                                                          
+            return "Message sent", 200
         except Exception as e:
             return f"Send failed: {str(e)}", 500
 
