@@ -6,14 +6,16 @@ automated quality evaluation.
 
 import argparse
 import logging
-import os
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from langchain_core.messages import HumanMessage
 from langsmith import Client, evaluate
 
-from scripts.langsmith_evaluators import (
+from tenantfirstaid.constants import LANGSMITH_API_KEY, SINGLETON
+from tenantfirstaid.langchain_chat_manager import LangChainChatManager
+from tenantfirstaid.location import OregonCity, UsaState
+
+from .langsmith_evaluators import (
     # citation_accuracy_evaluator,
     # citation_format_evaluator,
     # completeness_evaluator,
@@ -21,12 +23,6 @@ from scripts.langsmith_evaluators import (
     # performance_evaluator,
     tone_evaluator,
     # tool_usage_evaluator,
-)
-from tenantfirstaid.constants import SINGLETON
-from tenantfirstaid.langchain_chat_manager import (
-    LangChainChatManager,
-    OregonCity,
-    UsaState,
 )
 
 # Suppress the noisy additionalProperties warning from langchain_google_vertexai
@@ -74,7 +70,8 @@ def agent_wrapper(inputs) -> Dict[str, str]:
         )
         or "N/A - Set env var `SHOW_MODEL_THINKING=true` to capture reasoning",
         "Model-Under-Test System Prompt": chat_manager.system_prompt.content
-        if isinstance(chat_manager.system_prompt.content, str)
+        if chat_manager.system_prompt is not None
+        and isinstance(chat_manager.system_prompt.content, str)
         else "",
         # TODO: figure out how to return ToolMessage content blocks for evaluation of tool calls and outputs
         #       since these are not currently included in the output stream from generate_streaming_response()
@@ -98,7 +95,7 @@ def run_evaluation(
     Returns:
         Evaluation results object
     """
-    ls_client = Client(api_key=os.getenv("LANGSMITH_API_KEY"))
+    ls_client = Client(api_key=LANGSMITH_API_KEY)
 
     # Get dataset.
     dataset = ls_client.read_dataset(dataset_name=dataset_name)
@@ -176,14 +173,6 @@ if __name__ == "__main__":
         default=1,
         help="Maximum number of concurrent runs",
     )
-
-    env_path = Path(__file__).parent / "../.env"
-    if env_path.exists():
-        from dotenv import load_dotenv
-
-        load_dotenv(override=True)
-    else:
-        raise FileNotFoundError(f".env file not found at {env_path}")
 
     args = parser.parse_args()
 

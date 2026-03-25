@@ -3,17 +3,25 @@ Test location sanitization and other methods
 """
 
 import inspect
+import json
 from typing import Dict
 from unittest.mock import MagicMock, patch
 
+import pytest
+from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
+
+from tenantfirstaid.google_auth import load_gcp_credentials
 from tenantfirstaid.langchain_tools import (
     CityStateLawsInputSchema,
-    __filter_builder,
+    _filter_builder,
     generate_letter,
     get_letter_template,
     retrieve_city_state_laws,
 )
 from tenantfirstaid.location import OregonCity, UsaState
+
+pytestmark = pytest.mark.langchain
 
 
 def test_only_oregon_json_serialization():
@@ -53,7 +61,7 @@ def test_retrieve_city_law_filters_correctly():
     state = UsaState.from_maybe_str("or")
     city = OregonCity.from_maybe_str("portland")
 
-    filter = __filter_builder(state, city)
+    filter = _filter_builder(state, city)
 
     # Verify filter was constructed correctly.
     assert 'city: ANY("portland")' in str(filter)
@@ -65,7 +73,7 @@ def test_retrieve_state_law_filters_correctly():
     state = UsaState.from_maybe_str("or")
     city = None
 
-    filter = __filter_builder(state, city)
+    filter = _filter_builder(state, city)
 
     # Verify filter was constructed correctly.
     assert 'city: ANY("null")' in str(filter)
@@ -92,7 +100,7 @@ def test_get_letter_template_returns_template():
     assert "ORS 90.320" in result
 
 
-@patch("tenantfirstaid.langchain_tools.Rag_Builder")
+@patch("tenantfirstaid.langchain_tools.RagBuilder")
 def test_retrieve_city_state_laws_state_only(mock_rag_class):
     """Test tool can be invoked with only state parameter."""
     mock_rag_class.return_value.search.return_value = ""
@@ -103,7 +111,7 @@ def test_retrieve_city_state_laws_state_only(mock_rag_class):
     )
 
 
-@patch("tenantfirstaid.langchain_tools.Rag_Builder")
+@patch("tenantfirstaid.langchain_tools.RagBuilder")
 def test_retrieve_city_state_laws_parameter_order(mock_rag_class):
     """Test that parameters are correctly ordered."""
     mock_rag_class.return_value.search.return_value = ""
@@ -129,3 +137,74 @@ def test_tool_schema_matches_function_signature():
     func_params.discard("runtime")
 
     assert schema_fields == func_params
+
+
+# --- _load_gcp_credentials tests ---
+
+_AUTHORIZED_USER_JSON = json.dumps(
+    {
+        "type": "authorized_user",
+        "client_id": "fake-client-id",
+        "client_secret": "fake-client-secret",
+        "refresh_token": "fake-refresh-token",
+    }
+)
+
+_SERVICE_ACCOUNT_JSON = json.dumps(
+    {
+        "type": "service_account",
+        "project_id": "fake-project",
+        "private_key_id": "fake-key-id",
+        "private_key": "fake-key",
+        "client_email": "fake@fake-project.iam.gserviceaccount.com",
+        "client_id": "123456789",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+    }
+)
+
+
+def test_load_gcp_credentials_inline_authorized_user():
+    """Inline JSON with type=authorized_user returns Credentials."""
+    creds = load_gcp_credentials(_AUTHORIZED_USER_JSON)
+    assert isinstance(creds, Credentials)
+
+
+@patch.object(service_account.Credentials, "from_service_account_info")
+def test_load_gcp_credentials_inline_service_account(mock_from_info):
+    """Inline JSON with type=service_account calls the right factory."""
+    mock_from_info.return_value = MagicMock(spec=service_account.Credentials)
+
+    creds = load_gcp_credentials(_SERVICE_ACCOUNT_JSON)
+
+    mock_from_info.assert_called_once()
+    # Verify the parsed JSON was passed through.
+    call_info = mock_from_info.call_args[0][0]
+    assert call_info["type"] == "service_account"
+    assert call_info["project_id"] == "fake-project"
+    # Verify OAuth scopes are set (required for Vertex AI API).
+    call_scopes = mock_from_info.call_args[1]["scopes"]
+    assert "https://www.googleapis.com/auth/cloud-platform" in call_scopes
+    assert isinstance(creds, service_account.Credentials)
+
+
+def test_load_gcp_credentials_from_file(tmp_path):
+    """File path containing authorized_user JSON returns Credentials."""
+    cred_file = tmp_path / "creds.json"
+    cred_file.write_text(_AUTHORIZED_USER_JSON)
+
+    creds = load_gcp_credentials(str(cred_file))
+    assert isinstance(creds, Credentials)
+
+
+def test_load_gcp_credentials_unsupported_type():
+    """Unsupported credential type raises ValueError."""
+    bad_json = json.dumps({"type": "external_account", "audience": "test"})
+    with pytest.raises(ValueError, match="Unsupported credential type"):
+        load_gcp_credentials(bad_json)
+
+
+def test_load_gcp_credentials_invalid_json():
+    """Non-JSON string that isn't a file path raises."""
+    with pytest.raises((json.JSONDecodeError, ValueError)):
+        load_gcp_credentials("not-json-and-not-a-file")

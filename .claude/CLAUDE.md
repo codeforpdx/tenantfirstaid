@@ -58,8 +58,8 @@ uv run pytest -m langchain
 # Run with LangSmith tracing (requires API key)
 LANGSMITH_TRACING=true LANGCHAIN_TRACING_V2=true uv run pytest -m langchain
 
-# Run evaluations (see docs/EVALUATION.md)
-uv run python scripts/run_langsmith_evaluation.py --num-samples 20
+# Run evaluations (see backend/evaluate/EVALUATION.md)
+uv run python -m evaluate.run_langsmith_evaluation --num-repetitions 20
 ```
 
 ## Local `./frontend` workflow
@@ -100,7 +100,9 @@ This requires `uv` to be installed (see backend setup).
 
 - Write comments as full sentences and end them with a period.
 
-## Pull request expectations
+## Pull Request expectations
+
+### Pull Request creation
 
 PRs should use the template located at [pull_request_template.md](../.github/pull_request_template.md). Provide a summary, test plan and issue number if applicable, then check that:
 
@@ -109,6 +111,42 @@ PRs should use the template located at [pull_request_template.md](../.github/pul
   - Documentation is updated.
   - `make lint` and `make format` have been run.
   - The full test suite passes.
+
+### Pull Request reviews
+
+Perform a comprehensive code review of the modified code with the following focus areas:
+
+1. **Code Quality**
+   - Clean code principles and best practices
+   - Suggest improvements to modularity, composition and dependency inversion where appropriate
+   - Identify opportunities for refactoring or simplification
+   - Check for code duplication and suggest DRY improvements
+   - Identify and suggest removal of dead code or redundant logic
+   - Proper error handling and edge cases
+   - Code readability and maintainability, including type hints where appropriate
+   - Prefer strongly typed interfaces and data structures over stringly-typed where possible
+   - Check consistency of configuration/secret/environment variables across code/docs/examples and infrastructure
+2. **Security**
+   - Check for potential security vulnerabilities
+   - Validate input sanitization
+   - Review authentication/authorization logic
+   - Ensure secrets are handled securely and not exposed in code or logs
+   - Flag obsolete secrets/configuration/environment variables
+3. **Performance**
+   - Identify potential performance bottlenecks
+   - Review database queries for efficiency
+   - Check for memory leaks or resource issues
+4. **Testing**
+   - Verify adequate test coverage
+   - Review test quality and edge cases
+   - Check for missing test scenarios
+5. **Documentation**
+   - Ensure code is properly documented
+   - Verify README updates for new features
+   - Check API documentation accuracy
+
+Provide detailed feedback using inline comments for specific issues.
+Use top-level comments for general observations or praise.
 
 ## Commit Messages
 
