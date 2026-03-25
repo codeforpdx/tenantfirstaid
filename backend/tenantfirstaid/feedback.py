@@ -34,7 +34,19 @@ def send_feedback() -> Tuple[str, int]:
         ]
 
     if not file:
-        return "No file provided", 404
+        name = request.form.get("name")
+        subject = request.form.get("subject")
+        email_params = {
+            "subject": subject or "Homepage Feedback",
+            "from_email": os.getenv("SENDER_EMAIL"),
+            "to": [os.getenv("RECIPIENT_EMAIL")],
+            "body": f"From: {name}\n\n{feedback}",
+        }
+        try:
+            EmailMessage(**email_params).send()
+            return "Message sent", 200
+        except Exception as e:
+            return f"Send failed: {str(e)}", 500
 
     html_content: str = file.read().decode("utf-8")
     pdf_content: Optional[bytes] = convert_html_to_pdf(html_content)

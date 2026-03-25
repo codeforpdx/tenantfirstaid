@@ -4,6 +4,7 @@ import Navbar from "./shared/components/Navbar/Navbar";
 import Chat from "./Chat";
 import LoadingPage from "./pages/LoadingPage";
 import PageLayout from "./layouts/PageLayout";
+import HomePage from "./pages/HomePage/HomePage";
 
 // Lazy-loading for less frequented pages
 const About = lazy(() => import("./About"));
@@ -17,12 +18,13 @@ export default function App() {
       <Navbar />
       <PageLayout>
         <Routes>
-          <Route path="/" element={<Chat />} />
+          <Route path="/" element={<HomePage />} />
           <Route
             path="/*"
             element={
               <Suspense fallback={<LoadingPage />}>
                 <Routes>
+                  <Route path="/chat" element={<Chat />} />
                   <Route path="/letter" element={<Letter />} />
                   <Route path="/letter/:org/:loc?" element={<Letter />} />
                   <Route path="/about" element={<About />} />
