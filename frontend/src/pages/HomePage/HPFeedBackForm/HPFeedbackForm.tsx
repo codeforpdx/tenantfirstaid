@@ -63,7 +63,7 @@ export default function HPFeedbackForm() {
 
         <button
           type="submit"
-          className="m-0 cursor-pointer border-none rounded-xl p-4 transition-all duration-200 ease-in-out hover:opacity-90 bg-[#E6D5B8]/70 text-emerald-950 text-[1.2rem] font-bold shadow-[0_4px_15px_rgba(16,185,129,0.3)]"
+          className="m-0 cursor-pointer border-none rounded-xl p-4 transition-all duration-200 ease-in-out hover:opacity-90 bg-[#E6D5B8]/70 text-[#1F584F] text-[1.2rem] font-bold shadow-[0_4px_15px_rgba(16,185,129,0.3)]"
         >
           Submit
         </button>
