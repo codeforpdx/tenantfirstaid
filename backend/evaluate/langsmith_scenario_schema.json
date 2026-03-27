@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TenantFirstAid Dataset Record",
+  "type": "object",
+  "required": ["metadata", "inputs", "outputs"],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["city", "tags", "state", "scenario_id", "dataset_split"],
+      "properties": {
+        "city": {
+          "type": ["string", "null"],
+          "enum": ["Portland", "Eugene", null]
+        },
+        "state": {
+          "type": "string",
+          "enum": ["OR"]
+        },
+        "scenario_id": { "type": "integer" },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["city-None", "city-Portland", "city-Eugene", "state-OR"]
+          }
+        },
+        "dataset_split": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "required": ["city", "state", "query"],
+      "properties": {
+        "city": {
+          "type": ["string", "null"],
+          "enum": ["Portland", "Eugene", null]
+        },
+        "state": {
+          "type": "string",
+          "enum": ["OR"]
+        },
+        "query": { "type": "string" }
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "required": ["facts", "reference_conversation"],
+      "properties": {
+        "facts": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "reference_conversation": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "content", "additional_kwargs", "response_metadata"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["human", "ai"]
+              },
+              "content": { "type": "string" },
+              "additional_kwargs": { "type": "object" },
+              "response_metadata": { "type": "object" },
+              "tool_calls": {
+                "type": "array",
+                "items": {}
+              },
+              "invalid_tool_calls": {
+                "type": "array",
+                "items": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

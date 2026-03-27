@@ -23,13 +23,16 @@ typecheck: uv.lock
 MYPY_CMD := $(PYTHON) run mypy $(TYPECHECK_OPTIONS)
 MYPY_ARGS :=  --python-executable .venv/bin/python3 --pretty --check-untyped-defs
 
+typecheck-mypy-evaluate: uv.lock
+	$(MYPY_CMD) -p evaluate $(MYPY_ARGS)
+
 typecheck-mypy-scripts: uv.lock
 	$(MYPY_CMD) -p scripts $(MYPY_ARGS)
 
 typecheck-mypy-tenantfirstaid: uv.lock
 	$(MYPY_CMD) -p tenantfirstaid $(MYPY_ARGS)
 
-typecheck-mypy: typecheck-mypy-tenantfirstaid typecheck-mypy-scripts
+typecheck-mypy: typecheck-mypy-tenantfirstaid typecheck-mypy-evaluate typecheck-mypy-scripts
 
 typecheck-pyrefly: uv.lock
 	$(PYTHON) run pyrefly check $(TYPECHECK_OPTIONS) --python-interpreter-path .venv/bin/python3
