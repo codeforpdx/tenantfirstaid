@@ -2,13 +2,12 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from langchain_core.messages import AIMessage
 
 from tenantfirstaid.langchain_chat_manager import (
     LangChainChatManager,
 )
-from tenantfirstaid.location import OregonCity, UsaState
+from tenantfirstaid.location import UsaState
 
 
 def test_system_prompt_includes_location(oregon_state, portland_city):

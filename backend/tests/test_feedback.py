@@ -5,7 +5,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from flask import Flask
-
 from xhtml2pdf.context import pisaContext
 
 from tenantfirstaid.feedback import convert_html_to_pdf, send_feedback
@@ -63,7 +62,9 @@ class TestSendFeedbackSimple:
 
     @patch("tenantfirstaid.feedback.EmailMessage")
     @patch.dict("os.environ", {"SENDER_EMAIL": "s@t.com", "RECIPIENT_EMAIL": "r@t.com"})
-    def test_simple_feedback_without_subject_uses_default(self, mock_email_cls, feedback_app):
+    def test_simple_feedback_without_subject_uses_default(
+        self, mock_email_cls, feedback_app
+    ):
         with feedback_app.test_request_context(
             "/api/feedback",
             method="POST",
@@ -176,7 +177,9 @@ class TestSendFeedbackWithTranscript:
     @patch("tenantfirstaid.feedback.EmailMessage")
     @patch("tenantfirstaid.feedback.convert_html_to_pdf", return_value=b"%PDF-fake")
     @patch.dict("os.environ", {"SENDER_EMAIL": "s@t.com", "RECIPIENT_EMAIL": "r@t.com"})
-    def test_email_failure_with_transcript_returns_500(self, mock_pdf, mock_email_cls, feedback_app):
+    def test_email_failure_with_transcript_returns_500(
+        self, mock_pdf, mock_email_cls, feedback_app
+    ):
         mock_email_cls.return_value.send.side_effect = Exception("Connection refused")
         with feedback_app.test_request_context(
             "/api/feedback",

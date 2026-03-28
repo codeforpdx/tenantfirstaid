@@ -43,7 +43,6 @@ def test_portland_oregon_json_serialization():
     assert d["state"] == "or"
 
 
-
 def test_retrieve_city_law_filters_correctly():
     """Test that city law retrieval uses correct filter."""
     state = UsaState.from_maybe_str("or")
