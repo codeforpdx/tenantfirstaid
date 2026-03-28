@@ -95,7 +95,7 @@ def test_streaming_empty_chunk_skipped(mock_create_agent, oregon_state):
 
 def test_agent_creation_with_thread_id(oregon_state, portland_city):
     cm = LangChainChatManager()
-    agent = cm._LangChainChatManager__create_agent_for_session(
+    agent = cm._LangChainChatManager__create_agent_for_session(  # type: ignore[attr-defined]
         portland_city, oregon_state, "test-thread"
     )
     assert agent is not None
@@ -103,7 +103,7 @@ def test_agent_creation_with_thread_id(oregon_state, portland_city):
 
 def test_agent_creation_without_thread_id(oregon_state, portland_city):
     cm = LangChainChatManager()
-    agent = cm._LangChainChatManager__create_agent_for_session(
+    agent = cm._LangChainChatManager__create_agent_for_session(  # type: ignore[attr-defined]
         portland_city, oregon_state, None
     )
     assert agent is not None
