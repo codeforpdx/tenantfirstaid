@@ -31,7 +31,7 @@ class Rag_Builder:
         self,
         filter: str,
         name: Optional[str] = "tfa-retriever",
-        max_documents: Optional[int] = 1,
+        max_documents: Optional[int] = 3,
     ) -> None:
         if SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is None:
             raise ValueError("GOOGLE_APPLICATION_CREDENTIALS is not set")
@@ -147,7 +147,7 @@ def retrieve_city_state_laws(
 
     helper = Rag_Builder(
         name="retrieve_city_law",
-        max_documents=1,
+        max_documents=3,
         filter=__filter_builder(city=city, state=state),
     )
 
