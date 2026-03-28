@@ -1,9 +1,7 @@
 import pytest
-from flask import Flask
 from langchain_core.messages.content import create_text_block
 
 from tenantfirstaid.chat import ChatView, _classify_blocks
-from tenantfirstaid.langchain_chat_manager import LangChainChatManager
 
 
 def text_block(text: str) -> dict:
@@ -41,20 +39,6 @@ class TestClassifyBlocks:
         with app.app_context():
             result = chunks([{"type": "image", "image": "..."}])
         assert result == []
-
-
-@pytest.fixture
-def chat_manager(mocker):
-    m = mocker.patch.object(LangChainChatManager, "agent", spec=True)
-    yield m
-
-
-@pytest.fixture
-def app():
-    app = Flask(__name__)
-    app.testing = True  # propagate exceptions to the test client
-
-    return app
 
 
 @pytest.mark.skip("work-in-progress")

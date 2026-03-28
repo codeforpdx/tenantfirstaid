@@ -8,21 +8,6 @@ from tenantfirstaid.langchain_chat_manager import (
 from tenantfirstaid.location import OregonCity, UsaState
 
 
-@pytest.fixture
-def oregon_state():
-    return UsaState.from_maybe_str("or")
-
-
-@pytest.fixture
-def portland_city():
-    return OregonCity.from_maybe_str("Portland")
-
-
-@pytest.fixture
-def eugene_city():
-    return OregonCity.from_maybe_str("Eugene")
-
-
 def test_system_prompt_includes_location(oregon_state, portland_city):
     state = oregon_state
     city = portland_city
