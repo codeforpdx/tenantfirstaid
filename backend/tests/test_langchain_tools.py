@@ -43,10 +43,6 @@ def test_portland_oregon_json_serialization():
     assert d["state"] == "or"
 
 
-# TODO: negative tests for input validation
-
-# TODO: test _filter_builder
-
 
 def test_retrieve_city_law_filters_correctly():
     """Test that city law retrieval uses correct filter."""
@@ -129,3 +125,56 @@ def test_tool_schema_matches_function_signature():
     func_params.discard("runtime")
 
     assert schema_fields == func_params
+
+
+@patch("tenantfirstaid.langchain_tools.Rag_Builder")
+def test_retrieve_city_state_laws_returns_joined_docs(mock_rag_class):
+    """Test that RAG results are joined with newlines."""
+    mock_rag_class.return_value.search.return_value = "Doc1 content\nDoc2 content"
+
+    result = retrieve_city_state_laws.func(
+        query="eviction notice",
+        state=UsaState("or"),
+        city=OregonCity("portland"),
+        runtime=MagicMock(),
+    )
+    assert "Doc1 content" in result
+    assert "Doc2 content" in result
+
+
+@patch("tenantfirstaid.langchain_tools.Rag_Builder")
+def test_retrieve_city_state_laws_empty_results(mock_rag_class):
+    """Test behavior when RAG returns no documents."""
+    mock_rag_class.return_value.search.return_value = ""
+
+    result = retrieve_city_state_laws.func(
+        query="obscure law",
+        state=UsaState("or"),
+        runtime=MagicMock(),
+    )
+    assert result == ""
+
+
+def test_filter_builder_state_only():
+    """Test filter with state only (no city) produces null city."""
+    result = __filter_builder(UsaState("or"), None)
+    assert 'city: ANY("null")' in result
+    assert 'state: ANY("or")' in result
+
+
+def test_filter_builder_with_city():
+    """Test filter with city and state."""
+    result = __filter_builder(UsaState("or"), OregonCity("eugene"))
+    assert 'city: ANY("eugene")' in result
+    assert 'state: ANY("or")' in result
+
+
+@patch("tenantfirstaid.langchain_tools.get_stream_writer")
+def test_generate_letter_empty_string(mock_get_stream_writer):
+    """Test generate_letter with empty string."""
+    mock_writer = MagicMock()
+    mock_get_stream_writer.return_value = mock_writer
+
+    result = generate_letter.func(letter="")
+    mock_writer.assert_called_once_with({"type": "letter", "content": ""})
+    assert result == "Letter generated successfully."
