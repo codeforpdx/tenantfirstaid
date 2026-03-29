@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
-import { describe, it, afterEach } from "vitest";
+import { describe, it } from "vitest";
 
 const renderChatDisclaimer = async (isOngoing: boolean) => {
   const { default: ChatDisclaimer } =
@@ -17,21 +17,15 @@ const renderChatDisclaimer = async (isOngoing: boolean) => {
 };
 
 describe("ChatDisclaimer component", () => {
-  afterEach(() => {
-    cleanup();
-  });
-
   it("renders About page link when onGoing is true", async () => {
-    const mockIsOngoing = true;
-    await renderChatDisclaimer(mockIsOngoing);
+    await renderChatDisclaimer(true);
 
     const aboutLink = screen.getByRole("link", { name: "to about page" });
     expect(aboutLink).toHaveAttribute("href", "/about");
   });
 
   it("does not render About page link when isOngoing is false", async () => {
-    const mockIsOngoing = false;
-    await renderChatDisclaimer(mockIsOngoing);
+    await renderChatDisclaimer(false);
 
     const aboutLink = screen.queryByRole("link", { name: "to about page" });
     expect(aboutLink).not.toBeInTheDocument();
