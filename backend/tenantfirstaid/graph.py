@@ -7,7 +7,7 @@ Provides the LLM, tools, and graph factory used by both LangChainChatManager
 import threading
 from collections.abc import Awaitable
 from dataclasses import dataclass, field
-from typing import Any, Callable, List, NotRequired, Optional
+from typing import Any, Callable, List, NotRequired, Optional, TypedDict
 
 from langchain.agents import create_agent
 from langchain.agents.middleware.types import (
@@ -168,12 +168,25 @@ def create_graph(
     )
 
 
-class _DatasetInput(TFAAgentStateSchema):
-    """State schema for the LangSmith Cloud deployment entry point.
+class _DeploymentInput(TypedDict):
+    """Input schema for the deployment graph, read by Studio to render its UI.
 
-    Extends TFAAgentStateSchema with an optional query field so the deployment
-    can accept dataset examples (query/city/state) directly, without requiring
-    callers to pre-wrap the question in a messages list.
+    Both query and messages are optional: dataset experiments provide query,
+    interactive Studio chat provides messages. The _adapt_query node converts
+    query to a HumanMessage before the agent runs.
+    """
+
+    query: str
+    messages: NotRequired[list]
+    state: UsaState
+    city: NotRequired[Optional[OregonCity]]
+
+
+class _DatasetInput(TFAAgentStateSchema):
+    """Internal state schema for the deployment wrapper graph.
+
+    Extends TFAAgentStateSchema with an optional query field so the adapt node
+    can read it and convert it to a HumanMessage.
     """
 
     query: NotRequired[Optional[str]]
@@ -195,7 +208,7 @@ def _adapt_query(state: _DatasetInput) -> dict:
 # builds the graph (keeping the module importable without valid GCP creds).
 def graph() -> CompiledStateGraph[Any, Any, Any, Any]:
     inner = create_graph()  # no checkpointer — outer graph owns the checkpoint
-    builder: StateGraph = StateGraph(_DatasetInput)  # type: ignore
+    builder: StateGraph = StateGraph(_DatasetInput, input_schema=_DeploymentInput)  # type: ignore
     builder.add_node("adapt", _adapt_query)
     builder.add_node("agent", inner)
     builder.add_edge(START, "adapt")
