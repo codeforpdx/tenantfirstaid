@@ -5,9 +5,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 from langchain_core.messages import SystemMessage
 
+from langchain_core.messages import HumanMessage
+
 from tenantfirstaid.graph import (
     TFAContext,
+    _DatasetInput,
     _SystemPromptFromContext,
+    _adapt_query,
     create_graph,
     prepare_system_prompt,
 )
@@ -51,6 +55,30 @@ def test_graph_factory(mock_llm):
 
     result = graph()
     assert result is not None
+
+
+def test_adapt_query_converts_query_to_human_message():
+    """_adapt_query wraps a bare query string in a HumanMessage."""
+    state: _DatasetInput = {"query": "What are my rights?", "state": "or", "messages": []}  # type: ignore[typeddict-item]
+    result = _adapt_query(state)
+    assert len(result["messages"]) == 1
+    assert isinstance(result["messages"][0], HumanMessage)
+    assert result["messages"][0].content == "What are my rights?"
+
+
+def test_adapt_query_no_op_when_messages_present():
+    """_adapt_query leaves state unchanged when messages already exist."""
+    existing = HumanMessage(content="existing message")
+    state: _DatasetInput = {"query": "ignored", "state": "or", "messages": [existing]}  # type: ignore[typeddict-item]
+    result = _adapt_query(state)
+    assert result == {}
+
+
+def test_adapt_query_no_op_when_no_query():
+    """_adapt_query returns nothing when query is absent."""
+    state: _DatasetInput = {"state": "or", "messages": []}  # type: ignore[typeddict-item]
+    result = _adapt_query(state)
+    assert result == {}
 
 
 def _make_middleware_request(

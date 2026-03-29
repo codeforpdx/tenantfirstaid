@@ -7,7 +7,7 @@ Provides the LLM, tools, and graph factory used by both LangChainChatManager
 import threading
 from collections.abc import Awaitable
 from dataclasses import dataclass, field
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List, NotRequired, Optional
 
 from langchain.agents import create_agent
 from langchain.agents.middleware.types import (
@@ -15,10 +15,12 @@ from langchain.agents.middleware.types import (
     ModelRequest,
     ModelResponse,
 )
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.tools import BaseTool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.graph import StateGraph
+from langgraph.graph import START
 from langgraph.graph.state import CompiledStateGraph
 
 from .constants import DEFAULT_INSTRUCTIONS, SINGLETON
@@ -161,8 +163,36 @@ def create_graph(
     )
 
 
+class _DatasetInput(TFAAgentStateSchema):
+    """State schema for the LangSmith Cloud deployment entry point.
+
+    Extends TFAAgentStateSchema with an optional query field so the deployment
+    can accept dataset examples (query/city/state) directly, without requiring
+    callers to pre-wrap the question in a messages list.
+    """
+
+    query: NotRequired[Optional[str]]
+
+
+def _adapt_query(state: _DatasetInput) -> dict:
+    """Convert a bare query string to a HumanMessage if messages is empty.
+
+    This lets the graph accept both dataset-style inputs (query/city/state) and
+    the standard messages-based interface.
+    """
+    if state.get("query") and not state.get("messages"):
+        return {"messages": [HumanMessage(content=state["query"])]}
+    return {}
+
+
 # Graph factory for langgraph.json to reference. LangGraph's loader accepts
 # callables, so this defers credential loading until the runtime actually
 # builds the graph (keeping the module importable without valid GCP creds).
 def graph() -> CompiledStateGraph[Any, Any, Any, Any]:
-    return create_graph(checkpointer=InMemorySaver())
+    inner = create_graph()  # no checkpointer — outer graph owns the checkpoint
+    builder: StateGraph = StateGraph(_DatasetInput)
+    builder.add_node("adapt", _adapt_query)
+    builder.add_node("agent", inner)
+    builder.add_edge(START, "adapt")
+    builder.add_edge("adapt", "agent")
+    return builder.compile(checkpointer=InMemorySaver())
