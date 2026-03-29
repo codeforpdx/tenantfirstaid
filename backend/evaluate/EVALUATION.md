@@ -594,6 +594,10 @@ Repeat the steps above using the rubric from `evaluators/tone.md`, feedback key 
 
 Results appear in the same Experiments view used by the offline CLI, with the same feedback keys, so scores are directly comparable.
 
+#### How the deployment accepts dataset inputs
+
+The dataset stores scenarios as `query/state/city`, but the underlying agent expects a `messages` list. The deployment graph has an adapter node that converts `query` to a `HumanMessage` before the agent runs, so dataset examples are sent directly to the deployment without any transformation on the LangSmith side. The deployment's input schema (`_DeploymentInput` in `graph.py`) declares `query` and `state` as required and `city` as optional, matching the dataset format.
+
 ### Keeping bound evaluators in sync with the codebase
 
 There is no API to update a bound evaluator prompt programmatically. When you edit a rubric in `evaluators/`, update the bound evaluator prompt manually in the LangSmith UI (Datasets → `tenant-legal-qa-scenarios` → Evaluators → edit the evaluator).

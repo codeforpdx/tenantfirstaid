@@ -208,7 +208,7 @@ def _adapt_query(state: _DatasetInput) -> dict:
 # builds the graph (keeping the module importable without valid GCP creds).
 def graph() -> CompiledStateGraph[Any, Any, Any, Any]:
     inner = create_graph()  # no checkpointer — outer graph owns the checkpoint
-    builder: StateGraph = StateGraph(_DatasetInput, input_schema=_DeploymentInput)  # type: ignore
+    builder: StateGraph = StateGraph(_DatasetInput, input_schema=_DeploymentInput, context_schema=TFAContext)  # type: ignore
     builder.add_node("adapt", _adapt_query)
     builder.add_node("agent", inner)
     builder.add_edge(START, "adapt")
