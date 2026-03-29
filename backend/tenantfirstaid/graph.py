@@ -86,7 +86,13 @@ class _SystemPromptFromContext(AgentMiddleware[Any, TFAContext]):
     """
 
     def _build(self, request: ModelRequest[TFAContext]) -> SystemMessage:
-        base = request.runtime.context.system_prompt
+        ctx = request.runtime.context
+        # When the agent runs as a subgraph, LangGraph passes the configurable
+        # as a raw dict rather than a deserialized TFAContext instance.
+        if isinstance(ctx, TFAContext):
+            base = ctx.system_prompt
+        else:
+            base = ctx.get("system_prompt", DEFAULT_INSTRUCTIONS)  # type: ignore[union-attr]
         state = UsaState.from_maybe_str(request.state.get("state"))
         city = OregonCity.from_maybe_str(request.state.get("city"))
         return _build_system_message(base, city, state)
