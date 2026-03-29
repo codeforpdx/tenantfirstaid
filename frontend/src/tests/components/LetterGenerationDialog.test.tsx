@@ -5,7 +5,7 @@ import { createRef } from "react";
 import LetterGenerationDialog from "../../pages/Letter/components/LetterGenerationDialog";
 
 function renderDialog(path: string) {
-  const ref = createRef<HTMLDialogElement | null>();
+  const ref = createRef<HTMLDialogElement>();
   render(
     <MemoryRouter initialEntries={[path]}>
       <LetterGenerationDialog ref={ref} />
