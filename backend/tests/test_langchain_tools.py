@@ -131,7 +131,8 @@ def test_retrieve_city_state_laws_returns_joined_docs(mock_rag_class):
     """Test that RAG results are joined with newlines."""
     mock_rag_class.return_value.search.return_value = "Doc1 content\nDoc2 content"
 
-    result = retrieve_city_state_laws.func(  # type: ignore[unresolved-attribute]
+    _func = getattr(retrieve_city_state_laws, "func")
+    result = _func(
         query="eviction notice",
         state=UsaState("or"),
         city=OregonCity("portland"),
@@ -146,7 +147,8 @@ def test_retrieve_city_state_laws_empty_results(mock_rag_class):
     """Test behavior when RAG returns no documents."""
     mock_rag_class.return_value.search.return_value = ""
 
-    result = retrieve_city_state_laws.func(  # type: ignore[unresolved-attribute]
+    _func = getattr(retrieve_city_state_laws, "func")
+    result = _func(
         query="obscure law",
         state=UsaState("or"),
         runtime=MagicMock(),
@@ -174,6 +176,7 @@ def test_generate_letter_empty_string(mock_get_stream_writer):
     mock_writer = MagicMock()
     mock_get_stream_writer.return_value = mock_writer
 
-    result = generate_letter.func(letter="")  # type: ignore[unresolved-attribute]
+    _func = getattr(generate_letter, "func")
+    result = _func(letter="")
     mock_writer.assert_called_once_with({"type": "letter", "content": ""})
     assert result == "Letter generated successfully."
