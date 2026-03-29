@@ -19,8 +19,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.tools import BaseTool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.graph import StateGraph
-from langgraph.graph import START
+from langgraph.graph import START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from .constants import DEFAULT_INSTRUCTIONS, SINGLETON
@@ -190,7 +189,7 @@ def _adapt_query(state: _DatasetInput) -> dict:
 # builds the graph (keeping the module importable without valid GCP creds).
 def graph() -> CompiledStateGraph[Any, Any, Any, Any]:
     inner = create_graph()  # no checkpointer — outer graph owns the checkpoint
-    builder: StateGraph = StateGraph(_DatasetInput)
+    builder: StateGraph = StateGraph(_DatasetInput)  # type: ignore
     builder.add_node("adapt", _adapt_query)
     builder.add_node("agent", inner)
     builder.add_edge(START, "adapt")

@@ -12,8 +12,8 @@ from langchain_core.messages import (
     AIMessage,
     AnyMessage,
     ContentBlock,
-    HumanMessage,
     NonStandardContentBlock,
+    SystemMessage,
     ToolMessage,
 )
 from langchain_core.runnables import RunnableConfig

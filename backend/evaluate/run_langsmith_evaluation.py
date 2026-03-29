@@ -11,11 +11,7 @@ from typing import Any, Dict, List, Optional
 from langchain_core.messages import HumanMessage
 from langsmith import Client, evaluate
 
-from tenantfirstaid.constants import LANGSMITH_API_KEY, SINGLETON
-from tenantfirstaid.langchain_chat_manager import LangChainChatManager
-from tenantfirstaid.location import OregonCity, UsaState
-
-from langsmith_evaluators import (
+from evaluate.langsmith_evaluators import (
     # citation_accuracy_evaluator,
     # citation_format_evaluator,
     # completeness_evaluator,
@@ -24,6 +20,9 @@ from langsmith_evaluators import (
     tone_evaluator,
     # tool_usage_evaluator,
 )
+from tenantfirstaid.constants import LANGSMITH_API_KEY, SINGLETON
+from tenantfirstaid.langchain_chat_manager import LangChainChatManager
+from tenantfirstaid.location import OregonCity, UsaState
 
 # Suppress the noisy additionalProperties warning from langchain_google_vertexai
 # https://github.com/langchain-ai/langchain-google/issues/1038#issuecomment-3707773510
