@@ -121,7 +121,9 @@ class LangChainChatManager:
             # Custom chunks are emitted directly by tools (e.g. generate_letter).
             if mode == "custom":
                 self.logger.debug(chunk)
-                yield NonStandardContentBlock(type="non_standard", value=cast(Dict[str, Any], chunk))
+                yield NonStandardContentBlock(
+                    type="non_standard", value=cast(Dict[str, Any], chunk)
+                )
                 continue
 
             # outer dict key changes with internal messages (Model, Tool, ...)
