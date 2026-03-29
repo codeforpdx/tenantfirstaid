@@ -15,7 +15,7 @@ from tenantfirstaid.constants import LANGSMITH_API_KEY, SINGLETON
 from tenantfirstaid.langchain_chat_manager import LangChainChatManager
 from tenantfirstaid.location import OregonCity, UsaState
 
-from .langsmith_evaluators import (
+from langsmith_evaluators import (
     # citation_accuracy_evaluator,
     # citation_format_evaluator,
     # completeness_evaluator,
