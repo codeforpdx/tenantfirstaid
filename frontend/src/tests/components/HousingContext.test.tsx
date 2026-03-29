@@ -13,7 +13,7 @@ function UpdateLocationButton() {
   return (
     <button
       data-testid="update-loc"
-      onClick={() => handleHousingLocation?.({ city: "portland", state: "or" })}
+      onClick={() => handleHousingLocation({ city: "portland", state: "or" })}
     >
       update
     </button>

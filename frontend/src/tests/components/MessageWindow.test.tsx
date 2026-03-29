@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { vi } from "vitest";
+import { vi, beforeAll } from "vitest";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import MessageWindow from "../../pages/Chat/components/MessageWindow";
 import type { ChatMessage } from "../../shared/types/messages";
@@ -10,14 +10,6 @@ import HousingContextProvider from "../../contexts/HousingContext";
 vi.mock("../../pages/Chat/utils/streamHelper", () => ({
   streamText: vi.fn(),
 }));
-
-beforeAll(() => {
-  if (!("scrollTo" in HTMLElement.prototype)) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    HTMLElement.prototype.scrollTo = function () {};
-  }
-});
 
 function renderMessageWindow(
   props: Partial<React.ComponentProps<typeof MessageWindow>> = {},
@@ -51,6 +43,14 @@ const messages: ChatMessage[] = [
 ];
 
 describe("MessageWindow component", () => {
+  beforeAll(() => {
+    if (!("scrollTo" in HTMLElement.prototype)) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+      HTMLElement.prototype.scrollTo = function () {};
+    }
+  });
+
   it("hides first 2 messages on letter page", () => {
     renderMessageWindow({ messages, isOngoing: true }, "/letter/some-org");
 

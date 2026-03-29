@@ -14,7 +14,6 @@ describe("FeedbackModal", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
-    vi.useRealTimers();
   });
 
   it("renders the feedback form in idle state", () => {
@@ -63,6 +62,7 @@ describe("FeedbackModal", () => {
     act(() => {
       vi.runAllTimers();
     });
+    vi.useRealTimers();
 
     expect(sendFeedback).toHaveBeenCalledWith(
       messages,
@@ -81,5 +81,6 @@ describe("FeedbackModal", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
 
     expect(setOpenFeedback).toHaveBeenCalledWith(false);
+    expect(screen.queryByText("Feedback Sent!")).not.toBeInTheDocument();
   });
 });

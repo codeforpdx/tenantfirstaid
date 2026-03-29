@@ -11,7 +11,7 @@ vi.mock("../../pages/Chat/utils/streamHelper", () => ({
 function renderInputField(
   overrides: Partial<React.ComponentProps<typeof InputField>> = {},
 ) {
-  const inputRef = createRef<HTMLTextAreaElement | null>();
+  const inputRef = createRef<HTMLTextAreaElement>();
   const props = {
     addMessage: vi.fn(),
     setMessages: vi.fn(),
