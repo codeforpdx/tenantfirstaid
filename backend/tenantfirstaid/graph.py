@@ -171,13 +171,10 @@ def create_graph(
 class _DeploymentInput(TypedDict):
     """Input schema for the deployment graph, read by Studio to render its UI.
 
-    Both query and messages are optional: dataset experiments provide query,
-    interactive Studio chat provides messages. The _adapt_query node converts
-    query to a HumanMessage before the agent runs.
+    The _adapt_query node converts query to a HumanMessage before the agent runs.
     """
 
     query: str
-    messages: NotRequired[list]
     state: UsaState
     city: NotRequired[Optional[OregonCity]]
 
