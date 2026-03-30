@@ -215,6 +215,50 @@ Example output:
 
 ---
 
+### Adding examples created in the LangSmith UI
+
+Examples created through the LangSmith browser UI will not have a `scenario_id` in their metadata. The tooling uses `scenario_id` as the stable key for diff, merge, and push operations, so new examples must be assigned one before they can be committed.
+
+1. **Pull** the dataset to get the current state, including any UI-created examples:
+
+   ```bash
+   uv run langsmith_dataset.py dataset pull \
+     tenant-legal-qa-scenarios \
+     dataset-tenant-legal-qa-examples.jsonl
+   ```
+
+2. **Identify** the new examples in the JSONL file — they will have `"metadata": null` or a metadata object without a `scenario_id` field.
+
+3. **Assign a `scenario_id`** to each new example. Pick the next available integer (one higher than the current maximum). Also fill in the other required metadata fields (`city`, `state`, `tags`, `dataset_split`) to match the schema. For example:
+
+   ```json
+   {
+     "metadata": { "scenario_id": 42, "city": null, "state": "OR",
+                   "tags": ["city-None", "state-OR"], "dataset_split": ["train"] },
+     "inputs": { "query": "...", "city": null, "state": "OR" },
+     "outputs": { "facts": [...], "reference_conversation": [...] }
+   }
+   ```
+
+4. **Validate** the file:
+
+   ```bash
+   uv run langsmith_dataset.py dataset validate \
+     dataset-tenant-legal-qa-examples.jsonl
+   ```
+
+5. **Push** to write the assigned IDs back to LangSmith:
+
+   ```bash
+   uv run langsmith_dataset.py dataset push \
+     dataset-tenant-legal-qa-examples.jsonl \
+     tenant-legal-qa-scenarios
+   ```
+
+6. **Commit** the updated JSONL file.
+
+---
+
 ### Fine-grained example operations
 
 ```bash
