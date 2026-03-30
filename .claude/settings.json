@@ -22,10 +22,20 @@
                 "source": "github",
                 "repo": "astral-sh/claude-code-plugins"
             }
+        },
+        "knowledge-work-plugins": {
+            "source": {
+                "source": "github",
+                "repo": "anthropics/knowledge-work-plugins"
+            }
         }
     },
     "enabledPlugins": {
         "langsmith-skills@langsmith-skills": true,
-        "astral@astral-sh": true
+        "astral@astral-sh": true,
+        "frontend-design@claude-plugins-official": true,
+        "github@claude-plugins-official": true,
+        "typescript-lsp@claude-plugins-official": true,
+        "legal@knowledge-work-plugins": true
     }
 }
