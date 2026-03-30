@@ -9,5 +9,23 @@
             "WebFetch(domain:docs.docker.com)",
             "WebFetch(domain:docs.astral.sh)"
         ]
+    },
+    "extraKnownMarketplaces": {
+        "langsmith-skills": {
+            "source": {
+                "source": "github",
+                "repo": "langchain-ai/langsmith-skills"
+            }
+        },
+        "astral-sh": {
+            "source": {
+                "source": "github",
+                "repo": "astral-sh/claude-code-plugins"
+            }
+        }
+    },
+    "enabledPlugins": {
+        "langsmith-skills@langsmith-skills": true,
+        "astral@astral-sh": true
     }
 }
