@@ -22,22 +22,22 @@ An AI that can do more than answer in one step — it can decide what tools to u
 A set of instructions given to the agent before any conversation starts. It defines the agent's role, tone, citation style, and legal guardrails ("you are a tenant rights assistant; always cite Oregon statutes; never give legal advice"). The user never sees it. In this codebase it lives in `tenantfirstaid/system_prompt.md`.
 
 **Prompt** (in the context of evaluations)
-The text sent to the AI judge telling it how to evaluate a response. Not to be confused with the system prompt above. An evaluator prompt is constructed from the rubric and the scenario data, and instructs the judge what criteria to apply and what format to return scores in.
+The text sent to the AI judge telling it how to evaluate a response. Not to be confused with the system prompt above. An evaluator prompt is constructed from the rubric and the example data, and instructs the judge what criteria to apply and what format to return scores in.
 
 **Rubric**
 A plain-text document that defines the scoring criteria for one evaluator. It describes what earns a 1.0, 0.5, or 0.0 — for example, a legal correctness rubric says "1.0 = legally accurate; 0.0 = legally wrong or misleading." Rubrics live in `evaluate/evaluators/*.md` so lawyers and non-developers can edit them without touching Python code.
 
 **Evaluator**
-A piece of scoring logic that reads the chatbot's response to a scenario and assigns a score between 0.0 and 1.0. There are two kinds: *LLM-as-judge* evaluators use a second AI model guided by a rubric; *heuristic* evaluators use deterministic code (e.g. checking whether a citation link is well-formed). Each evaluator measures one dimension of quality — legal accuracy, tone, citation format, and so on.
+A piece of scoring logic that reads the chatbot's response to an example and assigns a score between 0.0 and 1.0. There are two kinds: *LLM-as-judge* evaluators use a second AI model guided by a rubric; *heuristic* evaluators use deterministic code (e.g. checking whether a citation link is well-formed). Each evaluator measures one dimension of quality — legal accuracy, tone, citation format, and so on.
 
-**Scenario**
-One test case. A scenario contains: the question a tenant asks, city/state context (because tenant law varies by jurisdiction), a reference conversation showing what a correct and well-toned response looks like, and a list of key legal facts the response must get right. Scenarios are the unit of work the evaluators score.
+**Example**
+One test case. An example contains: the question a tenant asks, city/state context (because tenant law varies by jurisdiction), a reference conversation showing what a correct and well-toned response looks like, and a list of key legal facts the response must get right. Examples are the unit of work the evaluators score.
 
 **Dataset**
-The full collection of scenarios, stored locally in `evaluate/dataset-tenant-legal-qa-scenarios.jsonl` and uploaded to LangSmith for evaluation runs. The JSONL file in the git repository is the source of truth — the LangSmith copy is a working copy that is synced from it.
+The full collection of examples, stored locally in `evaluate/dataset-tenant-legal-qa-examples.jsonl` and uploaded to LangSmith for evaluation runs. The JSONL file in the git repository is the source of truth — the LangSmith copy is a working copy that is synced from it.
 
 **Experiment**
-One complete run of the dataset through the chatbot. Each experiment records which version of the code and system prompt was used, the chatbot's response to every scenario, and the evaluator scores. Experiments are compared side-by-side in the LangSmith UI to measure the impact of a code or prompt change.
+One complete run of the dataset through the chatbot. Each experiment records which version of the code and system prompt was used, the chatbot's response to every example, and the evaluator scores. Experiments are compared side-by-side in the LangSmith UI to measure the impact of a code or prompt change.
 
 **Deployment**
 A version of the agent hosted in LangSmith Cloud, defined by `backend/langgraph.json`. A deployment is needed to run experiments from the LangSmith browser UI (so LangSmith can send test questions to a live endpoint) and to use Cloud Studio. Local development uses `langgraph dev` instead of a full deployment.
@@ -62,16 +62,16 @@ flowchart LR
 
 ## The dataset — the source of truth
 
-The file `dataset-tenant-legal-qa-scenarios.jsonl` is the authoritative list of test scenarios. Every scenario contains:
+The file `dataset-tenant-legal-qa-examples.jsonl` is the authoritative list of test examples. Every example contains:
 
 - **The question** — exactly what a tenant might type
 - **Context** — city and state, because tenant law varies by jurisdiction
 - **Reference answer** — a human-verified model conversation showing what a correct, well-toned response looks like
 - **Key facts** — the legal facts the response must get right
 
-This file lives in the git repository so that all contributors share the same set of test cases. Changes to scenarios should be committed here, not left only in the cloud.
+This file lives in the git repository so that all contributors share the same set of test cases. Changes to examples should be committed here, not left only in the cloud.
 
-### What a scenario looks like
+### What an example looks like
 
 ```
 inputs:   { "query": "My landlord hasn't fixed my heat for two weeks — what can I do?",
@@ -110,13 +110,13 @@ sequenceDiagram
 5. The judge scores the response and LangSmith stores the results.
 6. You review scores in the LangSmith dashboard.
 
-### Editing scenarios and keeping the repo in sync
+### Editing examples and keeping the repo in sync
 
 The LangSmith online editor is the most convenient way to refine a reference answer or reword a test question. But edits made in the browser don't automatically flow back into the git repository. The pull step closes that loop.
 
 ```mermaid
 flowchart TD
-    JSONL["dataset-tenant-legal-qa-scenarios.jsonl<br>(git — source of truth)"]
+    JSONL["dataset-tenant-legal-qa-examples.jsonl<br>(git — source of truth)"]
     LS["LangSmith dataset<br>(cloud — working copy)"]
     UI["LangSmith UI<br>(browser editor)"]
     Commit["git commit<br>(shared with team)"]
@@ -153,18 +153,18 @@ All dataset operations go through `langsmith_dataset.py`. Commands below assume 
 
 ```bash
 uv run langsmith_dataset.py dataset push \
-  dataset-tenant-legal-qa-scenarios.jsonl \
+  dataset-tenant-legal-qa-examples.jsonl \
   tenant-legal-qa-scenarios
 ```
 
-Creates the dataset in LangSmith if it doesn't exist, then uploads all scenarios.
+Creates the dataset in LangSmith if it doesn't exist, then uploads all examples.
 
 ### Pull after editing in the browser
 
 ```bash
 uv run langsmith_dataset.py dataset pull \
   tenant-legal-qa-scenarios \
-  dataset-tenant-legal-qa-scenarios.jsonl
+  dataset-tenant-legal-qa-examples.jsonl
 ```
 
 Overwrites the local file with whatever is currently in LangSmith. Commit the result.
@@ -173,7 +173,7 @@ Overwrites the local file with whatever is currently in LangSmith. Commit the re
 
 ```bash
 uv run langsmith_dataset.py dataset validate \
-  dataset-tenant-legal-qa-scenarios.jsonl
+  dataset-tenant-legal-qa-examples.jsonl
 ```
 
 Checks every line against the schema before pushing, catching formatting mistakes early.
@@ -181,9 +181,9 @@ Checks every line against the schema before pushing, catching formatting mistake
 ### Check for content drift between local and remote
 
 ```bash
-# Show which scenarios differ between the local file and LangSmith
+# Show which examples differ between the local file and LangSmith
 uv run langsmith_dataset.py dataset diff \
-  dataset-tenant-legal-qa-scenarios.jsonl \
+  dataset-tenant-legal-qa-examples.jsonl \
   tenant-legal-qa-scenarios
 ```
 
@@ -191,8 +191,8 @@ Reports three categories:
 
 | Symbol | Meaning |
 |--------|---------|
-| `<` | scenario exists only on the left (would be lost on a pull, missing on a push) |
-| `>` | scenario exists only on the right |
+| `<` | example exists only on the left (would be lost on a pull, missing on a push) |
+| `>` | example exists only on the right |
 | `~` | same `scenario_id` on both sides but content differs — shows a field-level unified diff |
 
 Example output:
@@ -211,22 +211,22 @@ Example output:
 > scenario_id=18
 ```
 
-`dataset diff` is the right first step before pushing or pulling — it tells you exactly what would change. Content changes (`~`) require a human decision: use `scenario update` to push a local fix to LangSmith, or `dataset pull` followed by `git diff` to review before accepting a remote edit.
+`dataset diff` is the right first step before pushing or pulling — it tells you exactly what would change. Content changes (`~`) require a human decision: use `example update` to push a local fix to LangSmith, or `dataset pull` followed by `git diff` to review before accepting a remote edit.
 
 ---
 
-### Fine-grained scenario operations
+### Fine-grained example operations
 
 ```bash
-# List all scenarios (shows scenario_id, tags, and the first 80 characters of the question)
-uv run langsmith_dataset.py scenario list tenant-legal-qa-scenarios
+# List all examples (shows scenario_id, tags, and the first 80 characters of the question)
+uv run langsmith_dataset.py example list tenant-legal-qa-scenarios
 
-# Append new scenarios from a JSONL file without touching existing ones
-uv run langsmith_dataset.py scenario append \
-  tenant-legal-qa-scenarios new-scenarios.jsonl
+# Append new examples from a JSONL file without touching existing ones
+uv run langsmith_dataset.py example append \
+  tenant-legal-qa-scenarios new-examples.jsonl
 
-# Remove a scenario by its scenario_id
-uv run langsmith_dataset.py scenario remove \
+# Remove an example by its scenario_id
+uv run langsmith_dataset.py example remove \
   tenant-legal-qa-scenarios 42
 ```
 
@@ -257,7 +257,7 @@ PRs from forked repos don't have access to repository secrets (including `LANGSM
 
 ## What the scores mean
 
-Each scenario gets a score between 0.0 and 1.0 for each active evaluator. The overall pass rate is the average across all scenarios.
+Each example gets a score between 0.0 and 1.0 for each active evaluator. The overall pass rate is the average across all examples.
 
 ### Legal Correctness
 
@@ -290,7 +290,7 @@ These evaluators exist in the code but are disabled pending calibration: citatio
 
 ---
 
-## How the judge sees each scenario
+## How the judge sees each example
 
 When the AI judge scores a response, it receives:
 
@@ -316,9 +316,9 @@ The judge compares what the chatbot actually said against what it should have sa
 Open https://smith.langchain.com/ → your dataset → **Experiments** tab.
 
 From there you can:
-- See per-scenario scores and the judge's written rationale for each score
+- See per-example scores and the judge's written rationale for each score
 - Compare two experiments side-by-side to measure the impact of a code change
-- Filter to failing scenarios to understand where the chatbot struggles
+- Filter to failing examples to understand where the chatbot struggles
 
 To compare two experiments from the command line:
 
@@ -338,7 +338,7 @@ flowchart LR
     A["Run evaluation<br>run_langsmith_evaluation.py"] --> B["Review scores<br>in LangSmith UI"]
     B --> C{Passing?}
     C -- Yes --> D["Ship it"]
-    C -- No --> E["Investigate failing<br>scenarios in UI"]
+    C -- No --> E["Investigate failing<br>examples in UI"]
     E --> F["Fix chatbot code<br>or system prompt"]
     F --> A
 ```
@@ -347,8 +347,8 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A["Write the scenario<br>(question + reference answer)"]
-    B["Append to JSONL<br>scenario append"]
+    A["Write the example<br>(question + reference answer)"]
+    B["Append to JSONL<br>example append"]
     C["Push to LangSmith<br>dataset push"]
     D["Run evaluation<br>to confirm it fails"]
     E["Fix the chatbot"]
@@ -444,17 +444,17 @@ Cloud deployments don't use a `.env` file. Instead, environment variables are co
 The dataset hasn't been pushed yet. Run:
 ```bash
 uv run langsmith_dataset.py dataset push \
-  dataset-tenant-legal-qa-scenarios.jsonl \
+  dataset-tenant-legal-qa-examples.jsonl \
   tenant-legal-qa-scenarios
 ```
 
 ### Scores seem wrong or inconsistent
 
-LLM-as-judge has its own biases and can be inconsistent on borderline cases. Review the judge's written rationale for specific failing scenarios in the LangSmith UI, then refine the evaluator rubrics in `evaluators/*.md` if the scoring logic is the problem (see [Editing evaluator rubrics](#editing-evaluator-rubrics) below).
+LLM-as-judge has its own biases and can be inconsistent on borderline cases. Review the judge's written rationale for specific failing examples in the LangSmith UI, then refine the evaluator rubrics in `evaluators/*.md` if the scoring logic is the problem (see [Editing evaluator rubrics](#editing-evaluator-rubrics) below).
 
 ### Evaluation is too slow
 
-Pass `--max-concurrency 3` (or higher) to run multiple scenarios in parallel, or temporarily reduce the dataset size in LangSmith to evaluate a representative subset.
+Pass `--max-concurrency 3` (or higher) to run multiple examples in parallel, or temporarily reduce the dataset size in LangSmith to evaluate a representative subset.
 
 ## Editing the system prompt
 
@@ -489,7 +489,7 @@ Step by step:
 4. **Chat with the agent.** Send a test question and see how the agent responds with your updated prompt. Try several questions to check different behaviors.
 5. **Iterate.** Tweak the prompt again, send another question. Repeat until you're satisfied. Each conversation thread remembers your config, so you can go back and compare.
 6. **Save your work.** Once you have wording you like, copy the prompt text from the Configuration panel and paste it into `tenantfirstaid/system_prompt.md` (remember to keep the `{RESPONSE_WORD_LIMIT}` and `{OREGON_LAW_CENTER_PHONE_NUMBER}` placeholders). Commit and push.
-7. **Run an evaluation** to verify the change didn't break anything across the full scenario suite.
+7. **Run an evaluation** to verify the change didn't break anything across the full example suite.
 
 The Configuration panel is per-conversation — resetting it or starting a new thread reverts to the default from `system_prompt.md`. Your changes aren't permanent until you commit the file.
 
@@ -516,7 +516,7 @@ Heuristic evaluators (citation format, tool usage, performance) are Python code 
 
 ## Bound evaluators (running evaluations from the LangSmith UI)
 
-Instead of running `run_langsmith_evaluation.py` locally, you can bind an LLM-as-judge evaluator directly to the dataset in LangSmith and run experiments from the browser against your Cloud deployment. This is useful for non-developers who want to iterate on the system prompt or test scenarios without a local Python setup.
+Instead of running `run_langsmith_evaluation.py` locally, you can bind an LLM-as-judge evaluator directly to the dataset in LangSmith and run experiments from the browser against your Cloud deployment. This is useful for non-developers who want to iterate on the system prompt or test examples without a local Python setup.
 
 ### How it works
 
@@ -594,7 +594,7 @@ Repeat the steps above using the rubric from `evaluators/tone.md`, feedback key 
 
 Results appear in the same Experiments view used by the offline CLI, with the same feedback keys, so scores are directly comparable.
 
-**Limitation:** the UI runs each scenario exactly once. The `--num-repetitions` option (useful for measuring scoring variance across runs) is only available through the CLI:
+**Limitation:** the UI runs each example exactly once. The `--num-repetitions` option (useful for measuring scoring variance across runs) is only available through the CLI:
 
 ```bash
 uv run run_langsmith_evaluation.py --num-repetitions 3
@@ -602,7 +602,7 @@ uv run run_langsmith_evaluation.py --num-repetitions 3
 
 #### How the deployment accepts dataset inputs
 
-The dataset stores scenarios as `query/state/city`, but the underlying agent expects a `messages` list. The deployment graph has an adapter node that converts `query` to a `HumanMessage` before the agent runs, so dataset examples are sent directly to the deployment without any transformation on the LangSmith side. The deployment's input schema (`_DeploymentInput` in `graph.py`) declares `query` and `state` as required and `city` as optional, matching the dataset format.
+The dataset stores examples as `query/state/city`, but the underlying agent expects a `messages` list. The deployment graph has an adapter node that converts `query` to a `HumanMessage` before the agent runs, so dataset examples are sent directly to the deployment without any transformation on the LangSmith side. The deployment's input schema (`_DeploymentInput` in `graph.py`) declares `query` and `state` as required and `city` as optional, matching the dataset format.
 
 ### Keeping bound evaluators in sync with the codebase
 
@@ -669,7 +669,7 @@ Requires `langgraph-cli[inmem]` (already in dev dependencies) and GCP credential
 
 ## Roadmap
 
-- [x] demonstrate basic evaluation flow (CLI-only) on single-turn scenarios
+- [x] demonstrate basic evaluation flow (CLI-only) on single-turn examples
 - [x] use LangSmith web UI to view experimental results
 - [x] capture more info in LangSmith experimental results to enable debugging (aka LLM psycho-analysis)
 - [x] externalize system prompt to editable markdown file
@@ -677,9 +677,9 @@ Requires `langgraph-cli[inmem]` (already in dev dependencies) and GCP credential
 - [x] LangGraph entry point for `langgraph dev` and Cloud deployment
 - [x] configurable system prompt in LangGraph Studio (no redeploy needed to iterate)
 - [ ] enable additional evaluators (e.g. citation correctness)
-- [ ] enable LangSmith web UI to edit scenarios
-  - [ ] update facts in existing scenarios to enable additional/better evaluators (e.g. citation correctness)
+- [ ] enable LangSmith web UI to edit examples
+  - [ ] update facts in existing examples to enable additional/better evaluators (e.g. citation correctness)
 - [x] enable LangSmith web UI to edit evaluators via bound evaluators
 - [x] enable LangSmith web UI to launch experiments via Cloud deployment
-- [ ] demonstrate evaluation of multi-turn scenarios
+- [ ] demonstrate evaluation of multi-turn examples
 - [ ] A/B testing of system prompt variants

@@ -4,12 +4,13 @@ Test location sanitization and other methods
 
 import inspect
 import json
-from typing import Dict
+from typing import Dict, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
+from langchain_core.tools import StructuredTool
 
 from tenantfirstaid.google_auth import load_gcp_credentials
 from tenantfirstaid.langchain_tools import (
@@ -129,13 +130,12 @@ def test_retrieve_city_state_laws_parameter_order(mock_rag_class):
     assert "portland" in filter_arg and "or" in filter_arg
 
 
-@pytest.mark.skip("broken")
 def test_tool_schema_matches_function_signature():
     """Test that Pydantic schema matches function defaults."""
     schema_fields = set(CityStateLawsInputSchema.model_fields.keys())
-    func_params = set(
-        inspect.signature(retrieve_city_state_laws.invoke).parameters.keys()  # type: ignore[unresolved-attribute]
-    )
+    tool_func = cast(StructuredTool, retrieve_city_state_laws).func
+    assert tool_func is not None
+    func_params = set(inspect.signature(tool_func).parameters.keys())
     func_params.discard("runtime")
 
     assert schema_fields == func_params

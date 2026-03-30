@@ -75,8 +75,8 @@ backend/
 │   ├── langsmith_dataset.py            # Dataset and experiment CLI (push/pull/validate/diff)
 │   ├── langsmith_evaluators.py         # LLM-as-a-judge configuration (loads rubrics from evaluators/)
 │   ├── run_langsmith_evaluation.py     # LangSmith experiment runner
-│   ├── langsmith_scenario_schema.json  # JSON schema for scenario validation
-│   ├── dataset-tenant-legal-qa-scenarios.jsonl  # Source-of-truth evaluation dataset
+│   ├── langsmith_example_schema.json  # JSON schema for example validation
+│   ├── dataset-tenant-legal-qa-examples.jsonl  # Source-of-truth evaluation dataset
 │   ├── evaluators/                     # Scoring rubrics as editable markdown files
 │   │   ├── legal_correctness.md        # Legal accuracy rubric
 │   │   ├── tone.md                     # Tone and professionalism rubric

@@ -1,4 +1,4 @@
-"""CLI for manipulating LangSmith datasets, scenarios, experiments, runs, and evaluators.
+"""CLI for manipulating LangSmith datasets, examples, experiments, runs, and evaluators.
 
 Remote references are bare dataset/experiment names as they appear in LangSmith.
 Local references are file paths ending in .jsonl.
@@ -9,7 +9,7 @@ Usage examples:
     dataset pull my-dataset ./my-dataset.jsonl
     dataset diff ./my-dataset.jsonl my-dataset
     dataset validate ./my-dataset.jsonl
-    scenario list my-dataset
+    example list my-dataset
     experiment list my-dataset
     run show <run-id>
     prompt list
@@ -41,9 +41,9 @@ from langsmith import utils as langsmith_utils
 from tenantfirstaid.constants import LANGSMITH_API_KEY
 
 EVALUATE_DIR = Path(__file__).parent
-DEFAULT_SCHEMA = EVALUATE_DIR / "langsmith_scenario_schema.json"
+DEFAULT_SCHEMA = EVALUATE_DIR / "langsmith_example_schema.json"
 DEFAULT_DATASET_NAME = "tenant-legal-qa-scenarios"
-DEFAULT_JSONL = EVALUATE_DIR / "dataset-tenant-legal-qa-scenarios.jsonl"
+DEFAULT_JSONL = EVALUATE_DIR / "dataset-tenant-legal-qa-examples.jsonl"
 
 
 @dataclass(frozen=True)
@@ -267,18 +267,18 @@ def _scenario_id(example: dict) -> int:
     return sc_id
 
 
-_SCENARIO_DIFF_FIELDS = ("inputs", "outputs", "metadata")
+_EXAMPLE_DIFF_FIELDS = ("inputs", "outputs", "metadata")
 
 
-def _scenario_content_diff(left: dict, right: dict) -> list[str]:
-    """Return unified diff lines for every field that differs between two scenario dicts.
+def _example_content_diff(left: dict, right: dict) -> list[str]:
+    """Return unified diff lines for every field that differs between two example dicts.
 
     Compares inputs, outputs, and metadata field by field so that callers can see
     exactly what changed rather than diffing a serialised blob.  Returns an empty
-    list when the scenarios are content-identical.
+    list when the examples are content-identical.
     """
     lines: list[str] = []
-    for key in _SCENARIO_DIFF_FIELDS:
+    for key in _EXAMPLE_DIFF_FIELDS:
         left_val = left.get(key)
         right_val = right.get(key)
         if left_val == right_val:
@@ -320,7 +320,7 @@ def cmd_dataset_diff(args: argparse.Namespace) -> None:
         print(f"> scenario_id={sid}")
         found_diff = True
     for sid in common:
-        diff_lines = _scenario_content_diff(left_by_id[sid], right_by_id[sid])
+        diff_lines = _example_content_diff(left_by_id[sid], right_by_id[sid])
         if diff_lines:
             print(f"~ scenario_id={sid}  [content differs]")
             for line in diff_lines:
@@ -367,10 +367,10 @@ def cmd_dataset_validate(args: argparse.Namespace) -> None:
     print(f"All records in {args.file} are valid.")
 
 
-# ── scenario subcommands ───────────────────────────────────────────────────────
+# ── example subcommands ───────────────────────────────────────────────────────
 
 
-def cmd_scenario_list(args: argparse.Namespace) -> None:
+def cmd_example_list(args: argparse.Namespace) -> None:
     client = make_client()
     ds = client.read_dataset(dataset_name=args.dataset)
     examples = list(client.list_examples(dataset_id=ds.id))
@@ -384,7 +384,7 @@ def cmd_scenario_list(args: argparse.Namespace) -> None:
     _tabulate(rows, headers=headers)
 
 
-def cmd_scenario_show(args: argparse.Namespace) -> None:
+def cmd_example_show(args: argparse.Namespace) -> None:
     ref = args.dataset
     if isinstance(ref, Path):
         examples = _read_jsonl(ref, validate=_Validate("warn"))
@@ -393,12 +393,12 @@ def cmd_scenario_show(args: argparse.Namespace) -> None:
 
     matches = [ex for ex in examples if _scenario_id(ex) == args.scenario_id]
     if not matches:
-        print(f"Scenario {args.scenario_id} not found.", file=sys.stderr)
+        print(f"Example {args.scenario_id} not found.", file=sys.stderr)
         sys.exit(1)
     print(json.dumps(matches[0], indent=2))
 
 
-def cmd_scenario_append(args: argparse.Namespace) -> None:
+def cmd_example_append(args: argparse.Namespace) -> None:
     local: Path = args.file
     client = make_client()
     ds = client.read_dataset(dataset_name=args.dataset)
@@ -418,7 +418,7 @@ def cmd_scenario_append(args: argparse.Namespace) -> None:
     print(f"Appended {len(examples)} examples to '{args.dataset}'.")
 
 
-def cmd_scenario_remove(args: argparse.Namespace) -> None:
+def cmd_example_remove(args: argparse.Namespace) -> None:
     client = make_client()
     ds = client.read_dataset(dataset_name=args.dataset)
     examples = list(client.list_examples(dataset_id=ds.id))
@@ -428,21 +428,21 @@ def cmd_scenario_remove(args: argparse.Namespace) -> None:
         if (ex.metadata or {}).get("scenario_id") == args.scenario_id
     ]
     if not matches:
-        print(f"Scenario {args.scenario_id} not found.", file=sys.stderr)
+        print(f"Example {args.scenario_id} not found.", file=sys.stderr)
         sys.exit(1)
     client.delete_example(matches[0].id)
-    print(f"Removed scenario {args.scenario_id} from '{args.dataset}'.")
+    print(f"Removed example {args.scenario_id} from '{args.dataset}'.")
 
 
-def cmd_scenario_update(args: argparse.Namespace) -> None:
-    local_scenarios = {
+def cmd_example_update(args: argparse.Namespace) -> None:
+    local_examples = {
         _scenario_id(ex): ex
         for ex in _read_jsonl(args.file, validate=_Validate("warn"))
     }
-    if args.scenario_id not in local_scenarios:
-        print(f"Scenario {args.scenario_id} not found in {args.file}.", file=sys.stderr)
+    if args.scenario_id not in local_examples:
+        print(f"Example {args.scenario_id} not found in {args.file}.", file=sys.stderr)
         sys.exit(1)
-    patch = local_scenarios[args.scenario_id]
+    patch = local_examples[args.scenario_id]
 
     client = make_client()
     ds = client.read_dataset(dataset_name=args.dataset)
@@ -454,7 +454,7 @@ def cmd_scenario_update(args: argparse.Namespace) -> None:
     ]
     if not matches:
         print(
-            f"Scenario {args.scenario_id} not found in '{args.dataset}'.",
+            f"Example {args.scenario_id} not found in '{args.dataset}'.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -464,7 +464,7 @@ def cmd_scenario_update(args: argparse.Namespace) -> None:
         outputs=patch.get("outputs"),
         metadata=patch.get("metadata"),
     )
-    print(f"Updated scenario {args.scenario_id} in '{args.dataset}'.")
+    print(f"Updated example {args.scenario_id} in '{args.dataset}'.")
 
 
 # ── experiment subcommands ─────────────────────────────────────────────────────
@@ -857,7 +857,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.set_defaults(func=cmd_dataset_diff)
 
-    p = ds_sub.add_parser("merge", help="Copy new scenarios from source into target.")
+    p = ds_sub.add_parser("merge", help="Copy new examples from source into target.")
     p.add_argument(
         "source",
         type=local_or_remote,
@@ -892,12 +892,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.set_defaults(func=cmd_dataset_validate)
 
-    # ── scenario ─────────────────────────────────────────────────────────────
-    sc_parser = nouns.add_parser("scenario", help="Manage scenarios within a dataset.")
-    sc_sub = sc_parser.add_subparsers(dest="verb", metavar="SUBCOMMAND")
-    sc_sub.required = True
+    # ── example ──────────────────────────────────────────────────────────────
+    example_parser = nouns.add_parser(
+        "example", help="Manage examples within a dataset."
+    )
+    example_sub = example_parser.add_subparsers(dest="verb", metavar="SUBCOMMAND")
+    example_sub.required = True
 
-    p = sc_sub.add_parser("list", help="List scenarios in a dataset.")
+    p = example_sub.add_parser("list", help="List examples in a dataset.")
     p.add_argument(
         "dataset",
         nargs="?",
@@ -906,9 +908,9 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"LangSmith dataset name (default: {DEFAULT_DATASET_NAME})",
     )
     p.add_argument("--no-header", action="store_true", help="Suppress column headers.")
-    p.set_defaults(func=cmd_scenario_list)
+    p.set_defaults(func=cmd_example_list)
 
-    p = sc_sub.add_parser("show", help="Print a single scenario.")
+    p = example_sub.add_parser("show", help="Print a single example.")
     p.add_argument(
         "dataset",
         type=local_or_remote,
@@ -918,10 +920,10 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"Dataset name or local JSONL file (default: {DEFAULT_JSONL.name})",
     )
     p.add_argument("scenario_id", type=int, help="scenario_id from metadata.")
-    p.set_defaults(func=cmd_scenario_show)
+    p.set_defaults(func=cmd_example_show)
 
-    p = sc_sub.add_parser(
-        "append", help="Append scenarios from a JSONL file to a dataset."
+    p = example_sub.add_parser(
+        "append", help="Append examples from a JSONL file to a dataset."
     )
     p.add_argument(
         "dataset",
@@ -936,11 +938,11 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         default=DEFAULT_JSONL,
         metavar="file.jsonl",
-        help=f"Local JSONL file containing scenarios to append (default: {DEFAULT_JSONL.name})",
+        help=f"Local JSONL file containing examples to append (default: {DEFAULT_JSONL.name})",
     )
-    p.set_defaults(func=cmd_scenario_append)
+    p.set_defaults(func=cmd_example_append)
 
-    p = sc_sub.add_parser("remove", help="Remove a scenario by scenario_id.")
+    p = example_sub.add_parser("remove", help="Remove an example by scenario_id.")
     p.add_argument(
         "dataset",
         nargs="?",
@@ -949,9 +951,9 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"LangSmith dataset name (default: {DEFAULT_DATASET_NAME})",
     )
     p.add_argument("scenario_id", type=int, help="scenario_id from metadata.")
-    p.set_defaults(func=cmd_scenario_remove)
+    p.set_defaults(func=cmd_example_remove)
 
-    p = sc_sub.add_parser("update", help="Update a scenario from a JSONL file.")
+    p = example_sub.add_parser("update", help="Update an example from a JSONL file.")
     p.add_argument(
         "dataset",
         nargs="?",
@@ -966,9 +968,9 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         default=DEFAULT_JSONL,
         metavar="file.jsonl",
-        help=f"Local JSONL file to read the updated scenario from (default: {DEFAULT_JSONL.name})",
+        help=f"Local JSONL file to read the updated example from (default: {DEFAULT_JSONL.name})",
     )
-    p.set_defaults(func=cmd_scenario_update)
+    p.set_defaults(func=cmd_example_update)
 
     # ── experiment ───────────────────────────────────────────────────────────
     ex_parser = nouns.add_parser("experiment", help="Inspect experiments.")
@@ -995,7 +997,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("experiment2", metavar="name", help="Second experiment name.")
     p.set_defaults(func=cmd_experiment_compare)
 
-    p = ex_sub.add_parser("results", help="Print per-scenario results as JSONL.")
+    p = ex_sub.add_parser("results", help="Print per-example results as JSONL.")
     p.add_argument("experiment", metavar="name", help="LangSmith experiment name.")
     p.set_defaults(func=cmd_experiment_results)
 

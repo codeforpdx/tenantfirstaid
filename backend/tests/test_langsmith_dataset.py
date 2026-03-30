@@ -10,17 +10,17 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from evaluate.langsmith_dataset import (
+    _example_content_diff,
     _extract_rubric,
     _read_jsonl,
-    _scenario_content_diff,
     _scenario_id,
     _tabulate,
     _Validate,
     build_parser,
     cmd_dataset_diff,
     cmd_dataset_validate,
-    cmd_scenario_show,
-    cmd_scenario_update,
+    cmd_example_show,
+    cmd_example_update,
     local_or_remote,
 )
 
@@ -194,14 +194,14 @@ def test_parser_dataset_validate_defaults():
     assert args.schema == DEFAULT_SCHEMA
 
 
-def test_parser_scenario_update_routes_correctly():
+def test_parser_example_update_routes_correctly():
     parser = build_parser()
-    args = parser.parse_args(["scenario", "update", "42"])
+    args = parser.parse_args(["example", "update", "42"])
     assert args.scenario_id == 42
-    assert args.func.__name__ == "cmd_scenario_update"
+    assert args.func.__name__ == "cmd_example_update"
 
 
-def test_parser_scenario_update_accepts_custom_file(tmp_path):
+def test_parser_example_update_accepts_custom_file(tmp_path):
     from evaluate.langsmith_dataset import DEFAULT_DATASET_NAME
 
     f = tmp_path / "custom.jsonl"
@@ -209,7 +209,7 @@ def test_parser_scenario_update_accepts_custom_file(tmp_path):
     parser = build_parser()
     # dataset is an optional positional before scenario_id, so to specify file
     # the dataset name must be provided explicitly as well.
-    args = parser.parse_args(["scenario", "update", DEFAULT_DATASET_NAME, "1", str(f)])
+    args = parser.parse_args(["example", "update", DEFAULT_DATASET_NAME, "1", str(f)])
     assert args.scenario_id == 1
     assert args.file == f
 
@@ -304,10 +304,10 @@ def test_cmd_dataset_validate_multiple_records(tmp_path, capsys):
     capsys.readouterr()  # suppress output
 
 
-# ── cmd_scenario_show ──────────────────────────────────────────────────────────
+# ── cmd_example_show ──────────────────────────────────────────────────────────
 
 
-def test_cmd_scenario_show_local_found(tmp_path, capsys):
+def test_cmd_example_show_local_found(tmp_path, capsys):
     f = tmp_path / "data.jsonl"
     record = _make_valid_record(7)
     f.write_text(json.dumps(record) + "\n")
@@ -316,13 +316,13 @@ def test_cmd_scenario_show_local_found(tmp_path, capsys):
     args.dataset = f
     args.scenario_id = 7
 
-    cmd_scenario_show(args)
+    cmd_example_show(args)
 
     out = capsys.readouterr().out
     assert '"scenario_id": 7' in out
 
 
-def test_cmd_scenario_show_local_not_found_exits(tmp_path, capsys):
+def test_cmd_example_show_local_not_found_exits(tmp_path, capsys):
     f = tmp_path / "data.jsonl"
     f.write_text(json.dumps(_make_valid_record(1)) + "\n")
 
@@ -331,12 +331,12 @@ def test_cmd_scenario_show_local_not_found_exits(tmp_path, capsys):
     args.scenario_id = 99
 
     with pytest.raises(SystemExit) as exc:
-        cmd_scenario_show(args)
+        cmd_example_show(args)
     assert exc.value.code == 1
     assert "99" in capsys.readouterr().err
 
 
-# ── cmd_scenario_update ────────────────────────────────────────────────────────
+# ── cmd_example_update ────────────────────────────────────────────────────────
 
 
 def _make_remote_example(scenario_id: int):
@@ -346,7 +346,7 @@ def _make_remote_example(scenario_id: int):
     return ex
 
 
-def test_cmd_scenario_update_applies_patch(tmp_path, capsys):
+def test_cmd_example_update_applies_patch(tmp_path, capsys):
     record = _make_valid_record(3)
     f = tmp_path / "data.jsonl"
     f.write_text(json.dumps(record) + "\n")
@@ -363,9 +363,9 @@ def test_cmd_scenario_update_applies_patch(tmp_path, capsys):
     mock_client.list_examples.return_value = [remote_ex]
 
     with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
-        cmd_scenario_update(args)
+        cmd_example_update(args)
 
-    assert "Updated scenario 3" in capsys.readouterr().out
+    assert "Updated example 3" in capsys.readouterr().out
     mock_client.update_example.assert_called_once_with(
         example_id=remote_ex.id,
         inputs=record["inputs"],
@@ -374,7 +374,7 @@ def test_cmd_scenario_update_applies_patch(tmp_path, capsys):
     )
 
 
-def test_cmd_scenario_update_not_in_local_file_exits(tmp_path, capsys):
+def test_cmd_example_update_not_in_local_file_exits(tmp_path, capsys):
     f = tmp_path / "data.jsonl"
     f.write_text(json.dumps(_make_valid_record(1)) + "\n")
 
@@ -384,12 +384,12 @@ def test_cmd_scenario_update_not_in_local_file_exits(tmp_path, capsys):
     args.dataset = "my-dataset"
 
     with pytest.raises(SystemExit) as exc:
-        cmd_scenario_update(args)
+        cmd_example_update(args)
     assert exc.value.code == 1
     assert "99" in capsys.readouterr().err
 
 
-def test_cmd_scenario_update_not_in_remote_exits(tmp_path, capsys):
+def test_cmd_example_update_not_in_remote_exits(tmp_path, capsys):
     f = tmp_path / "data.jsonl"
     f.write_text(json.dumps(_make_valid_record(5)) + "\n")
 
@@ -404,12 +404,12 @@ def test_cmd_scenario_update_not_in_remote_exits(tmp_path, capsys):
 
     with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
         with pytest.raises(SystemExit) as exc:
-            cmd_scenario_update(args)
+            cmd_example_update(args)
     assert exc.value.code == 1
     assert "5" in capsys.readouterr().err
 
 
-# ── _scenario_content_diff ────────────────────────────────────────────────────
+# ── _example_content_diff ────────────────────────────────────────────────────
 
 
 def _make_scenario(scenario_id: int = 1, query: str = "test query") -> dict:
@@ -420,21 +420,21 @@ def _make_scenario(scenario_id: int = 1, query: str = "test query") -> dict:
     }
 
 
-def test_scenario_content_diff_identical():
-    assert _scenario_content_diff(_make_scenario(), _make_scenario()) == []
+def test_example_content_diff_identical():
+    assert _example_content_diff(_make_scenario(), _make_scenario()) == []
 
 
-def test_scenario_content_diff_inputs_differ():
+def test_example_content_diff_inputs_differ():
     left = _make_scenario(query="old query")
     right = _make_scenario(query="new query")
-    combined = "".join(_scenario_content_diff(left, right))
+    combined = "".join(_example_content_diff(left, right))
     assert "old query" in combined
     assert "new query" in combined
     assert "left/inputs" in combined
     assert "right/inputs" in combined
 
 
-def test_scenario_content_diff_outputs_differ():
+def test_example_content_diff_outputs_differ():
     left = {
         **_make_scenario(),
         "outputs": {"facts": ["fact A"], "reference_conversation": []},
@@ -443,30 +443,30 @@ def test_scenario_content_diff_outputs_differ():
         **_make_scenario(),
         "outputs": {"facts": ["fact B"], "reference_conversation": []},
     }
-    combined = "".join(_scenario_content_diff(left, right))
+    combined = "".join(_example_content_diff(left, right))
     assert "fact A" in combined
     assert "fact B" in combined
     assert "left/outputs" in combined
 
 
-def test_scenario_content_diff_multiple_fields():
+def test_example_content_diff_multiple_fields():
     left = _make_scenario(query="old")
     right = {
         **_make_scenario(query="new"),
         "outputs": {"facts": ["changed"], "reference_conversation": []},
     }
-    combined = "".join(_scenario_content_diff(left, right))
+    combined = "".join(_example_content_diff(left, right))
     assert "left/inputs" in combined
     assert "left/outputs" in combined
 
 
-def test_scenario_content_diff_metadata_differ():
+def test_example_content_diff_metadata_differ():
     left = _make_scenario()
     right = {
         **_make_scenario(),
         "metadata": {"scenario_id": 1, "city": "Eugene", "state": "OR"},
     }
-    combined = "".join(_scenario_content_diff(left, right))
+    combined = "".join(_example_content_diff(left, right))
     assert "left/metadata" in combined
     assert "Eugene" in combined
 
