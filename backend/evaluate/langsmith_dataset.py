@@ -130,6 +130,29 @@ def _git_is_clean(path: Path) -> bool:
     return result.returncode == 0 and not result.stdout.strip()
 
 
+def _load_dataset_schemas() -> tuple[dict, dict]:
+    """Return (inputs_schema, outputs_schema) extracted from DEFAULT_SCHEMA."""
+    props = json.loads(DEFAULT_SCHEMA.read_text()).get("properties", {})
+    return props["inputs"], props["outputs"]
+
+
+def _apply_dataset_schemas(client: Client, dataset_id: Any) -> None:
+    """Attach inputs/outputs schemas from DEFAULT_SCHEMA to an existing dataset."""
+    inputs_schema, outputs_schema = _load_dataset_schemas()
+    response = client.request_with_retries(
+        "PATCH",
+        f"/datasets/{dataset_id}",
+        headers={**client._headers, "Content-Type": "application/json"},
+        data=json.dumps(
+            {
+                "inputs_schema_definition": inputs_schema,
+                "outputs_schema_definition": outputs_schema,
+            }
+        ).encode(),
+    )
+    langsmith_utils.raise_for_status_with_text(response)
+
+
 def make_client() -> Client:
     # The Client targets the workspace associated with LANGSMITH_API_KEY.
     # To target a different workspace, pass its UUID via the workspace_id
@@ -160,7 +183,12 @@ def cmd_dataset_create(args: argparse.Namespace) -> None:
         print(f"Dataset '{args.name}' already exists.")
         sys.exit(1)
     else:
-        ds = client.create_dataset(dataset_name=args.name)
+        inputs_schema, outputs_schema = _load_dataset_schemas()
+        ds = client.create_dataset(
+            dataset_name=args.name,
+            inputs_schema=inputs_schema,
+            outputs_schema=outputs_schema,
+        )
         print(f"Created '{args.name}' (uuid: {ds.id}).")
 
 
@@ -188,7 +216,13 @@ def cmd_dataset_push(args: argparse.Namespace) -> None:
     try:
         ds = client.read_dataset(dataset_name=args.remote)
     except langsmith_utils.LangSmithNotFoundError:
-        ds = client.create_dataset(dataset_name=args.remote)
+        inputs_schema, outputs_schema = _load_dataset_schemas()
+        ds = client.create_dataset(
+            dataset_name=args.remote,
+            inputs_schema=inputs_schema,
+            outputs_schema=outputs_schema,
+        )
+    _apply_dataset_schemas(client, ds.id)
 
     existing_ids = {
         _scenario_id({"metadata": ex.metadata})
@@ -342,6 +376,7 @@ def cmd_dataset_merge(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     target_ds = client.read_dataset(dataset_name=args.target)
+    _apply_dataset_schemas(client, target_ds.id)
     existing = list(client.list_examples(dataset_id=target_ds.id))
     existing_ids = {_scenario_id({"metadata": ex.metadata}) for ex in existing}
 
