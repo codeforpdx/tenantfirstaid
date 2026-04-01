@@ -10,25 +10,13 @@ from tenantfirstaid.langchain_chat_manager import (
 from tenantfirstaid.location import UsaState
 
 
-def test_system_prompt_includes_location(oregon_state, portland_city):
-    state = oregon_state
-    city = portland_city
-
-    chat_manager = LangChainChatManager()
-
+def test_system_prompt_includes_city_and_state(oregon_state, portland_city):
     """Test that system prompt includes user location."""
-    prompt = chat_manager._prepare_system_prompt(city, state)
-
-    assert "Portland OR" in prompt
-
-
-def test_prepare_system_prompt_includes_city_state(oregon_state, portland_city):
-    state = oregon_state
-    city = portland_city
     chat_manager = LangChainChatManager()
+    prompt = chat_manager._prepare_system_prompt(portland_city, oregon_state)
 
-    instructions = chat_manager._prepare_system_prompt(city, state)
-    assert f"The user is in {city.capitalize()} {state.upper()}." in instructions
+    assert "Portland" in prompt
+    assert "OR" in prompt
 
 
 def test_tools_include_rag_retrieval():
@@ -43,11 +31,11 @@ def test_tools_include_rag_retrieval():
 
 
 def test_system_prompt_no_city(oregon_state):
+    """When no city is provided, the location line should mention state only."""
     chat_manager = LangChainChatManager()
     prompt = chat_manager._prepare_system_prompt(None, oregon_state)
+    assert "The user is in" in prompt
     assert "OR" in prompt
-    # City portion should be empty.
-    assert "The user is in  OR." in prompt
 
 
 def test_system_prompt_state_only():

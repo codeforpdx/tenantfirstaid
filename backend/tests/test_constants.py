@@ -106,7 +106,12 @@ class TestGoogEnvAndPolicy:
 
 
 def test_model_config_values():
-    """Verify hard-coded model config values are sensible."""
+    """Pin model config values that affect legal advice quality.
+
+    Low temperature and top_p produce consistent, citation-heavy responses
+    rather than creative ones. Changing these accidentally could degrade the
+    quality of legal guidance, so this test should break loudly.
+    """
     from tenantfirstaid.constants import SINGLETON
 
     assert SINGLETON.MODEL_TEMPERATURE == 0.1
