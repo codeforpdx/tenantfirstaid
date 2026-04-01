@@ -1,151 +1,103 @@
-Welcome to the Tenant First Aid repository. This file contains the main points for new contributors.
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Repository overview
 
-- **Source code**: see [Architecture.md](../Architecture.md) for code organization
-- **Tests**: see [Architecture.md](../Architecture.md) for test organization and [README.md](../README.md) for backend quality check flows/commands; see `frontend-builds` job in [pr-checks](../.github/workflows/pr-check.yml) for frontend commands
-- **Documentation**: see [Architecture.md](../Architecture.md) for architectural documentation
-- **Utilities**: developer commands are defined in the `Makefile`.
-- **PR template**: [pull_request_template.md](../.github/pull_request_template.md) describes the information every PR must include.
+Tenant First Aid is a chatbot for Oregon housing/eviction legal information. Flask backend + React frontend monorepo, deployed on Digital Ocean.
 
-## Local `./backend` workflow
+- **Architecture docs**: [Architecture.md](../Architecture.md) — RAG pipeline, endpoints, session management, frontend structure
+- **Deployment docs**: [Deployment.md](../Deployment.md) — CI/CD, secrets, infrastructure
+- **PR template**: [.github/pull_request_template.md](../.github/pull_request_template.md)
+- **Dev commands**: `backend/Makefile`
 
-1. Format, lint and type‑check your changes:
+### Key architecture
 
-   ```bash
-   make fmt
-   make lint
-   make typecheck
-   ```
+- **Backend** (`backend/`): Flask API with LangChain agent orchestration. The agent uses Vertex AI RAG to retrieve Oregon housing law documents and Google Gemini as the LLM. Key files: `langchain_chat_manager.py` (agent orchestration), `langchain_tools.py` (RAG retriever + letter tools), `schema.py` (Pydantic response chunk types shared with frontend).
+- **Frontend** (`frontend/`): React 19 + TypeScript + Vite + Tailwind CSS 4. Uses `@langchain/core` message types (`HumanMessage`/`AIMessage`) directly for chat state. Streaming via native `ReadableStream`.
+- **Type bridge**: Frontend TypeScript types in `src/types/` are auto-generated from backend Pydantic models via `generate-types` and gitignored. Must regenerate before building or type-checking.
 
-2. Run the tests:
+## Backend workflow (run from `backend/`)
 
-   ```bash
-   make test
-   ```
+```bash
+make fmt                  # Format + sort imports (ruff)
+make lint                 # Lint (ruff)
+make typecheck            # Type-check (ty)
+make test                 # Run tests (pytest)
+make --keep-going check   # All of the above in one shot
 
-   To run a single test, use `uv run pytest -s -k <test_name>`.
+# Single test
+uv run pytest -s -k <test_name>
 
-3. Coverage can be generated with (optional but recommended for code changes):
-   ```bash
-   make test TEST_OPTIONS="--cov tenantfirstaid --cov-report html --cov-branch"
-   ```
+# LangChain-specific tests
+uv run pytest -m langchain
+
+# Coverage
+make test TEST_OPTIONS="--cov tenantfirstaid --cov-report html --cov-branch"
+```
 
 All python commands should be run via `uv run python ...`
 
-## LangChain Agent Architecture
+### Environment variables
 
-The backend uses LangChain 1.0.8+ for agent-based conversation management with Vertex AI integration.
+See `backend/.env.example`. Key ones: `MODEL_NAME`, `GOOGLE_APPLICATION_CREDENTIALS`, `VERTEX_AI_DATASTORE`, `LANGSMITH_API_KEY`.
 
-### Key Components
-- **LangChainChatManager**: Main agent orchestration class (`backend/tenantfirstaid/langchain_chat_manager.py`)
-- **retrieve_city_state_laws**: Tool for city/state-specific legal retrieval
-- **ChatVertexAI**: LangChain wrapper for Google Gemini
+### LangSmith evaluations
 
-### Environment Variables
 ```bash
-MODEL_NAME=gemini-2.5-pro                          # LLM model name
-VERTEX_AI_DATASTORE=projects/.../datastores/...    # RAG corpus ID
-SHOW_MODEL_THINKING=false                          # Enable Gemini thinking mode
-LANGSMITH_API_KEY=...                              # Optional: Enable LLM evaluations
-```
-
-### Testing LangChain Components
-```bash
-# Run LangChain-specific tests
-uv run pytest -m langchain
-
-# Run with LangSmith tracing (requires API key)
-LANGSMITH_TRACING=true LANGCHAIN_TRACING_V2=true uv run pytest -m langchain
-
-# Run evaluations (see docs/EVALUATION.md)
 uv run python scripts/run_langsmith_evaluation.py --num-samples 20
 ```
 
-## Local `./frontend` workflow
+See `docs/EVALUATION.md` for details.
 
-Frontend TypeScript types in `src/types/` are auto-generated from the backend Python models and are not checked into source control. You must generate them before building or type-checking:
+## Frontend workflow (run from `frontend/`)
 
 ```bash
-npm run generate-types
-# or equivalently:
-make generate-types  # (run from the backend/ directory)
+npm run generate-types    # Required before build/typecheck — generates src/types/models.ts
+npm run lint              # Lint (eslint)
+npm run format            # Format (prettier)
+npm run typecheck         # Type-check (tsc)
+npm run build             # Build (auto-generates types first)
+npm run test -- --run     # Run tests (vitest)
+npm run test -- --run --coverage  # With coverage
 ```
 
-This requires `uv` to be installed (see backend setup).
-
-1. Format, lint and type‑check your changes:
-
-   ```bash
-   npm run lint
-   npx run format
-   ```
-
-2. Build frontend code (automatically generates types first)
-   ```bash
-   npm run build
-   ```
-
-3. Test frontend code
-   ```bash
-   npm run test -- --run
-   ```
-
-4. Test Coverage can be generated with (optional but recommended for code changes):
-   ```bash
-   npm run test -- --run --coverage
-   ```
+`generate-types` requires `uv` to be installed (it runs backend Python to emit JSON Schema, piped through `json2ts`).
 
 ## Style notes
 
 - Write comments as full sentences and end them with a period.
 
+## Commit messages
+
+Concise, imperative mood, small focused commits. Write like a humble experienced engineer — casual, no listicles, highlight non-obvious choices. No robot speak, marketing buzzwords, or vague fluff.
+
 ## Pull request expectations
 
-PRs should use the template located at [pull_request_template.md](../.github/pull_request_template.md). Provide a summary, test plan and issue number if applicable, then check that:
-
-- for frontend, backend and backend/scripts
-  - New tests are added when needed.
-  - Documentation is updated.
-  - `make lint` and `make format` have been run.
-  - The full test suite passes.
-
-## Commit Messages
-
-Commit messages should be concise and written in the imperative mood. Small, focused commits are preferred.
-
-Write commit messages and PR descriptions as a humble but experienced engineer would. Keep it casual, avoid listicles, briefly describe what we're doing and highlight non-obvious implementation choices but don't overthink it.
-
-Don't embarrass me with robot speak, marketing buzzwords, or vague fluff. Just leave a meaningful trace so someone can understand the choices later. Assume the reader is able to follow the code perfectly fine.
-
-## GitHub Actions Security
-
-We pin all third-party actions to commit SHAs to prevent supply chain attacks:
-
-```yaml
-# ✅ Good: Commit SHA with inline version comment
-uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345 #v1.0.0
-
-# ❌ Bad: Floating version tags
-uses: appleboy/scp-action@v1.0.0
-```
-
-We allow fully qualified semantic version tag from
-- `Astral` (uv) github actions (note: CodeQL will warn about this)
-- immutable tags
-
-```yaml
-# ✅ Good: semantic version tag
-uses: astral-sh/setup-uv@7.3.0
-
-# ❌ Bad: major-only version tag
-uses: astral-sh/setup-uv@7
-```
+Use the PR template. For frontend, backend, and backend/scripts changes:
+- Add tests when needed
+- Update documentation
+- Run `make lint` and `make fmt`
+- Full test suite passes
 
 ## What reviewers look for
 
-- Tests covering new behaviour.
-- Consistent style: code formatted with `uv run ruff format`, imports sorted, and type hints passing `make typecheck`.
-- Clear documentation for any public API changes.
-- Clean history and a helpful PR description.
-- Inconsistent environment variables and secrets declarations across GitHub Actions, .env.example, tests, and relevant Markdown documentation; this includes secrets and variables which are declared but never referenced in the code.
+- Tests covering new behaviour
+- Consistent style: formatted with `ruff format`, imports sorted, type hints passing `make typecheck`
+- Clear documentation for public API changes
+- Clean history and helpful PR description
+- Consistent environment variable declarations across GitHub Actions, `.env.example`, tests, and docs — no orphaned secrets/variables
+
+## GitHub Actions security
+
+Pin third-party actions to commit SHAs:
+
+```yaml
+# Good: SHA with version comment
+uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345 #v1.0.0
+
+# Bad: floating tag
+uses: appleboy/scp-action@v1.0.0
+```
+
+Exceptions: Astral (uv) actions may use fully qualified semver tags (e.g. `astral-sh/setup-uv@7.3.0`), and immutable tags are allowed.

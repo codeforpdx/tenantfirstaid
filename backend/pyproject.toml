@@ -53,3 +53,11 @@ dev = [
 markers = [
     "require_repo_secrets: mark test as requiring repository secrets to run",
 ]
+
+[tool.coverage.run]
+source = ["tenantfirstaid"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
