@@ -59,7 +59,7 @@ backend/
 │   ├── __init__.py
 │   ├── app.py                          # Flask application setup and routing
 │   ├── chat.py                         # Flask ChatView
-|   ├── schema.py                       # Pydantic response chunk types (TextChunk, LetterChunk, ReasoningChunk)
+|   ├── schema.py                       # Pydantic response chunk types (TextChunk, LetterChunk, ReasoningChunk, DoneChunk)
 |   ├── constants.py                    # Immutable state and consolidated interface to environment variables
 |   ├── location.py                     # City & State normalization and sanitization
 |   ├── langchain_chat_manager.py       # Chat model configuration and response generation
@@ -326,7 +326,8 @@ async function streamText({
   setMessages,
   housingLocation,
   setIsLoading,
-}: StreamTextOptions): Promise<boolean | undefined> {
+  onDone,
+}: StreamTextOptions): Promise<void> {
   const botMessageId = (Date.now() + 1).toString();
 
   setIsLoading?.(true);
@@ -339,29 +340,39 @@ async function streamText({
 
   try {
     const reader = await addMessage(housingLocation);
-    if (!reader) {
-      console.error("Stream reader is unavailable");
-      const nullReaderError: UiMessage = {
-        type: "ui",
-        text: "Sorry, I encountered an error. Please try again.",
-        id: botMessageId,
-      };
-      setMessages((prev) =>
-        prev.map((msg) => (msg.id === botMessageId ? nullReaderError : msg)),
-      );
-      return;
-    }
+    // ...
 
     const decoder = new TextDecoder();
     let buffer = "";
     let fullText = "";
+    let receivedDone = false;
+
+    const processLines = (lines: string[]) => {
+      lines.filter((line) => line.trim() !== "").forEach((processedText) => {
+        try {
+          const parsed = JSON.parse(processedText) as { type?: string };
+          if (parsed.type === "done") {
+            receivedDone = true;
+            onDone?.();
+            return;
+          }
+        } catch { /* Not JSON — fall through and append as-is. */ }
+        fullText += processedText + "\n";
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === botMessageId
+              ? new AIMessage({ content: fullText, id: botMessageId })
+              : msg,
+          ),
+        );
+      });
+    };
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) {
-        // Flush any remaining content in the buffer.
         if (buffer.trim() !== "") processLines([buffer]);
-        return true;
+        return;
       }
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split("\n");
@@ -369,21 +380,14 @@ async function streamText({
       processLines(lines);
     }
   } catch (error) {
-    console.error("Error:", error);
-    const errorMessage: UiMessage = {
-      type: "ui",
-      text: "Sorry, I encountered an error. Please try again.",
-      id: botMessageId,
-    };
-    setMessages((prev) => [
-      ...prev.filter((msg) => msg.id !== botMessageId),
-      errorMessage,
-    ]);
+    // ...error handling
   } finally {
     setIsLoading?.(false);
   }
 }
 ```
+
+Each chunk is a serialized `ResponseChunk` (`text`, `reasoning`, `letter`, or `done`). Letter chunks are appended to the bot message content so `useLetterContent` can extract them for the letter panel. The `done` chunk signals clean completion and triggers the `onDone` callback; it is not appended to the message content.
 
 **Streaming Features:**
 
