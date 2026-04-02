@@ -31,8 +31,6 @@ def _classify_blocks(
                 yield TextChunk(content=content_block["text"])
             case "letter":
                 yield LetterChunk(content=content_block["content"])
-            case "done":
-                yield DoneChunk()
             case _:
                 current_app.logger.warning(
                     f"Unhandled block type: {content_block['type']}"
