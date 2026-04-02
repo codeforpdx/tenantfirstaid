@@ -188,9 +188,11 @@ describe("Letter component - effect orchestration", () => {
     });
   });
 
-  it("shows error message when stream fails", async () => {
+  it("does not add instruction message when stream ends without calling onDone", async () => {
+    // Simulate a dropped connection: streamText resolves but never calls onDone.
+    // Error messaging is handled inside streamHelper, not Letter.tsx.
     const mockSetMessages = vi.fn();
-    mockStreamText.mockResolvedValue(undefined);
+    mockStreamText.mockImplementation(() => Promise.resolve());
 
     mockUseMessages.mockReturnValue({
       addMessage: vi.fn(),
@@ -201,15 +203,16 @@ describe("Letter component - effect orchestration", () => {
     await renderLetter();
 
     await waitFor(() => {
-      expect(mockSetMessages).toHaveBeenCalledWith(expect.any(Function));
+      expect(mockStreamText).toHaveBeenCalled();
     });
 
-    const setMessagesCall = mockSetMessages.mock.calls.find((call) => {
+    const addedInstructionMessage = mockSetMessages.mock.calls.find((call) => {
       const result = call[0]([]);
-      return result.some((msg: ChatMessage) =>
-        msg.text.includes("Unable to generate letter"),
+      return result.some(
+        (msg: ChatMessage) =>
+          "text" in msg && msg.text.includes("initial template"),
       );
     });
-    expect(setMessagesCall).toBeDefined();
+    expect(addedInstructionMessage).toBeUndefined();
   });
 });

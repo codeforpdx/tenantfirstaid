@@ -46,24 +46,22 @@ describe("streamText", () => {
     const mockReader = createMockReader([
       '{"type":"text","content":"Hello"}\n',
       '{"type":"text","content":"world"}\n',
+      '{"type":"done"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
-    const result = await streamText({
+    await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
     } as StreamTextOptions);
 
-    expect(result).toBe(true);
     expect(mockAddMessage).toHaveBeenCalledWith({
       city: "portland",
       state: "or",
     });
     expect(mockSetMessages).toHaveBeenCalledTimes(3); // 1 initial + 2 chunk updates
-
-    // Verify loading state management
     expect(mockSetIsLoading).toHaveBeenCalledWith(true);
     expect(mockSetIsLoading).toHaveBeenCalledWith(false);
     expect(mockSetIsLoading).toHaveBeenCalledTimes(2);
@@ -73,6 +71,7 @@ describe("streamText", () => {
     const mockReader = createMockReader([
       '{"type":"text","content":"First"}\n',
       '{"type":"text","content":" chunk"}\n',
+      '{"type":"done"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
@@ -92,10 +91,10 @@ describe("streamText", () => {
 
     const updated = updateCall(existingMessages);
 
-    expect(updated[0]).toEqual(existingMessages[0]); // User message unchanged
+    expect(updated[0]).toEqual(existingMessages[0]);
     expect(updated[1].content).toBe(
       '{"type":"text","content":"First"}\n{"type":"text","content":" chunk"}\n',
-    ); // Bot message updated with accumulated JSON chunks
+    );
   });
 
   it("should set loading to false even when error occurs and set error message", async () => {
@@ -126,6 +125,7 @@ describe("streamText", () => {
     const mockReader = createMockReader([
       '{"type":"reasoning","content":"Let me think."}\n',
       '{"type":"text","content":"Here is the answer."}\n',
+      '{"type":"done"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
@@ -136,7 +136,7 @@ describe("streamText", () => {
       setIsLoading: mockSetIsLoading,
     } as StreamTextOptions);
 
-    // 1 initial + 2 chunk updates
+    // 1 initial + 2 chunk updates (done chunk does not trigger setMessages)
     expect(mockSetMessages).toHaveBeenCalledTimes(3);
 
     const lastCalls = mockSetMessages.mock.calls;
@@ -152,20 +152,21 @@ describe("streamText", () => {
   it("should flush buffer when final chunk has no trailing newline", async () => {
     // The last chunk intentionally omits a trailing newline to exercise the
     // buffer-flush path that runs when done=true and buffer is non-empty.
+    // This simulates a dropped connection (no done chunk from backend).
+    vi.spyOn(console, "warn").mockImplementation(() => {});
     const mockReader = createMockReader([
       '{"type":"text","content":"Hello"}\n',
-      '{"type":"text","content":"world"}', // no trailing newline
+      '{"type":"text","content":"world"}', // no trailing newline, no done chunk
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
-    const result = await streamText({
+    await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
     } as StreamTextOptions);
 
-    expect(result).toBe(true);
     expect(mockSetMessages).toHaveBeenCalledTimes(3); // 1 initial + 2 chunk updates
 
     const lastUpdateCall =
@@ -181,14 +182,13 @@ describe("streamText", () => {
   it("should handle null reader and log error", async () => {
     mockAddMessage.mockResolvedValue(undefined);
 
-    const result = await streamText({
+    await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
     } as StreamTextOptions);
 
-    expect(result).toBeUndefined();
     expect(console.error).toHaveBeenCalledWith("Stream reader is unavailable");
     expect(mockSetIsLoading).toHaveBeenCalledWith(false);
     // setMessages is called twice: once to add the empty placeholder, once to replace
@@ -199,5 +199,84 @@ describe("streamText", () => {
       new AIMessage({ content: "", id: "1000001" }),
     ]);
     expect(result2[0].text).toContain("Sorry, I encountered an error");
+  });
+
+  it("should call onDone when done chunk is received", async () => {
+    const mockOnDone = vi.fn();
+    const mockReader = createMockReader([
+      '{"type":"text","content":"Hello"}\n',
+      '{"type":"done"}\n',
+    ]);
+    mockAddMessage.mockResolvedValue(mockReader);
+
+    await streamText({
+      addMessage: mockAddMessage,
+      setMessages: mockSetMessages,
+      housingLocation: { city: "portland", state: "or" },
+      onDone: mockOnDone,
+    } as StreamTextOptions);
+
+    expect(mockOnDone).toHaveBeenCalledTimes(1);
+  });
+
+  it("should not call onDone when stream ends without a done chunk", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const mockOnDone = vi.fn();
+    const mockReader = createMockReader([
+      '{"type":"text","content":"Hello"}\n',
+      // No done chunk — simulates dropped connection.
+    ]);
+    mockAddMessage.mockResolvedValue(mockReader);
+
+    await streamText({
+      addMessage: mockAddMessage,
+      setMessages: mockSetMessages,
+      housingLocation: { city: "portland", state: "or" },
+      onDone: mockOnDone,
+    } as StreamTextOptions);
+
+    expect(mockOnDone).not.toHaveBeenCalled();
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining("done chunk"),
+    );
+  });
+
+  it("should not append done chunk to bot message content", async () => {
+    const mockReader = createMockReader([
+      '{"type":"text","content":"Actual content"}\n',
+      '{"type":"done"}\n',
+    ]);
+    mockAddMessage.mockResolvedValue(mockReader);
+
+    await streamText({
+      addMessage: mockAddMessage,
+      setMessages: mockSetMessages,
+      housingLocation: { city: "portland", state: "or" },
+    } as StreamTextOptions);
+
+    const lastUpdateCall =
+      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0];
+    const updated = lastUpdateCall([
+      new AIMessage({ content: "", id: "1000001" }),
+    ]);
+    expect(updated[0].content).not.toContain('"type":"done"');
+    expect(updated[0].content).toContain('"type":"text"');
+  });
+
+  it("should not call setMessages for the done chunk line", async () => {
+    const mockReader = createMockReader([
+      '{"type":"text","content":"Hello"}\n',
+      '{"type":"done"}\n',
+    ]);
+    mockAddMessage.mockResolvedValue(mockReader);
+
+    await streamText({
+      addMessage: mockAddMessage,
+      setMessages: mockSetMessages,
+      housingLocation: { city: "portland", state: "or" },
+    } as StreamTextOptions);
+
+    // 1 initial + 1 text chunk = 2 calls; done chunk adds no call.
+    expect(mockSetMessages).toHaveBeenCalledTimes(2);
   });
 });

@@ -67,23 +67,19 @@ export default function Letter() {
 
     const runGenerateLetter = async () => {
       if (streamLocationRef.current !== null) {
-        const streamDone = await streamText({
+        await streamText({
           addMessage,
           setMessages,
           housingLocation: streamLocationRef.current,
+          onDone: () => {
+            const uiMessage: UiMessage = {
+              type: "ui",
+              text: "What was generated is just an initial template. Please include details of your specific housing situation to update the letter.",
+              id: Date.now().toString(),
+            };
+            setMessages((prev) => [...prev, uiMessage]);
+          },
         });
-        const INITIAL_INSTRUCTION =
-          "What was generated is just an initial template. Please include details of your specific housing situation to update the letter.";
-        const ERROR_MESSAGE =
-          "Unable to generate letter. Please try again or refresh the page.";
-
-        const text = streamDone ? INITIAL_INSTRUCTION : ERROR_MESSAGE;
-        const uiMessage: UiMessage = {
-          type: "ui",
-          text,
-          id: Date.now().toString(),
-        };
-        setMessages((prev) => [...prev, uiMessage]);
         // Clear spinner after a short delay for a smoother transition.
         timerRef.current = setTimeout(
           () => setIsGenerating(false),

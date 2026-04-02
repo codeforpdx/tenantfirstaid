@@ -1,4 +1,7 @@
+import json
+
 from tenantfirstaid.chat import ChatView, _classify_blocks
+from tenantfirstaid.schema import DoneChunk
 
 
 def text_block(text: str) -> dict:
@@ -42,6 +45,9 @@ class TestClassifyBlocks:
         assert len(result) == 1
         assert result[0].content == ""
 
+    def test_done_chunk_serializes_correctly(self):
+        assert json.loads(DoneChunk().model_dump_json()) == {"type": "done"}
+
     def test_mixed_block_stream(self, app):
         blocks = [
             text_block("Hello"),
@@ -76,3 +82,22 @@ class TestDispatchRequest:
         assert resp.mimetype == "text/plain"
         lines = resp.data.decode().strip().split("\n")
         assert len(lines) >= 1
+
+    def test_generate_yields_done_chunk_last(self, app, mock_chat_manager):
+        app.add_url_rule(
+            "/api/query",
+            view_func=ChatView.as_view("chat_done"),
+            methods=["POST"],
+        )
+        with app.test_client() as client:
+            response = client.post(
+                "/api/query",
+                json={
+                    "messages": [{"role": "human", "content": "Hi"}],
+                    "city": None,
+                    "state": "or",
+                },
+            )
+        assert response.status_code == 200
+        lines = [line for line in response.data.decode().strip().split("\n") if line]
+        assert json.loads(lines[-1]) == {"type": "done"}

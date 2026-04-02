@@ -11,6 +11,7 @@ from langchain_core.messages import ContentBlock
 from .langchain_chat_manager import LangChainChatManager
 from .location import OregonCity, UsaState
 from .schema import (
+    DoneChunk,
     LetterChunk,
     ReasoningChunk,
     ResponseChunk,
@@ -72,6 +73,7 @@ class ChatView(View):
             for content_block in _classify_blocks(response_stream):
                 current_app.logger.debug(f"Received content_block: {content_block}")
                 yield content_block.model_dump_json() + "\n"
+            yield DoneChunk().model_dump_json() + "\n"
 
         # text/plain rather than application/x-ndjson: client only reads raw bytes
         return Response(
