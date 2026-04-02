@@ -31,6 +31,8 @@ def _classify_blocks(
                 yield TextChunk(content=content_block["text"])
             case "letter":
                 yield LetterChunk(content=content_block["content"])
+            case "done":
+                yield DoneChunk()
             case _:
                 current_app.logger.warning(
                     f"Unhandled block type: {content_block['type']}"
@@ -73,7 +75,9 @@ class ChatView(View):
             for content_block in _classify_blocks(response_stream):
                 current_app.logger.debug(f"Received content_block: {content_block}")
                 yield content_block.model_dump_json() + "\n"
-            yield DoneChunk().model_dump_json() + "\n"
+            done_chunk = DoneChunk()
+            current_app.logger.debug(f"Received content_block: {done_chunk}")
+            yield done_chunk.model_dump_json() + "\n"
 
         # text/plain rather than application/x-ndjson: client only reads raw bytes
         return Response(

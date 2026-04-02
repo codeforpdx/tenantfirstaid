@@ -263,6 +263,30 @@ describe("streamText", () => {
     expect(updated[0].content).toContain('"type":"text"');
   });
 
+  it("should append letter chunk to bot message content", async () => {
+    const mockReader = createMockReader([
+      '{"type":"text","content":"Here is your letter."}\n',
+      '{"type":"letter","content":"Dear Landlord,"}\n',
+      '{"type":"done"}\n',
+    ]);
+    mockAddMessage.mockResolvedValue(mockReader);
+
+    await streamText({
+      addMessage: mockAddMessage,
+      setMessages: mockSetMessages,
+      housingLocation: { city: "portland", state: "or" },
+    } as StreamTextOptions);
+
+    const lastUpdateCall =
+      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0];
+    const updated = lastUpdateCall([
+      new AIMessage({ content: "", id: "1000001" }),
+    ]);
+    expect(updated[0].content).toContain(
+      '{"type":"letter","content":"Dear Landlord,"}',
+    );
+  });
+
   it("should not call setMessages for the done chunk line", async () => {
     const mockReader = createMockReader([
       '{"type":"text","content":"Hello"}\n',
