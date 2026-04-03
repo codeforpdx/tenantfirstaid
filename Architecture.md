@@ -62,21 +62,32 @@ backend/
 |   ├── schema.py                       # Pydantic response chunk types (TextChunk, LetterChunk, ReasoningChunk, DoneChunk)
 |   ├── constants.py                    # Immutable state and consolidated interface to environment variables
 |   ├── location.py                     # City & State normalization and sanitization
-|   ├── langchain_chat_manager.py       # Chat model configuration and response generation
+|   ├── graph.py                        # Shared LLM, tools, and graph factory (used by chat manager and langgraph dev)
+|   ├── langchain_chat_manager.py       # Per-session agent wrapper with streaming support
 |   ├── langchain_tools.py              # LangChain Agent tools (i.e. RAG retriever)
-|   ├── citations.py                    # Citation handling
-│   ├── session.py                      # Session management
+|   ├── google_auth.py                  # GCP credential loading (inline JSON or file path)
+|   ├── system_prompt.md                # System prompt (editable without Python knowledge)
+|   ├── letter_template.md              # Letter template (editable without Python knowledge)
 │   ├── feedback.py                     # Message feedback logic and email integration
 │   └── sections.json                   # Legal section mappings
+├── evaluate/                           # LangSmith evaluation tooling
+│   ├── __init__.py
+│   ├── langsmith_dataset.py            # Dataset and experiment CLI (push/pull/validate/diff)
+│   ├── langsmith_evaluators.py         # LLM-as-a-judge configuration (loads rubrics from evaluators/)
+│   ├── run_langsmith_evaluation.py     # LangSmith experiment runner
+│   ├── langsmith_example_schema.json  # JSON schema for example validation
+│   ├── dataset-tenant-legal-qa-examples.jsonl  # Source-of-truth evaluation dataset
+│   ├── evaluators/                     # Scoring rubrics as editable markdown files
+│   │   ├── legal_correctness.md        # Legal accuracy rubric
+│   │   ├── tone.md                     # Tone and professionalism rubric
+│   │   └── citation_accuracy.md        # Citation formatting rubric
+│   └── EVALUATION.md                   # Evaluation documentation
 ├── scripts/                            # Utility scripts
-│   ├── create_langsmith_dataset.py     # Upload corpus to LangSmith
-│   ├── langsmith_evaluators.py         # LLM-as-a-Judge configuration (i.e. scoring, rubric)
-│   ├── run_langsmith_evaluators.py     # LangSmith experiment runner
 │   ├── simple_langchain_demo.py        # LangChain proof-of-concept
 │   ├── vertex_ai_list_datastores.py    # Utility to get Google Vertex AI Datastore IDs
-│   ├── create_vector_store.py          # RAG corpus setup
 │   ├── convert_csv_to_jsonl.py         # Data conversion utilities
 │   ├── generate_types.py               # Generates a JSON Schema for Pydantic models exported to the frontend; piped through json-schema-to-typescript to produce frontend/src/types/models.ts (run via `make generate-types` or `npm run generate-types`)
+│   ├── generate_conversation/          # Source data for synthetic conversation generation
 │   └── documents/                      # Source legal documents
 │       └── or/                         # Oregon state laws
 │           ├── OAR54.txt               # Oregon Administrative Rules
@@ -90,6 +101,7 @@ backend/
 │           └── eugene/                 # Eugene city codes
 │               └── EHC8.425.txt
 ├── tests/                              # Test suite
+├── langgraph.json                      # LangGraph deployment manifest (for langgraph dev and LangSmith Cloud)
 ├── pyproject.toml                      # Python dependencies and config
 └── Makefile                            # Development commands
 ```
@@ -114,6 +126,13 @@ The agent has access to three tools:
 
 The LLM decides how to call the tool based on the user's query and location context.
 
+#### Agent Entry Points
+
+The agent graph is defined once in `graph.py` and consumed by two entry points:
+
+- **Web application**: `LangChainChatManager` calls `create_graph()` with a per-session system prompt that includes the user's city/state. It handles streaming response chunks back to the Flask API.
+- **LangGraph dev / Cloud**: `langgraph.json` points to the module-level `graph` instance in `graph.py`. This enables `langgraph dev` for local Studio testing and LangSmith Cloud deployment for browser-based evaluation. See `evaluate/EVALUATION.md` for details.
+
 #### Data Ingestion Pipeline
 
 The RAG system processes legal documents to create a searchable knowledge base:
@@ -127,8 +146,8 @@ graph LR
     end
 
     subgraph "Processing Pipeline"
-        Script[create_vector_store.py]
-        Upload[File Upload<br/>to OpenAI]
+        Script[RAG corpus setup]
+        Upload[File Upload<br/>to Vertex AI]
         Metadata[Attribute Tagging<br/>city, state]
     end
 
@@ -150,11 +169,7 @@ graph LR
    - State laws: `documents/or/*.txt`
    - City codes: `documents/or/portland/*.txt`, `documents/or/eugene/*.txt`
 
-2. **Vector Store Creation**: The `create_vector_store.py` script:
-   - Processes documents by directory structure
-   - Adds metadata attributes (city, state) for filtering
-   - Uploads files to Vertex AI RAG corpus
-   - Handles UTF-8 encoding requirements
+2. **Vector Store Creation**: :construction: The corpus was set up via a one-time script that is no longer in the repository. Documents are processed by directory structure, tagged with city/state metadata, and uploaded to the Vertex AI RAG corpus with UTF-8 encoding.
 
 3. **Metadata Attribution**: Documents are tagged with jurisdiction metadata to enable location-specific queries
 

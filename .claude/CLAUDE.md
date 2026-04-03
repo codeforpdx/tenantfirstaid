@@ -45,7 +45,14 @@ See `backend/.env.example`. Key ones: `MODEL_NAME`, `GOOGLE_APPLICATION_CREDENTI
 ### LangSmith evaluations
 
 ```bash
-uv run python scripts/run_langsmith_evaluation.py --num-samples 20
+# Run LangChain-specific tests
+uv run pytest -m langchain
+
+# Run with LangSmith tracing (requires API key)
+LANGSMITH_TRACING=true LANGCHAIN_TRACING_V2=true uv run pytest -m langchain
+
+# Run evaluations (see backend/evaluate/EVALUATION.md)
+uv run python -m evaluate.run_langsmith_evaluation --num-repetitions 20
 ```
 
 See `docs/EVALUATION.md` for details.
@@ -72,7 +79,7 @@ npm run test -- --run --coverage  # With coverage
 
 Concise, imperative mood, small focused commits. Write like a humble experienced engineer — casual, no listicles, highlight non-obvious choices. No robot speak, marketing buzzwords, or vague fluff.
 
-## Pull request expectations
+## Pull Request expectations
 
 Use the PR template. For frontend, backend, and backend/scripts changes:
 - Add tests when needed
@@ -80,17 +87,51 @@ Use the PR template. For frontend, backend, and backend/scripts changes:
 - Run `make lint` and `make fmt`
 - Full test suite passes
 
-## What reviewers look for
+### Pull Request reviews
 
-- Tests covering new behaviour
-- Consistent style: formatted with `ruff format`, imports sorted, type hints passing `make typecheck`
-- Clear documentation for public API changes
-- Clean history and helpful PR description
-- Consistent environment variable declarations across GitHub Actions, `.env.example`, tests, and docs — no orphaned secrets/variables
+Perform a comprehensive code review of the modified code with the following focus areas:
 
-## GitHub Actions security
+1. **Code Quality**
+   - Consistent style: formatted with `ruff format`, imports sorted, type hints passing `make typecheck`
+   - Clean code principles and best practices
+   - Suggest improvements to modularity, composition and dependency inversion where appropriate
+   - Identify opportunities for refactoring or simplification
+   - Check for code duplication and suggest DRY improvements
+   - Identify and suggest removal of dead code or redundant logic
+   - Proper error handling and edge cases
+   - Code readability and maintainability, including type hints where appropriate
+   - Prefer strongly typed interfaces and data structures over stringly-typed where possible
+   - Consistent environment variable declarations across GitHub Actions, `.env.example`, tests, and docs — no orphaned secrets/variables
+2. **Security**
+   - Check for potential security vulnerabilities
+   - Validate input sanitization
+   - Review authentication/authorization logic
+   - Ensure secrets are handled securely and not exposed in code or logs
+   - Flag obsolete secrets/configuration/environment variables
+3. **Performance**
+   - Identify potential performance bottlenecks
+   - Review database queries for efficiency
+   - Check for memory leaks or resource issues
+4. **Testing**
+   - Verify adequate test coverage
+   - Tests covering new behaviour
+   - Review test quality and edge cases
+   - Check for missing test scenarios
+5. **Documentation**
+   - Ensure code is properly documented
+   - Clear documentation for public API changes
+   - Verify README updates for new features
+   - Check API documentation accuracy
+   - Clean history and helpful PR description
 
-Pin third-party actions to commit SHAs:
+Provide detailed feedback using inline comments for specific issues.
+Use top-level comments for general observations or praise.
+
+
+
+## GitHub Actions Security
+
+We pin all third-party actions to commit SHAs to prevent supply chain attacks:
 
 ```yaml
 # Good: SHA with version comment

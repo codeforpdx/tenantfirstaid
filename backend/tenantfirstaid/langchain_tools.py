@@ -2,8 +2,6 @@
 This module defines Tools for an Agent to call
 """
 
-import json
-from pathlib import Path
 from typing import Optional
 
 from google.oauth2 import service_account
@@ -15,10 +13,11 @@ from langgraph.config import get_stream_writer
 from pydantic import BaseModel
 
 from .constants import LETTER_TEMPLATE, SINGLETON
+from .google_auth import load_gcp_credentials
 from .location import OregonCity, UsaState
 
 
-class Rag_Builder:
+class RagBuilder:
     """
     Helper class to construct a Rag tool from VertexAISearchRetriever
     The helper class handles creds, project, location, datastore, etc.
@@ -36,20 +35,9 @@ class Rag_Builder:
         if SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is None:
             raise ValueError("GOOGLE_APPLICATION_CREDENTIALS is not set")
 
-        cred_path = Path(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
-
-        with cred_path.open("r") as f:
-            match json.load(f).get("type"):
-                case "authorized_user":
-                    self.__credentials = Credentials.from_authorized_user_file(
-                        SINGLETON.GOOGLE_APPLICATION_CREDENTIALS
-                    )
-                case "service_account":
-                    self.__credentials = (
-                        service_account.Credentials.from_service_account_file(
-                            SINGLETON.GOOGLE_APPLICATION_CREDENTIALS
-                        )
-                    )
+        self.__credentials = load_gcp_credentials(
+            SINGLETON.GOOGLE_APPLICATION_CREDENTIALS
+        )
 
         self.rag = VertexAISearchRetriever(
             beta=True,  # required for this implementation
@@ -72,7 +60,7 @@ class Rag_Builder:
         return "\n".join([doc.page_content for doc in docs])
 
 
-def __filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
+def _filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
     if city is None:
         city_or_null = "null"
     else:
@@ -145,10 +133,10 @@ def retrieve_city_state_laws(
         Relevant legal passages from city-specific laws
     """
 
-    helper = Rag_Builder(
+    helper = RagBuilder(
         name="retrieve_city_law",
         max_documents=3,
-        filter=__filter_builder(city=city, state=state),
+        filter=_filter_builder(city=city, state=state),
     )
 
     return helper.search(
