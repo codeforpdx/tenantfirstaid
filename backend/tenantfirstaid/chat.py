@@ -28,8 +28,15 @@ def _classify_blocks(
                 yield ReasoningChunk(content=content_block["reasoning"])
             case "text":
                 yield TextChunk(content=content_block["text"])
-            case "letter":
-                yield LetterChunk(content=content_block["content"])
+            case "non_standard":
+                inner: Dict[str, Any] = content_block["value"]
+                match inner.get("type"):
+                    case "letter":
+                        yield LetterChunk(content=inner["content"])
+                    case _:
+                        current_app.logger.warning(
+                            f"Unhandled non_standard block value type: {inner.get('type')}"
+                        )
             case _:
                 current_app.logger.warning(
                     f"Unhandled block type: {content_block['type']}"

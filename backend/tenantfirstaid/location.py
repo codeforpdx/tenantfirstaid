@@ -4,7 +4,7 @@ and normalize inputs to enumerated values
 """
 
 from enum import StrEnum
-from typing import Optional
+from typing import NotRequired, Optional
 
 from langchain.agents import AgentState
 from pydantic import BaseModel
@@ -32,6 +32,7 @@ class OregonCity(StrEnum):
         if c is None:
             return None
         else:
+            city: Optional[OregonCity]
             match c.strip().lower():
                 case "eugene":
                     city = cls.EUGENE
@@ -75,4 +76,6 @@ class Location(BaseModel):
 
 class TFAAgentStateSchema(AgentState):
     state: UsaState
-    city: Optional[OregonCity]
+    city: NotRequired[
+        Optional[OregonCity]
+    ]  # "NotRequired" makes this field optional in LangSmith Studio input panel

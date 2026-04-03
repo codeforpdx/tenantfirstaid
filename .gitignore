@@ -58,6 +58,16 @@ build/
 # Ignore generated credentials from google-github-actions/auth
 gha-creds-*.json
 
+# MyPy
+.mypy_cache/
+
+# Hypothesis — keep the examples database (replays found failures as regressions)
+/backend/.hypothesis/*
+!/backend/.hypothesis/examples/
+
+# LangChain/LangSmith/LangGraph
+/backend/.langgraph_api/
+
 # Local data
 chatlog.jsonl
 /backend/chatlog.jsonl
@@ -69,3 +79,4 @@ chatlog.jsonl
 /backend/scripts/generate_conversation/*.csv
 !/backend/scripts/generate_conversation/tenant_questions_facts_full.csv
 combined_training_gemini-2.0.jsonl
+/.claude/settings.local.json

@@ -1,3 +1,5 @@
+from langchain_core.messages import NonStandardContentBlock
+
 from tenantfirstaid.chat import ChatView, _classify_blocks
 
 
@@ -7,6 +9,12 @@ def text_block(text: str) -> dict:
 
 def reasoning_block(reasoning: str) -> dict:
     return {"type": "reasoning", "reasoning": reasoning}
+
+
+def letter_block(content: str) -> NonStandardContentBlock:
+    return NonStandardContentBlock(
+        type="non_standard", value={"type": "letter", "content": content}
+    )
 
 
 def chunks(blocks):
@@ -27,7 +35,7 @@ class TestClassifyBlocks:
         assert result[0].content == "Let me think."
 
     def test_letter_passthrough(self):
-        result = chunks([{"type": "letter", "content": "Dear Landlord,"}])
+        result = chunks([letter_block("Dear Landlord,")])
         assert len(result) == 1
         assert result[0].type == "letter"
         assert result[0].content == "Dear Landlord,"
@@ -46,7 +54,7 @@ class TestClassifyBlocks:
         blocks = [
             text_block("Hello"),
             reasoning_block("Thinking..."),
-            {"type": "letter", "content": "Dear Landlord,"},
+            letter_block("Dear Landlord,"),
             {"type": "unknown_widget", "data": "???"},
         ]
         with app.app_context():

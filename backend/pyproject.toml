@@ -1,7 +1,7 @@
 
 [project]
 name = "tenant-first-aid"
-version = "0.3.1"
+version = "0.4.0"
 requires-python = ">=3.12,<3.14" # langchain_core triggers a Pydantic V1 warning, https://github.com/langchain-ai/langchain/issues/34441
 dependencies = [
   "flask>=3.1.1",
@@ -18,6 +18,7 @@ dependencies = [
   "langchain-google-genai>=4.1.2",
   "google-auth>=2.40.3",
   "pydantic>=2.12.5",
+  "langgraph>=1.0.10",
 ]
 
 [tool.setuptools.packages.find]
@@ -40,18 +41,31 @@ dev = [
     "pytest-asyncio>=0.23.0",
     "pytest-cov>=6.1.1",
     "pytest-mock>=3.14.1",
-    "langsmith[pytest]>=0.6.3",
+    "langsmith[pytest]>=0.7.17",
     "openevals>=0.1.2",
     "types-Flask>=1.1.6",
     "types-flask-cors>=6.0.0.20250809",
     "google-cloud-discoveryengine>=0.15.0",
     "langchain-google-vertexai>=3.2.2",
     "pandas>=3.0.1",
+    "jsonschema>=4.26.0",
+    "types-jsonschema>=4.26.0.20260202",
+    "langgraph-cli[inmem]>=0.4.15",
+    "hypothesis>=6.151.9",
 ]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "N"]
 
 [tool.pytest.ini_options]
 markers = [
     "require_repo_secrets: mark test as requiring repository secrets to run",
+    "langchain: mark test as testing the LangChain/LangGraph API interface (may be mocked or live)",
+    "property: mark test as a property-based (Hypothesis) test",
+]
+filterwarnings = [
+    # Third-party library using deprecated Pydantic v1 API internally.
+    "ignore::pydantic.warnings.PydanticDeprecatedSince20:langsmith",
 ]
 
 [tool.coverage.run]
