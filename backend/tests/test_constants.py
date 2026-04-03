@@ -6,8 +6,6 @@ ensure that symbols are read-only
 from unittest.mock import patch
 
 import pytest
-
-import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
@@ -16,7 +14,6 @@ from tenantfirstaid.constants import (
     LETTER_TEMPLATE,
     OREGON_LAW_CENTER_PHONE_NUMBER,
     _GoogEnvAndPolicy,
-    _strtobool,
     _strtobool,
 )
 

@@ -212,7 +212,7 @@ def test_load_gcp_credentials_invalid_json():
         load_gcp_credentials("not-json-and-not-a-file")
 
 
-@patch("tenantfirstaid.langchain_tools.Rag_Builder")
+@patch("tenantfirstaid.langchain_tools.RagBuilder")
 def test_retrieve_city_state_laws_returns_joined_docs(mock_rag_class):
     """Test that RAG results are joined with newlines."""
     mock_rag_class.return_value.search.return_value = "Doc1 content\nDoc2 content"
@@ -228,7 +228,7 @@ def test_retrieve_city_state_laws_returns_joined_docs(mock_rag_class):
     assert "Doc2 content" in result
 
 
-@patch("tenantfirstaid.langchain_tools.Rag_Builder")
+@patch("tenantfirstaid.langchain_tools.RagBuilder")
 def test_retrieve_city_state_laws_empty_results(mock_rag_class):
     """Test behavior when RAG returns no documents."""
     mock_rag_class.return_value.search.return_value = ""
@@ -244,14 +244,14 @@ def test_retrieve_city_state_laws_empty_results(mock_rag_class):
 
 def test_filter_builder_state_only():
     """Test filter with state only (no city) produces null city."""
-    result = __filter_builder(UsaState("or"), None)
+    result = _filter_builder(UsaState("or"), None)
     assert 'city: ANY("null")' in result
     assert 'state: ANY("or")' in result
 
 
 def test_filter_builder_with_city():
     """Test filter with city and state."""
-    result = __filter_builder(UsaState("or"), OregonCity("eugene"))
+    result = _filter_builder(UsaState("or"), OregonCity("eugene"))
     assert 'city: ANY("eugene")' in result
     assert 'state: ANY("or")' in result
 

@@ -1,7 +1,4 @@
-import pytest
-from flask import Flask
 from langchain_core.messages import NonStandardContentBlock
-from langchain_core.messages.content import create_text_block
 
 from tenantfirstaid.chat import ChatView, _classify_blocks
 
@@ -57,7 +54,7 @@ class TestClassifyBlocks:
         blocks = [
             text_block("Hello"),
             reasoning_block("Thinking..."),
-            {"type": "letter", "content": "Dear Landlord,"},
+            letter_block("Dear Landlord,"),
             {"type": "unknown_widget", "data": "???"},
         ]
         with app.app_context():

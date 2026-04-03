@@ -63,6 +63,10 @@ markers = [
     "langchain: mark test as testing the LangChain/LangGraph API interface (may be mocked or live)",
     "property: mark test as a property-based (Hypothesis) test",
 ]
+filterwarnings = [
+    # Third-party library using deprecated Pydantic v1 API internally.
+    "ignore::pydantic.warnings.PydanticDeprecatedSince20:langsmith",
+]
 
 [tool.coverage.run]
 source = ["tenantfirstaid"]

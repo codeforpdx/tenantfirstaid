@@ -95,6 +95,16 @@ def _make_middleware_request(
     request.runtime.context = TFAContext(system_prompt=prompt)
     request.state = {"city": city, "state": state}
     request.system_message = None
+    # override() must return a new mock whose system_message reflects the kwarg,
+    # mirroring the real ModelRequest.override() behaviour.
+    def _override(**kwargs):
+        child = MagicMock()
+        child.runtime = request.runtime
+        child.state = request.state
+        for k, v in kwargs.items():
+            setattr(child, k, v)
+        return child
+    request.override = _override
     return request
 
 
@@ -103,13 +113,14 @@ def test_middleware_injects_location_from_state():
     middleware = _SystemPromptFromContext()
     request = _make_middleware_request("Base prompt.", city="Portland", state="OR")
 
-    handler = MagicMock(return_value=MagicMock())
+    forwarded = []
+    handler = MagicMock(side_effect=lambda r: forwarded.append(r) or MagicMock())
     middleware.wrap_model_call(request, handler)
 
-    assert isinstance(request.system_message, SystemMessage)
-    assert "Portland OR" in request.system_message.content
-    assert "Base prompt." in request.system_message.content
-    handler.assert_called_once_with(request)
+    injected = forwarded[0].system_message
+    assert isinstance(injected, SystemMessage)
+    assert "Portland OR" in injected.content
+    assert "Base prompt." in injected.content
 
 
 def test_middleware_without_city():
@@ -117,12 +128,14 @@ def test_middleware_without_city():
     middleware = _SystemPromptFromContext()
     request = _make_middleware_request("Base prompt.", city=None, state="OR")
 
-    handler = MagicMock(return_value=MagicMock())
+    forwarded = []
+    handler = MagicMock(side_effect=lambda r: forwarded.append(r) or MagicMock())
     middleware.wrap_model_call(request, handler)
 
-    assert "OR" in request.system_message.content
+    injected = forwarded[0].system_message
+    assert "OR" in injected.content
     # No leading space before state when city is absent.
-    assert "The user is in OR." in request.system_message.content
+    assert "The user is in OR." in injected.content
 
 
 def test_middleware_uses_custom_prompt_from_context():
@@ -131,10 +144,11 @@ def test_middleware_uses_custom_prompt_from_context():
     custom = "You are a custom agent."
     request = _make_middleware_request(custom, state="OR")
 
-    handler = MagicMock(return_value=MagicMock())
+    forwarded = []
+    handler = MagicMock(side_effect=lambda r: forwarded.append(r) or MagicMock())
     middleware.wrap_model_call(request, handler)
 
-    assert custom in request.system_message.content
+    assert custom in forwarded[0].system_message.content
 
 
 @pytest.mark.asyncio
@@ -143,10 +157,47 @@ async def test_middleware_async_injects_location():
     middleware = _SystemPromptFromContext()
     request = _make_middleware_request("Async base.", city="Eugene", state="OR")
 
+    forwarded = []
+
     async def async_handler(req):
+        forwarded.append(req)
         return MagicMock()
 
     await middleware.awrap_model_call(request, async_handler)
 
-    assert isinstance(request.system_message, SystemMessage)
-    assert "Eugene OR" in request.system_message.content
+    injected = forwarded[0].system_message
+    assert isinstance(injected, SystemMessage)
+    assert "Eugene OR" in injected.content
+
+
+@patch("tenantfirstaid.graph._get_llm")
+def test_graph_adapter_converts_query_to_human_message(mock_get_llm):
+    """E2E: query input flows through the adapt node and reaches the agent as a HumanMessage.
+
+    Runs the full wrapper graph (adapt → agent) with a mocked LLM, then
+    asserts the final state contains the HumanMessage that adapt produced.
+    """
+    from langchain_core.messages import AIMessage, AIMessageChunk
+
+    from tenantfirstaid.graph import graph
+
+    mock_llm = MagicMock()
+    mock_llm.bind_tools.return_value = mock_llm
+    # The agent framework may call invoke or stream on the bound LLM; both
+    # must return real message objects (not MagicMock) so LangChain can
+    # coerce them. No tool_calls means the agent stops after one round.
+    canned_response = AIMessageChunk(content="You have rights.")
+    mock_llm.invoke.return_value = AIMessage(content="You have rights.")
+    mock_llm.stream.return_value = iter([canned_response])
+    mock_get_llm.return_value = mock_llm
+
+    g = graph()
+    result = g.invoke(
+        {"query": "Can my landlord enter without notice?", "state": "or"},
+        config={"configurable": {"thread_id": "test-e2e"}},
+        context=TFAContext(),
+    )
+
+    human_messages = [m for m in result.get("messages", []) if isinstance(m, HumanMessage)]
+    assert len(human_messages) == 1
+    assert human_messages[0].content == "Can my landlord enter without notice?"

@@ -102,16 +102,14 @@ class _SystemPromptFromContext(AgentMiddleware[Any, TFAContext]):
         request: ModelRequest[TFAContext],
         handler: Callable[[ModelRequest[TFAContext]], ModelResponse],
     ) -> ModelResponse:
-        request.system_message = self._build(request)
-        return handler(request)
+        return handler(request.override(system_message=self._build(request)))
 
     async def awrap_model_call(
         self,
         request: ModelRequest[TFAContext],
         handler: Callable[[ModelRequest[TFAContext]], Awaitable[ModelResponse]],
     ) -> ModelResponse:
-        request.system_message = self._build(request)
-        return await handler(request)
+        return await handler(request.override(system_message=self._build(request)))
 
 
 def _build_system_message(

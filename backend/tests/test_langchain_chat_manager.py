@@ -2,9 +2,11 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
 from langchain_core.messages import AIMessage
 
 from tenantfirstaid.graph import prepare_system_prompt, tools
+from tenantfirstaid.langchain_chat_manager import LangChainChatManager
 from tenantfirstaid.location import OregonCity, UsaState
 
 pytestmark = pytest.mark.langchain
@@ -51,17 +53,15 @@ def test_tools_include_rag_retrieval():
 
 def test_system_prompt_no_city(oregon_state):
     """When no city is provided, the location line should mention state only."""
-    chat_manager = LangChainChatManager()
-    prompt = chat_manager._prepare_system_prompt(None, oregon_state)
-    assert "The user is in" in prompt
-    assert "OR" in prompt
+    prompt = prepare_system_prompt(None, oregon_state)
+    assert "The user is in" in prompt.content
+    assert "OR" in prompt.content
 
 
 def test_system_prompt_state_only():
-    chat_manager = LangChainChatManager()
     state = UsaState.from_maybe_str("other")
-    prompt = chat_manager._prepare_system_prompt(None, state)
-    assert "OTHER" in prompt
+    prompt = prepare_system_prompt(None, state)
+    assert "OTHER" in prompt.content
 
 
 @patch.object(LangChainChatManager, "_LangChainChatManager__create_agent_for_session")
