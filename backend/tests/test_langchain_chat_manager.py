@@ -100,6 +100,7 @@ def test_streaming_empty_chunk_skipped(mock_create_agent, oregon_state):
     assert blocks == []
 
 
+@pytest.mark.require_repo_secrets
 def test_agent_creation_with_thread_id(oregon_state, portland_city):
     cm = LangChainChatManager()
     create = getattr(cm, "_LangChainChatManager__create_agent_for_session")
@@ -107,6 +108,7 @@ def test_agent_creation_with_thread_id(oregon_state, portland_city):
     assert agent is not None
 
 
+@pytest.mark.require_repo_secrets
 def test_agent_creation_without_thread_id(oregon_state, portland_city):
     cm = LangChainChatManager()
     create = getattr(cm, "_LangChainChatManager__create_agent_for_session")
