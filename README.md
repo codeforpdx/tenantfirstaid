@@ -170,4 +170,4 @@ We currently have regular project meetups: https://www.meetup.com/codepdx/ . Als
 
 ## Deployment
 
-For information on how the application is deployed, where it runs, how to debug issues, and who has access, see [Deployment.md](Deployment.md).
+For information on how the application is deployed, where it runs, how to debug issues, and who has access, see [docs/Deployment/](docs/Deployment/).

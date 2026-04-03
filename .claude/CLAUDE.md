@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Tenant First Aid is a chatbot for Oregon housing/eviction legal information. Flask backend + React frontend monorepo, deployed on Digital Ocean.
 
-- **Architecture docs**: [Architecture.md](../Architecture.md) — RAG pipeline, endpoints, session management, frontend structure
-- **Deployment docs**: [Deployment.md](../Deployment.md) — CI/CD, secrets, infrastructure
+- **Architecture docs**: [docs/Architecture/](../docs/Architecture/) — RAG pipeline, endpoints, session management, frontend structure
+- **Deployment docs**: [docs/Deployment/](../docs/Deployment/) — CI/CD, secrets, infrastructure
 - **PR template**: [.github/pull_request_template.md](../.github/pull_request_template.md)
 - **Dev commands**: `backend/Makefile`
 
@@ -51,11 +51,11 @@ uv run pytest -m langchain
 # Run with LangSmith tracing (requires API key)
 LANGSMITH_TRACING=true LANGCHAIN_TRACING_V2=true uv run pytest -m langchain
 
-# Run evaluations (see backend/evaluate/EVALUATION.md)
+# Run evaluations (see docs/Evaluation/)
 uv run python -m evaluate.run_langsmith_evaluation --num-repetitions 20
 ```
 
-See `docs/EVALUATION.md` for details.
+See [docs/Evaluation/](../docs/Evaluation/) for details.
 
 ## Frontend workflow (run from `frontend/`)
 

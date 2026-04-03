@@ -34,6 +34,6 @@ _Please replace this line with instructions on how to test your changes, a note 
 
 ## Documentation
 
-- [ ] If this PR changes the system architecture, `Architecture.md` has been updated
+- [ ] If this PR changes the system architecture, [docs/Architecture/](../docs/Architecture/) has been updated
 
 ## [optional] Are there any post deployment tasks we need to perform?
