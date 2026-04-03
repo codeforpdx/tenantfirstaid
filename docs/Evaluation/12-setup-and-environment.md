@@ -43,10 +43,29 @@ Cloud deployments don't use a `.env` file. Environment variables are configured 
 
 **Configuring the deployment's environment variables:**
 
-1. Go to **Deployments → your deployment → Settings → Environment Variables**.
-2. Add the standard variables:
+1. Go to **Deployments → Create deployment**
+2. Configure **Deplyment details**
 
-   | Key | Value |
+   | Field | Value |
+   |---|---|
+   | `Select a repo` | `codeforpdx` / `tenantfirstaid` |
+   | `Name` | a meaningful name, e.g. `main-tracking-deployment` |
+   | `Git Ref (Branch or Tag)` | use `main` to track the production deployments |
+   | `LangGraph API config file` | `backend/langgraph.json` |
+   | `Automatically update deployment on push to branch` | :white_check_mark: |
+   | `Application` | |
+
+3. Configure **Deployment type**
+
+   | Field | Value |
+   |---|---|
+   | `Development` | :black_circle: (selected) |
+   | `Production` | :radio_button: (not selected) |
+   | `Shareable through LangSmith Studio` | :white_check_mark: |
+
+4. Configure **Environment Variables**.
+
+   | Name | Value |
    |---|---|
    | `MODEL_NAME` | `gemini-2.5-pro` |
    | `GOOGLE_CLOUD_PROJECT` | `tenantfirstaid` |
@@ -54,17 +73,22 @@ Cloud deployments don't use a `.env` file. Environment variables are configured 
    | `VERTEX_AI_DATASTORE` | `tenantfirstaid-corpora_...` |
    | `SHOW_MODEL_THINKING` | `false` |
 
-3. Reference the workspace secret for the credential:
+   `LANGSMITH_API_KEY` is **not** needed in the deployment environment — the Cloud runtime provides it automatically.
 
-   | Key | Value |
+   Use the credentials for the `langsmith-deployment` service account configured in GCP:
+
+   | Name | Value |
    |---|---|
-   | `GOOGLE_APPLICATION_CREDENTIALS` | `{{GOOGLE_APPLICATION_CREDENTIALS}}` |
+   | `GOOGLE_APPLICATION_CREDENTIALS` | paste whole JSON file contents here* |
 
-   The `{{...}}` syntax tells LangSmith to resolve the value from the workspace secret at runtime. Rotating the credential only requires updating the workspace secret — no redeployment needed.
+   * Due to a bug either in LangSmith or their documentation, we are not able to reference a **Workspace secret** (more secure and convenient) here.
 
-4. Save and redeploy.
 
-`LANGSMITH_API_KEY` is **not** needed in the deployment environment — the Cloud runtime provides it automatically.
+5. Skip **Monorepo Support** (no applicable)
+
+6. Skip **Tracing Project** (automatically defined)
+
+7. **Submit**.
 
 ---
 

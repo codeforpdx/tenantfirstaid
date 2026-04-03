@@ -52,3 +52,7 @@ After refining the system prompt in Studio, the next step is to measure whether 
 - Edit what counts as a good answer → [Editing Evaluator Rubrics](10-evaluator-rubrics.md)
 - Add or improve a test question → [Adding Examples in the Browser](05-examples-in-browser.md)
 - Run a scored experiment → [Bound Evaluators](06-bound-evaluators.md)
+
+---
+
+**Next**: [Examples in Browser](05-examples-in-browser.md)

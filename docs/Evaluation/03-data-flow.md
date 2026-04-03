@@ -67,4 +67,4 @@ flowchart TD
 
 ---
 
-**Next**: [Setup](04-setup.md)
+**Next**: [Cloud Studio](04-cloud-studio.md)
