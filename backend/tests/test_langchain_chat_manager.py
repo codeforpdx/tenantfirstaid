@@ -86,6 +86,30 @@ def test_streaming_text_response(mock_create_agent, oregon_state, portland_city)
 
 
 @patch.object(LangChainChatManager, "_LangChainChatManager__create_agent_for_session")
+def test_streaming_custom_chunk_yields_non_standard_block(
+    mock_create_agent, oregon_state
+):
+    """Custom-mode chunks (e.g. from generate_letter) are yielded as NonStandardContentBlock."""
+    mock_agent = MagicMock()
+    mock_agent.stream.return_value = iter(
+        [("custom", {"type": "letter", "content": "Dear Landlord,"})]
+    )
+    mock_create_agent.return_value = mock_agent
+
+    cm = LangChainChatManager()
+    blocks = list(
+        cm.generate_streaming_response(
+            messages=[], city=None, state=oregon_state, thread_id=None
+        )
+    )
+
+    assert len(blocks) == 1
+    block = blocks[0]
+    assert block["type"] == "non_standard"
+    assert block["value"] == {"type": "letter", "content": "Dear Landlord,"}
+
+
+@patch.object(LangChainChatManager, "_LangChainChatManager__create_agent_for_session")
 def test_streaming_empty_chunk_skipped(mock_create_agent, oregon_state):
     mock_agent = MagicMock()
     mock_agent.stream.return_value = iter([("updates", {})])
@@ -100,16 +124,18 @@ def test_streaming_empty_chunk_skipped(mock_create_agent, oregon_state):
     assert blocks == []
 
 
-@pytest.mark.require_repo_secrets
-def test_agent_creation_with_thread_id(oregon_state, portland_city):
+@patch("tenantfirstaid.graph._get_llm")
+def test_agent_creation_with_thread_id(mock_get_llm, oregon_state, portland_city):
+    mock_get_llm.return_value = MagicMock()
     cm = LangChainChatManager()
     create = getattr(cm, "_LangChainChatManager__create_agent_for_session")
     agent = create(portland_city, oregon_state, "test-thread")
     assert agent is not None
 
 
-@pytest.mark.require_repo_secrets
-def test_agent_creation_without_thread_id(oregon_state, portland_city):
+@patch("tenantfirstaid.graph._get_llm")
+def test_agent_creation_without_thread_id(mock_get_llm, oregon_state, portland_city):
+    mock_get_llm.return_value = MagicMock()
     cm = LangChainChatManager()
     create = getattr(cm, "_LangChainChatManager__create_agent_for_session")
     agent = create(portland_city, oregon_state, None)
