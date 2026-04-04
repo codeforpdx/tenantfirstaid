@@ -84,11 +84,6 @@ class _SystemPromptFromContext(AgentMiddleware[Any, TFAContext]):
     location context (city/state) from the agent state, mirroring what
     the web app does via prepare_system_prompt().
 
-    Note: direct attribute assignment to ModelRequest.system_message is
-    deprecated by langchain in favour of request.override(), but override()
-    triggers execution_info patching that crashes in LangSmith Studio before
-    a run context exists. Direct mutation is the correct approach here until
-    the library resolves that bug.
     """
 
     def _build(self, request: ModelRequest[TFAContext]) -> SystemMessage:
@@ -108,16 +103,14 @@ class _SystemPromptFromContext(AgentMiddleware[Any, TFAContext]):
         request: ModelRequest[TFAContext],
         handler: Callable[[ModelRequest[TFAContext]], ModelResponse],
     ) -> ModelResponse:
-        request.system_message = self._build(request)  # type: ignore[misc]
-        return handler(request)
+        return handler(request.override(system_message=self._build(request)))
 
     async def awrap_model_call(
         self,
         request: ModelRequest[TFAContext],
         handler: Callable[[ModelRequest[TFAContext]], Awaitable[ModelResponse]],
     ) -> ModelResponse:
-        request.system_message = self._build(request)  # type: ignore[misc]
-        return await handler(request)
+        return await handler(request.override(system_message=self._build(request)))
 
 
 def _build_system_message(
@@ -163,12 +156,15 @@ def create_graph(
         )
 
     # LangGraph deployment path: middleware injects the prompt from
-    # Studio's editable configuration panel.
+    # Studio's editable configuration panel. context_schema is NOT set here
+    # because this graph runs as a subgraph inside graph() — the outer graph
+    # owns the context and propagates it. Declaring it on both levels causes
+    # LangSmith to patch execution_info during __start__ before a run context
+    # exists.
     return create_agent(
         model,
         tools,
         middleware=[_SystemPromptFromContext()],
-        context_schema=TFAContext,
         state_schema=TFAAgentStateSchema,
         checkpointer=checkpointer,
     )
