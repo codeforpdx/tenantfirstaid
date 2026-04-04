@@ -1,7 +1,7 @@
 import json
 
 from tenantfirstaid.chat import ChatView, _classify_blocks
-from tenantfirstaid.schema import DoneChunk
+from tenantfirstaid.schema import EndOfStreamChunk
 
 
 def text_block(text: str) -> dict:
@@ -13,7 +13,7 @@ def reasoning_block(reasoning: str) -> dict:
 
 
 def letter_block(content: str) -> dict:
-    return {"type": "letter", "content": content}
+    return {"type": "non_standard", "value": {"type": "letter", "content": content}}
 
 
 def chunks(blocks):
@@ -33,11 +33,31 @@ class TestClassifyBlocks:
         assert result[0].type == "reasoning"
         assert result[0].content == "Let me think."
 
-    def test_letter_passthrough(self):
-        result = chunks([letter_block("Dear Landlord,")])
+    def test_non_standard_letter_block_routed_correctly(self, app):
+        with app.app_context():
+            result = chunks(
+                [
+                    {
+                        "type": "non_standard",
+                        "value": {"type": "letter", "content": "Dear Landlord,"},
+                    }
+                ]
+            )
         assert len(result) == 1
         assert result[0].type == "letter"
         assert result[0].content == "Dear Landlord,"
+
+    def test_non_standard_unknown_inner_type_is_skipped(self, app):
+        with app.app_context():
+            result = chunks(
+                [
+                    {
+                        "type": "non_standard",
+                        "value": {"type": "citation", "content": "..."},
+                    }
+                ]
+            )
+        assert result == []
 
     def test_unknown_block_type_is_skipped(self, app):
         with app.app_context():
@@ -66,7 +86,7 @@ class TestClassifyBlocks:
 
 class TestDispatchRequest:
     def test_done_chunk_serializes_correctly(self):
-        assert json.loads(DoneChunk().model_dump_json()) == {"type": "done"}
+        assert json.loads(EndOfStreamChunk().model_dump_json()) == {"type": "done"}
 
     def test_happy_path_streams_ndjson(self, app, mock_chat_manager):
         app.add_url_rule(

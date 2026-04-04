@@ -11,7 +11,7 @@ from langchain_core.messages import ContentBlock
 from .langchain_chat_manager import LangChainChatManager
 from .location import OregonCity, UsaState
 from .schema import (
-    DoneChunk,
+    EndOfStreamChunk,
     LetterChunk,
     ReasoningChunk,
     ResponseChunk,
@@ -29,9 +29,22 @@ def _classify_blocks(
                 yield ReasoningChunk(content=content_block["reasoning"])
             case "text":
                 yield TextChunk(content=content_block["text"])
-            case "letter":
-                yield LetterChunk(content=content_block["content"])
+            case "non_standard":
+                # Tool-emitted chunks are wrapped in NonStandardContentBlock.
+                # Add a case here for each tool chunk type (e.g. letter, citation).
+                inner: Dict[str, Any] = content_block["value"]
+                match inner.get("type"):
+                    case "letter":
+                        current_app.logger.debug(
+                            "Routing non_standard block to letter."
+                        )
+                        yield LetterChunk(content=inner["content"])
+                    case _:
+                        current_app.logger.warning(
+                            f"Unhandled non_standard block type: {inner.get('type')}"
+                        )
             case _:
+                # Unknown LLM block types are intentionally dropped.
                 current_app.logger.warning(
                     f"Unhandled block type: {content_block['type']}"
                 )
@@ -73,7 +86,7 @@ class ChatView(View):
             for content_block in _classify_blocks(response_stream):
                 current_app.logger.debug(f"Sending content_block: {content_block}")
                 yield content_block.model_dump_json() + "\n"
-            done_chunk = DoneChunk()
+            done_chunk = EndOfStreamChunk()
             current_app.logger.debug(f"Sending done chunk: {done_chunk}")
             yield done_chunk.model_dump_json() + "\n"
 

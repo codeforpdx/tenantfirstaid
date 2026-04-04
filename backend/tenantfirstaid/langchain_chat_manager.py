@@ -12,6 +12,7 @@ from langchain_core.messages import (
     AIMessage,
     AnyMessage,
     ContentBlock,
+    NonStandardContentBlock,
     SystemMessage,
     ToolMessage,
 )
@@ -119,8 +120,12 @@ class LangChainChatManager:
         ):
             # Custom chunks are emitted directly by tools (e.g. generate_letter).
             if mode == "custom":
-                self.logger.debug(chunk)
-                yield cast(ContentBlock, chunk)
+                self.logger.debug(
+                    f"Received custom chunk from tool: {cast(Dict[str, Any], chunk).get('type')}"
+                )
+                yield NonStandardContentBlock(
+                    type="non_standard", value=cast(Dict[str, Any], chunk)
+                )
                 continue
 
             # outer dict key changes with internal messages (Model, Tool, ...)

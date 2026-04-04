@@ -59,7 +59,7 @@ backend/
 │   ├── __init__.py
 │   ├── app.py                          # Flask application setup and routing
 │   ├── chat.py                         # Flask ChatView
-|   ├── schema.py                       # Pydantic response chunk types (TextChunk, LetterChunk, ReasoningChunk, DoneChunk)
+|   ├── schema.py                       # Pydantic response chunk types (TextChunk, LetterChunk, ReasoningChunk, EndOfStreamChunk)
 |   ├── constants.py                    # Immutable state and consolidated interface to environment variables
 |   ├── location.py                     # City & State normalization and sanitization
 |   ├── graph.py                        # Shared LLM, tools, and graph factory (used by chat manager and langgraph dev)
@@ -334,73 +334,6 @@ sequenceDiagram
 ### Frontend Streaming Implementation
 
 **Stream Processing** (`streamHelper.ts`):
-
-```typescript
-async function streamText({
-  addMessage,
-  setMessages,
-  housingLocation,
-  setIsLoading,
-  onDone,
-}: StreamTextOptions): Promise<void> {
-  const botMessageId = (Date.now() + 1).toString();
-
-  setIsLoading?.(true);
-
-  // Add empty bot message immediately so "Typing..." appears before the API responds.
-  setMessages((prev) => [
-    ...prev,
-    new AIMessage({ content: "", id: botMessageId }),
-  ]);
-
-  try {
-    const reader = await addMessage(housingLocation);
-    // ...
-
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let fullText = "";
-    let receivedDone = false;
-
-    const processLines = (lines: string[]) => {
-      lines.filter((line) => line.trim() !== "").forEach((processedText) => {
-        try {
-          const parsed = JSON.parse(processedText) as { type?: string };
-          if (parsed.type === "done") {
-            receivedDone = true;
-            onDone?.();
-            return;
-          }
-        } catch { /* Not JSON — fall through and append as-is. */ }
-        fullText += processedText + "\n";
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === botMessageId
-              ? new AIMessage({ content: fullText, id: botMessageId })
-              : msg,
-          ),
-        );
-      });
-    };
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        if (buffer.trim() !== "") processLines([buffer]);
-        return;
-      }
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-      processLines(lines);
-    }
-  } catch (error) {
-    // ...error handling
-  } finally {
-    setIsLoading?.(false);
-  }
-}
-```
 
 Each chunk is a serialized `ResponseChunk` (`text`, `reasoning`, `letter`, or `done`). Letter chunks are appended to the bot message content so `useLetterContent` can extract them for the letter panel. The `done` chunk signals clean completion and triggers the `onDone` callback; it is not appended to the message content.
 
