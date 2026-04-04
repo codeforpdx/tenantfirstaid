@@ -83,6 +83,12 @@ class _SystemPromptFromContext(AgentMiddleware[Any, TFAContext]):
     Reads the base prompt from Studio's configuration panel and appends
     location context (city/state) from the agent state, mirroring what
     the web app does via prepare_system_prompt().
+
+    Note: direct attribute assignment to ModelRequest.system_message is
+    deprecated by langchain in favour of request.override(), but override()
+    triggers execution_info patching that crashes in LangSmith Studio before
+    a run context exists. Direct mutation is the correct approach here until
+    the library resolves that bug.
     """
 
     def _build(self, request: ModelRequest[TFAContext]) -> SystemMessage:
@@ -102,14 +108,16 @@ class _SystemPromptFromContext(AgentMiddleware[Any, TFAContext]):
         request: ModelRequest[TFAContext],
         handler: Callable[[ModelRequest[TFAContext]], ModelResponse],
     ) -> ModelResponse:
-        return handler(request.override(system_message=self._build(request)))
+        request.system_message = self._build(request)  # type: ignore[misc]
+        return handler(request)
 
     async def awrap_model_call(
         self,
         request: ModelRequest[TFAContext],
         handler: Callable[[ModelRequest[TFAContext]], Awaitable[ModelResponse]],
     ) -> ModelResponse:
-        return await handler(request.override(system_message=self._build(request)))
+        request.system_message = self._build(request)  # type: ignore[misc]
+        return await handler(request)
 
 
 def _build_system_message(
