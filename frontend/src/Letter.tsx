@@ -67,11 +67,13 @@ export default function Letter() {
 
     const runGenerateLetter = async () => {
       if (streamLocationRef.current !== null) {
+        let cleanCompletion = false;
         await streamText({
           addMessage,
           setMessages,
           housingLocation: streamLocationRef.current,
           onDone: () => {
+            cleanCompletion = true;
             const uiMessage: UiMessage = {
               type: "ui",
               text: "What was generated is just an initial template. Please include details of your specific housing situation to update the letter.",
@@ -80,6 +82,15 @@ export default function Letter() {
             setMessages((prev) => [...prev, uiMessage]);
           },
         });
+        // No done chunk received — surface an error instead of a silent empty panel.
+        if (!cleanCompletion) {
+          const uiMessage: UiMessage = {
+            type: "ui",
+            text: "Unable to generate letter. Please try again or refresh the page.",
+            id: Date.now().toString(),
+          };
+          setMessages((prev) => [...prev, uiMessage]);
+        }
         // Clear spinner after a short delay for a smoother transition.
         timerRef.current = setTimeout(
           () => setIsGenerating(false),

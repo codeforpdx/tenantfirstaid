@@ -23,7 +23,10 @@ const renderInitializationForm = () => {
                 path="/chat"
                 element={
                   <HousingContextProvider>
-                    <InitializationForm addMessage={vi.fn()} setMessages={vi.fn()} />
+                    <InitializationForm
+                      addMessage={vi.fn()}
+                      setMessages={vi.fn()}
+                    />
                   </HousingContextProvider>
                 }
               />
