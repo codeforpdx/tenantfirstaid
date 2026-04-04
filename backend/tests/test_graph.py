@@ -95,18 +95,6 @@ def _make_middleware_request(
     request.runtime.context = TFAContext(system_prompt=prompt)
     request.state = {"city": city, "state": state}
     request.system_message = None
-
-    # override() must return a new mock whose system_message reflects the kwarg,
-    # mirroring the real ModelRequest.override() behaviour.
-    def _override(**kwargs):
-        child = MagicMock()
-        child.runtime = request.runtime
-        child.state = request.state
-        for k, v in kwargs.items():
-            setattr(child, k, v)
-        return child
-
-    request.override = _override
     return request
 
 

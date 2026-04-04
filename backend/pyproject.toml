@@ -66,6 +66,11 @@ markers = [
 filterwarnings = [
     # Third-party library using deprecated Pydantic v1 API internally.
     "ignore::pydantic.warnings.PydanticDeprecatedSince20:langsmith",
+    # langchain deprecated direct attribute assignment on ModelRequest in favour of
+    # request.override(), but override() triggers execution_info patching that crashes
+    # in LangSmith Studio before a run context exists. Direct mutation is intentional
+    # here; suppress until the library resolves that bug.
+    "ignore:Direct attribute assignment to ModelRequest:DeprecationWarning",
 ]
 
 [tool.coverage.run]
