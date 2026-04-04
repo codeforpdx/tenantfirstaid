@@ -29,15 +29,8 @@ def _classify_blocks(
                 yield ReasoningChunk(content=content_block["reasoning"])
             case "text":
                 yield TextChunk(content=content_block["text"])
-            case "non_standard":
-                inner: Dict[str, Any] = content_block["value"]
-                match inner.get("type"):
-                    case "letter":
-                        yield LetterChunk(content=inner["content"])
-                    case _:
-                        current_app.logger.warning(
-                            f"Unhandled non_standard block value type: {inner.get('type')}"
-                        )
+            case "letter":
+                yield LetterChunk(content=content_block["content"])
             case _:
                 current_app.logger.warning(
                     f"Unhandled block type: {content_block['type']}"
@@ -78,10 +71,10 @@ class ChatView(View):
                 )
             )
             for content_block in _classify_blocks(response_stream):
-                current_app.logger.debug(f"Received content_block: {content_block}")
+                current_app.logger.debug(f"Sending content_block: {content_block}")
                 yield content_block.model_dump_json() + "\n"
             done_chunk = DoneChunk()
-            current_app.logger.debug(f"Received content_block: {done_chunk}")
+            current_app.logger.debug(f"Sending done chunk: {done_chunk}")
             yield done_chunk.model_dump_json() + "\n"
 
         # text/plain rather than application/x-ndjson: client only reads raw bytes

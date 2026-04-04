@@ -1,7 +1,5 @@
 import json
 
-from langchain_core.messages import NonStandardContentBlock
-
 from tenantfirstaid.chat import ChatView, _classify_blocks
 from tenantfirstaid.schema import DoneChunk
 
@@ -14,10 +12,8 @@ def reasoning_block(reasoning: str) -> dict:
     return {"type": "reasoning", "reasoning": reasoning}
 
 
-def letter_block(content: str) -> NonStandardContentBlock:
-    return NonStandardContentBlock(
-        type="non_standard", value={"type": "letter", "content": content}
-    )
+def letter_block(content: str) -> dict:
+    return {"type": "letter", "content": content}
 
 
 def chunks(blocks):
@@ -53,9 +49,6 @@ class TestClassifyBlocks:
         assert len(result) == 1
         assert result[0].content == ""
 
-    def test_done_chunk_serializes_correctly(self):
-        assert json.loads(DoneChunk().model_dump_json()) == {"type": "done"}
-
     def test_mixed_block_stream(self, app):
         blocks = [
             text_block("Hello"),
@@ -72,6 +65,9 @@ class TestClassifyBlocks:
 
 
 class TestDispatchRequest:
+    def test_done_chunk_serializes_correctly(self):
+        assert json.loads(DoneChunk().model_dump_json()) == {"type": "done"}
+
     def test_happy_path_streams_ndjson(self, app, mock_chat_manager):
         app.add_url_rule(
             "/api/query", view_func=ChatView.as_view("chat"), methods=["POST"]
