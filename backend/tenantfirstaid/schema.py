@@ -19,7 +19,7 @@ class LetterChunk(BaseModel):
 
 
 class EndOfStreamChunk(BaseModel):
-    type: Literal["done"] = "done"
+    type: Literal["end_of_stream"] = "end_of_stream"
 
 
 ResponseChunk = TextChunk | ReasoningChunk | LetterChunk | EndOfStreamChunk

@@ -86,7 +86,7 @@ class TestClassifyBlocks:
 
 class TestDispatchRequest:
     def test_done_chunk_serializes_correctly(self):
-        assert json.loads(EndOfStreamChunk().model_dump_json()) == {"type": "done"}
+        assert json.loads(EndOfStreamChunk().model_dump_json()) == {"type": "end_of_stream"}
 
     def test_happy_path_streams_ndjson(self, app, mock_chat_manager):
         app.add_url_rule(
@@ -124,4 +124,4 @@ class TestDispatchRequest:
             )
         assert response.status_code == 200
         lines = [line for line in response.data.decode().strip().split("\n") if line]
-        assert json.loads(lines[-1]) == {"type": "done"}
+        assert json.loads(lines[-1]) == {"type": "end_of_stream"}

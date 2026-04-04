@@ -46,7 +46,7 @@ describe("streamText", () => {
     const mockReader = createMockReader([
       '{"type":"text","content":"Hello"}\n',
       '{"type":"text","content":"world"}\n',
-      '{"type":"done"}\n',
+      '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
@@ -71,7 +71,7 @@ describe("streamText", () => {
     const mockReader = createMockReader([
       '{"type":"text","content":"First"}\n',
       '{"type":"text","content":" chunk"}\n',
-      '{"type":"done"}\n',
+      '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
@@ -125,7 +125,7 @@ describe("streamText", () => {
     const mockReader = createMockReader([
       '{"type":"reasoning","content":"Let me think."}\n',
       '{"type":"text","content":"Here is the answer."}\n',
-      '{"type":"done"}\n',
+      '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
@@ -205,7 +205,7 @@ describe("streamText", () => {
     const mockOnDone = vi.fn();
     const mockReader = createMockReader([
       '{"type":"text","content":"Hello"}\n',
-      '{"type":"done"}\n',
+      '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
@@ -244,7 +244,7 @@ describe("streamText", () => {
   it("should not append done chunk to bot message content", async () => {
     const mockReader = createMockReader([
       '{"type":"text","content":"Actual content"}\n',
-      '{"type":"done"}\n',
+      '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
@@ -267,7 +267,7 @@ describe("streamText", () => {
     const mockReader = createMockReader([
       '{"type":"text","content":"Here is your letter."}\n',
       '{"type":"letter","content":"Dear Landlord,"}\n',
-      '{"type":"done"}\n',
+      '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
 
@@ -290,7 +290,7 @@ describe("streamText", () => {
   it("should not call setMessages for the done chunk line", async () => {
     const mockReader = createMockReader([
       '{"type":"text","content":"Hello"}\n',
-      '{"type":"done"}\n',
+      '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
 

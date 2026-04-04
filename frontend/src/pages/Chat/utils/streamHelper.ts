@@ -64,7 +64,7 @@ async function streamText({
         .forEach((processedText) => {
           try {
             const parsed = JSON.parse(processedText) as { type?: string };
-            if (parsed.type === "done") {
+            if (parsed.type === "end_of_stream") {
               receivedDone = true;
               onDone?.();
               return;
