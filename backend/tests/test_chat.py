@@ -86,7 +86,9 @@ class TestClassifyBlocks:
 
 class TestDispatchRequest:
     def test_done_chunk_serializes_correctly(self):
-        assert json.loads(EndOfStreamChunk().model_dump_json()) == {"type": "end_of_stream"}
+        assert json.loads(EndOfStreamChunk().model_dump_json()) == {
+            "type": "end_of_stream"
+        }
 
     def test_happy_path_streams_ndjson(self, app, mock_chat_manager):
         app.add_url_rule(
