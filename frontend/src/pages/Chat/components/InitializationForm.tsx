@@ -254,7 +254,7 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
           !NONLETTERABLE_TOPICS.includes(tenantTopic) &&
           issueDescription && (
             <Link
-              to="letter"
+              to="/letter"
               className={clsx(
                 "flex items-center",
                 "py-1 px-4",
