@@ -72,6 +72,7 @@ Cloud deployments don't use a `.env` file. Environment variables are configured 
    | `GOOGLE_CLOUD_LOCATION` | `global` |
    | `VERTEX_AI_DATASTORE` | `tenantfirstaid-corpora_...` |
    | `SHOW_MODEL_THINKING` | `false` |
+   | `DISTRIBUTED_RUNTIME_ENABLED` | `false` |
 
    `LANGSMITH_API_KEY` is **not** needed in the deployment environment — the Cloud runtime provides it automatically.
 
