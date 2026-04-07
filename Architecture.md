@@ -59,7 +59,7 @@ backend/
 │   ├── __init__.py
 │   ├── app.py                          # Flask application setup and routing
 │   ├── chat.py                         # Flask ChatView
-|   ├── schema.py                       # Pydantic response chunk types (TextChunk, LetterChunk, ReasoningChunk)
+|   ├── schema.py                       # Pydantic response chunk types (TextChunk, LetterChunk, ReasoningChunk, EndOfStreamChunk)
 |   ├── constants.py                    # Immutable state and consolidated interface to environment variables
 |   ├── location.py                     # City & State normalization and sanitization
 |   ├── graph.py                        # Shared LLM, tools, and graph factory (used by chat manager and langgraph dev)
@@ -335,70 +335,7 @@ sequenceDiagram
 
 **Stream Processing** (`streamHelper.ts`):
 
-```typescript
-async function streamText({
-  addMessage,
-  setMessages,
-  housingLocation,
-  setIsLoading,
-}: StreamTextOptions): Promise<boolean | undefined> {
-  const botMessageId = (Date.now() + 1).toString();
-
-  setIsLoading?.(true);
-
-  // Add empty bot message immediately so "Typing..." appears before the API responds.
-  setMessages((prev) => [
-    ...prev,
-    new AIMessage({ content: "", id: botMessageId }),
-  ]);
-
-  try {
-    const reader = await addMessage(housingLocation);
-    if (!reader) {
-      console.error("Stream reader is unavailable");
-      const nullReaderError: UiMessage = {
-        type: "ui",
-        text: "Sorry, I encountered an error. Please try again.",
-        id: botMessageId,
-      };
-      setMessages((prev) =>
-        prev.map((msg) => (msg.id === botMessageId ? nullReaderError : msg)),
-      );
-      return;
-    }
-
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let fullText = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        // Flush any remaining content in the buffer.
-        if (buffer.trim() !== "") processLines([buffer]);
-        return true;
-      }
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-      processLines(lines);
-    }
-  } catch (error) {
-    console.error("Error:", error);
-    const errorMessage: UiMessage = {
-      type: "ui",
-      text: "Sorry, I encountered an error. Please try again.",
-      id: botMessageId,
-    };
-    setMessages((prev) => [
-      ...prev.filter((msg) => msg.id !== botMessageId),
-      errorMessage,
-    ]);
-  } finally {
-    setIsLoading?.(false);
-  }
-}
-```
+Each chunk is a serialized `ResponseChunk` (`text`, `reasoning`, `letter`, or `done`). Letter chunks are appended to the bot message content so `useLetterContent` can extract them for the letter panel. The `done` chunk signals clean completion and triggers the `onDone` callback; it is not appended to the message content.
 
 **Streaming Features:**
 

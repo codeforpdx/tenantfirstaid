@@ -1,6 +1,7 @@
-from langchain_core.messages import NonStandardContentBlock
+import json
 
 from tenantfirstaid.chat import ChatView, _classify_blocks
+from tenantfirstaid.schema import EndOfStreamChunk
 
 
 def text_block(text: str) -> dict:
@@ -11,10 +12,8 @@ def reasoning_block(reasoning: str) -> dict:
     return {"type": "reasoning", "reasoning": reasoning}
 
 
-def letter_block(content: str) -> NonStandardContentBlock:
-    return NonStandardContentBlock(
-        type="non_standard", value={"type": "letter", "content": content}
-    )
+def letter_block(content: str) -> dict:
+    return {"type": "non_standard", "value": {"type": "letter", "content": content}}
 
 
 def chunks(blocks):
@@ -34,11 +33,31 @@ class TestClassifyBlocks:
         assert result[0].type == "reasoning"
         assert result[0].content == "Let me think."
 
-    def test_letter_passthrough(self):
-        result = chunks([letter_block("Dear Landlord,")])
+    def test_non_standard_letter_block_routed_correctly(self, app):
+        with app.app_context():
+            result = chunks(
+                [
+                    {
+                        "type": "non_standard",
+                        "value": {"type": "letter", "content": "Dear Landlord,"},
+                    }
+                ]
+            )
         assert len(result) == 1
         assert result[0].type == "letter"
         assert result[0].content == "Dear Landlord,"
+
+    def test_non_standard_unknown_inner_type_is_skipped(self, app):
+        with app.app_context():
+            result = chunks(
+                [
+                    {
+                        "type": "non_standard",
+                        "value": {"type": "citation", "content": "..."},
+                    }
+                ]
+            )
+        assert result == []
 
     def test_unknown_block_type_is_skipped(self, app):
         with app.app_context():
@@ -66,6 +85,11 @@ class TestClassifyBlocks:
 
 
 class TestDispatchRequest:
+    def test_done_chunk_serializes_correctly(self):
+        assert json.loads(EndOfStreamChunk().model_dump_json()) == {
+            "type": "end_of_stream"
+        }
+
     def test_happy_path_streams_ndjson(self, app, mock_chat_manager):
         app.add_url_rule(
             "/api/query", view_func=ChatView.as_view("chat"), methods=["POST"]
@@ -84,3 +108,22 @@ class TestDispatchRequest:
         assert resp.mimetype == "text/plain"
         lines = resp.data.decode().strip().split("\n")
         assert len(lines) >= 1
+
+    def test_generate_yields_done_chunk_last(self, app, mock_chat_manager):
+        app.add_url_rule(
+            "/api/query",
+            view_func=ChatView.as_view("chat_done"),
+            methods=["POST"],
+        )
+        with app.test_client() as client:
+            response = client.post(
+                "/api/query",
+                json={
+                    "messages": [{"role": "human", "content": "Hi"}],
+                    "city": None,
+                    "state": "or",
+                },
+            )
+        assert response.status_code == 200
+        lines = [line for line in response.data.decode().strip().split("\n") if line]
+        assert json.loads(lines[-1]) == {"type": "end_of_stream"}

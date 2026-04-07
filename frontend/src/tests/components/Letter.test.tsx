@@ -188,9 +188,10 @@ describe("Letter component - effect orchestration", () => {
     });
   });
 
-  it("shows error message when stream fails", async () => {
+  it("adds error message when stream ends without calling onDone", async () => {
+    // Simulate a dropped connection: streamText resolves but never calls onDone.
     const mockSetMessages = vi.fn();
-    mockStreamText.mockResolvedValue(undefined);
+    mockStreamText.mockImplementation(() => Promise.resolve());
 
     mockUseMessages.mockReturnValue({
       addMessage: vi.fn(),
@@ -201,15 +202,27 @@ describe("Letter component - effect orchestration", () => {
     await renderLetter();
 
     await waitFor(() => {
-      expect(mockSetMessages).toHaveBeenCalledWith(expect.any(Function));
+      expect(mockStreamText).toHaveBeenCalled();
     });
 
-    const setMessagesCall = mockSetMessages.mock.calls.find((call) => {
+    // Should not add the instruction message (no letter was cleanly generated).
+    const addedInstructionMessage = mockSetMessages.mock.calls.find((call) => {
       const result = call[0]([]);
-      return result.some((msg: ChatMessage) =>
-        msg.text.includes("Unable to generate letter"),
+      return result.some(
+        (msg: ChatMessage) =>
+          "text" in msg && msg.text.includes("initial template"),
       );
     });
-    expect(setMessagesCall).toBeDefined();
+    expect(addedInstructionMessage).toBeUndefined();
+
+    // Should add the error message so the user isn't left with an empty panel.
+    const addedErrorMessage = mockSetMessages.mock.calls.find((call) => {
+      const result = call[0]([]);
+      return result.some(
+        (msg: ChatMessage) =>
+          "text" in msg && msg.text.includes("Unable to generate"),
+      );
+    });
+    expect(addedErrorMessage).toBeDefined();
   });
 });
