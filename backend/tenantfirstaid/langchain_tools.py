@@ -12,7 +12,7 @@ from langchain_google_community import VertexAISearchRetriever
 from langgraph.config import get_stream_writer
 from pydantic import BaseModel
 
-from .constants import LETTER_TEMPLATE, SINGLETON
+from .constants import LETTER_TEMPLATE, SINGLETON, DataStoreConfig
 from .google_auth import load_gcp_credentials
 from .location import OregonCity, UsaState
 
@@ -28,9 +28,9 @@ class RagBuilder:
 
     def __init__(
         self,
+        store: DataStoreConfig,
         filter: str,
         name: Optional[str] = "tfa-retriever",
-        max_documents: Optional[int] = 3,
     ) -> None:
         if SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is None:
             raise ValueError("GOOGLE_APPLICATION_CREDENTIALS is not set")
@@ -42,13 +42,13 @@ class RagBuilder:
         self.rag = VertexAISearchRetriever(
             beta=True,  # required for this implementation
             credentials=self.__credentials,
-            project_id=SINGLETON.GOOGLE_CLOUD_PROJECT,  # tenantfirstaid
-            location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,  # global
-            data_store_id=SINGLETON.VERTEX_AI_DATASTORE,  # "tenantfirstaid-corpora_1758844059585",
-            engine_data_type=0,  # tenantfirstaid-corpora_1758844059585 is unstructured
+            project_id=SINGLETON.GOOGLE_CLOUD_PROJECT,
+            location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,
+            data_store_id=store.id,
+            engine_data_type=0,  # 0 = unstructured; all TFA datastores are unstructured docs
             get_extractive_answers=True,  # TODO: figure out if this is useful
             name=name,
-            max_documents=max_documents,
+            max_documents=store.max_documents,
             filter=filter,
         )
 
@@ -134,8 +134,8 @@ def retrieve_city_state_laws(
     """
 
     helper = RagBuilder(
+        store=SINGLETON.VERTEX_AI_DATASTORES["laws"],
         name="retrieve_city_law",
-        max_documents=3,
         filter=_filter_builder(city=city, state=state),
     )
 
