@@ -19,8 +19,8 @@ class DataStoreConfig(BaseModel):
     @classmethod
     def _strip_resource_uri(cls, v: str) -> str:
         """Accept either a bare datastore ID or a full resource URI."""
-        if "projects/" in v:
-            return v.split("/")[-1]
+        if v.startswith("projects/"):
+            return v.rstrip("/").split("/")[-1]
         return v
 
 
@@ -34,7 +34,11 @@ def _parse_datastores(raw: Optional[str]) -> dict[str, "DataStoreConfig"]:
         raise ValueError(f"VERTEX_AI_DATASTORES is not valid JSON: {e}") from e
     if not isinstance(items, list) or not items:
         raise ValueError("VERTEX_AI_DATASTORES must be a non-empty JSON array.")
-    return {config.name: config for config in (DataStoreConfig(**item) for item in items)}
+    configs = [DataStoreConfig(**item) for item in items]
+    names = [c.name for c in configs]
+    if len(names) != len(set(names)):
+        raise ValueError("VERTEX_AI_DATASTORES contains duplicate names.")
+    return {c.name: c for c in configs}
 
 
 def _strtobool(val: Optional[str]) -> bool:
@@ -103,7 +107,7 @@ class _GoogEnvAndPolicy:
             "GOOGLE_CLOUD_LOCATION",
             "GOOGLE_APPLICATION_CREDENTIALS",
         ):
-            if self.__getattribute__(c) is None:
+            if getattr(self, c) is None:
                 raise ValueError(f"[{c}] environment variable is not set.")
 
         # _parse_datastores raises ValueError if the var is missing, not valid JSON,
@@ -111,6 +115,10 @@ class _GoogEnvAndPolicy:
         self.VERTEX_AI_DATASTORES: Final[dict[str, DataStoreConfig]] = (
             _parse_datastores(os.getenv("VERTEX_AI_DATASTORES"))
         )
+        if "laws" not in self.VERTEX_AI_DATASTORES:
+            raise ValueError(
+                "VERTEX_AI_DATASTORES is missing required datastore: 'laws'."
+            )
 
         # Assign slot attributes for optional environment variables
         self.SHOW_MODEL_THINKING: Final = _strtobool(

@@ -132,6 +132,16 @@ class TestGoogEnvAndPolicy:
             with pytest.raises(ValueError, match="environment variable is not set|not valid JSON|non-empty JSON array"):
                 _GoogEnvAndPolicy()
 
+    @patch("tenantfirstaid.constants.Path.exists", return_value=False)
+    def test_missing_laws_datastore_raises(self, mock_path):
+        env = {
+            **self.REQUIRED_ENV,
+            "VERTEX_AI_DATASTORES": '[{"name":"other","id":"store-1"}]',
+        }
+        with patch.dict("os.environ", env, clear=True):
+            with pytest.raises(ValueError, match="missing required datastore.*laws"):
+                _GoogEnvAndPolicy()
+
 
 class TestParseDatastores:
     def test_bare_id(self):
@@ -141,6 +151,12 @@ class TestParseDatastores:
     def test_full_uri_extraction(self):
         result = _parse_datastores(
             '[{"name":"laws","id":"projects/p/locations/l/dataStores/my-ds"}]'
+        )
+        assert result["laws"].id == "my-ds"
+
+    def test_full_uri_with_trailing_slash(self):
+        result = _parse_datastores(
+            '[{"name":"laws","id":"projects/p/locations/l/dataStores/my-ds/"}]'
         )
         assert result["laws"].id == "my-ds"
 
@@ -172,6 +188,12 @@ class TestParseDatastores:
         )
         assert result["laws"].id == "store-1"
         assert result["letters"].id == "store-2"
+
+    def test_duplicate_names_raises(self):
+        with pytest.raises(ValueError, match="duplicate names"):
+            _parse_datastores(
+                '[{"name":"laws","id":"store-1"},{"name":"laws","id":"store-2"}]'
+            )
 
 
 def test_model_config_values():
