@@ -15,6 +15,13 @@ class DataStoreConfig(BaseModel):
     id: str
     max_documents: int = 3
 
+    @field_validator("name", "id")
+    @classmethod
+    def _non_empty(cls, v: str) -> str:
+        if not v:
+            raise ValueError("must not be empty")
+        return v
+
     @field_validator("id")
     @classmethod
     def _strip_resource_uri(cls, v: str) -> str:
@@ -24,7 +31,7 @@ class DataStoreConfig(BaseModel):
         return v
 
 
-def _parse_datastores(raw: Optional[str]) -> dict[str, "DataStoreConfig"]:
+def _parse_datastores(raw: Optional[str]) -> dict[str, DataStoreConfig]:
     """Parse a JSON array of datastore configs into a dict keyed by name."""
     if raw is None:
         raise ValueError("[VERTEX_AI_DATASTORES] environment variable is not set.")

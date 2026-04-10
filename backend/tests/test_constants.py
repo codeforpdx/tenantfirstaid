@@ -198,6 +198,14 @@ class TestParseDatastores:
                 '[{"name":"laws","id":"store-1"},{"name":"laws","id":"store-2"}]'
             )
 
+    def test_empty_name_raises(self):
+        with pytest.raises(ValueError, match="must not be empty"):
+            _parse_datastores('[{"name":"","id":"store-1"}]')
+
+    def test_empty_id_raises(self):
+        with pytest.raises(ValueError, match="must not be empty"):
+            _parse_datastores('[{"name":"laws","id":""}]')
+
 
 def test_model_config_values():
     """Pin model config values that affect legal advice quality.
