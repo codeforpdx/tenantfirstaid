@@ -129,7 +129,10 @@ class TestGoogEnvAndPolicy:
     def test_missing_required_var_raises(self, mock_path, missing_var):
         env = {k: v for k, v in self.REQUIRED_ENV.items() if k != missing_var}
         with patch.dict("os.environ", env, clear=True):
-            with pytest.raises(ValueError, match="environment variable is not set|not valid JSON|non-empty JSON array"):
+            with pytest.raises(
+                ValueError,
+                match="environment variable is not set|not valid JSON|non-empty JSON array",
+            ):
                 _GoogEnvAndPolicy()
 
     @patch("tenantfirstaid.constants.Path.exists", return_value=False)
