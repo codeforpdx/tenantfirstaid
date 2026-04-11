@@ -163,6 +163,10 @@ class TestParseDatastores:
         with pytest.raises(ValueError, match="VERTEX_AI_DATASTORES.*not set"):
             _parse_datastores(None)
 
+    def test_empty_string_raises(self):
+        with pytest.raises(ValueError):
+            _parse_datastores("")
+
     def test_missing_colon_raises(self):
         with pytest.raises(ValueError, match="not in 'name:id' format"):
             _parse_datastores("laws")
