@@ -6,6 +6,32 @@ from dotenv import load_dotenv
 from langchain_google_genai import HarmBlockThreshold, HarmCategory
 
 
+def _parse_datastores(raw: Optional[str]) -> dict[str, str]:
+    """Parse a comma-delimited string of ``name:id`` pairs into a dict keyed by name.
+
+    Expected format: ``laws:datastore-id-1,oregonlawhelp:datastore-id-2``
+    """
+    if raw is None:
+        raise ValueError("[VERTEX_AI_DATASTORES] environment variable is not set.")
+    result = {}
+    for entry in raw.split(","):
+        entry = entry.strip()
+        if ":" not in entry:
+            raise ValueError(
+                f"VERTEX_AI_DATASTORES entry {entry!r} is not in 'name:id' format."
+            )
+        name, id_ = entry.split(":", 1)
+        name, id_ = name.strip(), id_.strip()
+        if not name or not id_:
+            raise ValueError("VERTEX_AI_DATASTORES name and id must not be empty.")
+        if id_.startswith("projects/"):
+            id_ = id_.rstrip("/").split("/")[-1]
+        if name in result:
+            raise ValueError("VERTEX_AI_DATASTORES contains duplicate names.")
+        result[name] = id_
+    return result
+
+
 def _strtobool(val: Optional[str]) -> bool:
     """Convert a string representation of truth to true (1) or false (0).
 
@@ -32,7 +58,7 @@ class _GoogEnvAndPolicy:
     # Note: these are Class variables, not instance variables.
     __slots__ = (
         "MODEL_NAME",
-        "VERTEX_AI_DATASTORE",
+        "VERTEX_AI_DATASTORES",
         "GOOGLE_CLOUD_PROJECT",
         "GOOGLE_CLOUD_LOCATION",
         "GOOGLE_APPLICATION_CREDENTIALS",
@@ -60,25 +86,30 @@ class _GoogEnvAndPolicy:
         # Note: assign explicitly since typecheckers do not understand slotted attributes
         #       that are assigned by __setattr__()
         self.MODEL_NAME: Final = os.getenv("MODEL_NAME")
-        self.VERTEX_AI_DATASTORE = os.getenv("VERTEX_AI_DATASTORE")
         self.GOOGLE_CLOUD_PROJECT: Final = os.getenv("GOOGLE_CLOUD_PROJECT")
         self.GOOGLE_CLOUD_LOCATION: Final = os.getenv("GOOGLE_CLOUD_LOCATION")
         self.GOOGLE_APPLICATION_CREDENTIALS: Final = os.getenv(
             "GOOGLE_APPLICATION_CREDENTIALS"
         )
 
-        for c in list(self.__slots__)[:5]:
-            if self.__getattribute__(c) is None:
+        for c in (
+            "MODEL_NAME",
+            "GOOGLE_CLOUD_PROJECT",
+            "GOOGLE_CLOUD_LOCATION",
+            "GOOGLE_APPLICATION_CREDENTIALS",
+        ):
+            if getattr(self, c) is None:
                 raise ValueError(f"[{c}] environment variable is not set.")
 
-        # FIXME: Temporary hack for VERTEX_AI_DATASTORE (old code wanted full
-        #        path URI, new code only wants the last part)
-        #        (https://github.com/codeforpdx/tenantfirstaid/issues/247)
-        if (
-            self.VERTEX_AI_DATASTORE is not None
-            and "projects/" in self.VERTEX_AI_DATASTORE
-        ):
-            self.VERTEX_AI_DATASTORE = self.VERTEX_AI_DATASTORE.split("/")[-1]
+        # _parse_datastores raises ValueError if the var is missing, not in the
+        # expected format, or contains duplicate names.
+        self.VERTEX_AI_DATASTORES: Final[dict[str, str]] = _parse_datastores(
+            os.getenv("VERTEX_AI_DATASTORES")
+        )
+        if "laws" not in self.VERTEX_AI_DATASTORES:
+            raise ValueError(
+                "VERTEX_AI_DATASTORES is missing required datastore: 'laws'."
+            )
 
         # Assign slot attributes for optional environment variables
         self.SHOW_MODEL_THINKING: Final = _strtobool(

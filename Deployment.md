@@ -71,7 +71,7 @@ Notable staging-only setting: `SHOW_MODEL_THINKING` can be toggled on to surface
 
 | Artifact type | Current example | Becomes immutable when… |
 |---------------|-----------------|-------------------------|
-| **Vertex AI RAG corpus** (data store) | `VERTEX_AI_DATASTORE` | Deployed to any live environment (staging or production) |
+| **Vertex AI RAG corpus** (data store) | `VERTEX_AI_DATASTORES` | Deployed to any live environment (staging or production) |
 | **Cloud storage objects** (GCS files, etc.) | — (not currently used) | Deployed and referenced by a running service |
 | **Database** (relational / document) | — (not currently used) | Tables / collections referenced by a live deployment |
 
@@ -81,16 +81,16 @@ Once immutable, an artifact **must never be mutated in-place**. The risk is that
 
 ```mermaid
 flowchart TD
-    A["Create new corpus version<br/>(backend/scripts/create_vector_store.py)"] --> B["Point staging to new corpus<br/>(update VERTEX_AI_DATASTORE in staging env)"]
+    A["Create new corpus version<br/>(backend/scripts/create_vector_store.py)"] --> B["Point staging to new corpus<br/>(update VERTEX_AI_DATASTORES in staging env)"]
     B --> C["Deploy to staging and validate<br/>(smoke-test the chatbot)"]
     C --> D{"Validation passed?"}
     D -->|No| E["Debug / iterate on corpus<br/>(new corpus is still mutable)"]
     E --> C
-    D -->|Yes| F["Point production to new corpus<br/>(update VERTEX_AI_DATASTORE in production env)"]
+    D -->|Yes| F["Point production to new corpus<br/>(update VERTEX_AI_DATASTORES in production env)"]
     F --> G["Deploy to production<br/>(corpus is now immutable)"]
     G --> H["Archive old corpus ID<br/>(keep for rollback window)"]
     H --> I{"Rollback needed?"}
-    I -->|Yes| J["Revert VERTEX_AI_DATASTORE<br/>to previous corpus ID, redeploy"]
+    I -->|Yes| J["Revert VERTEX_AI_DATASTORES<br/>to previous corpus ID, redeploy"]
     I -->|No — stable for ≥1 sprint| K["Safe to delete old corpus"]
 ```
 
@@ -104,7 +104,7 @@ flowchart TD
 #### Rollbacks
 
 To roll back to a previous corpus:
-1. In GitHub [environment settings](https://github.com/codeforpdx/tenantfirstaid/settings/environments), revert `VERTEX_AI_DATASTORE` to the previous corpus ID.
+1. In GitHub [environment settings](https://github.com/codeforpdx/tenantfirstaid/settings/environments), update `VERTEX_AI_DATASTORES` to reference the previous corpus ID.
 2. Trigger a production deploy (push a revert commit or use `workflow_dispatch`).
 3. Verify the site is serving correct answers.
 4. Post a note in `#tenantfirstaid-general` on Discord describing the rollback and the reason.
@@ -267,7 +267,7 @@ Secrets exist in two places:
 | `MODEL_NAME` | Gemini model identifier (e.g. `gemini-2.5-pro`) | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py) |
 | `GOOGLE_CLOUD_PROJECT` | GCP project ID | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py), [pr-check.yml](.github/workflows/pr-check.yml) |
 | `GOOGLE_CLOUD_LOCATION` | GCP region (e.g. `global`) | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py) |
-| `VERTEX_AI_DATASTORE` | Vertex AI RAG corpus identifier | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py) |
+| `VERTEX_AI_DATASTORES` | Comma-delimited `name:id` pairs of Vertex AI RAG corpus configs (e.g. `laws:<id>` or `laws:<id>,oregonlawhelp:<id2>`). `id` can be a bare datastore ID or a full resource URI. | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py) |
 | `SHOW_MODEL_THINKING` | Toggle Gemini reasoning display (staging only; hardcoded `false` in production) | [deploy.staging.yml](.github/workflows/deploy.staging.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py) |
 
 ### Local development
@@ -443,7 +443,7 @@ sudo cat /etc/tenantfirstaid/env | grep -E "MODEL_NAME|GOOGLE_CLOUD|VERTEX"
 **Diagnose**:
 ```bash
 sudo journalctl -u tenantfirstaid-backend -n 100 | grep -i "retriev\|datastore\|rag\|vertex"
-sudo cat /etc/tenantfirstaid/env | grep VERTEX_AI_DATASTORE
+sudo cat /etc/tenantfirstaid/env | grep VERTEX_AI_DATASTORES
 ```
 Verify the corpus ID in the env file matches an existing corpus in [GCP Vertex AI Search](https://console.cloud.google.com/gen-app-builder/data-stores).
 
@@ -451,11 +451,11 @@ Verify the corpus ID in the env file matches an existing corpus in [GCP Vertex A
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| `NOT_FOUND` on datastore ID | Corpus deleted or wrong ID | Update `VERTEX_AI_DATASTORE` in GitHub environment settings and redeploy |
+| `NOT_FOUND` on datastore ID | Corpus deleted or wrong ID | Update `VERTEX_AI_DATASTORES` in GitHub environment settings and redeploy |
 | Empty retrieval results | Corpus not indexed / wrong metadata filters | Re-ingest documents via `backend/scripts/create_vector_store.py`; follow [External artifact lifecycle](#external-artifact-lifecycle) |
 | Auth errors on RAG calls | Same as Gemini auth issues | See Gemini runbook above |
 
-**Resolve**: update the `VERTEX_AI_DATASTORE` environment variable to a valid corpus ID and trigger a redeploy.
+**Resolve**: update the relevant entry in `VERTEX_AI_DATASTORES` to a valid corpus ID and trigger a redeploy.
 
 **Notify**: Post in `#tenantfirstaid-general`:
 > ⚠️ **Incident**: RAG retrieval errors — chatbot may respond without citations. Status: [investigating / resolved]. Corpus ID in use: [value from env].
@@ -518,7 +518,7 @@ If the timer is disabled: `sudo systemctl enable --now certbot.timer`.
 | GCP API errors | Bad or expired service account credentials | Re-deploy (the workflow rewrites the credentials file) |
 | TLS certificate expiry | Certbot renewal failed | See [Runbook: TLS certificate expiry](#runbook-tls-certificate-expiry) |
 | Deploy stuck / hanging | Previous deploy still running | Cancel it in the GitHub Actions UI; the concurrency group will allow the next one to proceed |
-| Chatbot returns wrong answers | Stale or incorrect RAG corpus | Check `VERTEX_AI_DATASTORE` in the env file; see [External artifact lifecycle](#external-artifact-lifecycle) |
+| Chatbot returns wrong answers | Stale or incorrect RAG corpus | Check `VERTEX_AI_DATASTORES` in the env file; see [External artifact lifecycle](#external-artifact-lifecycle) |
 
 ---
 

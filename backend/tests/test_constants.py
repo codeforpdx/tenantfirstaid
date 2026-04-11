@@ -14,6 +14,7 @@ from tenantfirstaid.constants import (
     LETTER_TEMPLATE,
     OREGON_LAW_CENTER_PHONE_NUMBER,
     _GoogEnvAndPolicy,
+    _parse_datastores,
     _strtobool,
 )
 
@@ -109,7 +110,7 @@ class TestStrtobool:
 class TestGoogEnvAndPolicy:
     REQUIRED_ENV = {
         "MODEL_NAME": "gemini-2.5-pro",
-        "VERTEX_AI_DATASTORE": "test-datastore",
+        "VERTEX_AI_DATASTORES": "laws:test-datastore",
         "GOOGLE_CLOUD_PROJECT": "test-project",
         "GOOGLE_CLOUD_LOCATION": "us-central1",
         "GOOGLE_APPLICATION_CREDENTIALS": "/tmp/creds.json",
@@ -121,25 +122,76 @@ class TestGoogEnvAndPolicy:
         singleton = _GoogEnvAndPolicy()
         assert singleton.MODEL_NAME == "gemini-2.5-pro"
         assert singleton.GOOGLE_CLOUD_PROJECT == "test-project"
+        assert singleton.VERTEX_AI_DATASTORES["laws"] == "test-datastore"
+
+    @pytest.mark.parametrize("missing_var", REQUIRED_ENV.keys())
+    @patch("tenantfirstaid.constants.Path.exists", return_value=False)
+    def test_missing_required_var_raises(self, mock_path, missing_var):
+        env = {k: v for k, v in self.REQUIRED_ENV.items() if k != missing_var}
+        with patch.dict("os.environ", env, clear=True):
+            with pytest.raises(
+                ValueError,
+                match="environment variable is not set|not in 'name:id' format|must not be empty",
+            ):
+                _GoogEnvAndPolicy()
 
     @patch("tenantfirstaid.constants.Path.exists", return_value=False)
-    @patch.dict("os.environ", {}, clear=True)
-    def test_missing_required_var_raises(self, mock_path):
-        with pytest.raises(ValueError, match="environment variable is not set"):
-            _GoogEnvAndPolicy()
+    def test_missing_laws_datastore_raises(self, mock_path):
+        env = {
+            **self.REQUIRED_ENV,
+            "VERTEX_AI_DATASTORES": "other:store-1",
+        }
+        with patch.dict("os.environ", env, clear=True):
+            with pytest.raises(ValueError, match="missing required datastore.*laws"):
+                _GoogEnvAndPolicy()
 
-    @patch("tenantfirstaid.constants.Path.exists", return_value=False)
-    @patch.dict(
-        "os.environ",
-        {
-            **REQUIRED_ENV,
-            "VERTEX_AI_DATASTORE": "projects/p/locations/l/dataStores/my-ds",
-        },
-        clear=False,
-    )
-    def test_vertex_ai_datastore_uri_extraction(self, mock_path):
-        singleton = _GoogEnvAndPolicy()
-        assert singleton.VERTEX_AI_DATASTORE == "my-ds"
+
+class TestParseDatastores:
+    def test_bare_id(self):
+        result = _parse_datastores("laws:my-store")
+        assert result["laws"] == "my-store"
+
+    def test_full_uri_extraction(self):
+        result = _parse_datastores("laws:projects/p/locations/l/dataStores/my-ds")
+        assert result["laws"] == "my-ds"
+
+    def test_full_uri_with_trailing_slash(self):
+        result = _parse_datastores("laws:projects/p/locations/l/dataStores/my-ds/")
+        assert result["laws"] == "my-ds"
+
+    def test_missing_env_var_raises(self):
+        with pytest.raises(ValueError, match="VERTEX_AI_DATASTORES.*not set"):
+            _parse_datastores(None)
+
+    def test_empty_string_raises(self):
+        with pytest.raises(ValueError):
+            _parse_datastores("")
+
+    def test_missing_colon_raises(self):
+        with pytest.raises(ValueError, match="not in 'name:id' format"):
+            _parse_datastores("laws")
+
+    def test_multiple_stores(self):
+        result = _parse_datastores("laws:store-1,letters:store-2")
+        assert result["laws"] == "store-1"
+        assert result["letters"] == "store-2"
+
+    def test_whitespace_trimmed(self):
+        result = _parse_datastores("laws : my-store , letters : store-2")
+        assert result["laws"] == "my-store"
+        assert result["letters"] == "store-2"
+
+    def test_duplicate_names_raises(self):
+        with pytest.raises(ValueError, match="duplicate names"):
+            _parse_datastores("laws:store-1,laws:store-2")
+
+    def test_empty_name_raises(self):
+        with pytest.raises(ValueError, match="must not be empty"):
+            _parse_datastores(":store-1")
+
+    def test_empty_id_raises(self):
+        with pytest.raises(ValueError, match="must not be empty"):
+            _parse_datastores("laws:")
 
 
 def test_model_config_values():

@@ -425,7 +425,7 @@ The agent needs the same set of variables regardless of where it runs. How you p
 | `GOOGLE_CLOUD_PROJECT` | yes | `tenantfirstaid` | GCP project ID |
 | `GOOGLE_CLOUD_LOCATION` | yes | `global` | Vertex AI location |
 | `GOOGLE_APPLICATION_CREDENTIALS` | yes | *(see below)* | GCP credentials — file path locally, inline JSON in Cloud |
-| `VERTEX_AI_DATASTORE` | yes | `tenantfirstaid-corpora_...` | Vertex AI Search datastore ID |
+| `VERTEX_AI_DATASTORES` | yes | `laws:tenantfirstaid-corpora_...` | Vertex AI Search datastore configs (comma-delimited `name:id` pairs) |
 | `LANGSMITH_API_KEY` | for evals | `lsv2_pt_...` | LangSmith API key (not needed for `langgraph dev` itself) |
 | `LANGSMITH_TRACING` | no | `true` | Enable LangSmith tracing |
 | `LANGCHAIN_TRACING_V2` | no | `true` | Enable detailed tracing |
@@ -464,7 +464,7 @@ Cloud deployments don't use a `.env` file. Instead, environment variables are co
    | `MODEL_NAME` | `gemini-2.5-pro` |
    | `GOOGLE_CLOUD_PROJECT` | `tenantfirstaid` |
    | `GOOGLE_CLOUD_LOCATION` | `global` |
-   | `VERTEX_AI_DATASTORE` | `tenantfirstaid-corpora_...` |
+   | `VERTEX_AI_DATASTORES` | `laws:tenantfirstaid-corpora_...` |
    | `SHOW_MODEL_THINKING` | `false` |
 
 3. For the credential, reference the workspace secret instead of pasting the value:
