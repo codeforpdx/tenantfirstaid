@@ -129,7 +129,7 @@ def rag_tool(query: str, runtime: ToolRuntime) -> str:
         name="tfa-retriever",
         project_id=SINGLETON.GOOGLE_CLOUD_PROJECT,  # tenantfirstaid
         location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,  # global
-        data_store_id=SINGLETON.VERTEX_AI_DATASTORES["laws"].id,
+        data_store_id=SINGLETON.VERTEX_AI_DATASTORES["laws"],
         engine_data_type=0,  # unstructured
         get_extractive_answers=True,
         credentials=credentials,

@@ -1,51 +1,35 @@
-import json
 import os
 from pathlib import Path
 from typing import Final, Optional
 
 from dotenv import load_dotenv
 from langchain_google_genai import HarmBlockThreshold, HarmCategory
-from pydantic import BaseModel, field_validator
 
 
-class DataStoreConfig(BaseModel):
-    """Configuration for a single Vertex AI Search datastore."""
+def _parse_datastores(raw: Optional[str]) -> dict[str, str]:
+    """Parse a comma-delimited string of ``name:id`` pairs into a dict keyed by name.
 
-    name: str
-    id: str
-    max_documents: int = 3
-
-    @field_validator("name", "id")
-    @classmethod
-    def _non_empty(cls, v: str) -> str:
-        if not v:
-            raise ValueError("must not be empty")
-        return v
-
-    @field_validator("id")
-    @classmethod
-    def _strip_resource_uri(cls, v: str) -> str:
-        """Accept either a bare datastore ID or a full resource URI."""
-        if v.startswith("projects/"):
-            return v.rstrip("/").split("/")[-1]
-        return v
-
-
-def _parse_datastores(raw: Optional[str]) -> dict[str, DataStoreConfig]:
-    """Parse a JSON array of datastore configs into a dict keyed by name."""
+    Expected format: ``laws:datastore-id-1,oregonlawhelp:datastore-id-2``
+    """
     if raw is None:
         raise ValueError("[VERTEX_AI_DATASTORES] environment variable is not set.")
-    try:
-        items = json.loads(raw)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"VERTEX_AI_DATASTORES is not valid JSON: {e}") from e
-    if not isinstance(items, list) or not items:
-        raise ValueError("VERTEX_AI_DATASTORES must be a non-empty JSON array.")
-    configs = [DataStoreConfig(**item) for item in items]
-    names = [c.name for c in configs]
-    if len(names) != len(set(names)):
-        raise ValueError("VERTEX_AI_DATASTORES contains duplicate names.")
-    return {c.name: c for c in configs}
+    result = {}
+    for entry in raw.split(","):
+        entry = entry.strip()
+        if ":" not in entry:
+            raise ValueError(
+                f"VERTEX_AI_DATASTORES entry {entry!r} is not in 'name:id' format."
+            )
+        name, id_ = entry.split(":", 1)
+        name, id_ = name.strip(), id_.strip()
+        if not name or not id_:
+            raise ValueError("VERTEX_AI_DATASTORES name and id must not be empty.")
+        if id_.startswith("projects/"):
+            id_ = id_.rstrip("/").split("/")[-1]
+        if name in result:
+            raise ValueError("VERTEX_AI_DATASTORES contains duplicate names.")
+        result[name] = id_
+    return result
 
 
 def _strtobool(val: Optional[str]) -> bool:
@@ -117,10 +101,10 @@ class _GoogEnvAndPolicy:
             if getattr(self, c) is None:
                 raise ValueError(f"[{c}] environment variable is not set.")
 
-        # _parse_datastores raises ValueError if the var is missing, not valid JSON,
-        # or resolves full resource URIs to bare datastore IDs.
-        self.VERTEX_AI_DATASTORES: Final[dict[str, DataStoreConfig]] = (
-            _parse_datastores(os.getenv("VERTEX_AI_DATASTORES"))
+        # _parse_datastores raises ValueError if the var is missing, not in the
+        # expected format, or contains duplicate names.
+        self.VERTEX_AI_DATASTORES: Final[dict[str, str]] = _parse_datastores(
+            os.getenv("VERTEX_AI_DATASTORES")
         )
         if "laws" not in self.VERTEX_AI_DATASTORES:
             raise ValueError(

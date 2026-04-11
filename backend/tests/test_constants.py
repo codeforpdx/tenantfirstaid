@@ -110,7 +110,7 @@ class TestStrtobool:
 class TestGoogEnvAndPolicy:
     REQUIRED_ENV = {
         "MODEL_NAME": "gemini-2.5-pro",
-        "VERTEX_AI_DATASTORES": '[{"name":"laws","id":"test-datastore"}]',
+        "VERTEX_AI_DATASTORES": "laws:test-datastore",
         "GOOGLE_CLOUD_PROJECT": "test-project",
         "GOOGLE_CLOUD_LOCATION": "us-central1",
         "GOOGLE_APPLICATION_CREDENTIALS": "/tmp/creds.json",
@@ -122,7 +122,7 @@ class TestGoogEnvAndPolicy:
         singleton = _GoogEnvAndPolicy()
         assert singleton.MODEL_NAME == "gemini-2.5-pro"
         assert singleton.GOOGLE_CLOUD_PROJECT == "test-project"
-        assert singleton.VERTEX_AI_DATASTORES["laws"].id == "test-datastore"
+        assert singleton.VERTEX_AI_DATASTORES["laws"] == "test-datastore"
 
     @pytest.mark.parametrize("missing_var", REQUIRED_ENV.keys())
     @patch("tenantfirstaid.constants.Path.exists", return_value=False)
@@ -131,7 +131,7 @@ class TestGoogEnvAndPolicy:
         with patch.dict("os.environ", env, clear=True):
             with pytest.raises(
                 ValueError,
-                match="environment variable is not set|not valid JSON|non-empty JSON array",
+                match="environment variable is not set|not in 'name:id' format|must not be empty",
             ):
                 _GoogEnvAndPolicy()
 
@@ -139,7 +139,7 @@ class TestGoogEnvAndPolicy:
     def test_missing_laws_datastore_raises(self, mock_path):
         env = {
             **self.REQUIRED_ENV,
-            "VERTEX_AI_DATASTORES": '[{"name":"other","id":"store-1"}]',
+            "VERTEX_AI_DATASTORES": "other:store-1",
         }
         with patch.dict("os.environ", env, clear=True):
             with pytest.raises(ValueError, match="missing required datastore.*laws"):
@@ -148,63 +148,46 @@ class TestGoogEnvAndPolicy:
 
 class TestParseDatastores:
     def test_bare_id(self):
-        result = _parse_datastores('[{"name":"laws","id":"my-store"}]')
-        assert result["laws"].id == "my-store"
+        result = _parse_datastores("laws:my-store")
+        assert result["laws"] == "my-store"
 
     def test_full_uri_extraction(self):
-        result = _parse_datastores(
-            '[{"name":"laws","id":"projects/p/locations/l/dataStores/my-ds"}]'
-        )
-        assert result["laws"].id == "my-ds"
+        result = _parse_datastores("laws:projects/p/locations/l/dataStores/my-ds")
+        assert result["laws"] == "my-ds"
 
     def test_full_uri_with_trailing_slash(self):
-        result = _parse_datastores(
-            '[{"name":"laws","id":"projects/p/locations/l/dataStores/my-ds/"}]'
-        )
-        assert result["laws"].id == "my-ds"
-
-    def test_default_max_documents(self):
-        result = _parse_datastores('[{"name":"laws","id":"my-store"}]')
-        assert result["laws"].max_documents == 3
-
-    def test_custom_max_documents(self):
-        result = _parse_datastores(
-            '[{"name":"laws","id":"my-store","max_documents":5}]'
-        )
-        assert result["laws"].max_documents == 5
+        result = _parse_datastores("laws:projects/p/locations/l/dataStores/my-ds/")
+        assert result["laws"] == "my-ds"
 
     def test_missing_env_var_raises(self):
         with pytest.raises(ValueError, match="VERTEX_AI_DATASTORES.*not set"):
             _parse_datastores(None)
 
-    def test_invalid_json_raises(self):
-        with pytest.raises(ValueError, match="not valid JSON"):
-            _parse_datastores("not-json")
-
-    def test_empty_array_raises(self):
-        with pytest.raises(ValueError, match="non-empty JSON array"):
-            _parse_datastores("[]")
+    def test_missing_colon_raises(self):
+        with pytest.raises(ValueError, match="not in 'name:id' format"):
+            _parse_datastores("laws")
 
     def test_multiple_stores(self):
-        result = _parse_datastores(
-            '[{"name":"laws","id":"store-1"},{"name":"letters","id":"store-2"}]'
-        )
-        assert result["laws"].id == "store-1"
-        assert result["letters"].id == "store-2"
+        result = _parse_datastores("laws:store-1,letters:store-2")
+        assert result["laws"] == "store-1"
+        assert result["letters"] == "store-2"
+
+    def test_whitespace_trimmed(self):
+        result = _parse_datastores("laws : my-store , letters : store-2")
+        assert result["laws"] == "my-store"
+        assert result["letters"] == "store-2"
 
     def test_duplicate_names_raises(self):
         with pytest.raises(ValueError, match="duplicate names"):
-            _parse_datastores(
-                '[{"name":"laws","id":"store-1"},{"name":"laws","id":"store-2"}]'
-            )
+            _parse_datastores("laws:store-1,laws:store-2")
 
     def test_empty_name_raises(self):
         with pytest.raises(ValueError, match="must not be empty"):
-            _parse_datastores('[{"name":"","id":"store-1"}]')
+            _parse_datastores(":store-1")
 
     def test_empty_id_raises(self):
         with pytest.raises(ValueError, match="must not be empty"):
-            _parse_datastores('[{"name":"laws","id":""}]')
+            _parse_datastores("laws:")
 
 
 def test_model_config_values():

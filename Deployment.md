@@ -267,7 +267,7 @@ Secrets exist in two places:
 | `MODEL_NAME` | Gemini model identifier (e.g. `gemini-2.5-pro`) | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py) |
 | `GOOGLE_CLOUD_PROJECT` | GCP project ID | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py), [pr-check.yml](.github/workflows/pr-check.yml) |
 | `GOOGLE_CLOUD_LOCATION` | GCP region (e.g. `global`) | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py) |
-| `VERTEX_AI_DATASTORES` | JSON array of Vertex AI RAG corpus configs (`[{"name":"laws","id":"<id>"}]`). Each entry requires `name` (tool lookup key) and `id` (bare datastore ID or full resource URI); `max_documents` is optional (default 3). | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py) |
+| `VERTEX_AI_DATASTORES` | Comma-delimited `name:id` pairs of Vertex AI RAG corpus configs (e.g. `laws:<id>` or `laws:<id>,oregonlawhelp:<id2>`). `id` can be a bare datastore ID or a full resource URI. | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py) |
 | `SHOW_MODEL_THINKING` | Toggle Gemini reasoning display (staging only; hardcoded `false` in production) | [deploy.staging.yml](.github/workflows/deploy.staging.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py) |
 
 ### Local development
