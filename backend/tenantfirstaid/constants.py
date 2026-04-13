@@ -22,7 +22,9 @@ def _parse_datastores(env: Mapping[str, str]) -> dict[str, str]:
             continue
         name = key.removeprefix(_DATASTORE_PREFIX).lower()
         if not name:
-            raise ValueError(f"[{key}] datastore variable has no name after the prefix.")
+            raise ValueError(
+                f"[{key}] datastore variable has no name after the prefix."
+            )
         value = value.strip()
         if not value:
             raise ValueError(f"[{key}] environment variable is set but empty.")

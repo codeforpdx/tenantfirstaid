@@ -133,7 +133,10 @@ class TestParseDatastores:
 
     def test_multiple_stores(self):
         result = _parse_datastores(
-            {"VERTEX_AI_DATASTORE_LAWS": "store-1", "VERTEX_AI_DATASTORE_LETTERS": "store-2"}
+            {
+                "VERTEX_AI_DATASTORE_LAWS": "store-1",
+                "VERTEX_AI_DATASTORE_LETTERS": "store-2",
+            }
         )
         assert result["laws"] == "store-1"
         assert result["letters"] == "store-2"
