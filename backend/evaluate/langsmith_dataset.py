@@ -618,15 +618,26 @@ def cmd_experiment_stats(args: argparse.Namespace) -> None:
     for fb in client.list_feedback(run_ids=run_ids):
         fb_by_run.setdefault(str(fb.run_id), []).append(fb)
 
-    # Group runs by the example they ran against, preserving insertion order.
+    # Group runs by the example they ran against.
     runs_by_example: dict[str, list] = {}
     for run in runs:
         runs_by_example.setdefault(str(run.reference_example_id), []).append(run)
 
+    # Fetch example metadata so we can sort by scenario_id and show it in the
+    # key, making it easy to cross-reference against `example list` output.
+    example_ids = list(runs_by_example.keys())
+    scenario_id_by_example: dict[str, int] = {}
+    for ex in client.list_examples(example_ids=example_ids):
+        scenario_id_by_example[str(ex.id)] = (ex.metadata or {}).get("scenario_id", 0)
+
     scenarios = []
-    for example_runs in runs_by_example.values():
+    for example_id, example_runs in sorted(
+        runs_by_example.items(),
+        key=lambda item: scenario_id_by_example.get(item[0], 0),
+    ):
         q = str((example_runs[0].inputs or {}).get("query", ""))
-        label = f'"{q[:72]}{"..." if len(q) > 72 else ""}"'
+        sc_id = scenario_id_by_example.get(example_id, "?")
+        label = f'[{sc_id}] "{q[:68]}{"..." if len(q) > 68 else ""}"'
         scores: dict[str, list[float]] = {}
         for run in example_runs:
             for fb in fb_by_run.get(str(run.id), []):

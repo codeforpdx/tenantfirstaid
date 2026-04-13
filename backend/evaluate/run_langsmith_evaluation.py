@@ -78,17 +78,41 @@ def agent_wrapper(inputs) -> Dict[str, str]:
     }
 
 
-def _df_to_scenario_results(df: Any) -> List[ScenarioResult]:
-    """Convert a LangSmith results DataFrame to ScenarioResult list."""
+def _df_to_scenario_results(
+    df: Any, client: Optional[Any] = None
+) -> List[ScenarioResult]:
+    """Convert a LangSmith results DataFrame to ScenarioResult list.
+
+    When a LangSmith client is provided, example metadata is fetched to sort
+    scenarios by scenario_id and include it in the label so the output can be
+    cross-referenced against `langsmith_dataset example list` output.
+    """
     score_cols = [c for c in df.columns if c.startswith("feedback.")]
     if not score_cols or "example_id" not in df.columns:
         return []
 
+    # Fetch scenario_ids from example metadata when a client is available.
+    scenario_id_by_example: Dict[str, int] = {}
+    if client is not None:
+        example_ids = df["example_id"].unique().tolist()
+        for ex in client.list_examples(example_ids=example_ids):
+            scenario_id_by_example[str(ex.id)] = (ex.metadata or {}).get(
+                "scenario_id", 0
+            )
+
     query_col = "inputs.query" if "inputs.query" in df.columns else None
+    groups = list(df.groupby("example_id", sort=False))
+    if scenario_id_by_example:
+        groups.sort(key=lambda g: scenario_id_by_example.get(str(g[0]), 0))
+
     scenarios = []
-    for _, group in df.groupby("example_id", sort=False):
+    for example_id, group in groups:
         q = str(group[query_col].iloc[0]) if query_col else ""
-        label = f'"{q[:72]}{"..." if len(q) > 72 else ""}"'
+        sc_id = scenario_id_by_example.get(str(example_id))
+        if sc_id is not None:
+            label = f'[{sc_id}] "{q[:68]}{"..." if len(q) > 68 else ""}"'
+        else:
+            label = f'"{q[:72]}{"..." if len(q) > 72 else ""}"'
         scores: Dict[str, List[float]] = {}
         for col in score_cols:
             name = col.removeprefix("feedback.")
@@ -166,7 +190,7 @@ def run_evaluation(
     else:
         print("No feedback columns found.")
 
-    print_consistency_stats(_df_to_scenario_results(df))
+    print_consistency_stats(_df_to_scenario_results(df, client=ls_client))
 
     print(f"\nExperiment: {results.experiment_name}")
     return results

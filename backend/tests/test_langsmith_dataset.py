@@ -37,6 +37,7 @@ from evaluate.langsmith_dataset import (
     cmd_example_update,
     cmd_experiment_compare,
     cmd_experiment_show,
+    cmd_experiment_stats,
     local_or_remote,
     make_client,
 )
@@ -1140,10 +1141,19 @@ def test_local_or_remote_classification(value):
 # ── _experiment_scores ─────────────────────────────────────────────────────────
 
 
-def _make_run(run_id=None):
+def _make_run(run_id=None, example_id=None, query=None):
     r = MagicMock()
     r.id = run_id or uuid4()
+    r.reference_example_id = example_id or uuid4()
+    r.inputs = {"query": query or ""}
     return r
+
+
+def _make_example(example_id, scenario_id):
+    ex = MagicMock()
+    ex.id = example_id
+    ex.metadata = {"scenario_id": scenario_id}
+    return ex
 
 
 def _make_feedback(run_id, key, score):
@@ -1311,3 +1321,78 @@ def test_cmd_experiment_compare_missing_key_shows_dash(capsys):
         cmd_experiment_compare(args)
 
     assert "—" in capsys.readouterr().out
+
+
+# ── cmd_experiment_stats ────────────────────────────────────────────────────────
+
+
+def _mock_client_for_stats(runs, feedback, examples):
+    """Build a mock LangSmith client for cmd_experiment_stats tests."""
+    client = MagicMock()
+    p = MagicMock()
+    p.id = "proj-id"
+    client.read_project.return_value = p
+    client.list_runs.return_value = iter(runs)
+    client.list_feedback.return_value = iter(feedback)
+    client.list_examples.return_value = iter(examples)
+    return client
+
+
+def test_cmd_experiment_stats_no_runs(capsys):
+    """Stats command prints a message and exits cleanly when no runs exist."""
+    client = _mock_client_for_stats([], [], [])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_experiment_stats(MagicMock(experiment="exp", evaluator=[]))
+    assert "No runs found" in capsys.readouterr().out
+
+
+def test_cmd_experiment_stats_sorted_by_scenario_id(capsys):
+    """Scenarios appear sorted by scenario_id, not insertion order."""
+    ex_id_a, ex_id_b = uuid4(), uuid4()
+    r_a = _make_run(example_id=ex_id_a, query="question A")
+    r_b = _make_run(example_id=ex_id_b, query="question B")
+    fb_a = _make_feedback(r_a.id, "tone", 1.0)
+    fb_b = _make_feedback(r_b.id, "tone", 0.5)
+    # example B has lower scenario_id (3) than example A (7) — B should sort first.
+    examples = [_make_example(ex_id_a, 7), _make_example(ex_id_b, 3)]
+
+    client = _mock_client_for_stats([r_b, r_a], [fb_b, fb_a], examples)
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_experiment_stats(MagicMock(experiment="exp", evaluator=[]))
+
+    out = capsys.readouterr().out
+    # S1 should correspond to scenario_id=3 (question B), S2 to scenario_id=7 (question A).
+    assert out.index("question B") < out.index("question A")
+
+
+def test_cmd_experiment_stats_label_includes_scenario_id(capsys):
+    """Each scenario label includes the dataset scenario_id in brackets."""
+    ex_id = uuid4()
+    run = _make_run(example_id=ex_id, query="Can my landlord enter?")
+    fb = _make_feedback(run.id, "tone", 1.0)
+    examples = [_make_example(ex_id, 42)]
+
+    client = _mock_client_for_stats([run], [fb], examples)
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_experiment_stats(MagicMock(experiment="exp", evaluator=[]))
+
+    assert "[42]" in capsys.readouterr().out
+
+
+def test_cmd_experiment_stats_evaluator_filter(capsys):
+    """The --evaluator flag restricts which evaluator tables are printed."""
+    ex_id = uuid4()
+    run = _make_run(example_id=ex_id, query="eviction question")
+    feedback = [
+        _make_feedback(run.id, "tone", 1.0),
+        _make_feedback(run.id, "legal correctness", 0.5),
+    ]
+    examples = [_make_example(ex_id, 1)]
+
+    client = _mock_client_for_stats([run], feedback, examples)
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_experiment_stats(MagicMock(experiment="exp", evaluator=["tone"]))
+
+    out = capsys.readouterr().out
+    assert "tone" in out
+    assert "legal correctness" not in out
