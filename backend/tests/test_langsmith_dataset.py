@@ -12,6 +12,7 @@ from hypothesis import strategies as st
 from evaluate.langsmith_dataset import (
     _apply_dataset_schemas,
     _example_content_diff,
+    _experiment_scores,
     _extract_rubric,
     _git_is_clean,
     _load_dataset_schemas,
@@ -34,6 +35,8 @@ from evaluate.langsmith_dataset import (
     cmd_example_remove,
     cmd_example_show,
     cmd_example_update,
+    cmd_experiment_compare,
+    cmd_experiment_show,
     local_or_remote,
     make_client,
 )
@@ -1132,3 +1135,179 @@ def test_local_or_remote_classification(value):
         assert isinstance(result, Path)
     else:
         assert isinstance(result, str)
+
+
+# ── _experiment_scores ─────────────────────────────────────────────────────────
+
+
+def _make_run(run_id=None):
+    r = MagicMock()
+    r.id = run_id or uuid4()
+    return r
+
+
+def _make_feedback(run_id, key, score):
+    fb = MagicMock()
+    fb.run_id = run_id
+    fb.key = key
+    fb.score = score
+    return fb
+
+
+def test_experiment_scores_no_runs():
+    client = MagicMock()
+    client.list_runs.return_value = []
+    count, scores = _experiment_scores(client, "proj-id")
+    assert count == 0
+    assert scores == {}
+
+
+def test_experiment_scores_aggregates_mean_and_pstdev():
+    run = _make_run()
+    client = MagicMock()
+    client.list_runs.return_value = [run]
+    client.list_feedback.return_value = [
+        _make_feedback(run.id, "legal correctness", 1.0),
+        _make_feedback(run.id, "legal correctness", 0.5),
+        _make_feedback(run.id, "legal correctness", 0.5),
+    ]
+    count, scores = _experiment_scores(client, "proj-id")
+    assert count == 1
+    mean, std = scores["legal correctness"]
+    assert round(mean, 4) == round(2.0 / 3.0, 4)
+    assert std > 0
+
+
+def test_experiment_scores_ignores_none_score():
+    run = _make_run()
+    client = MagicMock()
+    client.list_runs.return_value = [run]
+    client.list_feedback.return_value = [
+        _make_feedback(run.id, "tone", None),
+        _make_feedback(run.id, "tone", 1.0),
+    ]
+    _, scores = _experiment_scores(client, "proj-id")
+    mean, _ = scores["tone"]
+    assert mean == 1.0
+
+
+def test_experiment_scores_multiple_evaluator_keys():
+    run = _make_run()
+    client = MagicMock()
+    client.list_runs.return_value = [run]
+    client.list_feedback.return_value = [
+        _make_feedback(run.id, "legal correctness", 1.0),
+        _make_feedback(run.id, "tone", 0.5),
+    ]
+    _, scores = _experiment_scores(client, "proj-id")
+    assert set(scores.keys()) == {"legal correctness", "tone"}
+
+
+# ── cmd_experiment_show ────────────────────────────────────────────────────────
+
+
+def _make_project(proj_name: str, proj_id: str = "proj-id"):
+    """MagicMock project with a real .name attribute (name= is reserved in MagicMock)."""
+    p = MagicMock()
+    p.name = proj_name
+    p.id = proj_id
+    p.start_time = None
+    p.end_time = None
+    return p
+
+
+def test_cmd_experiment_show_outputs_json(capsys):
+    run = _make_run()
+    mock_client = MagicMock()
+    mock_client.read_project.return_value = _make_project("my-exp")
+    mock_client.list_runs.return_value = [run]
+    mock_client.list_feedback.return_value = [
+        _make_feedback(run.id, "legal correctness", 1.0),
+    ]
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        args = MagicMock(experiment="my-exp")
+        cmd_experiment_show(args)
+
+    out = json.loads(capsys.readouterr().out)
+    assert out["run_count"] == 1
+    assert "legal correctness" in out["feedback_stats"]
+    assert "mean" in out["feedback_stats"]["legal correctness"]
+    assert "std" in out["feedback_stats"]["legal correctness"]
+
+
+# ── cmd_experiment_compare ─────────────────────────────────────────────────────
+
+
+def _mock_client_for_compare(runs1, feedback1, runs2, feedback2):
+    """Return a client whose list_runs/list_feedback alternate between two experiments."""
+    client = MagicMock()
+    client.read_project.side_effect = [_make_project("exp-A"), _make_project("exp-B")]
+    client.list_runs.side_effect = [runs1, runs2]
+    client.list_feedback.side_effect = [feedback1, feedback2]
+    return client
+
+
+def test_cmd_experiment_compare_shows_run_counts(capsys):
+    r1, r2 = _make_run(), _make_run()
+    client = _mock_client_for_compare(
+        [r1],
+        [_make_feedback(r1.id, "tone", 1.0)],
+        [r2],
+        [_make_feedback(r2.id, "tone", 0.5)],
+    )
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        args = MagicMock(experiment1="exp-A", experiment2="exp-B")
+        cmd_experiment_compare(args)
+
+    out = capsys.readouterr().out
+    assert "runs" in out
+    assert "1" in out
+
+
+def test_cmd_experiment_compare_shows_evaluator_scores(capsys):
+    r1, r2 = _make_run(), _make_run()
+    client = _mock_client_for_compare(
+        [r1],
+        [_make_feedback(r1.id, "legal correctness", 1.0)],
+        [r2],
+        [_make_feedback(r2.id, "legal correctness", 0.5)],
+    )
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        args = MagicMock(experiment1="exp-A", experiment2="exp-B")
+        cmd_experiment_compare(args)
+
+    out = capsys.readouterr().out
+    assert "legal correctness" in out
+    assert "100.0%" in out
+    assert "50.0%" in out
+
+
+def test_cmd_experiment_compare_shows_sigma(capsys):
+    r1, r2 = _make_run(), _make_run()
+    client = _mock_client_for_compare(
+        [r1],
+        [_make_feedback(r1.id, "tone", 1.0), _make_feedback(r1.id, "tone", 0.5)],
+        [r2],
+        [_make_feedback(r2.id, "tone", 1.0)],
+    )
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        args = MagicMock(experiment1="exp-A", experiment2="exp-B")
+        cmd_experiment_compare(args)
+
+    assert "σ=" in capsys.readouterr().out
+
+
+def test_cmd_experiment_compare_missing_key_shows_dash(capsys):
+    r1, r2 = _make_run(), _make_run()
+    client = _mock_client_for_compare(
+        [r1],
+        [_make_feedback(r1.id, "legal correctness", 1.0)],
+        [r2],
+        [],  # exp-B has no feedback
+    )
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        args = MagicMock(experiment1="exp-A", experiment2="exp-B")
+        cmd_experiment_compare(args)
+
+    assert "—" in capsys.readouterr().out
