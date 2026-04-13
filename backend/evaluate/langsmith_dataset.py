@@ -11,7 +11,7 @@ Usage examples:
     dataset validate ./my-dataset.jsonl
     example list my-dataset
     experiment list my-dataset
-    run show <run-id>
+    runs show <run-id>
     prompt list
     prompt pull tfa-legal-correctness evaluators/legal_correctness.md
     prompt pull tfa-tone evaluators/tone.md --dry-run
@@ -38,6 +38,7 @@ from langchain_core.runnables import RunnableSequence
 from langsmith import Client
 from langsmith import utils as langsmith_utils
 
+from evaluate.results_display import ScenarioResult, print_consistency_stats
 from tenantfirstaid.constants import LANGSMITH_API_KEY
 
 EVALUATE_DIR = Path(__file__).parent
@@ -516,9 +517,33 @@ def cmd_experiment_list(args: argparse.Namespace) -> None:
     _tabulate([(p.name or "", str(p.id)) for p in projects], headers=headers)
 
 
+def _experiment_scores(
+    client: Any, project_id: Any
+) -> tuple[int, dict[str, tuple[float, float]]]:
+    """Return (run_count, {evaluator_key: (mean, pstdev)}) for an experiment.
+
+    read_project does not reliably populate run_count or feedback_stats, so
+    we count runs and aggregate scores directly from list_runs/list_feedback.
+    """
+    import statistics as _statistics
+
+    runs = list(client.list_runs(project_id=project_id, execution_order=1))
+    if not runs:
+        return 0, {}
+    run_ids = [r.id for r in runs]
+    raw: dict[str, list[float]] = {}
+    for fb in client.list_feedback(run_ids=run_ids):
+        if fb.score is not None:
+            raw.setdefault(fb.key, []).append(float(fb.score))
+    return len(runs), {
+        k: (_statistics.mean(v), _statistics.pstdev(v)) for k, v in raw.items()
+    }
+
+
 def cmd_experiment_show(args: argparse.Namespace) -> None:
     client = make_client()
     p = client.read_project(project_name=args.experiment)
+    run_count, scores = _experiment_scores(client, p.id)
     print(
         json.dumps(
             {
@@ -526,8 +551,11 @@ def cmd_experiment_show(args: argparse.Namespace) -> None:
                 "id": str(p.id),
                 "start_time": str(p.start_time),
                 "end_time": str(p.end_time),
-                "run_count": p.run_count,
-                "feedback_stats": p.feedback_stats,
+                "run_count": run_count,
+                "feedback_stats": {
+                    k: {"mean": round(mean, 4), "std": round(std, 4)}
+                    for k, (mean, std) in scores.items()
+                },
             },
             indent=2,
         )
@@ -540,27 +568,19 @@ def cmd_experiment_compare(args: argparse.Namespace) -> None:
         client.read_project(project_name=name)
         for name in (args.experiment1, args.experiment2)
     ]
+    (n1, scores1), (n2, scores2) = [_experiment_scores(client, p.id) for p in (p1, p2)]
 
-    def fmt_stats(stats: dict | None) -> str:
-        if not stats:
+    def fmt(entry: tuple[float, float] | None) -> str:
+        if entry is None:
             return "—"
-        avg = stats.get("avg")
-        return f"{avg:.1%}" if avg is not None else str(stats)
+        mean, std = entry
+        return f"{mean:.1%} (σ={std:.1%})"
 
-    all_keys = sorted(
-        set((p1.feedback_stats or {}).keys()) | set((p2.feedback_stats or {}).keys())
-    )
-    rows: list[tuple[str, ...]] = [
-        ("runs", str(p1.run_count or 0), str(p2.run_count or 0))
-    ]
+    all_keys = sorted(scores1.keys() | scores2.keys())
+    rows: list[tuple[str, ...]] = [("runs", str(n1), str(n2))]
     for key in all_keys:
-        rows.append(
-            (
-                key.removeprefix("feedback."),
-                fmt_stats((p1.feedback_stats or {}).get(key)),
-                fmt_stats((p2.feedback_stats or {}).get(key)),
-            )
-        )
+        rows.append((key, fmt(scores1.get(key)), fmt(scores2.get(key))))
+
     _tabulate(
         rows,
         headers=("METRIC", p1.name or args.experiment1, p2.name or args.experiment2),
@@ -581,6 +601,40 @@ def cmd_experiment_results(args: argparse.Namespace) -> None:
                 }
             )
         )
+
+
+def cmd_experiment_stats(args: argparse.Namespace) -> None:
+    """Print per-scenario consistency stats with ASCII score distributions."""
+    client = make_client()
+    p = client.read_project(project_name=args.experiment)
+    runs = list(client.list_runs(project_id=p.id, execution_order=1))
+    if not runs:
+        print("No runs found.")
+        return
+
+    # Fetch all feedback in one call, then index by run_id.
+    run_ids = [run.id for run in runs]
+    fb_by_run: dict[str, list] = {}
+    for fb in client.list_feedback(run_ids=run_ids):
+        fb_by_run.setdefault(str(fb.run_id), []).append(fb)
+
+    # Group runs by the example they ran against, preserving insertion order.
+    runs_by_example: dict[str, list] = {}
+    for run in runs:
+        runs_by_example.setdefault(str(run.reference_example_id), []).append(run)
+
+    scenarios = []
+    for example_runs in runs_by_example.values():
+        q = str((example_runs[0].inputs or {}).get("query", ""))
+        label = f'"{q[:72]}{"..." if len(q) > 72 else ""}"'
+        scores: dict[str, list[float]] = {}
+        for run in example_runs:
+            for fb in fb_by_run.get(str(run.id), []):
+                if fb.score is not None:
+                    scores.setdefault(fb.key, []).append(float(fb.score))
+        scenarios.append(ScenarioResult(label=label, scores=scores))
+
+    print_consistency_stats(scenarios, evaluators=args.evaluator or None)
 
 
 # ── run subcommands ────────────────────────────────────────────────────────────
@@ -1023,18 +1077,72 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--no-header", action="store_true", help="Suppress column headers.")
     p.set_defaults(func=cmd_experiment_list)
 
-    p = ex_sub.add_parser("show", help="Print aggregate results for an experiment.")
+    p = ex_sub.add_parser(
+        "show",
+        help="Print run count and mean/stdev per evaluator for an experiment.",
+        description=(
+            "Print a JSON summary of an experiment: run count, start/end time, "
+            "and mean/stdev for each evaluator key. "
+            "Scores are aggregated directly from stored runs and feedback rather "
+            "than the cached project metadata, which is not always populated."
+        ),
+    )
     p.add_argument("experiment", metavar="name", help="LangSmith experiment name.")
     p.set_defaults(func=cmd_experiment_show)
 
-    p = ex_sub.add_parser("compare", help="Compare scores for two experiments.")
+    p = ex_sub.add_parser(
+        "compare",
+        help="Compare two experiments side-by-side: run count and mean (with σ) per evaluator.",
+        description=(
+            "Print a side-by-side table of run count and mean with standard deviation per evaluator "
+            "for two experiments run against the same dataset. "
+            "Useful for measuring the effect of a prompt or model change."
+        ),
+    )
     p.add_argument("experiment1", metavar="name", help="First experiment name.")
     p.add_argument("experiment2", metavar="name", help="Second experiment name.")
     p.set_defaults(func=cmd_experiment_compare)
 
-    p = ex_sub.add_parser("results", help="Print per-example results as JSONL.")
+    p = ex_sub.add_parser(
+        "results",
+        help="Print per-run inputs, outputs, and evaluator scores as JSONL.",
+        description=(
+            "Stream one JSON object per run to stdout: inputs, model outputs, "
+            "and evaluator feedback scores. "
+            "Useful for inspecting individual results or piping to jq / other tools."
+        ),
+    )
     p.add_argument("experiment", metavar="name", help="LangSmith experiment name.")
     p.set_defaults(func=cmd_experiment_results)
+
+    p = ex_sub.add_parser(
+        "stats",
+        help=(
+            "Print per-evaluator consistency tables: one row per scenario showing "
+            "mean, stdev, and score frequency (0.0 / 0.5 / 1.0) across repetitions. "
+            "Followed by a scenario key mapping S1, S2, ... to full example queries."
+        ),
+        description=(
+            "Print per-evaluator consistency tables for an experiment. "
+            "Each table has one row per scenario showing mean, stdev, and the count "
+            "of runs that scored 0.0, 0.5, or 1.0. "
+            "Non-standard scores (if any) appear in separate columns to the right. "
+            "A scenario key at the end maps S1, S2, ... to the full example query "
+            "and repetition count. "
+            "Use --evaluator to restrict output to specific evaluators."
+        ),
+    )
+    p.add_argument("experiment", metavar="name", help="LangSmith experiment name.")
+    p.add_argument(
+        "--evaluator",
+        metavar="name",
+        action="append",
+        help=(
+            "Show only this evaluator. Repeatable: "
+            "--evaluator 'legal correctness' --evaluator tone."
+        ),
+    )
+    p.set_defaults(func=cmd_experiment_stats)
 
     # ── runs ──────────────────────────────────────────────────────────────────
     runs_parser = nouns.add_parser("runs", help="Inspect individual runs.")

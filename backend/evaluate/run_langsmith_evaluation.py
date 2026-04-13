@@ -20,6 +20,7 @@ from evaluate.langsmith_evaluators import (
     tone_evaluator,
     # tool_usage_evaluator,
 )
+from evaluate.results_display import ScenarioResult, print_consistency_stats
 from tenantfirstaid.constants import LANGSMITH_API_KEY, SINGLETON
 from tenantfirstaid.langchain_chat_manager import LangChainChatManager
 from tenantfirstaid.location import OregonCity, UsaState
@@ -75,6 +76,25 @@ def agent_wrapper(inputs) -> Dict[str, str]:
         # TODO: figure out how to return ToolMessage content blocks for evaluation of tool calls and outputs
         #       since these are not currently included in the output stream from generate_streaming_response()
     }
+
+
+def _df_to_scenario_results(df: Any) -> List[ScenarioResult]:
+    """Convert a LangSmith results DataFrame to ScenarioResult list."""
+    score_cols = [c for c in df.columns if c.startswith("feedback.")]
+    if not score_cols or "example_id" not in df.columns:
+        return []
+
+    query_col = "inputs.query" if "inputs.query" in df.columns else None
+    scenarios = []
+    for _, group in df.groupby("example_id", sort=False):
+        q = str(group[query_col].iloc[0]) if query_col else ""
+        label = f'"{q[:72]}{"..." if len(q) > 72 else ""}"'
+        scores: Dict[str, List[float]] = {}
+        for col in score_cols:
+            name = col.removeprefix("feedback.")
+            scores[name] = group[col].dropna().tolist()
+        scenarios.append(ScenarioResult(label=label, scores=scores))
+    return scenarios
 
 
 # TODO: https://docs.langchain.com/langsmith/multi-turn-simulation
@@ -146,7 +166,9 @@ def run_evaluation(
     else:
         print("No feedback columns found.")
 
-    print(f"Experiment: {results.experiment_name}")
+    print_consistency_stats(_df_to_scenario_results(df))
+
+    print(f"\nExperiment: {results.experiment_name}")
     return results
 
 
