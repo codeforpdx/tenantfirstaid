@@ -107,7 +107,7 @@ jobs:
             MODEL_NAME=${{vars.MODEL_NAME}}
             GOOGLE_CLOUD_PROJECT=${{vars.GOOGLE_CLOUD_PROJECT}}
             GOOGLE_CLOUD_LOCATION=${{vars.GOOGLE_CLOUD_LOCATION}}
-            VERTEX_AI_DATASTORES=${{vars.VERTEX_AI_DATASTORES}}
+            VERTEX_AI_DATASTORE_LAWS=${{vars.VERTEX_AI_DATASTORE_LAWS}}
             SHOW_MODEL_THINKING=false
             GOOGLE_APPLICATION_CREDENTIALS=/etc/tenantfirstaid/google-service-account.json
             EOF

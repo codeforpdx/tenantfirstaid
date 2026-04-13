@@ -1,4 +1,5 @@
 import os
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Final, Optional
 
@@ -6,29 +7,28 @@ from dotenv import load_dotenv
 from langchain_google_genai import HarmBlockThreshold, HarmCategory
 
 
-def _parse_datastores(raw: Optional[str]) -> dict[str, str]:
-    """Parse a comma-delimited string of ``name:id`` pairs into a dict keyed by name.
+_DATASTORE_PREFIX = "VERTEX_AI_DATASTORE_"
 
-    Expected format: ``laws:datastore-id-1,oregonlawhelp:datastore-id-2``
+
+def _parse_datastores(env: Mapping[str, str]) -> dict[str, str]:
+    """Build a datastore name→id dict from environment variables with the VERTEX_AI_DATASTORE_ prefix.
+
+    Each variable named ``VERTEX_AI_DATASTORE_<NAME>`` becomes an entry keyed by
+    ``<NAME>`` lowercased. The value may be a bare datastore ID or a full resource URI.
     """
-    if raw is None:
-        raise ValueError("[VERTEX_AI_DATASTORES] environment variable is not set.")
     result = {}
-    for entry in raw.split(","):
-        entry = entry.strip()
-        if ":" not in entry:
-            raise ValueError(
-                f"VERTEX_AI_DATASTORES entry {entry!r} is not in 'name:id' format."
-            )
-        name, id_ = entry.split(":", 1)
-        name, id_ = name.strip(), id_.strip()
-        if not name or not id_:
-            raise ValueError("VERTEX_AI_DATASTORES name and id must not be empty.")
-        if id_.startswith("projects/"):
-            id_ = id_.rstrip("/").split("/")[-1]
-        if name in result:
-            raise ValueError("VERTEX_AI_DATASTORES contains duplicate names.")
-        result[name] = id_
+    for key, value in env.items():
+        if not key.startswith(_DATASTORE_PREFIX):
+            continue
+        name = key.removeprefix(_DATASTORE_PREFIX).lower()
+        if not name:
+            raise ValueError(f"[{key}] datastore variable has no name after the prefix.")
+        value = value.strip()
+        if not value:
+            raise ValueError(f"[{key}] environment variable is set but empty.")
+        if value.startswith("projects/"):
+            value = value.rstrip("/").split("/")[-1]
+        result[name] = value
     return result
 
 
@@ -101,14 +101,11 @@ class _GoogEnvAndPolicy:
             if getattr(self, c) is None:
                 raise ValueError(f"[{c}] environment variable is not set.")
 
-        # _parse_datastores raises ValueError if the var is missing, not in the
-        # expected format, or contains duplicate names.
-        self.VERTEX_AI_DATASTORES: Final[dict[str, str]] = _parse_datastores(
-            os.getenv("VERTEX_AI_DATASTORES")
-        )
+        # _parse_datastores raises ValueError if any matched var is set but empty.
+        self.VERTEX_AI_DATASTORES: Final[dict[str, str]] = _parse_datastores(os.environ)
         if "laws" not in self.VERTEX_AI_DATASTORES:
             raise ValueError(
-                "VERTEX_AI_DATASTORES is missing required datastore: 'laws'."
+                f"[{_DATASTORE_PREFIX}LAWS] environment variable is not set."
             )
 
         # Assign slot attributes for optional environment variables
