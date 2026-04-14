@@ -25,6 +25,7 @@ Usage examples:
 import argparse
 import difflib
 import json
+import math
 import re
 import statistics
 import subprocess
@@ -544,7 +545,7 @@ def _index_feedback_by_run(client: Any, run_ids: list) -> dict[str, list]:
 
 
 def _index_scenario_ids(
-    client: Any, example_ids: list, default: int = 0
+    client: Any, example_ids: list, default: int = -1
 ) -> dict[str, int]:
     """Return {str(example_id): scenario_id} fetched from example metadata."""
     return {
@@ -653,7 +654,9 @@ def cmd_experiment_stats(args: argparse.Namespace) -> None:
     for run in runs:
         runs_by_example.setdefault(str(run.reference_example_id), []).append(run)
 
-    scenario_id_by_example = _index_scenario_ids(client, list(runs_by_example.keys()))
+    scenario_id_by_example = _index_scenario_ids(
+        client, list(runs_by_example.keys()), default=-1
+    )
 
     scenarios = []
     for example_id, example_runs in sorted(
@@ -733,7 +736,7 @@ def cmd_run_exemplars(args: argparse.Namespace) -> None:
         for fb in fb_by_run.get(str(run.id), []):
             if fb.key == evaluator_key and fb.score is not None:
                 return float(fb.score)
-        return float("nan")
+        return float("inf")  # Sort unevaluated runs after all scored runs.
 
     scores_by_run = {run.id: _score(run) for run in scenario_runs}
     scenario_runs.sort(key=lambda r: scores_by_run[r.id])
@@ -741,7 +744,7 @@ def cmd_run_exemplars(args: argparse.Namespace) -> None:
     rows: list[tuple[str, ...]] = []
     for run in scenario_runs:
         score = scores_by_run[run.id]
-        score_str = f"{score:.2f}" if score == score else "N/A"  # NaN check
+        score_str = f"{score:.2f}" if math.isfinite(score) else "N/A"
         query = str((run.inputs or {}).get("query", ""))
         rows.append(
             (score_str, str(run.id), query[:60] + ("…" if len(query) > 60 else ""))
