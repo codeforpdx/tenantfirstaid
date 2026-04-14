@@ -11,7 +11,12 @@ Usage examples:
     dataset validate ./my-dataset.jsonl
     example list my-dataset
     experiment list my-dataset
+    experiment show <name-or-uuid>
+    experiment stats <name-or-uuid>
+    runs exemplars <name-or-uuid> <scenario-id> --evaluator "legal correctness"
     runs show <run-id>
+    runs trace <run-id>
+    runs trace <run-id> --verbose
     prompt list
     prompt pull tfa-legal-correctness evaluators/legal_correctness.md
     prompt pull tfa-tone evaluators/tone.md --dry-run
@@ -163,6 +168,18 @@ def make_client() -> Client:
             "LANGSMITH_API_KEY environment variable not set. Cannot create LangSmith Client."
         )
     return Client(api_key=LANGSMITH_API_KEY)
+
+
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE
+)
+
+
+def _read_project(client: Client, name_or_id: str) -> Any:
+    """Read a LangSmith project by name or UUID."""
+    if _UUID_RE.match(name_or_id):
+        return client.read_project(project_id=name_or_id)
+    return client.read_project(project_name=name_or_id)
 
 
 # ── dataset subcommands ────────────────────────────────────────────────────────
@@ -542,7 +559,7 @@ def _experiment_scores(
 
 def cmd_experiment_show(args: argparse.Namespace) -> None:
     client = make_client()
-    p = client.read_project(project_name=args.experiment)
+    p = _read_project(client, args.experiment)
     run_count, scores = _experiment_scores(client, p.id)
     print(
         json.dumps(
@@ -565,8 +582,7 @@ def cmd_experiment_show(args: argparse.Namespace) -> None:
 def cmd_experiment_compare(args: argparse.Namespace) -> None:
     client = make_client()
     p1, p2 = [
-        client.read_project(project_name=name)
-        for name in (args.experiment1, args.experiment2)
+        _read_project(client, name) for name in (args.experiment1, args.experiment2)
     ]
     (n1, scores1), (n2, scores2) = [_experiment_scores(client, p.id) for p in (p1, p2)]
 
@@ -589,7 +605,7 @@ def cmd_experiment_compare(args: argparse.Namespace) -> None:
 
 def cmd_experiment_results(args: argparse.Namespace) -> None:
     client = make_client()
-    p = client.read_project(project_name=args.experiment)
+    p = _read_project(client, args.experiment)
     for run in client.list_runs(project_id=p.id, execution_order=1):
         print(
             json.dumps(
@@ -606,7 +622,7 @@ def cmd_experiment_results(args: argparse.Namespace) -> None:
 def cmd_experiment_stats(args: argparse.Namespace) -> None:
     """Print per-scenario consistency stats with ASCII score distributions."""
     client = make_client()
-    p = client.read_project(project_name=args.experiment)
+    p = _read_project(client, args.experiment)
     runs = list(client.list_runs(project_id=p.id, execution_order=1))
     if not runs:
         print("No runs found.")
@@ -653,7 +669,7 @@ def cmd_experiment_stats(args: argparse.Namespace) -> None:
 
 def cmd_run_list(args: argparse.Namespace) -> None:
     client = make_client()
-    p = client.read_project(project_name=args.experiment)
+    p = _read_project(client, args.experiment)
     headers = None if args.no_header else ("UUID", "NAME", "STATUS")
     _tabulate(
         [
@@ -664,22 +680,88 @@ def cmd_run_list(args: argparse.Namespace) -> None:
     )
 
 
+def cmd_run_exemplars(args: argparse.Namespace) -> None:
+    """List runs for a specific scenario, sorted by evaluator score.
+
+    Designed to replace the manual loop of:
+      runs scores → runs show (to check scenario) → runs trace --verbose.
+
+    Prints one row per run in the target scenario, sorted from lowest to highest
+    score for the chosen evaluator, so the worst and best exemplars are easy to
+    pick for 'runs trace --verbose'.
+    """
+    client = make_client()
+    p = _read_project(client, args.experiment)
+    runs = list(client.list_runs(project_id=p.id, execution_order=1))
+    if not runs:
+        print("No runs found.")
+        return
+
+    # Fetch all feedback in one call.
+    run_ids = [run.id for run in runs]
+    fb_by_run: dict[str, list] = {}
+    for fb in client.list_feedback(run_ids=run_ids):
+        fb_by_run.setdefault(str(fb.run_id), []).append(fb)
+
+    # Fetch example metadata to resolve scenario_id.
+    example_ids = list(
+        {str(run.reference_example_id) for run in runs if run.reference_example_id}
+    )
+    scenario_id_by_example: dict[str, int] = {}
+    for ex in client.list_examples(example_ids=example_ids):
+        scenario_id_by_example[str(ex.id)] = (ex.metadata or {}).get("scenario_id", -1)
+
+    # Filter runs to the requested scenario.
+    target = args.scenario_id
+    scenario_runs = [
+        run
+        for run in runs
+        if scenario_id_by_example.get(str(run.reference_example_id)) == target
+    ]
+    if not scenario_runs:
+        print(f"No runs found for scenario_id={target}.")
+        return
+
+    evaluator_key: str = args.evaluator
+
+    def _score(run: Any) -> float:
+        for fb in fb_by_run.get(str(run.id), []):
+            if fb.key == evaluator_key and fb.score is not None:
+                return float(fb.score)
+        return float("nan")
+
+    scenario_runs.sort(key=_score)
+
+    rows: list[tuple[str, ...]] = []
+    for run in scenario_runs:
+        score = _score(run)
+        score_str = f"{score:.2f}" if score == score else "N/A"  # NaN check
+        query = str((run.inputs or {}).get("query", ""))
+        rows.append(
+            (score_str, str(run.id), query[:60] + ("…" if len(query) > 60 else ""))
+        )
+
+    headers = None if args.no_header else (evaluator_key, "RUN UUID", "QUERY")
+    _tabulate(rows, headers=headers)
+
+
 def cmd_run_show(args: argparse.Namespace) -> None:
     client = make_client()
-    run = client.read_run(args.run_id)
-    print(
-        json.dumps(
-            {
-                "id": str(run.id),
-                "name": run.name,
-                "status": run.status,
-                "inputs": run.inputs,
-                "outputs": run.outputs,
-                "error": run.error,
-            },
-            indent=2,
+    for run_id in args.run_id:
+        run = client.read_run(run_id)
+        print(
+            json.dumps(
+                {
+                    "id": str(run.id),
+                    "name": run.name,
+                    "status": run.status,
+                    "inputs": run.inputs,
+                    "outputs": run.outputs,
+                    "error": run.error,
+                },
+                indent=2,
+            )
         )
-    )
 
 
 def cmd_run_feedback(args: argparse.Namespace) -> None:
@@ -697,13 +779,38 @@ def cmd_run_feedback(args: argparse.Namespace) -> None:
         )
 
 
+_TRACE_SNIP = 5000  # max chars shown per tool/llm content block before truncation
+
+
 def cmd_run_trace(args: argparse.Namespace) -> None:
     client = make_client()
     run = client.read_run(args.run_id, load_child_runs=True)
+    verbose: bool = args.verbose
 
-    def print_run(r, depth: int = 0) -> None:
+    def _snip(text: str) -> str:
+        if len(text) > _TRACE_SNIP:
+            return (
+                text[:_TRACE_SNIP] + f"\n… [{len(text) - _TRACE_SNIP} chars truncated]"
+            )
+        return text
+
+    def print_run(r: Any, depth: int = 0) -> None:
         indent = "  " * depth
         print(f"{indent}{r.name}  ({r.run_type})  status={r.status}")
+        if verbose:
+            if r.run_type == "tool":
+                for k, v in (r.inputs or {}).items():
+                    print(f"{indent}  in  {k}: {v!r}")
+                raw = (r.outputs or {}).get("output", r.outputs)
+                text = raw if isinstance(raw, str) else json.dumps(raw)
+                print(f"{indent}  out {_snip(text)}")
+            elif r.run_type == "llm":
+                # Show the last message in the output (the model reply).
+                generations = (r.outputs or {}).get("generations", [[]])
+                for gen_list in generations:
+                    for gen in gen_list:
+                        text = gen.get("text") or json.dumps(gen.get("message", {}))
+                        print(f"{indent}  out {_snip(text)}")
         for child in r.child_runs or []:
             print_run(child, depth + 1)
 
@@ -1098,7 +1205,9 @@ def build_parser() -> argparse.ArgumentParser:
             "than the cached project metadata, which is not always populated."
         ),
     )
-    p.add_argument("experiment", metavar="name", help="LangSmith experiment name.")
+    p.add_argument(
+        "experiment", metavar="name-or-uuid", help="LangSmith experiment name or UUID."
+    )
     p.set_defaults(func=cmd_experiment_show)
 
     p = ex_sub.add_parser(
@@ -1123,7 +1232,9 @@ def build_parser() -> argparse.ArgumentParser:
             "Useful for inspecting individual results or piping to jq / other tools."
         ),
     )
-    p.add_argument("experiment", metavar="name", help="LangSmith experiment name.")
+    p.add_argument(
+        "experiment", metavar="name-or-uuid", help="LangSmith experiment name or UUID."
+    )
     p.set_defaults(func=cmd_experiment_results)
 
     p = ex_sub.add_parser(
@@ -1143,7 +1254,9 @@ def build_parser() -> argparse.ArgumentParser:
             "Use --evaluator to restrict output to specific evaluators."
         ),
     )
-    p.add_argument("experiment", metavar="name", help="LangSmith experiment name.")
+    p.add_argument(
+        "experiment", metavar="name-or-uuid", help="LangSmith experiment name or UUID."
+    )
     p.add_argument(
         "--evaluator",
         metavar="name",
@@ -1161,12 +1274,41 @@ def build_parser() -> argparse.ArgumentParser:
     runs_sub.required = True
 
     p = runs_sub.add_parser("list", help="List runs in an experiment.")
-    p.add_argument("experiment", metavar="name", help="LangSmith experiment name.")
+    p.add_argument(
+        "experiment", metavar="name-or-uuid", help="LangSmith experiment name or UUID."
+    )
     p.add_argument("--no-header", action="store_true", help="Suppress column headers.")
     p.set_defaults(func=cmd_run_list)
 
-    p = runs_sub.add_parser("show", help="Print inputs, outputs, and status for a run.")
-    p.add_argument("run_id", help="LangSmith run UUID.")
+    p = runs_sub.add_parser(
+        "exemplars",
+        help=(
+            "List runs for a specific scenario sorted by evaluator score — "
+            "worst to best — so you can pick UUIDs for 'runs trace --verbose'."
+        ),
+    )
+    p.add_argument(
+        "experiment", metavar="name-or-uuid", help="LangSmith experiment name or UUID."
+    )
+    p.add_argument(
+        "scenario_id",
+        type=int,
+        metavar="scenario-id",
+        help="scenario_id from 'experiment stats' (the number in brackets, e.g. 3 for [3]).",
+    )
+    p.add_argument(
+        "--evaluator",
+        metavar="key",
+        required=True,
+        help="Evaluator key to sort by (e.g. 'legal correctness').",
+    )
+    p.add_argument("--no-header", action="store_true", help="Suppress column headers.")
+    p.set_defaults(func=cmd_run_exemplars)
+
+    p = runs_sub.add_parser(
+        "show", help="Print inputs, outputs, and status for one or more runs."
+    )
+    p.add_argument("run_id", nargs="+", help="One or more LangSmith run UUIDs.")
     p.set_defaults(func=cmd_run_show)
 
     p = runs_sub.add_parser("feedback", help="Print evaluator scores for a run.")
@@ -1175,6 +1317,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = runs_sub.add_parser("trace", help="Print the full call tree for a run.")
     p.add_argument("run_id", help="LangSmith run UUID.")
+    p.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Include tool call arguments, tool responses, and LLM output at each node.",
+    )
     p.set_defaults(func=cmd_run_trace)
 
     # ── prompt ───────────────────────────────────────────────────────────────

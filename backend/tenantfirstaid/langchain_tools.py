@@ -10,7 +10,7 @@ from langchain.tools import ToolRuntime
 from langchain_core.tools import tool
 from langchain_google_community import VertexAISearchRetriever
 from langgraph.config import get_stream_writer
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .constants import LETTER_TEMPLATE, SINGLETON
 from .google_auth import load_gcp_credentials
@@ -47,6 +47,10 @@ class RagBuilder:
             data_store_id=SINGLETON.VERTEX_AI_DATASTORE,  # "tenantfirstaid-corpora_1758844059585",
             engine_data_type=0,  # tenantfirstaid-corpora_1758844059585 is unstructured
             get_extractive_answers=True,  # TODO: figure out if this is useful
+            # Suggestion-only: spell corrections are recorded in the response but the
+            # original query is used for retrieval. Prevents auto-correction from
+            # mangling ORS references and other legal terminology.
+            spell_correction_mode=1,
             name=name,
             max_documents=max_documents,
             filter=filter,
@@ -107,9 +111,25 @@ def generate_letter(letter: str) -> str:
 
 
 class CityStateLawsInputSchema(BaseModel):
-    query: str
+    query: str = Field(
+        description="""A precise legal search query for the specific legal issue.
+                       Rephrase the user's question using relevant legal terms and
+                       ORS references when applicable (e.g. 'week-to-week tenancy
+                       nonpayment notice timing ORS 90.394'). Avoid paraphrasing so
+                       broadly that specific statutory details are lost."""
+    )
     state: UsaState
     city: Optional[OregonCity] = None
+    max_documents: int = Field(
+        default=5,
+        ge=1,
+        le=25,
+        description="""Number of passages to retrieve (1–15). Use a smaller value
+                       (3–5) for focused questions with a clear statutory target.
+                       Use a larger value (10–15) when the question spans multiple
+                       statutes, involves city overrides, or an initial retrieval
+                       missed the relevant passage.""",
+    )
 
 
 @tool(args_schema=CityStateLawsInputSchema, response_format="content")
@@ -117,6 +137,7 @@ def retrieve_city_state_laws(
     query: str,
     state: UsaState,
     city: Optional[OregonCity] = None,
+    max_documents: int = 5,
     *,
     runtime: ToolRuntime,
 ) -> str:
@@ -125,9 +146,10 @@ def retrieve_city_state_laws(
     laws from the RAG corpus.
 
     Args:
-        query: The user's legal question
+        query: A precise legal search query for the specific legal issue
         city: The user's city (e.g., "portland", "eugene"), optional
         state: The user's state (e.g., "or")
+        max_documents: Number of passages to retrieve (1–15)
 
     Returns:
         Relevant legal passages from city-specific laws
@@ -135,7 +157,7 @@ def retrieve_city_state_laws(
 
     helper = RagBuilder(
         name="retrieve_city_law",
-        max_documents=3,
+        max_documents=max_documents,
         filter=_filter_builder(city=city, state=state),
     )
 
