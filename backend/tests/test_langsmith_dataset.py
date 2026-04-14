@@ -40,6 +40,7 @@ from evaluate.langsmith_dataset import (
     cmd_experiment_stats,
     cmd_run_exemplars,
     cmd_run_show,
+    cmd_run_trace,
     local_or_remote,
     make_client,
 )
@@ -1605,3 +1606,106 @@ def test_cmd_run_show_multiple_uuids(capsys):
     capsys.readouterr()
     # Two separate JSON objects means read_run was called twice.
     assert client.read_run.call_count == 2
+
+
+# ── cmd_run_trace ──────────────────────────────────────────────────────────────
+
+
+def _make_trace_run(name="root", run_type="chain", status="success", child_runs=None):
+    """Build a minimal mock run for cmd_run_trace tests."""
+    r = MagicMock()
+    r.name = name
+    r.run_type = run_type
+    r.status = status
+    r.child_runs = child_runs or []
+    r.inputs = {}
+    r.outputs = {}
+    return r
+
+
+def test_cmd_run_trace_non_verbose_prints_name_and_type(capsys):
+    """Without --verbose, only the name, run_type, and status are printed."""
+    run = _make_trace_run(name="my-chain", run_type="chain", status="success")
+    client = MagicMock()
+    client.read_run.return_value = run
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_trace(MagicMock(run_id=str(uuid4()), verbose=False))
+    out = capsys.readouterr().out
+    assert "my-chain" in out
+    assert "chain" in out
+    assert "success" in out
+
+
+def test_cmd_run_trace_non_verbose_omits_inputs_outputs(capsys):
+    """Without --verbose, tool inputs/outputs are not printed."""
+    tool_run = _make_trace_run(name="retrieve", run_type="tool", status="success")
+    tool_run.inputs = {"query": "eviction notice"}
+    tool_run.outputs = {"output": "ORS 90.394 text"}
+    client = MagicMock()
+    client.read_run.return_value = tool_run
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_trace(MagicMock(run_id=str(uuid4()), verbose=False))
+    out = capsys.readouterr().out
+    assert "eviction notice" not in out
+    assert "ORS 90.394" not in out
+
+
+def test_cmd_run_trace_verbose_prints_tool_inputs(capsys):
+    """With --verbose, tool run inputs are printed with 'in' prefix."""
+    tool_run = _make_trace_run(name="retrieve", run_type="tool", status="success")
+    tool_run.inputs = {"query": "eviction notice"}
+    tool_run.outputs = {"output": "ORS 90.394 text"}
+    client = MagicMock()
+    client.read_run.return_value = tool_run
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_trace(MagicMock(run_id=str(uuid4()), verbose=True))
+    out = capsys.readouterr().out
+    assert "in  query" in out
+    assert "eviction notice" in out
+
+
+def test_cmd_run_trace_verbose_prints_tool_output(capsys):
+    """With --verbose, tool run output is printed with 'out' prefix."""
+    tool_run = _make_trace_run(name="retrieve", run_type="tool", status="success")
+    tool_run.inputs = {}
+    tool_run.outputs = {"output": "ORS 90.394 text"}
+    client = MagicMock()
+    client.read_run.return_value = tool_run
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_trace(MagicMock(run_id=str(uuid4()), verbose=True))
+    out = capsys.readouterr().out
+    assert "out" in out
+    assert "ORS 90.394 text" in out
+
+
+def test_cmd_run_trace_verbose_prints_llm_generation(capsys):
+    """With --verbose, LLM run output generations are printed."""
+    llm_run = _make_trace_run(name="ChatVertexAI", run_type="llm", status="success")
+    llm_run.inputs = {}
+    llm_run.outputs = {
+        "generations": [[{"text": "You are protected under ORS 90.453."}]]
+    }
+    client = MagicMock()
+    client.read_run.return_value = llm_run
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_trace(MagicMock(run_id=str(uuid4()), verbose=True))
+    out = capsys.readouterr().out
+    assert "ORS 90.453" in out
+
+
+def test_cmd_run_trace_verbose_recurses_into_child_runs(capsys):
+    """With --verbose, child runs are printed indented below the parent."""
+    child = _make_trace_run(name="child-tool", run_type="tool", status="success")
+    child.inputs = {"query": "child input"}
+    child.outputs = {"output": "child output"}
+    parent = _make_trace_run(
+        name="parent-chain", run_type="chain", status="success", child_runs=[child]
+    )
+    client = MagicMock()
+    client.read_run.return_value = parent
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_trace(MagicMock(run_id=str(uuid4()), verbose=True))
+    out = capsys.readouterr().out
+    assert "parent-chain" in out
+    assert "child-tool" in out
+    assert "child input" in out

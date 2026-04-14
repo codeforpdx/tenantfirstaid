@@ -1228,8 +1228,12 @@ def build_parser() -> argparse.ArgumentParser:
             "Useful for measuring the effect of a prompt or model change."
         ),
     )
-    p.add_argument("experiment1", metavar="name", help="First experiment name.")
-    p.add_argument("experiment2", metavar="name", help="Second experiment name.")
+    p.add_argument(
+        "experiment1", metavar="name-or-uuid", help="First experiment name or UUID."
+    )
+    p.add_argument(
+        "experiment2", metavar="name-or-uuid", help="Second experiment name or UUID."
+    )
     p.set_defaults(func=cmd_experiment_compare)
 
     p = ex_sub.add_parser(
