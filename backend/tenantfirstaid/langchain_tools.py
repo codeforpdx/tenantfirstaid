@@ -130,7 +130,6 @@ def _make_rag_tool(
     tool_name: str,
     description: str,
     *,
-    args_schema: type[BaseModel] = CityStateLawsInputSchema,
     filter_builder: Callable[..., str] = _default_filter_from_city_state,
 ) -> BaseTool:
     """Factory that creates a RAG retrieval tool bound to a specific datastore."""
@@ -138,7 +137,7 @@ def _make_rag_tool(
     @tool(
         tool_name,
         description=description,
-        args_schema=args_schema,
+        args_schema=CityStateLawsInputSchema,
         response_format="content",
     )
     def _retrieve(
@@ -158,17 +157,14 @@ def _make_rag_tool(
     return _retrieve
 
 
-def get_active_rag_tools() -> list[BaseTool]:
-    """Return tools whose backing datastore is present in the environment."""
-    return [t for key, t in RAG_TOOL_REGISTRY if key in SINGLETON.VERTEX_AI_DATASTORES]
-
-
 retrieve_city_state_laws: BaseTool = _make_rag_tool(
     DatastoreKey.LAWS,
     "retrieve_city_state_laws",
     "Retrieve relevant state (and when specified, city) specific housing laws from the RAG corpus.",
 )
 
+# Defined here for testability; inactive until added to RAG_TOOL_REGISTRY and
+# VERTEX_AI_DATASTORE_OREGON_LAW_HELP is configured.
 retrieve_oregon_law_help: BaseTool = _make_rag_tool(
     DatastoreKey.OREGON_LAW_HELP,
     "retrieve_oregon_law_help",
@@ -186,3 +182,8 @@ RAG_TOOL_REGISTRY: list[tuple[str, BaseTool]] = [
     # Uncomment when VERTEX_AI_DATASTORE_OREGON_LAW_HELP is configured and needed for new tooling.
     # (DatastoreKey.OREGON_LAW_HELP, retrieve_oregon_law_help),
 ]
+
+
+def get_active_rag_tools() -> list[BaseTool]:
+    """Return tools whose backing datastore is present in the environment."""
+    return [t for key, t in RAG_TOOL_REGISTRY if key in SINGLETON.VERTEX_AI_DATASTORES]
