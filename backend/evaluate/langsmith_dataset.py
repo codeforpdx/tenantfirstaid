@@ -652,14 +652,16 @@ def cmd_experiment_stats(args: argparse.Namespace) -> None:
         key=lambda item: scenario_id_by_example.get(item[0], 0),
     ):
         q = str((example_runs[0].inputs or {}).get("query", ""))
-        sc_id = scenario_id_by_example.get(example_id, "?")
-        label = f'[{sc_id}] "{q[:68]}{"..." if len(q) > 68 else ""}"'
+        sc_id = scenario_id_by_example.get(example_id, 0)
+        label = f'"{q[:68]}{"..." if len(q) > 68 else ""}"'
         scores: dict[str, list[float]] = {}
         for run in example_runs:
             for fb in fb_by_run.get(str(run.id), []):
                 if fb.score is not None:
                     scores.setdefault(fb.key, []).append(float(fb.score))
-        scenarios.append(ScenarioResult(label=label, scores=scores))
+        scenarios.append(
+            ScenarioResult(label=label, scenario_id=int(sc_id), scores=scores)
+        )
 
     print_consistency_stats(scenarios, evaluators=args.evaluator or None)
 

@@ -109,15 +109,14 @@ def _df_to_scenario_results(
     for example_id, group in groups:
         q = str(group[query_col].iloc[0]) if query_col else ""
         sc_id = scenario_id_by_example.get(str(example_id))
-        if sc_id is not None:
-            label = f'[{sc_id}] "{q[:68]}{"..." if len(q) > 68 else ""}"'
-        else:
-            label = f'"{q[:72]}{"..." if len(q) > 72 else ""}"'
+        label = f'"{q[:68]}{"..." if len(q) > 68 else ""}"'
         scores: Dict[str, List[float]] = {}
         for col in score_cols:
             name = col.removeprefix("feedback.")
             scores[name] = group[col].dropna().tolist()
-        scenarios.append(ScenarioResult(label=label, scores=scores))
+        scenarios.append(
+            ScenarioResult(label=label, scenario_id=sc_id or 0, scores=scores)
+        )
     return scenarios
 
 

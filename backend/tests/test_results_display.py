@@ -53,6 +53,7 @@ def _two_scenarios():
     return [
         ScenarioResult(
             label='"Is a 72-hour notice valid?"',
+            scenario_id=1,
             scores={
                 "legal correctness": [1.0, 0.5, 1.0, 1.0, 0.5],
                 "appropriate tone": [1.0, 1.0, 1.0, 1.0, 1.0],
@@ -60,6 +61,7 @@ def _two_scenarios():
         ),
         ScenarioResult(
             label='"Can my landlord evict me for a pet?"',
+            scenario_id=2,
             scores={
                 "legal correctness": [0.5, 1.0, 1.0, 0.0, 1.0],
                 "appropriate tone": [1.0, 1.0, 0.5, 1.0, 1.0],
@@ -123,7 +125,7 @@ def test_print_consistency_stats_standard_score_counts(capsys):
     # Data rows contain the mean value; key rows contain "(n=".
     # 0.0 count=1, 0.5 count=2, 1.0 count=3 — all should appear in the data row.
     data_lines = [
-        line for line in out.splitlines() if "S1" in line and "(n=" not in line
+        line for line in out.splitlines() if "S0" in line and "(n=" not in line
     ]
     assert len(data_lines) == 1
     assert "1" in data_lines[0]

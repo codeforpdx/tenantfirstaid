@@ -1378,7 +1378,7 @@ def test_cmd_experiment_stats_label_includes_scenario_id(capsys):
     with patch("evaluate.langsmith_dataset.make_client", return_value=client):
         cmd_experiment_stats(MagicMock(experiment="exp", evaluator=[]))
 
-    assert "[42]" in capsys.readouterr().out
+    assert "S42" in capsys.readouterr().out
 
 
 def test_cmd_experiment_stats_evaluator_filter(capsys):

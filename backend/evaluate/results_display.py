@@ -19,6 +19,7 @@ class ScenarioResult:
     """Scores for one example across all repetitions."""
 
     label: str
+    scenario_id: int = 0
     scores: Dict[str, List[float]] = field(default_factory=dict)
 
 
@@ -76,8 +77,9 @@ def print_consistency_stats(
     std_labels = [f"{lv:.1f}" for lv in _STANDARD_LEVELS]
     ns_labels = [f"{lv:.2f}" for lv in nonstandard_levels]
 
-    # Scenario IDs: S1, S2, ... — wide enough to fit the widest ID or the header.
-    sid_w = max(len(f"S{len(scenarios)}"), len("Scenario"))
+    # Scenario IDs: S0, S1, ... using the actual scenario_id from metadata.
+    sid_w = max((len(f"S{s.scenario_id}") for s in scenarios), default=len("Scenario"))
+    sid_w = max(sid_w, len("Scenario"))
 
     # Build header and separator for count columns, with a visual break before
     # any non-standard columns.
@@ -95,12 +97,12 @@ def print_consistency_stats(
         print(f"  {'Scenario':<{sid_w}}  {'mean':>6}  {'σ':>6}  {std_hdr}{ns_hdr}")
         print(f"  {'-' * sid_w}  {'-' * 6}  {'-' * 6}  {std_sep}{ns_sep}")
 
-        for i, scenario in enumerate(scenarios):
+        for scenario in scenarios:
             score_list = scenario.scores.get(key, [])
             if not score_list:
                 continue
 
-            sid = f"S{i + 1}"
+            sid = f"S{scenario.scenario_id}"
             mean = statistics.mean(score_list)
             std = statistics.pstdev(score_list)
 
@@ -127,9 +129,9 @@ def print_consistency_stats(
 
             print(f"  {sid:<{sid_w}}  {mean:>6.2f}  {std:>6.2f}  {std_cells}{ns_cells}")
 
-    # Scenario key: map S1, S2, ... to full query text and repetition count.
+    # Scenario key: map S<scenario_id> to full query text and repetition count.
     print("\nScenario Key:")
-    for i, scenario in enumerate(scenarios):
-        sid = f"S{i + 1}"
+    for scenario in scenarios:
+        sid = f"S{scenario.scenario_id}"
         n = max((len(v) for v in scenario.scores.values()), default=0)
         print(f"  {sid}  (n={n})  {scenario.label}")
