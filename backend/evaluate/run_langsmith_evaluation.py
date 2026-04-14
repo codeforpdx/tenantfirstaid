@@ -115,7 +115,11 @@ def _df_to_scenario_results(
             name = col.removeprefix("feedback.")
             scores[name] = group[col].dropna().tolist()
         scenarios.append(
-            ScenarioResult(label=label, scenario_id=sc_id or 0, scores=scores)
+            ScenarioResult(
+                label=label,
+                scenario_id=sc_id if sc_id is not None else 0,
+                scores=scores,
+            )
         )
     return scenarios
 

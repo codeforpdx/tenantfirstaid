@@ -44,8 +44,9 @@ def print_consistency_stats(
 
     Outer loop is evaluators (fewer), inner loop is scenarios (more). Each row
     shows mean, stdev, and how many runs landed at each standard score level
-    (0.0, 0.5, 1.0). An "other" column appears only when out-of-band scores are
-    present. A "!" suffix flags any non-zero count in the 0.0 column.
+    (0.0, 0.5, 1.0). Non-standard score columns appears only when present in the
+    data, and they are visually separated from the standard levels with a vertical
+    bar.
 
     Args:
         scenarios: Per-example results to display.

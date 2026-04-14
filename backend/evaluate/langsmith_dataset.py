@@ -26,6 +26,7 @@ import argparse
 import difflib
 import json
 import re
+import statistics
 import subprocess
 import sys
 from collections.abc import Sequence
@@ -534,6 +535,24 @@ def cmd_experiment_list(args: argparse.Namespace) -> None:
     _tabulate([(p.name or "", str(p.id)) for p in projects], headers=headers)
 
 
+def _index_feedback_by_run(client: Any, run_ids: list) -> dict[str, list]:
+    """Return {str(run_id): [feedback, ...]} for the given run IDs."""
+    fb_by_run: dict[str, list] = {}
+    for fb in client.list_feedback(run_ids=run_ids):
+        fb_by_run.setdefault(str(fb.run_id), []).append(fb)
+    return fb_by_run
+
+
+def _index_scenario_ids(
+    client: Any, example_ids: list, default: int = 0
+) -> dict[str, int]:
+    """Return {str(example_id): scenario_id} fetched from example metadata."""
+    return {
+        str(ex.id): (ex.metadata or {}).get("scenario_id", default)
+        for ex in client.list_examples(example_ids=example_ids)
+    }
+
+
 def _experiment_scores(
     client: Any, project_id: Any
 ) -> tuple[int, dict[str, tuple[float, float]]]:
@@ -542,7 +561,6 @@ def _experiment_scores(
     read_project does not reliably populate run_count or feedback_stats, so
     we count runs and aggregate scores directly from list_runs/list_feedback.
     """
-    import statistics as _statistics
 
     runs = list(client.list_runs(project_id=project_id, execution_order=1))
     if not runs:
@@ -553,7 +571,7 @@ def _experiment_scores(
         if fb.score is not None:
             raw.setdefault(fb.key, []).append(float(fb.score))
     return len(runs), {
-        k: (_statistics.mean(v), _statistics.pstdev(v)) for k, v in raw.items()
+        k: (statistics.mean(v), statistics.pstdev(v)) for k, v in raw.items()
     }
 
 
@@ -628,23 +646,14 @@ def cmd_experiment_stats(args: argparse.Namespace) -> None:
         print("No runs found.")
         return
 
-    # Fetch all feedback in one call, then index by run_id.
     run_ids = [run.id for run in runs]
-    fb_by_run: dict[str, list] = {}
-    for fb in client.list_feedback(run_ids=run_ids):
-        fb_by_run.setdefault(str(fb.run_id), []).append(fb)
+    fb_by_run = _index_feedback_by_run(client, run_ids)
 
-    # Group runs by the example they ran against.
     runs_by_example: dict[str, list] = {}
     for run in runs:
         runs_by_example.setdefault(str(run.reference_example_id), []).append(run)
 
-    # Fetch example metadata so we can sort by scenario_id and show it in the
-    # key, making it easy to cross-reference against `example list` output.
-    example_ids = list(runs_by_example.keys())
-    scenario_id_by_example: dict[str, int] = {}
-    for ex in client.list_examples(example_ids=example_ids):
-        scenario_id_by_example[str(ex.id)] = (ex.metadata or {}).get("scenario_id", 0)
+    scenario_id_by_example = _index_scenario_ids(client, list(runs_by_example.keys()))
 
     scenarios = []
     for example_id, example_runs in sorted(
@@ -699,21 +708,15 @@ def cmd_run_exemplars(args: argparse.Namespace) -> None:
         print("No runs found.")
         return
 
-    # Fetch all feedback in one call.
     run_ids = [run.id for run in runs]
-    fb_by_run: dict[str, list] = {}
-    for fb in client.list_feedback(run_ids=run_ids):
-        fb_by_run.setdefault(str(fb.run_id), []).append(fb)
+    fb_by_run = _index_feedback_by_run(client, run_ids)
 
-    # Fetch example metadata to resolve scenario_id.
     example_ids = list(
         {str(run.reference_example_id) for run in runs if run.reference_example_id}
     )
-    scenario_id_by_example: dict[str, int] = {}
-    for ex in client.list_examples(example_ids=example_ids):
-        scenario_id_by_example[str(ex.id)] = (ex.metadata or {}).get("scenario_id", -1)
+    # Use -1 as sentinel so scenario_id=0 is not confused with "unknown".
+    scenario_id_by_example = _index_scenario_ids(client, example_ids, default=-1)
 
-    # Filter runs to the requested scenario.
     target = args.scenario_id
     scenario_runs = [
         run
@@ -732,11 +735,12 @@ def cmd_run_exemplars(args: argparse.Namespace) -> None:
                 return float(fb.score)
         return float("nan")
 
-    scenario_runs.sort(key=_score)
+    scores_by_run = {run.id: _score(run) for run in scenario_runs}
+    scenario_runs.sort(key=lambda r: scores_by_run[r.id])
 
     rows: list[tuple[str, ...]] = []
     for run in scenario_runs:
-        score = _score(run)
+        score = scores_by_run[run.id]
         score_str = f"{score:.2f}" if score == score else "N/A"  # NaN check
         query = str((run.inputs or {}).get("query", ""))
         rows.append(
