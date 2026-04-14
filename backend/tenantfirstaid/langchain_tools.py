@@ -2,17 +2,21 @@
 This module defines Tools for an Agent to call
 """
 
-from typing import Optional
+from typing import Callable, Optional, cast
 
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from langchain.tools import ToolRuntime
-from langchain_core.tools import tool
+from langchain_core.tools import BaseTool, tool
 from langchain_google_community import VertexAISearchRetriever
 from langgraph.config import get_stream_writer
 from pydantic import BaseModel
 
-from .constants import LETTER_TEMPLATE, SINGLETON
+from .constants import (
+    LETTER_TEMPLATE,
+    SINGLETON,
+    DatastoreKey,
+)
 from .google_auth import load_gcp_credentials
 from .location import OregonCity, UsaState
 
@@ -112,33 +116,73 @@ class CityStateLawsInputSchema(BaseModel):
     city: Optional[OregonCity] = None
 
 
-@tool(args_schema=CityStateLawsInputSchema, response_format="content")
-def retrieve_city_state_laws(
-    query: str,
-    state: UsaState,
-    city: Optional[OregonCity] = None,
+def _default_filter_from_city_state(**kwargs: object) -> str:
+    """Adapter that extracts state/city from tool kwargs and calls _filter_builder."""
+    # query is intentionally not forwarded; custom filter_builders may use it.
+    return _filter_builder(
+        state=cast(UsaState, kwargs["state"]),
+        city=cast(Optional[OregonCity], kwargs.get("city")),
+    )
+
+
+def _make_rag_tool(
+    datastore_key: str,
+    tool_name: str,
+    description: str,
     *,
-    runtime: ToolRuntime,
-) -> str:
-    """
-    Retrieve relevant state (and when specified, city) specific housing
-    laws from the RAG corpus.
+    args_schema: type[BaseModel] = CityStateLawsInputSchema,
+    filter_builder: Callable[..., str] = _default_filter_from_city_state,
+) -> BaseTool:
+    """Factory that creates a RAG retrieval tool bound to a specific datastore."""
 
-    Args:
-        query: The user's legal question
-        city: The user's city (e.g., "portland", "eugene"), optional
-        state: The user's state (e.g., "or")
-
-    Returns:
-        Relevant legal passages from city-specific laws
-    """
-
-    helper = RagBuilder(
-        data_store_id=SINGLETON.VERTEX_AI_DATASTORES["laws"],
-        name="retrieve_city_law",
-        filter=_filter_builder(city=city, state=state),
+    @tool(
+        tool_name,
+        description=description,
+        args_schema=args_schema,
+        response_format="content",
     )
+    def _retrieve(
+        query: str,
+        state: UsaState,
+        city: Optional[OregonCity] = None,
+        *,
+        runtime: ToolRuntime,
+    ) -> str:
+        helper = RagBuilder(
+            data_store_id=SINGLETON.VERTEX_AI_DATASTORES[datastore_key],
+            name=tool_name,
+            filter=filter_builder(query=query, state=state, city=city),
+        )
+        return helper.search(query=query)
 
-    return helper.search(
-        query=query,
-    )
+    return _retrieve
+
+
+def get_active_rag_tools() -> list[BaseTool]:
+    """Return tools whose backing datastore is present in the environment."""
+    return [t for key, t in RAG_TOOL_REGISTRY if key in SINGLETON.VERTEX_AI_DATASTORES]
+
+
+retrieve_city_state_laws: BaseTool = _make_rag_tool(
+    DatastoreKey.LAWS,
+    "retrieve_city_state_laws",
+    "Retrieve relevant state (and when specified, city) specific housing laws from the RAG corpus.",
+)
+
+retrieve_oregon_law_help: BaseTool = _make_rag_tool(
+    DatastoreKey.OREGON_LAW_HELP,
+    "retrieve_oregon_law_help",
+    (
+        "Retrieve relevant housing law information from the OregonLawHelp RAG corpus."
+        " Use this alongside retrieve_city_state_laws to broaden coverage with"
+        " plain-language guidance from OregonLawHelp.org."
+    ),
+)
+
+# Registry of (datastore_key, tool) pairs. Multiple tools may share the same
+# datastore key; each tool is included only when its datastore is configured.
+RAG_TOOL_REGISTRY: list[tuple[str, BaseTool]] = [
+    (DatastoreKey.LAWS, retrieve_city_state_laws),
+    # Uncomment when VERTEX_AI_DATASTORE_OREGON_LAW_HELP is configured and needed for new tooling.
+    # (DatastoreKey.OREGON_LAW_HELP, retrieve_oregon_law_help),
+]

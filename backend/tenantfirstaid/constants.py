@@ -1,13 +1,20 @@
 import os
 from collections.abc import Mapping
+from enum import StrEnum, auto
 from pathlib import Path
 from typing import Final, Optional
 
 from dotenv import load_dotenv
 from langchain_google_genai import HarmBlockThreshold, HarmCategory
 
-
 _DATASTORE_PREFIX = "VERTEX_AI_DATASTORE_"
+
+
+class DatastoreKey(StrEnum):
+    """Datastore keys — must match the suffix of the corresponding VERTEX_AI_DATASTORE_<NAME> env var (lowercased)."""
+
+    LAWS = auto()
+    OREGON_LAW_HELP = auto()
 
 
 def _parse_datastores(env: Mapping[str, str]) -> dict[str, str]:
@@ -105,7 +112,7 @@ class _GoogEnvAndPolicy:
 
         # _parse_datastores raises ValueError if any matched var is set but empty.
         self.VERTEX_AI_DATASTORES: Final[dict[str, str]] = _parse_datastores(os.environ)
-        if "laws" not in self.VERTEX_AI_DATASTORES:
+        if DatastoreKey.LAWS not in self.VERTEX_AI_DATASTORES:
             raise ValueError(
                 f"[{_DATASTORE_PREFIX}LAWS] environment variable is not set."
             )

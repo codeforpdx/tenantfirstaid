@@ -12,13 +12,17 @@ from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from langchain_core.tools import StructuredTool
 
+from tenantfirstaid.constants import DatastoreKey
 from tenantfirstaid.google_auth import load_gcp_credentials
 from tenantfirstaid.langchain_tools import (
     CityStateLawsInputSchema,
     _filter_builder,
+    _make_rag_tool,
     generate_letter,
+    get_active_rag_tools,
     get_letter_template,
     retrieve_city_state_laws,
+    retrieve_oregon_law_help,
 )
 from tenantfirstaid.location import OregonCity, UsaState
 
@@ -240,6 +244,92 @@ def test_retrieve_city_state_laws_empty_results(mock_rag_class):
         runtime=MagicMock(),
     )
     assert result == ""
+
+
+@patch("tenantfirstaid.langchain_tools.RagBuilder")
+def test_retrieve_oregon_law_help_uses_correct_datastore(mock_rag_class):
+    """Test that retrieve_oregon_law_help uses the oregon_law_help datastore."""
+    mock_rag_class.return_value.search.return_value = "Some legal guidance"
+
+    with patch.dict(
+        "tenantfirstaid.langchain_tools.SINGLETON.VERTEX_AI_DATASTORES",
+        {DatastoreKey.OREGON_LAW_HELP: "fake-olh-datastore-id"},
+    ):
+        _func = getattr(retrieve_oregon_law_help, "func")
+        result = _func(
+            query="eviction notice",
+            state=UsaState("or"),
+            runtime=MagicMock(),
+        )
+
+    mock_rag_class.assert_called_once_with(
+        data_store_id="fake-olh-datastore-id",
+        name="retrieve_oregon_law_help",
+        filter=_filter_builder(UsaState("or"), None),
+    )
+    assert result == "Some legal guidance"
+
+
+@patch("tenantfirstaid.langchain_tools.RagBuilder")
+def test_retrieve_oregon_law_help_with_city(mock_rag_class):
+    """Test that city filter is forwarded to RagBuilder."""
+    mock_rag_class.return_value.search.return_value = ""
+
+    with patch.dict(
+        "tenantfirstaid.langchain_tools.SINGLETON.VERTEX_AI_DATASTORES",
+        {DatastoreKey.OREGON_LAW_HELP: "fake-olh-datastore-id"},
+    ):
+        _func = getattr(retrieve_oregon_law_help, "func")
+        _func(
+            query="rental deposit",
+            state=UsaState("or"),
+            city=OregonCity("portland"),
+            runtime=MagicMock(),
+        )
+
+    filter_arg = mock_rag_class.call_args[1]["filter"]
+    assert "portland" in filter_arg
+    assert "or" in filter_arg
+
+
+def test_get_active_rag_tools_filters_by_configured_datastores():
+    """Tools whose datastore key is absent from env are excluded."""
+    with patch.dict(
+        "tenantfirstaid.langchain_tools.SINGLETON.VERTEX_AI_DATASTORES",
+        {DatastoreKey.LAWS: "fake-laws-id"},
+        clear=True,
+    ):
+        active = get_active_rag_tools()
+    assert len(active) == 1
+    assert active[0].name == "retrieve_city_state_laws"
+
+
+@patch("tenantfirstaid.langchain_tools.RagBuilder")
+def test_make_rag_tool_custom_filter_builder(mock_rag_class):
+    """Custom filter_builder is called instead of the default."""
+    mock_rag_class.return_value.search.return_value = ""
+    custom_filter = MagicMock(return_value="custom-filter")
+
+    custom_tool = _make_rag_tool(
+        DatastoreKey.LAWS,
+        "test_tool",
+        "A test tool.",
+        filter_builder=custom_filter,
+    )
+
+    with patch.dict(
+        "tenantfirstaid.langchain_tools.SINGLETON.VERTEX_AI_DATASTORES",
+        {DatastoreKey.LAWS: "fake-id"},
+    ):
+        _func = getattr(custom_tool, "func")
+        _func(query="test query", state=UsaState("or"), runtime=MagicMock())
+
+    custom_filter.assert_called_once_with(
+        query="test query", state=UsaState("or"), city=None
+    )
+    mock_rag_class.assert_called_once_with(
+        data_store_id="fake-id", name="test_tool", filter="custom-filter"
+    )
 
 
 def test_filter_builder_state_only():
