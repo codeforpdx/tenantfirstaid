@@ -2,11 +2,10 @@
 This module defines Tools for an Agent to call
 """
 
-from typing import Callable, Optional, cast
+from typing import Callable, Optional, Type, cast
 
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
-from langchain.tools import ToolRuntime
 from langchain_core.tools import BaseTool, tool
 from langchain_google_community import VertexAISearchRetriever
 from langgraph.config import get_stream_writer
@@ -33,8 +32,8 @@ class RagBuilder:
     def __init__(
         self,
         data_store_id: str,
-        filter: str,
         name: Optional[str] = "tfa-retriever",
+        filter: Optional[str] = None,
     ) -> None:
         if SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is None:
             raise ValueError("GOOGLE_APPLICATION_CREDENTIALS is not set")
@@ -110,6 +109,10 @@ def generate_letter(letter: str) -> str:
     return "Letter generated successfully."
 
 
+class QueryOnlyInputSchema(BaseModel):
+    query: str
+
+
 class CityStateLawsInputSchema(BaseModel):
     query: str
     state: UsaState
@@ -130,29 +133,29 @@ def _make_rag_tool(
     tool_name: str,
     description: str,
     *,
-    filter_builder: Callable[..., str] = _default_filter_from_city_state,
+    args_schema: Type[BaseModel],
+    filter_builder: Optional[Callable[..., str]] = None,
 ) -> BaseTool:
     """Factory that creates a RAG retrieval tool bound to a specific datastore."""
 
     @tool(
         tool_name,
         description=description,
-        args_schema=CityStateLawsInputSchema,
+        args_schema=args_schema,
         response_format="content",
     )
-    def _retrieve(
-        query: str,
-        state: UsaState,
-        city: Optional[OregonCity] = None,
-        *,
-        runtime: ToolRuntime,
-    ) -> str:
+    def _retrieve(**kwargs: object) -> str:
+        # Strip non-schema kwargs injected by LangChain (e.g. runtime).
+        schema_data = {k: v for k, v in kwargs.items() if k in args_schema.model_fields}
+        # Validate against the schema to populate any optional field defaults.
+        validated = args_schema.model_validate(schema_data).model_dump()
+        rag_filter = filter_builder(**validated) if filter_builder is not None else None
         helper = RagBuilder(
             data_store_id=SINGLETON.VERTEX_AI_DATASTORES[datastore_key],
             name=tool_name,
-            filter=filter_builder(query=query, state=state, city=city),
+            filter=rag_filter,
         )
-        return helper.search(query=query)
+        return helper.search(query=validated["query"])
 
     return _retrieve
 
@@ -161,6 +164,8 @@ retrieve_city_state_laws: BaseTool = _make_rag_tool(
     DatastoreKey.LAWS,
     "retrieve_city_state_laws",
     "Retrieve relevant state (and when specified, city) specific housing laws from the RAG corpus.",
+    args_schema=CityStateLawsInputSchema,
+    filter_builder=_default_filter_from_city_state,
 )
 
 # Defined here for testability; inactive until added to RAG_TOOL_REGISTRY and
@@ -173,6 +178,7 @@ retrieve_oregon_law_help: BaseTool = _make_rag_tool(
         " Use this alongside retrieve_city_state_laws to broaden coverage with"
         " plain-language guidance from OregonLawHelp.org."
     ),
+    args_schema=QueryOnlyInputSchema,
 )
 
 # Registry of (datastore_key, tool) pairs. Multiple tools may share the same
