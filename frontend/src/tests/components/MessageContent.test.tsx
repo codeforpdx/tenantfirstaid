@@ -85,4 +85,26 @@ describe("MessageContent", () => {
       screen.getByText("Is my landlord allowed to do this?"),
     ).toBeInTheDocument();
   });
+
+  it("falls back to plain markdown when an AI chunk is not valid JSON", () => {
+    const message = new AIMessage({
+      content: "This is a plain text response.\n",
+      id: "10",
+    });
+    render(<MessageContent message={message} />);
+    expect(
+      screen.getByText("This is a plain text response."),
+    ).toBeInTheDocument();
+  });
+
+  it("skips letter chunk inline when mixed with text content", () => {
+    const message = new AIMessage({
+      content:
+        '{"type":"text","content":"Here is your letter."}\n{"type":"letter","content":"Dear Landlord, fix the heat."}\n',
+      id: "11",
+    });
+    render(<MessageContent message={message} />);
+    expect(screen.getByText("Here is your letter.")).toBeInTheDocument();
+    expect(screen.queryByText(/Dear Landlord/)).not.toBeInTheDocument();
+  });
 });

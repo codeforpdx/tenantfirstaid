@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
-import { describe, it, afterEach } from "vitest";
+import { describe, it } from "vitest";
 
 const renderLetterDisclaimer = async (isOngoing: boolean) => {
   const { default: LetterDisclaimer } =
@@ -17,13 +17,8 @@ const renderLetterDisclaimer = async (isOngoing: boolean) => {
 };
 
 describe("LetterDisclaimer component", () => {
-  afterEach(() => {
-    cleanup();
-  });
-
   it("renders Privacy Policy link when onGoing is true", async () => {
-    const mockIsOngoing = true;
-    await renderLetterDisclaimer(mockIsOngoing);
+    await renderLetterDisclaimer(true);
 
     const privacyPolicyLink = screen.getByRole("link", {
       name: "to privacy policy",
@@ -32,8 +27,7 @@ describe("LetterDisclaimer component", () => {
   });
 
   it("does not render Privacy Policy link when isOngoing is false", async () => {
-    const mockIsOngoing = false;
-    await renderLetterDisclaimer(mockIsOngoing);
+    await renderLetterDisclaimer(false);
 
     const privacyPolicyLink = screen.queryByRole("link", {
       name: "to privacy policy",

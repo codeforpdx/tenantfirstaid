@@ -13,9 +13,18 @@ function UpdateLocationButton() {
   return (
     <button
       data-testid="update-loc"
-      onClick={() => handleHousingLocation?.({ city: "portland", state: "or" })}
+      onClick={() => handleHousingLocation({ city: "portland", state: "or" })}
     >
       update
+    </button>
+  );
+}
+
+function ResetButton() {
+  const { handleFormReset } = useHousingContext();
+  return (
+    <button data-testid="reset" onClick={handleFormReset}>
+      reset
     </button>
   );
 }
@@ -28,7 +37,7 @@ describe("HousingContext", () => {
       </HousingContextProvider>,
     );
 
-    const dump = screen.getByTestId("ctx").textContent || "";
+    const dump = screen.getByTestId("ctx").textContent ?? "";
     expect(dump).toContain("housingLocation");
     expect(dump).toContain("housingType");
     expect(dump).toContain("tenantTopic");
@@ -49,6 +58,23 @@ describe("HousingContext", () => {
 
     expect(screen.getByTestId("ctx").textContent).toContain("portland");
     expect(screen.getByTestId("ctx").textContent).toContain('"or"');
+  });
+
+  it("resets housingLocation when handleFormReset is called", () => {
+    render(
+      <HousingContextProvider>
+        <ContextDump />
+        <UpdateLocationButton />
+        <ResetButton />
+      </HousingContextProvider>,
+    );
+
+    fireEvent.click(screen.getByTestId("update-loc"));
+    expect(screen.getByTestId("ctx").textContent).toContain("portland");
+
+    fireEvent.click(screen.getByTestId("reset"));
+
+    expect(screen.getByTestId("ctx").textContent).not.toContain("portland");
   });
 
   it("throws error when used outside provider", () => {
