@@ -108,7 +108,10 @@ def test_retrieve_city_state_laws_with_city(mock_rag_class):
 
 def test_tool_schema_matches_function_signature():
     """Test that retrieve_city_state_laws is bound to CityStateLawsInputSchema."""
-    assert cast(StructuredTool, retrieve_city_state_laws).args_schema is CityStateLawsInputSchema
+    assert (
+        cast(StructuredTool, retrieve_city_state_laws).args_schema
+        is CityStateLawsInputSchema
+    )
 
 
 # --- _load_gcp_credentials tests ---
