@@ -109,6 +109,10 @@ jobs:
             GOOGLE_CLOUD_LOCATION=${{vars.GOOGLE_CLOUD_LOCATION}}
             VERTEX_AI_DATASTORE=${{vars.VERTEX_AI_DATASTORE}}
             SHOW_MODEL_THINKING=false
+            LANGSMITH_API_KEY=${{ secrets.LANGSMITH_API_KEY }}
+            LANGSMITH_TRACING=true
+            LANGCHAIN_TRACING_V2=true
+            LANGSMITH_PROJECT=${{ vars.LANGSMITH_PROJECT }}
             GOOGLE_APPLICATION_CREDENTIALS=/etc/tenantfirstaid/google-service-account.json
             EOF
             chmod 640 /etc/tenantfirstaid/env
