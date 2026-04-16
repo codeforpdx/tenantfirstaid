@@ -1084,25 +1084,33 @@ def test_cmd_dataset_diff_mixed(tmp_path, capsys):
 # JSON-serializable values: booleans must come before integers in st.one_of
 # because bool is a subclass of int and Hypothesis would otherwise generate
 # True/False as integers.
+#
+# Surrogate characters (Unicode category Cs, U+D800–U+DFFF) are excluded from
+# all text strategies: json.dumps raises UnicodeEncodeError for lone surrogates,
+# so they would abort the test before reaching the assertion.
+_json_text = st.text(alphabet=st.characters(blacklist_categories=("Cs",)))
 _json_primitive = st.one_of(
     st.none(),
     st.booleans(),
     st.integers(),
     st.floats(allow_nan=False, allow_infinity=False),
-    st.text(),
+    _json_text,
 )
 _json_value = st.recursive(
     _json_primitive,
     lambda children: st.one_of(
         st.lists(children),
-        st.dictionaries(st.text(), children),
+        st.dictionaries(_json_text, children),
     ),
     max_leaves=10,
 )
+# Use a direct dict strategy rather than filtering _json_value, which would
+# reject most generated values (primitives/lists) and trigger filter_too_much.
+_json_dict = st.dictionaries(_json_text, _json_value)
 
 
 @pytest.mark.property
-@given(records=st.lists(_json_value.filter(lambda v: isinstance(v, dict)), max_size=20))
+@given(records=st.lists(_json_dict, max_size=20))
 @settings(max_examples=200)
 def test_read_jsonl_roundtrip(records):
     """Any list of dicts written as JSONL should parse back to the same list."""
