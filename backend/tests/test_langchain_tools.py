@@ -9,6 +9,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
+from hypothesis import given
+from hypothesis import strategies as st
 from langchain_core.tools import StructuredTool
 
 from tenantfirstaid.constants import DatastoreKey
@@ -17,6 +19,7 @@ from tenantfirstaid.langchain_tools import (
     CityStateLawsInputSchema,
     _filter_builder,
     _make_rag_tool,
+    _repair_mojibake,
     generate_letter,
     get_active_rag_tools,
     get_letter_template,
@@ -198,6 +201,49 @@ def test_retrieve_city_state_laws_returns_joined_docs(mock_rag_class):
     )
     assert "Doc1 content" in result
     assert "Doc2 content" in result
+
+
+# --- _repair_mojibake property tests ---
+
+
+@pytest.mark.property
+@given(st.text(alphabet=st.characters(max_codepoint=0x7F)))
+def test_repair_mojibake_ascii_unchanged(text: str) -> None:
+    """Pure ASCII text is returned unchanged — no mojibake to repair."""
+    assert _repair_mojibake(text) == text
+
+
+@pytest.mark.property
+@given(st.text(alphabet=st.characters(blacklist_categories=("Cs",))))
+def test_repair_mojibake_repairs_genuine_mojibake(original: str) -> None:
+    """Genuine mojibake (UTF-8 bytes misread as Latin-1) is fully repaired.
+
+    Simulates the Vertex AI encoding defect: the original string's UTF-8
+    bytes are misread as Latin-1, producing mojibake. The repair should
+    recover the original string exactly.
+
+    Surrogates (category Cs, U+D800–U+DFFF) are excluded because they cannot
+    be encoded as UTF-8, so the test setup would raise UnicodeEncodeError
+    before reaching the function under test.
+    """
+    mojibake = original.encode("utf-8").decode("latin-1")
+    assert _repair_mojibake(mojibake) == original
+
+
+@pytest.mark.property
+@given(
+    st.text(alphabet=st.characters(min_codepoint=0x80, max_codepoint=0xBF), min_size=1)
+)
+def test_repair_mojibake_continuation_byte_chars_unchanged(text: str) -> None:
+    """Text with chars in U+0080–U+00BF is returned unchanged.
+
+    These chars (including § U+00A7) encode to Latin-1 bytes 0x80–0xBF,
+    which are UTF-8 continuation bytes. They can never form valid UTF-8
+    without a preceding start byte, so the round-trip fails and the
+    original text is returned as-is. This covers the Vertex AI defect
+    where the leading 0xC2 byte of a UTF-8 § sequence is dropped.
+    """
+    assert _repair_mojibake(text) == text
 
 
 @patch("tenantfirstaid.langchain_tools.RagBuilder")

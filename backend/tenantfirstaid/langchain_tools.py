@@ -2,6 +2,7 @@
 This module defines Tools for an Agent to call
 """
 
+import logging
 from typing import Callable, Optional, Type, cast
 
 from google.oauth2 import service_account
@@ -18,6 +19,50 @@ from .constants import (
 )
 from .google_auth import load_gcp_credentials
 from .location import OregonCity, UsaState
+
+logger = logging.getLogger(__name__)
+
+
+def _repair_mojibake(text: str) -> str:
+    """Attempt to repair UTF-8 text that was incorrectly decoded as Latin-1.
+
+    Vertex AI may return corpus text with mojibake (e.g. â€™ instead of ')
+    if the source document's UTF-8 encoding was misread as Latin-1 at index
+    time. This reverses that by re-encoding as Latin-1 and decoding as UTF-8.
+
+    Logs a warning if the repair itself appears to corrupt the text (i.e. the
+    round-trip fails or introduces replacement characters).
+    """
+    try:
+        repaired = text.encode("latin-1").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError) as e:
+        # Round-trip failure means the text has non-ASCII characters that are
+        # not the result of UTF-8-as-Latin-1 mojibake (e.g. bare § U+00A7 from
+        # a dropped 0xC2 byte). Correct behaviour — leave the text alone.
+        char = (
+            repr(text[e.start]) if hasattr(e, "start") and e.start < len(text) else "?"
+        )
+        logger.debug(
+            "mojibake repair skipped — round-trip failed at pos %s (char %s): %.120r",
+            getattr(e, "start", "?"),
+            char,
+            text,
+        )
+        return text
+
+    if "\ufffd" in repaired:
+        logger.warning(
+            "mojibake repair would introduce replacement characters; skipping: %.120r",
+            text,
+        )
+        return text
+
+    if repaired != text:
+        logger.debug(
+            "mojibake repair applied to RAG passage (first 120 chars): %.120r", text
+        )
+
+    return repaired
 
 
 class RagBuilder:
@@ -65,7 +110,7 @@ class RagBuilder:
             input=query,
         )
 
-        return "\n".join([doc.page_content for doc in docs])
+        return "\n".join([_repair_mojibake(doc.page_content) for doc in docs])
 
 
 def _filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
@@ -135,7 +180,18 @@ class CityStateLawsInputSchema(BaseModel):
                        Rephrase the user's question using relevant legal terms and
                        ORS references when applicable (e.g. 'week-to-week tenancy
                        nonpayment notice timing ORS 90.394'). Avoid paraphrasing so
-                       broadly that specific statutory details are lost."""
+                       broadly that specific statutory details are lost.
+
+                       Frame queries around the legal relationship and direction of
+                       obligation: who is required, entitled, or prohibited to do what
+                       (e.g. 'landlord required to pay interest on security deposit'
+                       rather than 'landlord security deposit interest'). On retry
+                       after a miss, change the framing angle — try the other party's
+                       perspective or restate as an obligation/entitlement — rather
+                       than repeating the same terms with an ORS number appended.
+                       Always include the specific action being contested in the query
+                       (e.g. 'landlord required to pay interest' not just 'landlord
+                       obligation security deposit')."""
     )
     state: UsaState
     city: Optional[OregonCity] = None
