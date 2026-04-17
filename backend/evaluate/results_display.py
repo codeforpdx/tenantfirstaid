@@ -6,7 +6,7 @@ experiment stats (post-hoc, from stored experiment data).
 
 import statistics
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 # Rubric scores are expected to be one of these three values.
 _STANDARD_LEVELS = (0.0, 0.5, 1.0)
@@ -39,6 +39,7 @@ def _keep(key: str, filter_set: Optional[set]) -> bool:
 def print_consistency_stats(
     scenarios: List[ScenarioResult],
     evaluators: Optional[List[str]] = None,
+    baseline: Optional[Dict[Tuple[int, str], Tuple[float, float]]] = None,
 ) -> None:
     """Print per-evaluator tables with one row per scenario, then a scenario key.
 
@@ -52,6 +53,9 @@ def print_consistency_stats(
         scenarios: Per-example results to display.
         evaluators: If given, only show tables whose name is in this list.
             Names are matched case-insensitively against the feedback key.
+        baseline: If given, maps (scenario_id, eval_name) -> (old_mean, old_sigma).
+            When present, mean and σ columns show "old→new" to surface how an
+            updated evaluator rubric shifted scores.
     """
     if not scenarios:
         return
@@ -91,12 +95,15 @@ def print_consistency_stats(
     std_sep = "-" * (len(_STANDARD_LEVELS) * (_COL_W + 2) - 2)
     ns_sep = ("  |  " + "-" * (len(ns_labels) * (_COL_W + 2) - 2)) if ns_labels else ""
 
+    # When baseline is provided, mean/σ columns show "X.XX(±X.XX)" (11 chars each).
+    stat_w = 11 if baseline is not None else 6
+
     print("\n=== Per-Scenario Consistency ===")
 
     for key in all_keys:
         print(f"\nEvaluator: {key}")
-        print(f"  {'Scenario':<{sid_w}}  {'mean':>6}  {'σ':>6}  {std_hdr}{ns_hdr}")
-        print(f"  {'-' * sid_w}  {'-' * 6}  {'-' * 6}  {std_sep}{ns_sep}")
+        print(f"  {'Scenario':<{sid_w}}  {'mean':>{stat_w}}  {'σ':>{stat_w}}  {std_hdr}{ns_hdr}")
+        print(f"  {'-' * sid_w}  {'-' * stat_w}  {'-' * stat_w}  {std_sep}{ns_sep}")
 
         for scenario in scenarios:
             score_list = scenario.scores.get(key, [])
@@ -104,8 +111,21 @@ def print_consistency_stats(
                 continue
 
             sid = f"S{scenario.scenario_id}"
-            mean = statistics.mean(score_list)
-            std = statistics.pstdev(score_list)
+            new_mean = statistics.mean(score_list)
+            new_std = statistics.pstdev(score_list)
+
+            if baseline is not None:
+                old = baseline.get((scenario.scenario_id, key))
+                if old is not None:
+                    old_mean, old_std = old
+                    mean_str = f"{new_mean:.2f}({new_mean - old_mean:+.2f})"
+                    std_str = f"{new_std:.2f}({new_std - old_std:+.2f})"
+                else:
+                    mean_str = f"{new_mean:.2f}(?)"
+                    std_str = f"{new_std:.2f}(?)"
+            else:
+                mean_str = f"{new_mean:.2f}"
+                std_str = f"{new_std:.2f}"
 
             counts: Dict[float, int] = {lv: 0 for lv in _STANDARD_LEVELS}
             ns_counts: Dict[float, int] = {lv: 0 for lv in nonstandard_levels}
@@ -128,7 +148,7 @@ def print_consistency_stats(
                 else ""
             )
 
-            print(f"  {sid:<{sid_w}}  {mean:>6.2f}  {std:>6.2f}  {std_cells}{ns_cells}")
+            print(f"  {sid:<{sid_w}}  {mean_str:>{stat_w}}  {std_str:>{stat_w}}  {std_cells}{ns_cells}")
 
     # Scenario key: map S<scenario_id> to full query text and repetition count.
     print("\nScenario Key:")

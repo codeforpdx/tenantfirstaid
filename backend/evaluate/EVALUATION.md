@@ -758,24 +758,40 @@ To refine how the judge scores responses, edit the rubric file and commit. You c
 
 ### Testing rubric changes without re-running the agent
 
-After editing a rubric, use `measure_evaluator_variance.py` to re-score an existing experiment's outputs with the new rubric — no new agent calls needed:
+After editing a rubric, use `measure_evaluator_variance.py` to re-score an existing experiment's outputs with the new rubric — no new agent calls needed. Pass `--show-delta` to see how the updated rubric changed scores compared to what was originally recorded in the experiment. Evaluator calls run concurrently; use `--max-workers` to control parallelism (default: 10).
 
 ```bash
-# Score every existing run once with the updated rubric
+# Re-score all runs and show per-scenario deltas vs. stored scores
 uv run python -m evaluate.measure_evaluator_variance \
   --experiment <experiment-name> \
   --evaluator "legal correctness" \
-  -k 1
+  --show-delta \
+  -k 5
 
-# Focus on a specific scenario that was noisy
+# Focus on a specific scenario; increase workers for a large experiment
 uv run python -m evaluate.measure_evaluator_variance \
   --experiment <experiment-name> \
   --evaluator "legal correctness" \
   --scenario 2 \
+  --show-delta \
+  --max-workers 20 \
   -k 5
 ```
 
-Use `-k 1` to get a quick read on how the score distribution shifts. Use `-k 5` or higher on a specific scenario to confirm that evaluator σ has dropped — a tighter rubric should produce a lower mean σ across re-evaluations of the same fixed output.
+With `--show-delta`, the mean and σ columns in the Per-Scenario Consistency table show the new value with the change from the stored score in parentheses:
+
+```
+=== Per-Scenario Consistency ===
+
+Evaluator: legal correctness
+  Scenario        mean           σ    0.0    0.5    1.0
+  --------  ----------  ----------  -----  -----  -----
+  S0        0.95(+0.23)  0.05(-0.13)    0      2      8
+  S1        0.80(+0.30)  0.12(-0.23)    1      1      8
+  S2        0.45(+0.05)  0.24(-0.02)    3      5      2
+```
+
+A positive delta on mean means the rubric change raised scores for that scenario; a negative delta on σ means scoring became more consistent. Use `-k 1` for a quick sanity check and `-k 5` or higher to confirm that evaluator σ has genuinely dropped.
 
 Heuristic evaluators (citation format, tool usage, performance) are Python code in `langsmith_evaluators.py` and require a developer to modify.
 
