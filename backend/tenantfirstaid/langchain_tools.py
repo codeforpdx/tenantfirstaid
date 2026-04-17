@@ -5,12 +5,15 @@ This module defines Tools for an Agent to call
 import logging
 from typing import Callable, Optional, Type, cast
 
+import httpx
+from google.api_core import exceptions as google_exceptions
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from langchain_core.tools import BaseTool, tool
 from langchain_google_community import VertexAISearchRetriever
 from langgraph.config import get_stream_writer
 from pydantic import BaseModel, Field
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from .constants import (
     LETTER_TEMPLATE,
@@ -46,13 +49,6 @@ def _repair_mojibake(text: str) -> str:
             "mojibake repair skipped — round-trip failed at pos %s (char %s): %.120r",
             getattr(e, "start", "?"),
             char,
-            text,
-        )
-        return text
-
-    if "\ufffd" in repaired:
-        logger.warning(
-            "mojibake repair would introduce replacement characters; skipping: %.120r",
             text,
         )
         return text
@@ -105,6 +101,15 @@ class RagBuilder:
             filter=filter,
         )
 
+    @retry(
+        retry=retry_if_exception_type((httpx.ReadError, google_exceptions.ServiceUnavailable)),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=0.5, max=4),
+        reraise=True,
+        before_sleep=lambda rs: logger.warning(
+            "RAG search retry #%d after %s", rs.attempt_number, rs.outcome.exception()
+        ),
+    )
     def search(self, query: str) -> str:
         docs = self.rag.invoke(
             input=query,
@@ -115,11 +120,13 @@ class RagBuilder:
 
 def _filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
     if city is None:
-        city_or_null = "null"
+        city_filter = 'city: ANY("null")'
     else:
-        city_or_null = city.lower()
+        # Include both city-specific and state-level ("null") documents so the
+        # agent sees both layers of law in a single retrieval.
+        city_filter = f'city: ANY("{city.lower()}", "null")'
 
-    return f"""city: ANY("{city_or_null}") AND state: ANY("{state.lower()}")"""
+    return f"""{city_filter} AND state: ANY("{state.lower()}")"""
 
 
 @tool
@@ -204,6 +211,26 @@ class CityStateLawsInputSchema(BaseModel):
                        Use a larger value (6–8) when the question spans multiple
                        statutes, involves city overrides, or an initial retrieval
                        missed the relevant passage.""",
+    )
+    max_extractive_answer_count: int = Field(
+        default=1,
+        ge=1,
+        le=5,
+        description="""Extractive answers per document (1–5). Each is a short
+                       passage the search engine identifies as directly relevant.
+                       Increase on retry if the first search returned passages
+                       from the right document but missed the specific subsection
+                       you need.""",
+    )
+    max_extractive_segment_count: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="""Extractive segments per document (1–10). Segments are
+                       longer surrounding blocks of text that provide more context
+                       than answers. Increase on retry when the answer likely sits
+                       adjacent to what was returned (e.g. the right ORS section
+                       was found but a neighboring subsection was missed).""",
     )
 
 
