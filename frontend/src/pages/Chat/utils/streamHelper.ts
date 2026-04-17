@@ -12,21 +12,23 @@ export interface StreamTextOptions {
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   housingLocation: Location;
   setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>;
+  onDone?: () => void;
 }
 
 /**
  * Streams text from the AI model and updates messages in real-time.
  *
- * @returns Promise that resolves to:
- *   - `true` if streaming completed successfully
- *   - `undefined` if reader is not available or an error occurred
+ * Calls `onDone` when the backend sends a done chunk, indicating clean
+ * completion. If the stream closes without a done chunk, a warning is logged
+ * to indicate a possible dropped connection.
  */
 async function streamText({
   addMessage,
   setMessages,
   housingLocation,
   setIsLoading,
-}: StreamTextOptions): Promise<boolean | undefined> {
+  onDone,
+}: StreamTextOptions): Promise<void> {
   const botMessageId = (Date.now() + 1).toString();
 
   setIsLoading?.(true);
@@ -54,13 +56,23 @@ async function streamText({
     const decoder = new TextDecoder();
     let buffer = "";
     let fullText = "";
+    let receivedDone = false;
 
     const processLines = (lines: string[]) => {
       lines
         .filter((line) => line.trim() !== "")
         .forEach((processedText) => {
+          try {
+            const parsed = JSON.parse(processedText) as { type?: string };
+            if (parsed.type === "end_of_stream") {
+              receivedDone = true;
+              onDone?.();
+              return;
+            }
+          } catch {
+            // Not JSON — fall through and append as-is.
+          }
           fullText += processedText + "\n";
-          // Update only the bot's message
           const botMessage = new AIMessage({
             content: fullText,
             id: botMessageId,
@@ -74,9 +86,13 @@ async function streamText({
     while (true) {
       const { done, value } = await reader.read();
       if (done) {
-        // Flush any remaining content in the buffer.
         if (buffer.trim() !== "") processLines([buffer]);
-        return true;
+        if (!receivedDone) {
+          console.warn(
+            "Stream ended without a done chunk — possible dropped connection",
+          );
+        }
+        return;
       }
       buffer += decoder.decode(value, { stream: true });
 

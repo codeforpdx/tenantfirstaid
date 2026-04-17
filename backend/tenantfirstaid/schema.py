@@ -18,4 +18,8 @@ class LetterChunk(BaseModel):
     content: str = Field(description="The letter content")
 
 
-ResponseChunk = TextChunk | ReasoningChunk | LetterChunk
+class EndOfStreamChunk(BaseModel):
+    type: Literal["end_of_stream"] = "end_of_stream"
+
+
+ResponseChunk = TextChunk | ReasoningChunk | LetterChunk | EndOfStreamChunk

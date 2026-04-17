@@ -89,7 +89,7 @@ def test_streaming_text_response(mock_create_agent, oregon_state, portland_city)
 def test_streaming_custom_chunk_yields_non_standard_block(
     mock_create_agent, oregon_state
 ):
-    """Custom-mode chunks (e.g. from generate_letter) are yielded as NonStandardContentBlock."""
+    """Custom-mode chunks (e.g. from generate_letter) are wrapped in NonStandardContentBlock so _classify_blocks can distinguish tool chunks from LLM chunks."""
     mock_agent = MagicMock()
     mock_agent.stream.return_value = iter(
         [("custom", {"type": "letter", "content": "Dear Landlord,"})]
@@ -106,7 +106,8 @@ def test_streaming_custom_chunk_yields_non_standard_block(
     assert len(blocks) == 1
     block = blocks[0]
     assert block["type"] == "non_standard"
-    assert block["value"] == {"type": "letter", "content": "Dear Landlord,"}
+    assert block["value"]["type"] == "letter"
+    assert block["value"]["content"] == "Dear Landlord,"
 
 
 @patch.object(LangChainChatManager, "_LangChainChatManager__create_agent_for_session")

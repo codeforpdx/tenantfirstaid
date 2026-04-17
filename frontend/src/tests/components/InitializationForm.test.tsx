@@ -2,19 +2,55 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import InitializationForm from "../../pages/Chat/components/InitializationForm";
 import HousingContextProvider from "../../contexts/HousingContext";
-import { BrowserRouter } from "react-router-dom";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
 
 vi.mock("../../pages/Chat/utils/streamHelper", () => ({
   streamText: vi.fn(),
 }));
 
+// Mirrors the App.tsx route structure: <Route path="/*"> wrapping inner <Routes>.
+// This ensures relative links inside /chat resolve as /chat/letter (not /letter),
+// so tests that check href values catch accidental relative-path regressions.
 const renderInitializationForm = () => {
   render(
-    <BrowserRouter>
-      <HousingContextProvider>
-        <InitializationForm addMessage={vi.fn()} setMessages={vi.fn()} />
-      </HousingContextProvider>
-    </BrowserRouter>,
+    <MemoryRouter initialEntries={["/chat"]}>
+      <Routes>
+        <Route
+          path="/*"
+          element={
+            <Routes>
+              <Route
+                path="/chat"
+                element={
+                  <HousingContextProvider>
+                    <InitializationForm
+                      addMessage={vi.fn()}
+                      setMessages={vi.fn()}
+                    />
+                  </HousingContextProvider>
+                }
+              />
+            </Routes>
+          }
+        />
+      </Routes>
+    </MemoryRouter>,
+  );
+};
+
+const fillLetterForm = () => {
+  fireEvent.change(screen.getByLabelText("city"), {
+    target: { value: "portland" },
+  });
+  fireEvent.change(screen.getByLabelText("housing type"), {
+    target: { value: "Apartment/House Rental" },
+  });
+  fireEvent.change(screen.getByLabelText("tenant topic"), {
+    target: { value: "Rent Issues" },
+  });
+  fireEvent.change(
+    screen.getByPlaceholderText(/briefly describe your specific/i),
+    { target: { value: "My landlord won't repair the heat" } },
   );
 };
 
@@ -90,26 +126,12 @@ describe("InitializationForm", () => {
   it("shows/hides Generate Letter button correctly", async () => {
     renderInitializationForm();
 
-    const citySelect = screen.getByLabelText("city");
-    const housingSelect = screen.getByLabelText("housing type");
-    const topicSelect = screen.getByLabelText("tenant topic");
-    const issueInput = screen.getByPlaceholderText(
-      /briefly describe your specific/i,
-    );
-
     // Hides generate letter by default
     expect(
       screen.queryByRole("link", { name: "generate letter" }),
     ).not.toBeInTheDocument();
 
-    fireEvent.change(citySelect, { target: { value: "portland" } });
-    fireEvent.change(housingSelect, {
-      target: { value: "Apartment/House Rental" },
-    });
-    fireEvent.change(topicSelect, { target: { value: "Rent Issues" } });
-    fireEvent.change(issueInput, {
-      target: { value: "My landlord won't repair the heat" },
-    });
+    fillLetterForm();
 
     await waitFor(() => {
       expect(
@@ -118,7 +140,7 @@ describe("InitializationForm", () => {
     });
 
     // Hides generate letter for Eviction and Notices
-    fireEvent.change(topicSelect, {
+    fireEvent.change(screen.getByLabelText("tenant topic"), {
       target: { value: "Eviction and Notices" },
     });
 
@@ -128,7 +150,9 @@ describe("InitializationForm", () => {
       ).not.toBeInTheDocument();
     });
 
-    fireEvent.change(topicSelect, { target: { value: "Rent Issues" } });
+    fireEvent.change(screen.getByLabelText("tenant topic"), {
+      target: { value: "Rent Issues" },
+    });
 
     await waitFor(() => {
       expect(
@@ -136,7 +160,9 @@ describe("InitializationForm", () => {
       ).toBeInTheDocument();
     });
 
-    fireEvent.change(citySelect, { target: { value: "other" } });
+    fireEvent.change(screen.getByLabelText("city"), {
+      target: { value: "other" },
+    });
 
     // Changes styling for generate button when other is selected
     await waitFor(() => {
@@ -146,6 +172,17 @@ describe("InitializationForm", () => {
       if (genButton) {
         expect(genButton).toHaveClass("opacity-50");
       }
+    });
+  });
+
+  it("Generate Letter link points to absolute /letter route", async () => {
+    renderInitializationForm();
+    fillLetterForm();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("link", { name: "generate letter" }),
+      ).toHaveAttribute("href", "/letter");
     });
   });
 });
