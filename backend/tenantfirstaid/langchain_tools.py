@@ -118,6 +118,15 @@ def generate_letter(letter: str) -> str:
 
 class QueryOnlyInputSchema(BaseModel):
     query: str
+    max_documents: int = Field(
+        default=3,
+        ge=1,
+        le=8,
+        description="""Number of passages to retrieve (1–8). Use a smaller value
+                       (3–5) for focused questions. Use a larger value (6–8) when
+                       the question spans multiple topics or an initial retrieval
+                       missed the relevant passage.""",
+    )
 
 
 class CityStateLawsInputSchema(BaseModel):
@@ -133,18 +142,21 @@ class CityStateLawsInputSchema(BaseModel):
     max_documents: int = Field(
         default=5,
         ge=1,
-        le=25,
-        description="""Number of passages to retrieve (1–25). Use a smaller value
+        le=8,  # Total number of documents in the laws datastore.
+        description="""Number of passages to retrieve (1–8). Use a smaller value
                        (3–5) for focused questions with a clear statutory target.
-                       Use a larger value (10–15) when the question spans multiple
+                       Use a larger value (6–8) when the question spans multiple
                        statutes, involves city overrides, or an initial retrieval
                        missed the relevant passage.""",
     )
 
 
 def _default_filter_from_city_state(**kwargs: object) -> str:
-    """Adapter that extracts state/city from tool kwargs and calls _filter_builder."""
-    # query is intentionally not forwarded; custom filter_builders may use it.
+    """Adapter that extracts state/city from tool kwargs and calls _filter_builder.
+
+    All other kwargs (query, max_documents, etc.) are intentionally ignored;
+    custom filter_builders may use them if needed.
+    """
     return _filter_builder(
         state=cast(UsaState, kwargs["state"]),
         city=cast(Optional[OregonCity], kwargs.get("city")),
@@ -152,7 +164,7 @@ def _default_filter_from_city_state(**kwargs: object) -> str:
 
 
 def _make_rag_tool(
-    datastore_key: str,
+    datastore_key: DatastoreKey,
     tool_name: str,
     description: str,
     *,
@@ -168,16 +180,16 @@ def _make_rag_tool(
         response_format="content",
     )
     def _retrieve(**kwargs: object) -> str:
-        # Strip non-schema kwargs injected by LangChain (e.g. runtime).
+        # Strip non-schema kwargs injected by LangChain (e.g. runtime) and
+        # validate to populate Field defaults for any omitted optional fields.
         schema_data = {k: v for k, v in kwargs.items() if k in args_schema.model_fields}
-        # Validate against the schema to populate any optional field defaults.
         validated = args_schema.model_validate(schema_data).model_dump()
         rag_filter = filter_builder(**validated) if filter_builder is not None else None
         helper = RagBuilder(
             data_store_id=SINGLETON.VERTEX_AI_DATASTORES[datastore_key],
             name=tool_name,
             filter=rag_filter,
-            max_documents=validated.get("max_documents", 3),
+            max_documents=validated["max_documents"],
         )
         return helper.search(query=validated["query"])
 
@@ -207,7 +219,7 @@ retrieve_oregon_law_help: BaseTool = _make_rag_tool(
 
 # Registry of (datastore_key, tool) pairs. Multiple tools may share the same
 # datastore key; each tool is included only when its datastore is configured.
-RAG_TOOL_REGISTRY: list[tuple[str, BaseTool]] = [
+RAG_TOOL_REGISTRY: list[tuple[DatastoreKey, BaseTool]] = [
     (DatastoreKey.LAWS, retrieve_city_state_laws),
     # Uncomment when VERTEX_AI_DATASTORE_OREGON_LAW_HELP is configured and needed for new tooling.
     # (DatastoreKey.OREGON_LAW_HELP, retrieve_oregon_law_help),
