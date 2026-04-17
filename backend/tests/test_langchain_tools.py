@@ -316,7 +316,12 @@ def test_make_rag_tool_custom_filter_builder(mock_rag_class):
         _func(query="test query", state=UsaState("or"))
 
     custom_filter.assert_called_once_with(
-        query="test query", state=UsaState("or"), city=None, max_documents=5
+        query="test query",
+        state=UsaState("or"),
+        city=None,
+        max_documents=5,
+        max_extractive_answer_count=1,
+        max_extractive_segment_count=3,
     )
     mock_rag_class.assert_called_once_with(
         data_store_id="fake-id",
@@ -364,9 +369,12 @@ def test_rag_search_retries_on_httpx_read_error(mock_retriever_class, mock_creds
     mock_doc.page_content = "result text"
 
     mock_instance = mock_retriever_class.return_value
-    mock_instance.invoke.side_effect = [httpx.ReadError("Connection reset by peer"), [mock_doc]]
+    mock_instance.invoke.side_effect = [
+        httpx.ReadError("Connection reset by peer"),
+        [mock_doc],
+    ]
 
-    builder = RagBuilder(filter='city: ANY("null") AND state: ANY("or")')
+    builder = RagBuilder(data_store_id="fake-datastore-id", filter='city: ANY("null") AND state: ANY("or")')
     result = builder.search("test query")
 
     assert result == "result text"
@@ -382,7 +390,7 @@ def test_rag_search_gives_up_after_three_attempts(mock_retriever_class, mock_cre
     mock_instance = mock_retriever_class.return_value
     mock_instance.invoke.side_effect = httpx.ReadError("Connection reset by peer")
 
-    builder = RagBuilder(filter='city: ANY("null") AND state: ANY("or")')
+    builder = RagBuilder(data_store_id="fake-datastore-id", filter='city: ANY("null") AND state: ANY("or")')
     with pytest.raises(httpx.ReadError):
         builder.search("test query")
 
