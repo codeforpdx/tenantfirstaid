@@ -355,6 +355,131 @@ The judge compares what the chatbot actually said against what it should have sa
 
 ---
 
+## Understanding and diagnosing score variance
+
+### Two noise sources
+
+Every score you see in an experiment reflects two independent sources of randomness:
+
+- **Agent variance** — the chatbot gives a slightly different response each time to the same question (LLM temperature > 0). Running the same example ten times will produce ten different outputs, and some will score higher or lower than others.
+- **Evaluator variance** — the LLM judge assigns a slightly different score each time it reads the same output. Even a fixed response, shown to the judge five times, may get 1.0 twice and 0.5 three times.
+
+Total observed variance decomposes as:
+
+```
+σ²_total = σ²_agent + σ²_evaluator
+```
+
+This matters because the two sources call for different fixes: agent variance requires more repetitions per example; evaluator variance requires a better judge or a tighter rubric.
+
+### Measuring evaluator variance
+
+`measure_evaluator_variance.py` isolates evaluator variance by re-scoring the same fixed agent outputs multiple times. No new agent calls are made, so this is cheap (~10–20× cheaper per sample than a full evaluation run).
+
+```bash
+# Re-score all runs from an experiment 5 times each (default)
+uv run python -m evaluate.measure_evaluator_variance \
+  --experiment <experiment-name> \
+  --evaluator "legal correctness"
+
+# Use more repeats for a tighter estimate; limit to 3 runs per scenario to keep it fast
+uv run python -m evaluate.measure_evaluator_variance \
+  --experiment <experiment-name> \
+  --evaluator "legal correctness" \
+  -k 7 \
+  --runs-per-scenario 3
+```
+
+Available evaluator names match the `feedback_key` values: `"legal correctness"` and `"appropriate tone"`. Omit `--evaluator` to run all of them.
+
+### Example: interpreting the output
+
+Running the script against a 10-repetition experiment (50 total runs across 5 scenarios) with `-k 5` produced:
+
+```
+=== Per-Scenario Consistency ===
+
+Evaluator: legal correctness
+  Scenario    mean       σ    0.0    0.5    1.0
+  --------  ------  ------  -------------------
+  S0          0.77    0.25      0     23     27
+  S1          0.87    0.24      1     10     35
+  S2          0.48    0.26      8     36      6
+  S3          0.93    0.17      0      7     43
+  S4          0.66    0.23      0     34     16
+
+=== Evaluator Variance Summary ===
+(σ is computed per individual run across k re-evaluations of fixed output)
+  legal correctness:
+    mean σ = 0.108  (max = 0.400)
+```
+
+The consistency table aggregates all scores across the k re-evaluations. The evaluator summary gives the key number: **σ_evaluator = 0.108**.
+
+To decompose variance per scenario, use σ²_agent = σ²_total − σ²_evaluator:
+
+| Scenario | σ_total | σ_evaluator | σ_agent | Evaluator share |
+|---|---|---|---|---|
+| S0 | 0.25 | 0.108 | 0.22 | 19% |
+| S1 | 0.24 | 0.108 | 0.21 | 20% |
+| S2 | 0.26 | 0.108 | 0.24 | 17% |
+| S3 | 0.17 | 0.108 | 0.13 | 40% |
+| S4 | 0.23 | 0.108 | 0.20 | 22% |
+
+**What this tells you:**
+
+- The agent is the dominant noise source (~75–80% of variance for most scenarios). S3 is the exception — the chatbot is highly consistent there, so the judge itself accounts for 40% of variance.
+- A `max = 0.400` evaluator σ is a red flag: at least one fixed output received 0.0 and 1.0 on different judge calls. This points to rubric ambiguity on borderline responses. In this data S2 (notice-giving scenario) was the likely culprit — the lowest mean (0.48) and most 0.5 scores indicate the judge is uncertain.
+
+### Decision rules
+
+| Observation | Diagnosis | Fix |
+|---|---|---|
+| σ_evaluator << σ_total (evaluator share < 15%) | Variance is mostly agent-side | Increase `--num-repetitions` in evaluation runs |
+| σ_evaluator ≈ σ_total (evaluator share > 40%) | Judge stochasticity dominates | Use a stronger judge model; tighten the rubric for borderline cases |
+| max σ >> mean σ | Some outputs are genuinely borderline | Review judge rationale; add rubric guidance for that failure mode |
+| One scenario has much lower σ than the rest | That scenario is well-defined | Good: use it to calibrate expected score ranges |
+
+### Drilling into a specific scenario
+
+Once you identify a noisy scenario, use `--scenario` to focus on it:
+
+```bash
+uv run python -m evaluate.measure_evaluator_variance \
+  --experiment <experiment-name> \
+  --evaluator "legal correctness" \
+  --scenario 2
+```
+
+Multiple scenario IDs are accepted: `--scenario 2 4`.
+
+### Improving the rubric for borderline cases
+
+If max σ is high (> 0.3) for a scenario, the most likely cause is rubric ambiguity on borderline responses — the judge is uncertain what the 0.5 vs 1.0 threshold means for that type of question.
+
+Steps:
+1. Run `--scenario <id> -k 7` to collect enough data to see the pattern.
+2. Look at the score distribution: lots of 0.5 scores with some 0.0 and 1.0 suggests the judge is genuinely unsure. Many swings between 0.0 and 1.0 on the same output suggests the rubric doesn't distinguish those cases.
+3. Edit `evaluate/evaluators/legal_correctness.md` — add a concrete example of the borderline case and specify which tier it should fall in.
+4. Re-run the script against the same experiment to confirm σ drops.
+
+The rubric lives in a plain markdown file — no code change needed. See [Editing evaluator rubrics](#editing-evaluator-rubrics) for the file locations.
+
+### Sample size guidance
+
+With σ_agent ≈ 0.20 (typical for this dataset), the 95% confidence interval on a scenario mean is approximately:
+
+| Repetitions per scenario | 95% CI width |
+|---|---|
+| 10 | ± 0.12 |
+| 25 | ± 0.08 |
+| 35 | ± 0.07 |
+| 50 | ± 0.06 |
+
+**To detect a 0.10-point improvement with 80% power** at this σ_agent, you need ~32 repetitions per scenario. Ten repetitions (the default) is sufficient for spotting large regressions but too noisy to confirm incremental gains.
+
+---
+
 ## Viewing and comparing results
 
 Open https://smith.langchain.com/ → your dataset → **Experiments** tab.
@@ -369,6 +494,83 @@ To compare two experiments from the command line:
 ```bash
 uv run python evaluate/langsmith_dataset.py experiment compare \
   tfa-baseline tfa-my-experiment
+```
+
+---
+
+## Claude-assisted analysis with `/analyze-experiment`
+
+The `/analyze-experiment` skill is a Claude Code command that automates the full experiment investigation workflow — from aggregate scores through root-cause diagnosis — in a single step.
+
+Invoke it from any Claude Code session in this repository:
+
+```
+/analyze-experiment <experiment-name-or-uuid>
+```
+
+For example:
+
+```
+/analyze-experiment tfa-2026-04-13
+/analyze-experiment c663e09e-1234-...
+```
+
+### What it does
+
+Claude runs the following automatically and synthesizes the findings:
+
+1. **Overview** — `experiment show` and `experiment stats` in parallel to get aggregate scores and per-scenario consistency tables. Identifies scenarios with low means or high variance.
+
+2. **Exemplar selection** — For the worst-performing scenario, fetches all runs sorted worst-to-best and selects one 0.0 run and one 1.0 run from the same scenario. This controls for question difficulty — any difference between them is a signal about agent behaviour, not input variation.
+
+3. **Trace analysis** — Reads the full execution trace for both exemplars, including tool calls, retrieved passages, and the final model output. Looks for which of the following failure modes is present:
+
+   | Failure mode | Signature |
+   |---|---|
+   | **Retrieval miss** | The correct statutory text is absent from retrieved passages in both runs; the 1.0 run succeeded on general knowledge rather than retrieval |
+   | **Query too broad** | The RAG query echoes the user's words verbatim; specific statute language is absent from results |
+   | **Reasoning failure** | The correct text was retrieved but the model ignored or misapplied it |
+   | **Instruction conflict** | Two system-prompt rules contradict each other; the model follows one and suppresses the other. Hard signature: empty `content` field with reasoning tokens but no tool calls |
+   | **Confabulation** | The model asserted specific numbers, dates, or rules not present in retrieved text or system prompt |
+   | **Misleading retrieval** | Retrieved passages are technically accurate but framed in a way that leads to a wrong inference |
+
+4. **Recommended fixes** — Matched to the failure mode:
+
+   | Failure mode | Fix |
+   |---|---|
+   | Retrieval miss | Corpus update needed; names the missing statute |
+   | Query too broad | Better RAG query formulation or updated tool description |
+   | Reasoning failure | System-prompt guidance targeting that reasoning step |
+   | Instruction conflict | Identifies the conflicting lines; suggests a carve-out or clarified precedence |
+   | Confabulation | Tighter anti-hallucination instruction |
+   | Misleading retrieval | System-prompt trigger to search for the protective statute before drawing conclusions |
+
+### Output format
+
+Results are presented as: overview table → worst-scenario highlights → root-cause diagnosis → recommended fixes.
+
+### Comparing two experiments
+
+If you have a baseline experiment to compare against, include it:
+
+```
+/analyze-experiment <baseline> <experiment>
+```
+
+Claude will run `experiment compare` in parallel with the overview and highlight which scenarios improved, regressed, or remained unchanged.
+
+### When to use this vs. the LangSmith UI
+
+The LangSmith UI is best for browsing individual scores and reading judge rationale for specific examples. The `/analyze-experiment` skill is best when you want a diagnosis — not just the numbers, but a hypothesis about *why* a scenario is failing and what to change.
+
+A typical workflow after running a new experiment:
+
+```mermaid
+flowchart LR
+    A["Run evaluation<br>run_langsmith_evaluation.py"] --> B["/analyze-experiment<br>in Claude Code"]
+    B --> C["Root-cause diagnosis<br>+ recommended fixes"]
+    C --> D["Edit system_prompt.md<br>or evaluator rubric"]
+    D --> A
 ```
 
 ---
@@ -553,6 +755,27 @@ evaluators/
 Each file describes what a good answer looks like and the scoring guidelines (1.0 / 0.5 / 0.0). The Python code in `langsmith_evaluators.py` loads these files and wraps them in the structural boilerplate the AI judge needs.
 
 To refine how the judge scores responses, edit the rubric file and commit. You can also experiment with rubric wording in the LangSmith UI by binding an LLM-as-judge evaluator to your dataset — when you find wording you like, copy it back into the `.md` file and commit so everyone shares the same criteria.
+
+### Testing rubric changes without re-running the agent
+
+After editing a rubric, use `measure_evaluator_variance.py` to re-score an existing experiment's outputs with the new rubric — no new agent calls needed:
+
+```bash
+# Score every existing run once with the updated rubric
+uv run python -m evaluate.measure_evaluator_variance \
+  --experiment <experiment-name> \
+  --evaluator "legal correctness" \
+  -k 1
+
+# Focus on a specific scenario that was noisy
+uv run python -m evaluate.measure_evaluator_variance \
+  --experiment <experiment-name> \
+  --evaluator "legal correctness" \
+  --scenario 2 \
+  -k 5
+```
+
+Use `-k 1` to get a quick read on how the score distribution shifts. Use `-k 5` or higher on a specific scenario to confirm that evaluator σ has dropped — a tighter rubric should produce a lower mean σ across re-evaluations of the same fixed output.
 
 Heuristic evaluators (citation format, tool usage, performance) are Python code in `langsmith_evaluators.py` and require a developer to modify.
 

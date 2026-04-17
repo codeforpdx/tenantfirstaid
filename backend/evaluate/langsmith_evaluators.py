@@ -13,12 +13,20 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, Final
 
+from langchain_google_genai import ChatGoogleGenerativeAI
 from openevals import create_llm_as_judge
 from openevals.types import SimpleEvaluator
 
 # NOTE: can (should?) use different models for chatbot LLM & evaluator
-# EVALUATOR_MODEL_NAME: Final = "gemini-2.5-pro"
-EVALUATOR_MODEL_NAME: Final = "gemini-2.5-flash"
+EVALUATOR_MODEL_NAME: Final = "gemini-3-flash-preview"
+
+# Use vertexai=True so the evaluator uses service account credentials rather
+# than a Gemini API key. init_chat_model routes gemini-3-flash-preview to
+# us-central1 by default, which returns 404 — constructing the judge directly
+# avoids that routing issue.
+_EVALUATOR_JUDGE: Final = ChatGoogleGenerativeAI(
+    model=EVALUATOR_MODEL_NAME, vertexai=True, location="global"
+)
 
 EVALUATORS_DIR: Final = Path(__file__).parent / "evaluators"
 
@@ -75,9 +83,14 @@ def load_rubric(name: str) -> str:
     )
 
 
+# NOTE: do not pass choices=[...] to create_llm_as_judge with Gemini models.
+# Openevals serializes choices as a float enum in the structured output schema,
+# but Gemini's protobuf layer requires enum values to be strings, not floats,
+# and raises a ParseError at runtime.
+
 # Evaluator: Citation Accuracy (LLM-as-Judge).
 citation_accuracy_evaluator: SimpleEvaluator = create_llm_as_judge(
-    model=EVALUATOR_MODEL_NAME,
+    judge=_EVALUATOR_JUDGE,
     prompt=load_rubric("citation_accuracy"),
     feedback_key="citation accuracy",
     continuous=True,
@@ -85,7 +98,7 @@ citation_accuracy_evaluator: SimpleEvaluator = create_llm_as_judge(
 
 # Evaluator: Legal Correctness (LLM-as-Judge).
 legal_correctness_evaluator: SimpleEvaluator = create_llm_as_judge(
-    model=EVALUATOR_MODEL_NAME,
+    judge=_EVALUATOR_JUDGE,
     prompt=load_rubric("legal_correctness"),
     feedback_key="legal correctness",
     continuous=True,
@@ -93,7 +106,7 @@ legal_correctness_evaluator: SimpleEvaluator = create_llm_as_judge(
 
 # Evaluator: Tone & Professionalism (LLM-as-Judge).
 tone_evaluator: SimpleEvaluator = create_llm_as_judge(
-    model=EVALUATOR_MODEL_NAME,
+    judge=_EVALUATOR_JUDGE,
     prompt=load_rubric("tone"),
     feedback_key="appropriate tone",
     continuous=True,
