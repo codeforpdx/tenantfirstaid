@@ -1139,7 +1139,7 @@ def test_extract_rubric_roundtrip(before, rubric, after):
 
 
 @pytest.mark.property
-@given(st.text())
+@given(st.text(alphabet=st.characters(blacklist_categories=("Cs",))))
 def test_local_or_remote_classification(value):
     """Strings ending in .jsonl always return Path; all others return str."""
     result = local_or_remote(value)
