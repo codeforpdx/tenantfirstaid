@@ -40,7 +40,7 @@ All python commands should be run via `uv run python ...`
 
 ### Environment variables
 
-See `backend/.env.example`. Key ones: `MODEL_NAME`, `GOOGLE_APPLICATION_CREDENTIALS`, `VERTEX_AI_DATASTORE`, `LANGSMITH_API_KEY`.
+See `backend/.env.example`. Key ones: `MODEL_NAME`, `GOOGLE_APPLICATION_CREDENTIALS`, `VERTEX_AI_DATASTORE_LAWS`, `LANGSMITH_API_KEY`.
 
 ### LangSmith evaluations
 

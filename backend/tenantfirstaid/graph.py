@@ -26,8 +26,8 @@ from .constants import DEFAULT_INSTRUCTIONS, SINGLETON
 from .google_auth import load_gcp_credentials
 from .langchain_tools import (
     generate_letter,
+    get_active_rag_tools,
     get_letter_template,
-    retrieve_city_state_laws,
 )
 from .location import OregonCity, TFAAgentStateSchema, UsaState
 
@@ -62,8 +62,7 @@ def _get_llm() -> ChatGoogleGenerativeAI:
         return _llm
 
 
-# Shared tool list.
-tools: List[BaseTool] = [retrieve_city_state_laws, get_letter_template, generate_letter]
+tools: List[BaseTool] = [*get_active_rag_tools(), get_letter_template, generate_letter]
 
 
 @dataclass

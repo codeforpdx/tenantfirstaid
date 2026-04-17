@@ -1,9 +1,44 @@
 import os
+from collections.abc import Mapping
+from enum import StrEnum, auto
 from pathlib import Path
 from typing import Final, Optional
 
 from dotenv import load_dotenv
 from langchain_google_genai import HarmBlockThreshold, HarmCategory
+
+_DATASTORE_PREFIX = "VERTEX_AI_DATASTORE_"
+
+
+class DatastoreKey(StrEnum):
+    """Datastore keys — must match the suffix of the corresponding VERTEX_AI_DATASTORE_<NAME> env var (lowercased)."""
+
+    LAWS = auto()
+    OREGON_LAW_HELP = auto()
+
+
+def _parse_datastores(env: Mapping[str, str]) -> dict[str, str]:
+    """Build a datastore name→id dict from environment variables with the VERTEX_AI_DATASTORE_ prefix.
+
+    Each variable named ``VERTEX_AI_DATASTORE_<NAME>`` becomes an entry keyed by
+    ``<NAME>`` lowercased. The value may be a bare datastore ID or a full resource URI.
+    """
+    result = {}
+    for key, value in env.items():
+        if not key.startswith(_DATASTORE_PREFIX):
+            continue
+        name = key.removeprefix(_DATASTORE_PREFIX).lower()
+        if not name:
+            raise ValueError(
+                f"[{key}] datastore variable has no name after the prefix."
+            )
+        value = value.strip()
+        if not value:
+            raise ValueError(f"[{key}] environment variable is set but empty.")
+        if value.startswith("projects/"):
+            value = value.rstrip("/").split("/")[-1]
+        result[name] = value
+    return result
 
 
 def _strtobool(val: Optional[str]) -> bool:
@@ -32,7 +67,7 @@ class _GoogEnvAndPolicy:
     # Note: these are Class variables, not instance variables.
     __slots__ = (
         "MODEL_NAME",
-        "VERTEX_AI_DATASTORE",
+        "VERTEX_AI_DATASTORES",
         "GOOGLE_CLOUD_PROJECT",
         "GOOGLE_CLOUD_LOCATION",
         "GOOGLE_APPLICATION_CREDENTIALS",
@@ -60,25 +95,27 @@ class _GoogEnvAndPolicy:
         # Note: assign explicitly since typecheckers do not understand slotted attributes
         #       that are assigned by __setattr__()
         self.MODEL_NAME: Final = os.getenv("MODEL_NAME")
-        self.VERTEX_AI_DATASTORE = os.getenv("VERTEX_AI_DATASTORE")
         self.GOOGLE_CLOUD_PROJECT: Final = os.getenv("GOOGLE_CLOUD_PROJECT")
         self.GOOGLE_CLOUD_LOCATION: Final = os.getenv("GOOGLE_CLOUD_LOCATION")
         self.GOOGLE_APPLICATION_CREDENTIALS: Final = os.getenv(
             "GOOGLE_APPLICATION_CREDENTIALS"
         )
 
-        for c in list(self.__slots__)[:5]:
-            if self.__getattribute__(c) is None:
+        for c in (
+            "MODEL_NAME",
+            "GOOGLE_CLOUD_PROJECT",
+            "GOOGLE_CLOUD_LOCATION",
+            "GOOGLE_APPLICATION_CREDENTIALS",
+        ):
+            if getattr(self, c) is None:
                 raise ValueError(f"[{c}] environment variable is not set.")
 
-        # FIXME: Temporary hack for VERTEX_AI_DATASTORE (old code wanted full
-        #        path URI, new code only wants the last part)
-        #        (https://github.com/codeforpdx/tenantfirstaid/issues/247)
-        if (
-            self.VERTEX_AI_DATASTORE is not None
-            and "projects/" in self.VERTEX_AI_DATASTORE
-        ):
-            self.VERTEX_AI_DATASTORE = self.VERTEX_AI_DATASTORE.split("/")[-1]
+        # _parse_datastores raises ValueError if any matched var is set but empty.
+        self.VERTEX_AI_DATASTORES: Final[dict[str, str]] = _parse_datastores(os.environ)
+        if DatastoreKey.LAWS not in self.VERTEX_AI_DATASTORES:
+            raise ValueError(
+                f"[{_DATASTORE_PREFIX}LAWS] environment variable is not set."
+            )
 
         # Assign slot attributes for optional environment variables
         self.SHOW_MODEL_THINKING: Final = _strtobool(

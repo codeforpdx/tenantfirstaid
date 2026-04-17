@@ -38,7 +38,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
 from pydantic import BaseModel
 
-from tenantfirstaid.constants import DEFAULT_INSTRUCTIONS, SINGLETON
+from tenantfirstaid.constants import DEFAULT_INSTRUCTIONS, SINGLETON, DatastoreKey
 
 
 # Primitive inputs and outputs
@@ -129,7 +129,7 @@ def rag_tool(query: str, runtime: ToolRuntime) -> str:
         name="tfa-retriever",
         project_id=SINGLETON.GOOGLE_CLOUD_PROJECT,  # tenantfirstaid
         location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,  # global
-        data_store_id=SINGLETON.VERTEX_AI_DATASTORE,  # "tenantfirstaid-corpora_1758844059585",
+        data_store_id=SINGLETON.VERTEX_AI_DATASTORES[DatastoreKey.LAWS],
         engine_data_type=0,  # unstructured
         get_extractive_answers=True,
         credentials=credentials,

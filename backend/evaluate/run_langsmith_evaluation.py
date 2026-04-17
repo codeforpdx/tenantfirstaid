@@ -174,7 +174,7 @@ def run_evaluation(
         metadata={
             "LLM model name": SINGLETON.MODEL_NAME,
             "LLM model temperature": SINGLETON.MODEL_TEMPERATURE,
-            "RAG Data Store": SINGLETON.VERTEX_AI_DATASTORE,
+            "RAG Data Stores": SINGLETON.VERTEX_AI_DATASTORES,
         },
         max_concurrency=max_concurrency,
     )

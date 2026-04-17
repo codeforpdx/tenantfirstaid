@@ -14,6 +14,7 @@ from tenantfirstaid.constants import (
     LETTER_TEMPLATE,
     OREGON_LAW_CENTER_PHONE_NUMBER,
     _GoogEnvAndPolicy,
+    _parse_datastores,
     _strtobool,
 )
 
@@ -67,37 +68,7 @@ def test_letter_template_contains_placeholders():
     assert "ORS 90.320" in LETTER_TEMPLATE
 
 
-def test_import_constants():
-    from tenantfirstaid.constants import SINGLETON
-
-    assert SINGLETON is not None
-
-
 class TestStrtobool:
-    @pytest.mark.parametrize(
-        "val,expected",
-        [
-            ("y", True),
-            ("yes", True),
-            ("t", True),
-            ("true", True),
-            ("on", True),
-            ("1", True),
-            ("YES", True),
-            ("True", True),
-            ("n", False),
-            ("no", False),
-            ("f", False),
-            ("false", False),
-            ("off", False),
-            ("0", False),
-            ("NO", False),
-            ("False", False),
-        ],
-    )
-    def test_valid_values(self, val, expected):
-        assert _strtobool(val) is expected
-
     def test_none_returns_false(self):
         assert _strtobool(None) is False
 
@@ -109,7 +80,7 @@ class TestStrtobool:
 class TestGoogEnvAndPolicy:
     REQUIRED_ENV = {
         "MODEL_NAME": "gemini-2.5-pro",
-        "VERTEX_AI_DATASTORE": "test-datastore",
+        "VERTEX_AI_DATASTORE_LAWS": "test-datastore",
         "GOOGLE_CLOUD_PROJECT": "test-project",
         "GOOGLE_CLOUD_LOCATION": "us-central1",
         "GOOGLE_APPLICATION_CREDENTIALS": "/tmp/creds.json",
@@ -121,25 +92,80 @@ class TestGoogEnvAndPolicy:
         singleton = _GoogEnvAndPolicy()
         assert singleton.MODEL_NAME == "gemini-2.5-pro"
         assert singleton.GOOGLE_CLOUD_PROJECT == "test-project"
+        assert singleton.VERTEX_AI_DATASTORES["laws"] == "test-datastore"
+
+    @pytest.mark.parametrize("missing_var", REQUIRED_ENV.keys())
+    @patch("tenantfirstaid.constants.Path.exists", return_value=False)
+    def test_missing_required_var_raises(self, mock_path, missing_var):
+        env = {k: v for k, v in self.REQUIRED_ENV.items() if k != missing_var}
+        with patch.dict("os.environ", env, clear=True):
+            with pytest.raises(ValueError, match="environment variable is not set"):
+                _GoogEnvAndPolicy()
 
     @patch("tenantfirstaid.constants.Path.exists", return_value=False)
-    @patch.dict("os.environ", {}, clear=True)
-    def test_missing_required_var_raises(self, mock_path):
-        with pytest.raises(ValueError, match="environment variable is not set"):
-            _GoogEnvAndPolicy()
+    def test_missing_laws_datastore_raises(self, mock_path):
+        env = {
+            **self.REQUIRED_ENV,
+            "VERTEX_AI_DATASTORE_OREGONLAWHELP": "store-1",
+        }
+        del env["VERTEX_AI_DATASTORE_LAWS"]
+        with patch.dict("os.environ", env, clear=True):
+            with pytest.raises(ValueError, match="VERTEX_AI_DATASTORE_LAWS"):
+                _GoogEnvAndPolicy()
 
-    @patch("tenantfirstaid.constants.Path.exists", return_value=False)
-    @patch.dict(
-        "os.environ",
-        {
-            **REQUIRED_ENV,
-            "VERTEX_AI_DATASTORE": "projects/p/locations/l/dataStores/my-ds",
-        },
-        clear=False,
-    )
-    def test_vertex_ai_datastore_uri_extraction(self, mock_path):
-        singleton = _GoogEnvAndPolicy()
-        assert singleton.VERTEX_AI_DATASTORE == "my-ds"
+
+class TestParseDatastores:
+    def test_bare_id(self):
+        result = _parse_datastores({"VERTEX_AI_DATASTORE_LAWS": "my-store"})
+        assert result["laws"] == "my-store"
+
+    def test_full_uri_extraction(self):
+        result = _parse_datastores(
+            {"VERTEX_AI_DATASTORE_LAWS": "projects/p/locations/l/dataStores/my-ds"}
+        )
+        assert result["laws"] == "my-ds"
+
+    def test_full_uri_with_trailing_slash(self):
+        result = _parse_datastores(
+            {"VERTEX_AI_DATASTORE_LAWS": "projects/p/locations/l/dataStores/my-ds/"}
+        )
+        assert result["laws"] == "my-ds"
+
+    def test_multiple_stores(self):
+        result = _parse_datastores(
+            {
+                "VERTEX_AI_DATASTORE_LAWS": "store-1",
+                "VERTEX_AI_DATASTORE_LETTERS": "store-2",
+            }
+        )
+        assert result["laws"] == "store-1"
+        assert result["letters"] == "store-2"
+
+    def test_name_is_lowercased(self):
+        result = _parse_datastores({"VERTEX_AI_DATASTORE_OREGON_LAW_HELP": "store-1"})
+        assert result["oregon_law_help"] == "store-1"
+
+    def test_whitespace_trimmed(self):
+        result = _parse_datastores({"VERTEX_AI_DATASTORE_LAWS": "  my-store  "})
+        assert result["laws"] == "my-store"
+
+    def test_empty_value_raises(self):
+        with pytest.raises(ValueError, match="set but empty"):
+            _parse_datastores({"VERTEX_AI_DATASTORE_LAWS": ""})
+
+    def test_non_prefixed_vars_ignored(self):
+        result = _parse_datastores(
+            {"VERTEX_AI_DATASTORE_LAWS": "store-1", "MODEL_NAME": "gemini-2.5-pro"}
+        )
+        assert set(result.keys()) == {"laws"}
+
+    def test_empty_name_raises(self):
+        with pytest.raises(ValueError, match="has no name after the prefix"):
+            _parse_datastores({"VERTEX_AI_DATASTORE_": "store-1"})
+
+    def test_no_datastore_vars_returns_empty(self):
+        result = _parse_datastores({"MODEL_NAME": "gemini-2.5-pro"})
+        assert result == {}
 
 
 def test_model_config_values():

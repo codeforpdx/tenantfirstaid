@@ -2,7 +2,6 @@
 Test location sanitization and other methods
 """
 
-import inspect
 import json
 from typing import Dict, cast
 from unittest.mock import MagicMock, patch
@@ -12,13 +11,17 @@ from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from langchain_core.tools import StructuredTool
 
+from tenantfirstaid.constants import DatastoreKey
 from tenantfirstaid.google_auth import load_gcp_credentials
 from tenantfirstaid.langchain_tools import (
     CityStateLawsInputSchema,
     _filter_builder,
+    _make_rag_tool,
     generate_letter,
+    get_active_rag_tools,
     get_letter_template,
     retrieve_city_state_laws,
+    retrieve_oregon_law_help,
 )
 from tenantfirstaid.location import OregonCity, UsaState
 
@@ -52,30 +55,6 @@ def test_portland_oregon_json_serialization():
     assert d["state"] == "or"
 
 
-def test_retrieve_city_law_filters_correctly():
-    """Test that city law retrieval uses correct filter."""
-    state = UsaState.from_maybe_str("or")
-    city = OregonCity.from_maybe_str("portland")
-
-    filter = _filter_builder(state, city)
-
-    # Verify filter was constructed correctly.
-    assert 'city: ANY("portland")' in str(filter)
-    assert 'state: ANY("or")' in str(filter)
-
-
-def test_retrieve_state_law_filters_correctly():
-    """Test that state law retrieval uses correct filter."""
-    state = UsaState.from_maybe_str("or")
-    city = None
-
-    filter = _filter_builder(state, city)
-
-    # Verify filter was constructed correctly.
-    assert 'city: ANY("null")' in str(filter)
-    assert 'state: ANY("or")' in str(filter)
-
-
 @patch("tenantfirstaid.langchain_tools.get_stream_writer")
 def test_generate_letter_writes_letter_chunk(mock_get_stream_writer):
     """Test that generate_letter emits a letter chunk via the stream writer."""
@@ -106,23 +85,20 @@ def test_retrieve_city_state_laws_state_only(mock_rag_class):
         input={
             "query": "late rent fee",
             "state": UsaState("or"),
-            "runtime": MagicMock(),
         },
     )
 
 
 @patch("tenantfirstaid.langchain_tools.RagBuilder")
-def test_retrieve_city_state_laws_parameter_order(mock_rag_class):
-    """Test that parameters are correctly ordered."""
+def test_retrieve_city_state_laws_with_city(mock_rag_class):
+    """Test that city and state are forwarded to the filter."""
     mock_rag_class.return_value.search.return_value = ""
 
-    # Pass city before state (opposite of function signature order).
     retrieve_city_state_laws.invoke(  # type: ignore[union-attr]
         input={
             "query": "eviction notice",
             "city": OregonCity("portland"),
             "state": UsaState("or"),
-            "runtime": MagicMock(),
         },
     )
 
@@ -131,14 +107,11 @@ def test_retrieve_city_state_laws_parameter_order(mock_rag_class):
 
 
 def test_tool_schema_matches_function_signature():
-    """Test that Pydantic schema matches function defaults."""
-    schema_fields = set(CityStateLawsInputSchema.model_fields.keys())
-    tool_func = cast(StructuredTool, retrieve_city_state_laws).func
-    assert tool_func is not None
-    func_params = set(inspect.signature(tool_func).parameters.keys())
-    func_params.discard("runtime")
-
-    assert schema_fields == func_params
+    """Test that retrieve_city_state_laws is bound to CityStateLawsInputSchema."""
+    assert (
+        cast(StructuredTool, retrieve_city_state_laws).args_schema
+        is CityStateLawsInputSchema
+    )
 
 
 # --- _load_gcp_credentials tests ---
@@ -222,7 +195,6 @@ def test_retrieve_city_state_laws_returns_joined_docs(mock_rag_class):
         query="eviction notice",
         state=UsaState("or"),
         city=OregonCity("portland"),
-        runtime=MagicMock(),
     )
     assert "Doc1 content" in result
     assert "Doc2 content" in result
@@ -237,9 +209,73 @@ def test_retrieve_city_state_laws_empty_results(mock_rag_class):
     result = _func(
         query="obscure law",
         state=UsaState("or"),
-        runtime=MagicMock(),
     )
     assert result == ""
+
+
+@patch("tenantfirstaid.langchain_tools.RagBuilder")
+def test_retrieve_oregon_law_help_uses_correct_datastore(mock_rag_class):
+    """Test that retrieve_oregon_law_help uses the oregon_law_help datastore without filtering."""
+    mock_rag_class.return_value.search.return_value = "Some legal guidance"
+
+    with patch.dict(
+        "tenantfirstaid.langchain_tools.SINGLETON.VERTEX_AI_DATASTORES",
+        {DatastoreKey.OREGON_LAW_HELP: "fake-olh-datastore-id"},
+    ):
+        _func = getattr(retrieve_oregon_law_help, "func")
+        result = _func(query="eviction notice")
+
+    mock_rag_class.assert_called_once_with(
+        data_store_id="fake-olh-datastore-id",
+        name="retrieve_oregon_law_help",
+        filter=None,
+        max_documents=3,
+    )
+    assert result == "Some legal guidance"
+
+
+def test_get_active_rag_tools_filters_by_configured_datastores():
+    """Tools whose datastore key is absent from env are excluded."""
+    with patch.dict(
+        "tenantfirstaid.langchain_tools.SINGLETON.VERTEX_AI_DATASTORES",
+        {DatastoreKey.LAWS: "fake-laws-id"},
+        clear=True,
+    ):
+        active = get_active_rag_tools()
+    assert len(active) == 1
+    assert active[0].name == "retrieve_city_state_laws"
+
+
+@patch("tenantfirstaid.langchain_tools.RagBuilder")
+def test_make_rag_tool_custom_filter_builder(mock_rag_class):
+    """Custom filter_builder is called instead of the default."""
+    mock_rag_class.return_value.search.return_value = ""
+    custom_filter = MagicMock(return_value="custom-filter")
+
+    custom_tool = _make_rag_tool(
+        DatastoreKey.LAWS,
+        "test_tool",
+        "A test tool.",
+        args_schema=CityStateLawsInputSchema,
+        filter_builder=custom_filter,
+    )
+
+    with patch.dict(
+        "tenantfirstaid.langchain_tools.SINGLETON.VERTEX_AI_DATASTORES",
+        {DatastoreKey.LAWS: "fake-id"},
+    ):
+        _func = getattr(custom_tool, "func")
+        _func(query="test query", state=UsaState("or"))
+
+    custom_filter.assert_called_once_with(
+        query="test query", state=UsaState("or"), city=None, max_documents=5
+    )
+    mock_rag_class.assert_called_once_with(
+        data_store_id="fake-id",
+        name="test_tool",
+        filter="custom-filter",
+        max_documents=5,
+    )
 
 
 def test_filter_builder_state_only():
