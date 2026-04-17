@@ -1,41 +1,51 @@
 {
-    "permissions": {
-        "allow": [
-            "WebFetch(domain:docs.langchain.com)",
-            "WebFetch(domain:reference.langchain.com)",
-            "WebFetch(domain:ai.google.dev)",
-            "WebFetch(domain:docs.digitalocean.com)",
-            "WebFetch(domain:docs.github.com)",
-            "WebFetch(domain:docs.docker.com)",
-            "WebFetch(domain:docs.astral.sh)"
-        ]
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.langchain.com)",
+      "WebFetch(domain:reference.langchain.com)",
+      "WebFetch(domain:ai.google.dev)",
+      "WebFetch(domain:docs.digitalocean.com)",
+      "WebFetch(domain:docs.github.com)",
+      "WebFetch(domain:docs.docker.com)",
+      "WebFetch(domain:docs.astral.sh)"
+    ]
+  },
+  "extraKnownMarketplaces": {
+    "langsmith-skills": {
+      "source": {
+        "source": "github",
+        "repo": "langchain-ai/langsmith-skills"
+      }
     },
-    "extraKnownMarketplaces": {
-        "langsmith-skills": {
-            "source": {
-                "source": "github",
-                "repo": "langchain-ai/langsmith-skills"
-            }
-        },
-        "astral-sh": {
-            "source": {
-                "source": "github",
-                "repo": "astral-sh/claude-code-plugins"
-            }
-        },
-        "knowledge-work-plugins": {
-            "source": {
-                "source": "github",
-                "repo": "anthropics/knowledge-work-plugins"
-            }
-        }
+    "astral-sh": {
+      "source": {
+        "source": "github",
+        "repo": "astral-sh/claude-code-plugins"
+      }
     },
-    "enabledPlugins": {
-        "langsmith-skills@langsmith-skills": true,
-        "astral@astral-sh": true,
-        "frontend-design@claude-plugins-official": true,
-        "github@claude-plugins-official": true,
-        "typescript-lsp@claude-plugins-official": true,
-        "legal@knowledge-work-plugins": true
+    "knowledge-work-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/knowledge-work-plugins"
+      }
     }
+  },
+  "enabledPlugins": {
+    "langsmith-skills@langsmith-skills": true,
+    "astral@astral-sh": true,
+    "frontend-design@claude-plugins-official": true,
+    "github@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "legal@knowledge-work-plugins": true
+  },
+  "env": {
+    "UV_NO_CACHE": "1"
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "network": {
+      "allowedDomains": ["api.smith.langchain.com"]
+    }
+  }
 }
