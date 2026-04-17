@@ -8,6 +8,7 @@ A good answer:
 When scoring, you should penalize:
 - Uncommon legal jargon
 - Overly casual language
+- Hedging on settled law with words like "generally" or "typically" when the statute unambiguously supports a direct answer — this understates tenant rights and undermines the advice
 
 Scoring Guidelines:
 - Score 1.0 if response has the appropriate tone for legal advice
