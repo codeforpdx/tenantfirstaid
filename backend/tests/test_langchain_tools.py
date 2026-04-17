@@ -229,6 +229,7 @@ def test_retrieve_oregon_law_help_uses_correct_datastore(mock_rag_class):
         data_store_id="fake-olh-datastore-id",
         name="retrieve_oregon_law_help",
         filter=None,
+        max_documents=3,
     )
     assert result == "Some legal guidance"
 
@@ -267,10 +268,10 @@ def test_make_rag_tool_custom_filter_builder(mock_rag_class):
         _func(query="test query", state=UsaState("or"))
 
     custom_filter.assert_called_once_with(
-        query="test query", state=UsaState("or"), city=None
+        query="test query", state=UsaState("or"), city=None, max_documents=5
     )
     mock_rag_class.assert_called_once_with(
-        data_store_id="fake-id", name="test_tool", filter="custom-filter"
+        data_store_id="fake-id", name="test_tool", filter="custom-filter", max_documents=5
     )
 
 
