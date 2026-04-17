@@ -13,7 +13,12 @@ from langchain_core.tools import BaseTool, tool
 from langchain_google_community import VertexAISearchRetriever
 from langgraph.config import get_stream_writer
 from pydantic import BaseModel, Field
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from .constants import (
     LETTER_TEMPLATE,
@@ -102,7 +107,9 @@ class RagBuilder:
         )
 
     @retry(
-        retry=retry_if_exception_type((httpx.ReadError, google_exceptions.ServiceUnavailable)),
+        retry=retry_if_exception_type(
+            (httpx.ReadError, google_exceptions.ServiceUnavailable)
+        ),
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=0.5, max=4),
         reraise=True,

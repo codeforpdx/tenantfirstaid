@@ -374,7 +374,10 @@ def test_rag_search_retries_on_httpx_read_error(mock_retriever_class, mock_creds
         [mock_doc],
     ]
 
-    builder = RagBuilder(data_store_id="fake-datastore-id", filter='city: ANY("null") AND state: ANY("or")')
+    builder = RagBuilder(
+        data_store_id="fake-datastore-id",
+        filter='city: ANY("null") AND state: ANY("or")',
+    )
     result = builder.search("test query")
 
     assert result == "result text"
@@ -390,7 +393,10 @@ def test_rag_search_gives_up_after_three_attempts(mock_retriever_class, mock_cre
     mock_instance = mock_retriever_class.return_value
     mock_instance.invoke.side_effect = httpx.ReadError("Connection reset by peer")
 
-    builder = RagBuilder(data_store_id="fake-datastore-id", filter='city: ANY("null") AND state: ANY("or")')
+    builder = RagBuilder(
+        data_store_id="fake-datastore-id",
+        filter='city: ANY("null") AND state: ANY("or")',
+    )
     with pytest.raises(httpx.ReadError):
         builder.search("test query")
 
