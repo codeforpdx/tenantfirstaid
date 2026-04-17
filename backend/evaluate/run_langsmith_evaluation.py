@@ -20,6 +20,7 @@ from evaluate.langsmith_evaluators import (
     tone_evaluator,
     # tool_usage_evaluator,
 )
+from evaluate.results_display import ScenarioResult, print_consistency_stats
 from tenantfirstaid.constants import LANGSMITH_API_KEY, SINGLETON
 from tenantfirstaid.langchain_chat_manager import LangChainChatManager
 from tenantfirstaid.location import OregonCity, UsaState
@@ -75,6 +76,52 @@ def agent_wrapper(inputs) -> Dict[str, str]:
         # TODO: figure out how to return ToolMessage content blocks for evaluation of tool calls and outputs
         #       since these are not currently included in the output stream from generate_streaming_response()
     }
+
+
+def _df_to_scenario_results(
+    df: Any, client: Optional[Any] = None
+) -> List[ScenarioResult]:
+    """Convert a LangSmith results DataFrame to ScenarioResult list.
+
+    When a LangSmith client is provided, example metadata is fetched to sort
+    scenarios by scenario_id and include it in the label so the output can be
+    cross-referenced against `langsmith_dataset example list` output.
+    """
+    score_cols = [c for c in df.columns if c.startswith("feedback.")]
+    if not score_cols or "example_id" not in df.columns:
+        return []
+
+    # Fetch scenario_ids from example metadata when a client is available.
+    scenario_id_by_example: Dict[str, int] = {}
+    if client is not None:
+        example_ids = df["example_id"].unique().tolist()
+        for ex in client.list_examples(example_ids=example_ids):
+            scenario_id_by_example[str(ex.id)] = (ex.metadata or {}).get(
+                "scenario_id", 0
+            )
+
+    query_col = "inputs.query" if "inputs.query" in df.columns else None
+    groups = list(df.groupby("example_id", sort=False))
+    if scenario_id_by_example:
+        groups.sort(key=lambda g: scenario_id_by_example.get(str(g[0]), 0))
+
+    scenarios = []
+    for example_id, group in groups:
+        q = str(group[query_col].iloc[0]) if query_col else ""
+        sc_id = scenario_id_by_example.get(str(example_id))
+        label = f'"{q[:68]}{"..." if len(q) > 68 else ""}"'
+        scores: Dict[str, List[float]] = {}
+        for col in score_cols:
+            name = col.removeprefix("feedback.")
+            scores[name] = group[col].dropna().tolist()
+        scenarios.append(
+            ScenarioResult(
+                label=label,
+                scenario_id=sc_id if sc_id is not None else 0,
+                scores=scores,
+            )
+        )
+    return scenarios
 
 
 # TODO: https://docs.langchain.com/langsmith/multi-turn-simulation
@@ -146,7 +193,9 @@ def run_evaluation(
     else:
         print("No feedback columns found.")
 
-    print(f"Experiment: {results.experiment_name}")
+    print_consistency_stats(_df_to_scenario_results(df, client=ls_client))
+
+    print(f"\nExperiment: {results.experiment_name}")
     return results
 
 

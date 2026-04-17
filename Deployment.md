@@ -247,6 +247,7 @@ Secrets exist in two places:
 | `DB_PASSWORD` | ⚠️ Database password — **not read by any current application code** | [deploy.production.yml](.github/workflows/deploy.production.yml) (env file only) |
 | `APP_PASSWORD` | SMTP app-specific password for sending feedback emails | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/app.py](backend/tenantfirstaid/app.py) |
 | `SSH_USER` | SSH username on the droplet (staging environment only — stored as a secret there) | [deploy.staging.yml](.github/workflows/deploy.staging.yml) |
+| `LANGSMITH_API_KEY` | LangSmith API key for LLM trace collection (quality-control review of live conversations) | [deploy.production.yml](.github/workflows/deploy.production.yml), [deploy.staging.yml](.github/workflows/deploy.staging.yml) |
 
 ### GitHub Actions variables (non-sensitive)
 
@@ -269,6 +270,7 @@ Secrets exist in two places:
 | `GOOGLE_CLOUD_LOCATION` | GCP region (e.g. `global`) | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py) |
 | `VERTEX_AI_DATASTORE_LAWS` | Vertex AI Search datastore ID for the Oregon laws corpus. Can be a bare datastore ID or a full resource URI. Additional datastores follow the same `VERTEX_AI_DATASTORE_<NAME>` pattern and are picked up automatically. | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py) |
 | `SHOW_MODEL_THINKING` | Toggle Gemini reasoning display (staging only; hardcoded `false` in production) | [deploy.staging.yml](.github/workflows/deploy.staging.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py) |
+| `LANGSMITH_PROJECT` | LangSmith project name that groups traces in the UI (e.g. `tenantfirstaid-prod`, `tenantfirstaid-staging`) | [deploy.production.yml](.github/workflows/deploy.production.yml), [deploy.staging.yml](.github/workflows/deploy.staging.yml) |
 
 ### Local development
 
@@ -559,11 +561,15 @@ The production Gunicorn service is instrumented with DataDog for log collection 
 
 The DataDog agent and its API key are configured directly on the server by a server admin and are not stored in this repository or the CI pipeline.
 
-### LangSmith (LLM traces — development / CI only)
+### LangSmith (LLM traces — production, staging, development)
 
-[LangSmith](https://smith.langchain.com/) can optionally trace LLM calls for debugging and evaluation when a `LANGSMITH_API_KEY` is set. See `backend/.env.example` for the relevant variables. LangSmith tracing is **not** enabled in the production deployment.
+[LangSmith](https://smith.langchain.com/) traces every LLM call made by the live chatbot for ongoing quality-control review of user conversations. Tracing is enabled in **production and staging** as well as local development; the on/off switch is the presence of a `LANGSMITH_API_KEY` env var plus the `LANGSMITH_TRACING=true` / `LANGCHAIN_TRACING_V2=true` flags (see [`backend/.env.example`](backend/.env.example)).
 
-For running evaluations, see [`backend/evaluate/EVALUATION.md`](backend/evaluate/EVALUATION.md).
+Traces are grouped in the LangSmith UI by the `LANGSMITH_PROJECT` variable — typically `tenantfirstaid-prod` vs `tenantfirstaid-staging` — so production and staging traffic are viewable separately.
+
+> **Privacy note**: trace content includes user-submitted chat messages, which may contain sensitive housing/legal details. Access to the LangSmith project is therefore limited to maintainers with a documented quality-control need. See [Permissions](#permissions) for how to request access.
+
+For running offline evaluations against a dataset, see [`backend/evaluate/EVALUATION.md`](backend/evaluate/EVALUATION.md).
 
 ### Future plans
 

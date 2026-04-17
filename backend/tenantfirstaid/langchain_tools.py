@@ -99,6 +99,8 @@ def generate_letter(letter: str) -> str:
     """Display the completed or updated letter in the letter panel.
 
     Call this after filling in the letter template or after making any updates.
+    Letter content must always be passed to this tool — never output letter
+    content directly as text, as doing so will break the UI.
 
     Args:
         letter: The complete letter content.

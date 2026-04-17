@@ -12,6 +12,7 @@ from hypothesis import strategies as st
 from evaluate.langsmith_dataset import (
     _apply_dataset_schemas,
     _example_content_diff,
+    _experiment_scores,
     _extract_rubric,
     _git_is_clean,
     _load_dataset_schemas,
@@ -34,6 +35,12 @@ from evaluate.langsmith_dataset import (
     cmd_example_remove,
     cmd_example_show,
     cmd_example_update,
+    cmd_experiment_compare,
+    cmd_experiment_show,
+    cmd_experiment_stats,
+    cmd_run_exemplars,
+    cmd_run_show,
+    cmd_run_trace,
     local_or_remote,
     make_client,
 )
@@ -1132,3 +1139,573 @@ def test_local_or_remote_classification(value):
         assert isinstance(result, Path)
     else:
         assert isinstance(result, str)
+
+
+# ── _experiment_scores ─────────────────────────────────────────────────────────
+
+
+def _make_run(run_id=None, example_id=None, query=None):
+    r = MagicMock()
+    r.id = run_id or uuid4()
+    r.reference_example_id = example_id or uuid4()
+    r.inputs = {"query": query or ""}
+    return r
+
+
+def _make_example(example_id, scenario_id):
+    ex = MagicMock()
+    ex.id = example_id
+    ex.metadata = {"scenario_id": scenario_id}
+    return ex
+
+
+def _make_feedback(run_id, key, score):
+    fb = MagicMock()
+    fb.run_id = run_id
+    fb.key = key
+    fb.score = score
+    return fb
+
+
+def test_experiment_scores_no_runs():
+    client = MagicMock()
+    client.list_runs.return_value = []
+    count, scores = _experiment_scores(client, "proj-id")
+    assert count == 0
+    assert scores == {}
+
+
+def test_experiment_scores_aggregates_mean_and_pstdev():
+    run = _make_run()
+    client = MagicMock()
+    client.list_runs.return_value = [run]
+    client.list_feedback.return_value = [
+        _make_feedback(run.id, "legal correctness", 1.0),
+        _make_feedback(run.id, "legal correctness", 0.5),
+        _make_feedback(run.id, "legal correctness", 0.5),
+    ]
+    count, scores = _experiment_scores(client, "proj-id")
+    assert count == 1
+    mean, std = scores["legal correctness"]
+    assert round(mean, 4) == round(2.0 / 3.0, 4)
+    assert std > 0
+
+
+def test_experiment_scores_ignores_none_score():
+    run = _make_run()
+    client = MagicMock()
+    client.list_runs.return_value = [run]
+    client.list_feedback.return_value = [
+        _make_feedback(run.id, "tone", None),
+        _make_feedback(run.id, "tone", 1.0),
+    ]
+    _, scores = _experiment_scores(client, "proj-id")
+    mean, _ = scores["tone"]
+    assert mean == 1.0
+
+
+def test_experiment_scores_multiple_evaluator_keys():
+    run = _make_run()
+    client = MagicMock()
+    client.list_runs.return_value = [run]
+    client.list_feedback.return_value = [
+        _make_feedback(run.id, "legal correctness", 1.0),
+        _make_feedback(run.id, "tone", 0.5),
+    ]
+    _, scores = _experiment_scores(client, "proj-id")
+    assert set(scores.keys()) == {"legal correctness", "tone"}
+
+
+# ── cmd_experiment_show ────────────────────────────────────────────────────────
+
+
+def _make_project(proj_name: str, proj_id: str = "proj-id"):
+    """MagicMock project with a real .name attribute (name= is reserved in MagicMock)."""
+    p = MagicMock()
+    p.name = proj_name
+    p.id = proj_id
+    p.start_time = None
+    p.end_time = None
+    return p
+
+
+def test_cmd_experiment_show_outputs_json(capsys):
+    run = _make_run()
+    mock_client = MagicMock()
+    mock_client.read_project.return_value = _make_project("my-exp")
+    mock_client.list_runs.return_value = [run]
+    mock_client.list_feedback.return_value = [
+        _make_feedback(run.id, "legal correctness", 1.0),
+    ]
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        args = MagicMock(experiment="my-exp")
+        cmd_experiment_show(args)
+
+    out = json.loads(capsys.readouterr().out)
+    assert out["run_count"] == 1
+    assert "legal correctness" in out["feedback_stats"]
+    assert "mean" in out["feedback_stats"]["legal correctness"]
+    assert "std" in out["feedback_stats"]["legal correctness"]
+
+
+# ── cmd_experiment_compare ─────────────────────────────────────────────────────
+
+
+def _mock_client_for_compare(runs1, feedback1, runs2, feedback2):
+    """Return a client whose list_runs/list_feedback alternate between two experiments."""
+    client = MagicMock()
+    client.read_project.side_effect = [_make_project("exp-A"), _make_project("exp-B")]
+    client.list_runs.side_effect = [runs1, runs2]
+    client.list_feedback.side_effect = [feedback1, feedback2]
+    return client
+
+
+def test_cmd_experiment_compare_shows_run_counts(capsys):
+    r1, r2 = _make_run(), _make_run()
+    client = _mock_client_for_compare(
+        [r1],
+        [_make_feedback(r1.id, "tone", 1.0)],
+        [r2],
+        [_make_feedback(r2.id, "tone", 0.5)],
+    )
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        args = MagicMock(experiment1="exp-A", experiment2="exp-B")
+        cmd_experiment_compare(args)
+
+    out = capsys.readouterr().out
+    assert "runs" in out
+    assert "1" in out
+
+
+def test_cmd_experiment_compare_shows_evaluator_scores(capsys):
+    r1, r2 = _make_run(), _make_run()
+    client = _mock_client_for_compare(
+        [r1],
+        [_make_feedback(r1.id, "legal correctness", 1.0)],
+        [r2],
+        [_make_feedback(r2.id, "legal correctness", 0.5)],
+    )
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        args = MagicMock(experiment1="exp-A", experiment2="exp-B")
+        cmd_experiment_compare(args)
+
+    out = capsys.readouterr().out
+    assert "legal correctness" in out
+    assert "100.0%" in out
+    assert "50.0%" in out
+
+
+def test_cmd_experiment_compare_shows_sigma(capsys):
+    r1, r2 = _make_run(), _make_run()
+    client = _mock_client_for_compare(
+        [r1],
+        [_make_feedback(r1.id, "tone", 1.0), _make_feedback(r1.id, "tone", 0.5)],
+        [r2],
+        [_make_feedback(r2.id, "tone", 1.0)],
+    )
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        args = MagicMock(experiment1="exp-A", experiment2="exp-B")
+        cmd_experiment_compare(args)
+
+    assert "σ=" in capsys.readouterr().out
+
+
+def test_cmd_experiment_compare_missing_key_shows_dash(capsys):
+    r1, r2 = _make_run(), _make_run()
+    client = _mock_client_for_compare(
+        [r1],
+        [_make_feedback(r1.id, "legal correctness", 1.0)],
+        [r2],
+        [],  # exp-B has no feedback
+    )
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        args = MagicMock(experiment1="exp-A", experiment2="exp-B")
+        cmd_experiment_compare(args)
+
+    assert "—" in capsys.readouterr().out
+
+
+# ── cmd_experiment_stats ────────────────────────────────────────────────────────
+
+
+def _mock_client_for_stats(runs, feedback, examples):
+    """Build a mock LangSmith client for cmd_experiment_stats tests."""
+    client = MagicMock()
+    p = MagicMock()
+    p.id = "proj-id"
+    client.read_project.return_value = p
+    client.list_runs.return_value = iter(runs)
+    client.list_feedback.return_value = iter(feedback)
+    client.list_examples.return_value = iter(examples)
+    return client
+
+
+def test_cmd_experiment_stats_no_runs(capsys):
+    """Stats command prints a message and exits cleanly when no runs exist."""
+    client = _mock_client_for_stats([], [], [])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_experiment_stats(MagicMock(experiment="exp", evaluator=[]))
+    assert "No runs found" in capsys.readouterr().out
+
+
+def test_cmd_experiment_stats_sorted_by_scenario_id(capsys):
+    """Scenarios appear sorted by scenario_id, not insertion order."""
+    ex_id_a, ex_id_b = uuid4(), uuid4()
+    r_a = _make_run(example_id=ex_id_a, query="question A")
+    r_b = _make_run(example_id=ex_id_b, query="question B")
+    fb_a = _make_feedback(r_a.id, "tone", 1.0)
+    fb_b = _make_feedback(r_b.id, "tone", 0.5)
+    # example B has lower scenario_id (3) than example A (7) — B should sort first.
+    examples = [_make_example(ex_id_a, 7), _make_example(ex_id_b, 3)]
+
+    client = _mock_client_for_stats([r_b, r_a], [fb_b, fb_a], examples)
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_experiment_stats(MagicMock(experiment="exp", evaluator=[]))
+
+    out = capsys.readouterr().out
+    # S1 should correspond to scenario_id=3 (question B), S2 to scenario_id=7 (question A).
+    assert out.index("question B") < out.index("question A")
+
+
+def test_cmd_experiment_stats_label_includes_scenario_id(capsys):
+    """Each scenario label includes the dataset scenario_id in brackets."""
+    ex_id = uuid4()
+    run = _make_run(example_id=ex_id, query="Can my landlord enter?")
+    fb = _make_feedback(run.id, "tone", 1.0)
+    examples = [_make_example(ex_id, 42)]
+
+    client = _mock_client_for_stats([run], [fb], examples)
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_experiment_stats(MagicMock(experiment="exp", evaluator=[]))
+
+    assert "S42" in capsys.readouterr().out
+
+
+def test_cmd_experiment_stats_evaluator_filter(capsys):
+    """The --evaluator flag restricts which evaluator tables are printed."""
+    ex_id = uuid4()
+    run = _make_run(example_id=ex_id, query="eviction question")
+    feedback = [
+        _make_feedback(run.id, "tone", 1.0),
+        _make_feedback(run.id, "legal correctness", 0.5),
+    ]
+    examples = [_make_example(ex_id, 1)]
+
+    client = _mock_client_for_stats([run], feedback, examples)
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_experiment_stats(MagicMock(experiment="exp", evaluator=["tone"]))
+
+    out = capsys.readouterr().out
+    assert "tone" in out
+    assert "legal correctness" not in out
+
+
+# ── cmd_run_exemplars ──────────────────────────────────────────────────────────
+
+
+def _mock_client_for_exemplars(runs, feedback, examples):
+    """Build a mock LangSmith client for cmd_run_exemplars tests."""
+    client = MagicMock()
+    p = MagicMock()
+    p.id = "proj-id"
+    client.read_project.return_value = p
+    client.list_runs.return_value = iter(runs)
+    client.list_feedback.return_value = iter(feedback)
+    client.list_examples.return_value = iter(examples)
+    return client
+
+
+def test_cmd_run_exemplars_no_runs(capsys):
+    """Prints a message and exits cleanly when no runs exist."""
+    client = _mock_client_for_exemplars([], [], [])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_exemplars(
+            MagicMock(
+                experiment="exp",
+                scenario_id=1,
+                evaluator="legal correctness",
+                no_header=False,
+            )
+        )
+    assert "No runs found" in capsys.readouterr().out
+
+
+def test_cmd_run_exemplars_no_runs_for_scenario(capsys):
+    """Prints a message when no runs match the requested scenario_id."""
+    ex_id = uuid4()
+    run = _make_run(example_id=ex_id)
+    example = _make_example(ex_id, scenario_id=2)
+    feedback = [_make_feedback(run.id, "legal correctness", 1.0)]
+    client = _mock_client_for_exemplars([run], feedback, [example])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_exemplars(
+            MagicMock(
+                experiment="exp",
+                scenario_id=99,
+                evaluator="legal correctness",
+                no_header=False,
+            )
+        )
+    assert "No runs found for scenario_id=99" in capsys.readouterr().out
+
+
+def test_cmd_run_exemplars_filters_to_scenario(capsys):
+    """Only runs belonging to the requested scenario_id appear in output."""
+    ex_id_a, ex_id_b = uuid4(), uuid4()
+    run_a = _make_run(example_id=ex_id_a, query="scenario 1 question")
+    run_b = _make_run(example_id=ex_id_b, query="scenario 2 question")
+    examples = [_make_example(ex_id_a, 1), _make_example(ex_id_b, 2)]
+    feedback = [
+        _make_feedback(run_a.id, "legal correctness", 0.5),
+        _make_feedback(run_b.id, "legal correctness", 1.0),
+    ]
+    client = _mock_client_for_exemplars([run_a, run_b], feedback, examples)
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_exemplars(
+            MagicMock(
+                experiment="exp",
+                scenario_id=1,
+                evaluator="legal correctness",
+                no_header=True,
+            )
+        )
+    out = capsys.readouterr().out
+    assert "scenario 1 question" in out
+    assert "scenario 2 question" not in out
+
+
+def test_cmd_run_exemplars_sorted_worst_to_best(capsys):
+    """Runs are printed sorted from lowest to highest evaluator score."""
+    ex_id = uuid4()
+    run_low = _make_run(example_id=ex_id, query="low score run")
+    run_high = _make_run(example_id=ex_id, query="high score run")
+    example = _make_example(ex_id, 1)
+    feedback = [
+        _make_feedback(run_low.id, "legal correctness", 0.0),
+        _make_feedback(run_high.id, "legal correctness", 1.0),
+    ]
+    # Pass high-score run first to confirm sorting is not insertion order.
+    client = _mock_client_for_exemplars([run_high, run_low], feedback, [example])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_exemplars(
+            MagicMock(
+                experiment="exp",
+                scenario_id=1,
+                evaluator="legal correctness",
+                no_header=True,
+            )
+        )
+    out = capsys.readouterr().out
+    assert out.index("low score run") < out.index("high score run")
+
+
+def test_cmd_run_exemplars_missing_feedback_shows_na(capsys):
+    """A run with no feedback for the requested evaluator shows 'N/A' as the score."""
+    ex_id = uuid4()
+    run = _make_run(example_id=ex_id, query="unevaluated run")
+    example = _make_example(ex_id, 1)
+    client = _mock_client_for_exemplars([run], [], [example])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_exemplars(
+            MagicMock(
+                experiment="exp",
+                scenario_id=1,
+                evaluator="legal correctness",
+                no_header=True,
+            )
+        )
+    assert "N/A" in capsys.readouterr().out
+
+
+def test_cmd_run_exemplars_truncates_long_query(capsys):
+    """Queries longer than 60 characters are truncated with an ellipsis."""
+    ex_id = uuid4()
+    long_query = "A" * 70
+    run = _make_run(example_id=ex_id, query=long_query)
+    example = _make_example(ex_id, 1)
+    feedback = [_make_feedback(run.id, "legal correctness", 0.5)]
+    client = _mock_client_for_exemplars([run], feedback, [example])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_exemplars(
+            MagicMock(
+                experiment="exp",
+                scenario_id=1,
+                evaluator="legal correctness",
+                no_header=True,
+            )
+        )
+    out = capsys.readouterr().out
+    assert "…" in out
+    assert long_query not in out
+
+
+def test_cmd_run_exemplars_no_header_suppresses_headers(capsys):
+    """The --no-header flag omits the column header row."""
+    ex_id = uuid4()
+    run = _make_run(example_id=ex_id, query="question")
+    example = _make_example(ex_id, 1)
+    feedback = [_make_feedback(run.id, "legal correctness", 1.0)]
+    client = _mock_client_for_exemplars([run], feedback, [example])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_exemplars(
+            MagicMock(
+                experiment="exp",
+                scenario_id=1,
+                evaluator="legal correctness",
+                no_header=True,
+            )
+        )
+    assert "RUN UUID" not in capsys.readouterr().out
+
+
+# ── cmd_run_show ───────────────────────────────────────────────────────────────
+
+
+def test_cmd_run_show_single_uuid(capsys):
+    """Prints JSON for a single run UUID."""
+    run_id = uuid4()
+    mock_run = MagicMock()
+    mock_run.id = run_id
+    mock_run.name = "Target"
+    mock_run.status = "success"
+    mock_run.inputs = {"query": "test"}
+    mock_run.outputs = {"answer": "42"}
+    mock_run.error = None
+
+    client = MagicMock()
+    client.read_run.return_value = mock_run
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_show(MagicMock(run_id=[str(run_id)]))
+
+    out = json.loads(capsys.readouterr().out)
+    assert out["id"] == str(run_id)
+    assert out["name"] == "Target"
+    assert out["inputs"] == {"query": "test"}
+
+
+def test_cmd_run_show_multiple_uuids(capsys):
+    """Prints one JSON object per UUID when multiple are given."""
+    id_a, id_b = uuid4(), uuid4()
+
+    def _mock_read_run(run_id):
+        r = MagicMock()
+        r.id = run_id
+        r.name = f"run-{run_id}"
+        r.status = "success"
+        r.inputs = {}
+        r.outputs = {}
+        r.error = None
+        return r
+
+    client = MagicMock()
+    client.read_run.side_effect = _mock_read_run
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_show(MagicMock(run_id=[str(id_a), str(id_b)]))
+
+    capsys.readouterr()
+    # Two separate JSON objects means read_run was called twice.
+    assert client.read_run.call_count == 2
+
+
+# ── cmd_run_trace ──────────────────────────────────────────────────────────────
+
+
+def _make_trace_run(name="root", run_type="chain", status="success", child_runs=None):
+    """Build a minimal mock run for cmd_run_trace tests."""
+    r = MagicMock()
+    r.name = name
+    r.run_type = run_type
+    r.status = status
+    r.child_runs = child_runs or []
+    r.inputs = {}
+    r.outputs = {}
+    return r
+
+
+def test_cmd_run_trace_non_verbose_prints_name_and_type(capsys):
+    """Without --verbose, only the name, run_type, and status are printed."""
+    run = _make_trace_run(name="my-chain", run_type="chain", status="success")
+    client = MagicMock()
+    client.read_run.return_value = run
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_trace(MagicMock(run_id=str(uuid4()), verbose=False))
+    out = capsys.readouterr().out
+    assert "my-chain" in out
+    assert "chain" in out
+    assert "success" in out
+
+
+def test_cmd_run_trace_non_verbose_omits_inputs_outputs(capsys):
+    """Without --verbose, tool inputs/outputs are not printed."""
+    tool_run = _make_trace_run(name="retrieve", run_type="tool", status="success")
+    tool_run.inputs = {"query": "eviction notice"}
+    tool_run.outputs = {"output": "ORS 90.394 text"}
+    client = MagicMock()
+    client.read_run.return_value = tool_run
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_trace(MagicMock(run_id=str(uuid4()), verbose=False))
+    out = capsys.readouterr().out
+    assert "eviction notice" not in out
+    assert "ORS 90.394" not in out
+
+
+def test_cmd_run_trace_verbose_prints_tool_inputs(capsys):
+    """With --verbose, tool run inputs are printed with 'in' prefix."""
+    tool_run = _make_trace_run(name="retrieve", run_type="tool", status="success")
+    tool_run.inputs = {"query": "eviction notice"}
+    tool_run.outputs = {"output": "ORS 90.394 text"}
+    client = MagicMock()
+    client.read_run.return_value = tool_run
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_trace(MagicMock(run_id=str(uuid4()), verbose=True))
+    out = capsys.readouterr().out
+    assert "in  query" in out
+    assert "eviction notice" in out
+
+
+def test_cmd_run_trace_verbose_prints_tool_output(capsys):
+    """With --verbose, tool run output is printed with 'out' prefix."""
+    tool_run = _make_trace_run(name="retrieve", run_type="tool", status="success")
+    tool_run.inputs = {}
+    tool_run.outputs = {"output": "ORS 90.394 text"}
+    client = MagicMock()
+    client.read_run.return_value = tool_run
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_trace(MagicMock(run_id=str(uuid4()), verbose=True))
+    out = capsys.readouterr().out
+    assert "out" in out
+    assert "ORS 90.394 text" in out
+
+
+def test_cmd_run_trace_verbose_prints_llm_generation(capsys):
+    """With --verbose, LLM run output generations are printed."""
+    llm_run = _make_trace_run(name="ChatVertexAI", run_type="llm", status="success")
+    llm_run.inputs = {}
+    llm_run.outputs = {
+        "generations": [[{"text": "You are protected under ORS 90.453."}]]
+    }
+    client = MagicMock()
+    client.read_run.return_value = llm_run
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_trace(MagicMock(run_id=str(uuid4()), verbose=True))
+    out = capsys.readouterr().out
+    assert "ORS 90.453" in out
+
+
+def test_cmd_run_trace_verbose_recurses_into_child_runs(capsys):
+    """With --verbose, child runs are printed indented below the parent."""
+    child = _make_trace_run(name="child-tool", run_type="tool", status="success")
+    child.inputs = {"query": "child input"}
+    child.outputs = {"output": "child output"}
+    parent = _make_trace_run(
+        name="parent-chain", run_type="chain", status="success", child_runs=[child]
+    )
+    client = MagicMock()
+    client.read_run.return_value = parent
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_run_trace(MagicMock(run_id=str(uuid4()), verbose=True))
+    out = capsys.readouterr().out
+    assert "parent-chain" in out
+    assert "child-tool" in out
+    assert "child input" in out

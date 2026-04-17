@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { ChatMessage } from "../shared/types/messages";
-import type { ResponseChunk } from "../types/models";
+import type { LetterChunk, ResponseChunk } from "../types/models";
 
 /**
  * Extracts generated letter content from chat messages by scanning all AI
@@ -19,7 +19,9 @@ export function useLetterContent(messages: ChatMessage[]) {
         }
       });
 
-    const letterChunks = chunks.filter((chunk) => chunk.type === "letter");
+    const letterChunks = chunks.filter(
+      (chunk): chunk is LetterChunk => chunk.type === "letter",
+    );
     return letterChunks[letterChunks.length - 1]?.content ?? "";
   }, [messages]);
 
