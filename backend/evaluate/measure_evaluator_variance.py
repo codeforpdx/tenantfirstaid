@@ -108,7 +108,6 @@ def _evaluate_once(
     return float(score) if score is not None else None
 
 
-
 def measure_evaluator_variance(
     experiment_name: str,
     k: int = 5,
@@ -214,7 +213,9 @@ def measure_evaluator_variance(
             runs = runs[:runs_per_scenario]
         example = examples_by_id[eid]
         ref_outputs = example.outputs or {}
-        all_results[eid] = {name: {i: {} for i in range(len(runs))} for name in evaluators}
+        all_results[eid] = {
+            name: {i: {} for i in range(len(runs))} for name in evaluators
+        }
 
         for run_idx, run in enumerate(runs):
             run_inputs = run.inputs or {}
@@ -222,7 +223,16 @@ def measure_evaluator_variance(
             for eval_name, evaluator in evaluators.items():
                 for repeat in range(k):
                     tasks.append(
-                        (eid, run_idx, eval_name, evaluator, run_inputs, run_outputs, ref_outputs, repeat)
+                        (
+                            eid,
+                            run_idx,
+                            eval_name,
+                            evaluator,
+                            run_inputs,
+                            run_outputs,
+                            ref_outputs,
+                            repeat,
+                        )
                     )
 
     completed = 0
@@ -262,7 +272,8 @@ def measure_evaluator_variance(
                 scores_for_run = [
                     s
                     for repeat in range(k)
-                    if (s := all_results[eid][eval_name][run_idx].get(repeat)) is not None
+                    if (s := all_results[eid][eval_name][run_idx].get(repeat))
+                    is not None
                 ]
                 per_run_scores[eval_name].append(scores_for_run)
 
@@ -293,7 +304,9 @@ def measure_evaluator_variance(
     if show_delta and stored_scores:
         baseline_map: Dict[Tuple[int, str], Tuple[float, float]] = {}
         # Aggregate stored scores across all eids that share the same scenario_id.
-        stored_by_sid: Dict[int, Dict[str, List[float]]] = defaultdict(lambda: defaultdict(list))
+        stored_by_sid: Dict[int, Dict[str, List[float]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
         for eid, eval_scores in stored_scores.items():
             sid = scenario_ids.get(eid, 0)
             for eval_name, scores in eval_scores.items():

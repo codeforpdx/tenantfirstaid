@@ -102,7 +102,9 @@ def print_consistency_stats(
 
     for key in all_keys:
         print(f"\nEvaluator: {key}")
-        print(f"  {'Scenario':<{sid_w}}  {'mean':>{stat_w}}  {'σ':>{stat_w}}  {std_hdr}{ns_hdr}")
+        print(
+            f"  {'Scenario':<{sid_w}}  {'mean':>{stat_w}}  {'σ':>{stat_w}}  {std_hdr}{ns_hdr}"
+        )
         print(f"  {'-' * sid_w}  {'-' * stat_w}  {'-' * stat_w}  {std_sep}{ns_sep}")
 
         for scenario in scenarios:
@@ -148,7 +150,9 @@ def print_consistency_stats(
                 else ""
             )
 
-            print(f"  {sid:<{sid_w}}  {mean_str:>{stat_w}}  {std_str:>{stat_w}}  {std_cells}{ns_cells}")
+            print(
+                f"  {sid:<{sid_w}}  {mean_str:>{stat_w}}  {std_str:>{stat_w}}  {std_cells}{ns_cells}"
+            )
 
     # Scenario key: map S<scenario_id> to full query text and repetition count.
     print("\nScenario Key:")
