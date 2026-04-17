@@ -26,7 +26,7 @@ from google.cloud.discoveryengine_v1beta.services.search_service.pagers import (
     SearchPager,
 )
 
-from tenantfirstaid.constants import SINGLETON
+from tenantfirstaid.constants import SINGLETON, DatastoreKey
 from tenantfirstaid.google_auth import load_gcp_credentials
 from tenantfirstaid.langchain_tools import _filter_builder, _repair_mojibake
 from tenantfirstaid.location import OregonCity, UsaState
@@ -59,7 +59,7 @@ def search(
         client_options=client_options,
     )
 
-    datastore = datastore_override or SINGLETON.VERTEX_AI_DATASTORE
+    datastore = datastore_override or SINGLETON.VERTEX_AI_DATASTORES[DatastoreKey.LAWS]
     serving_config = (
         f"projects/{SINGLETON.GOOGLE_CLOUD_PROJECT}"
         f"/locations/{location}"
@@ -351,7 +351,7 @@ def main() -> None:
     state = UsaState.from_maybe_str(args.state)
     city = OregonCity.from_maybe_str(args.city) if args.city else None
 
-    datastore = args.datastore or SINGLETON.VERTEX_AI_DATASTORE
+    datastore = args.datastore or SINGLETON.VERTEX_AI_DATASTORES[DatastoreKey.LAWS]
 
     if args.command == "shmoo":
         _shmoo(
