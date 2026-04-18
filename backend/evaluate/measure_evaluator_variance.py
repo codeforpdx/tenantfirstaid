@@ -10,15 +10,21 @@ Run this script against an existing experiment to measure σ_evaluator directly.
 If σ_evaluator << σ_total, the noise is agent-side and more agent samples are
 the right fix. If σ_evaluator is comparable to σ_total, fix the judge first.
 
+Pass --show-delta to compare re-evaluated scores against the scores already stored
+in the experiment. This is useful when you have updated an evaluator rubric and
+want to see which scenarios moved up or down without running a full new experiment.
+
 Usage:
     uv run python -m evaluate.measure_evaluator_variance --experiment <name>
     uv run python -m evaluate.measure_evaluator_variance --experiment <name> -k 10
+    uv run python -m evaluate.measure_evaluator_variance --experiment <name> --show-delta
     uv run python -m evaluate.measure_evaluator_variance --experiment <name> --runs-per-scenario 3
 """
 
 import argparse
 import statistics
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional, Tuple
 
 from langsmith import Client
@@ -59,6 +65,24 @@ def _fetch_runs_and_examples(
     return pairs
 
 
+def _fetch_stored_scores(
+    client: Client,
+    runs: List[Any],
+    evaluator_keys: List[str],
+) -> Dict[str, List[float]]:
+    """Return stored feedback scores keyed by evaluator name.
+
+    Fetches feedback for all runs in a single batch and filters to the
+    requested evaluator feedback keys. Only scores (not comments) are included.
+    """
+    run_ids = [str(r.id) for r in runs]
+    scores: Dict[str, List[float]] = defaultdict(list)
+    for feedback in client.list_feedback(run_ids=run_ids):
+        if feedback.key in evaluator_keys and feedback.score is not None:
+            scores[feedback.key].append(float(feedback.score))
+    return dict(scores)
+
+
 def _evaluate_once(
     evaluator: Any,
     inputs: Dict[str, Any],
@@ -90,6 +114,8 @@ def measure_evaluator_variance(
     runs_per_scenario: Optional[int] = None,
     evaluator_names: Optional[List[str]] = None,
     scenario_ids_filter: Optional[List[int]] = None,
+    show_delta: bool = False,
+    max_workers: int = 10,
 ) -> None:
     """Fetch runs from an experiment, re-evaluate each k times, and report σ.
 
@@ -103,6 +129,10 @@ def measure_evaluator_variance(
             Defaults to all evaluators when None.
         scenario_ids_filter: If set, only probe scenarios whose scenario_id is
             in this list. Useful for drilling into a single noisy scenario.
+        show_delta: If True, fetch stored feedback from the experiment and show
+            how the re-evaluated scores compare to the originally recorded scores.
+            Useful for testing whether an updated evaluator rubric changes scores.
+        max_workers: Thread pool size for concurrent evaluator calls.
     """
     if evaluator_names is not None:
         unknown = set(evaluator_names) - set(_ALL_EVALUATORS)
@@ -158,45 +188,95 @@ def measure_evaluator_variance(
         f"Will make {total_evals} evaluator calls ({total_runs} runs × {k} repeats × {len(evaluators)} evaluators)."
     )
 
+    # Optionally fetch stored scores from the experiment for delta display.
+    # stored_scores[eid][eval_name] = [score, ...]
+    stored_scores: Dict[str, Dict[str, List[float]]] = {}
+    if show_delta:
+        print("Fetching stored feedback scores for delta comparison...")
+        for eid, runs in runs_by_example.items():
+            probe_runs = runs[:runs_per_scenario] if runs_per_scenario else runs
+            stored_scores[eid] = _fetch_stored_scores(
+                client, probe_runs, list(evaluators.keys())
+            )
+
     # Re-evaluate each run k times and collect per-scenario scores.
+    # Build a flat list of (eid, run_idx, run, eval_name, repeat) tasks and
+    # submit them all to a thread pool for concurrency.
     scenarios: List[ScenarioResult] = []
+    # results[eid][eval_name][run_idx][repeat] = score
+    all_results: Dict[str, Dict[str, Dict[int, Dict[int, Optional[float]]]]] = {}
 
-    for eid in sorted(runs_by_example, key=lambda e: scenario_ids.get(e, 0)):
+    tasks = []
+    for eid in runs_by_example:
         runs = runs_by_example[eid]
-        example = examples_by_id[eid]
-        sid = scenario_ids.get(eid, 0)
-        query = queries.get(eid, "")
-        label = f'"{query[:68]}{"..." if len(query) > 68 else ""}"'
-
         if runs_per_scenario is not None:
             runs = runs[:runs_per_scenario]
-
-        # per_run_scores[eval_name][run_idx] = [score_1, ..., score_k]
-        per_run_scores: Dict[str, List[List[float]]] = {name: [] for name in evaluators}
-
+        example = examples_by_id[eid]
         ref_outputs = example.outputs or {}
+        all_results[eid] = {
+            name: {i: {} for i in range(len(runs))} for name in evaluators
+        }
 
         for run_idx, run in enumerate(runs):
             run_inputs = run.inputs or {}
             run_outputs = run.outputs or {}
-            print(f"  S{sid} run {run_idx + 1}/{len(runs)}", end="", flush=True)
-
             for eval_name, evaluator in evaluators.items():
-                scores_for_run = []
-                for _ in range(k):
-                    score = _evaluate_once(
-                        evaluator, run_inputs, run_outputs, ref_outputs
+                for repeat in range(k):
+                    tasks.append(
+                        (
+                            eid,
+                            run_idx,
+                            eval_name,
+                            evaluator,
+                            run_inputs,
+                            run_outputs,
+                            ref_outputs,
+                            repeat,
+                        )
                     )
-                    if score is not None:
-                        scores_for_run.append(score)
-                    print(".", end="", flush=True)
+
+    completed = 0
+    total_tasks = len(tasks)
+    print(f"Submitting {total_tasks} evaluator calls with {max_workers} workers...")
+
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        future_to_task = {
+            pool.submit(
+                _evaluate_once, evaluator, run_inputs, run_outputs, ref_outputs
+            ): (eid, run_idx, eval_name, repeat)
+            for eid, run_idx, eval_name, evaluator, run_inputs, run_outputs, ref_outputs, repeat in tasks
+        }
+
+        for future in as_completed(future_to_task):
+            eid, run_idx, eval_name, repeat = future_to_task[future]
+            score = future.result()
+            all_results[eid][eval_name][run_idx][repeat] = score
+            completed += 1
+            if completed % max(1, total_tasks // 20) == 0 or completed == total_tasks:
+                print(f"  {completed}/{total_tasks} done...", flush=True)
+
+    # Assemble per-scenario results and print σ breakdown.
+    for eid in sorted(runs_by_example, key=lambda e: scenario_ids.get(e, 0)):
+        runs = runs_by_example[eid]
+        if runs_per_scenario is not None:
+            runs = runs[:runs_per_scenario]
+        sid = scenario_ids.get(eid, 0)
+        query = queries.get(eid, "")
+        label = f'"{query[:68]}{"..." if len(query) > 68 else ""}"'
+
+        # per_run_scores[eval_name][run_idx] = [score_1, ..., score_k]
+        per_run_scores: Dict[str, List[List[float]]] = {name: [] for name in evaluators}
+
+        for run_idx in range(len(runs)):
+            for eval_name in evaluators:
+                scores_for_run = [
+                    s
+                    for repeat in range(k)
+                    if (s := all_results[eid][eval_name][run_idx].get(repeat))
+                    is not None
+                ]
                 per_run_scores[eval_name].append(scores_for_run)
 
-            print()  # newline after dots
-
-        # For the consistency table, flatten all k scores per evaluator across
-        # all probed runs into a single list per scenario. This shows the
-        # combined evaluator spread across the sampled outputs.
         flat_scores: Dict[str, List[float]] = {
             name: [s for run_scores in per_run_scores[name] for s in run_scores]
             for name in evaluators
@@ -206,7 +286,7 @@ def measure_evaluator_variance(
         )
 
         # Per-run σ breakdown for this scenario.
-        print(f"  Per-run evaluator σ for S{sid}:")
+        print(f"\n  Per-run evaluator σ for S{sid}:")
         for eval_name in evaluators:
             run_sigmas = [
                 statistics.pstdev(run_scores)
@@ -219,8 +299,28 @@ def measure_evaluator_variance(
                     f"    {eval_name}: mean σ = {mean_sigma:.3f}  (per-run: {[f'{s:.2f}' for s in run_sigmas]})"
                 )
 
-    # Reuse the existing consistency display.
-    print_consistency_stats(scenarios)
+    # Build baseline dict for delta display: (scenario_id, eval_name) -> (old_mean, old_σ).
+    baseline = None
+    if show_delta and stored_scores:
+        baseline_map: Dict[Tuple[int, str], Tuple[float, float]] = {}
+        # Aggregate stored scores across all eids that share the same scenario_id.
+        stored_by_sid: Dict[int, Dict[str, List[float]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
+        for eid, eval_scores in stored_scores.items():
+            sid = scenario_ids.get(eid, 0)
+            for eval_name, scores in eval_scores.items():
+                stored_by_sid[sid][eval_name].extend(scores)
+        for sid, eval_scores in stored_by_sid.items():
+            for eval_name, scores in eval_scores.items():
+                if scores:
+                    baseline_map[(sid, eval_name)] = (
+                        statistics.mean(scores),
+                        statistics.pstdev(scores),
+                    )
+        baseline = baseline_map if baseline_map else None
+
+    print_consistency_stats(scenarios, baseline=baseline)
 
     # Summary: mean evaluator σ across all scenarios and runs.
     print("\n=== Evaluator Variance Summary ===")
@@ -300,6 +400,22 @@ if __name__ == "__main__":
         metavar="ID",
         help="Scenario ID(s) to probe (e.g. --scenario 2). Defaults to all.",
     )
+    parser.add_argument(
+        "--show-delta",
+        action="store_true",
+        default=False,
+        help=(
+            "Compare re-evaluated scores against the scores already stored in the "
+            "experiment. Useful for testing whether an updated evaluator rubric "
+            "changes scores without running a full new experiment."
+        ),
+    )
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=10,
+        help="Thread pool size for concurrent evaluator calls.",
+    )
 
     args = parser.parse_args()
 
@@ -309,4 +425,6 @@ if __name__ == "__main__":
         runs_per_scenario=args.runs_per_scenario,
         evaluator_names=args.evaluators,
         scenario_ids_filter=args.scenarios,
+        show_delta=args.show_delta,
+        max_workers=args.max_workers,
     )
