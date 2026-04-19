@@ -29,6 +29,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from langsmith import Client
 
+from evaluate.eval_history import write_variance_entry
 from evaluate.langsmith_evaluators import (
     legal_correctness_evaluator,
     tone_evaluator,
@@ -340,6 +341,12 @@ def measure_evaluator_variance(
         "Compare these σ values against the per-scenario σ in your experiment results.\n"
         "If evaluator σ << experiment σ, variance is agent-side → increase --num-repetitions.\n"
         "If evaluator σ ≈ experiment σ, judge stochasticity dominates → improve the judge."
+    )
+
+    write_variance_entry(
+        experiment_name=experiment_name,
+        scenarios=scenarios,
+        k=k,
     )
 
 
