@@ -188,6 +188,7 @@ def test_measure_evaluator_variance_calls_evaluator_k_times(fake_pairs):
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch("evaluate.measure_evaluator_variance.print_consistency_stats"),
+        patch("builtins.print"),
     ):
         measure_evaluator_variance("fake-experiment", k=3)
 
@@ -216,6 +217,7 @@ def test_measure_evaluator_variance_scenario_filter(fake_pairs):
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch("evaluate.measure_evaluator_variance.print_consistency_stats"),
+        patch("builtins.print"),
     ):
         # Only scenario 1 (2 runs), k=2 → 4 calls.
         measure_evaluator_variance("fake-experiment", k=2, scenario_ids_filter=[1])
@@ -237,6 +239,7 @@ def test_measure_evaluator_variance_runs_per_scenario_limit(fake_pairs):
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch("evaluate.measure_evaluator_variance.print_consistency_stats"),
+        patch("builtins.print"),
     ):
         # 2 scenarios × 1 run × k=2 = 4 calls.
         measure_evaluator_variance("fake-experiment", k=2, runs_per_scenario=1)

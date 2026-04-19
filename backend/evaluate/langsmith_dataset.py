@@ -45,6 +45,13 @@ from langchain_core.runnables import RunnableSequence
 from langsmith import Client
 from langsmith import utils as langsmith_utils
 
+from evaluate.eval_history import (
+    HISTORY_DIR,
+    append_section,
+    find_baseline,
+    find_entry,
+    parse_frontmatter,
+)
 from evaluate.results_display import ScenarioResult, print_consistency_stats
 from tenantfirstaid.constants import LANGSMITH_API_KEY
 
@@ -975,6 +982,61 @@ def local_or_remote(value: str) -> str | Path:
     return Path(value) if value.endswith(".jsonl") else value
 
 
+# ---------------------------------------------------------------------------
+# history commands
+# ---------------------------------------------------------------------------
+
+
+def _require_entry(experiment: str) -> Path:
+    path = find_entry(experiment)
+    if path is None:
+        print(f"No history entry found for experiment: {experiment}", file=sys.stderr)
+        sys.exit(1)
+    return path
+
+
+def cmd_history_baseline(args: argparse.Namespace) -> None:  # noqa: ARG001
+    """Print the best prior history entry to use as a regression baseline."""
+
+    baseline = find_baseline()
+    if baseline is None:
+        print("No baseline found. Run an evaluation first.")
+        return
+
+    fm = parse_frontmatter(baseline)
+    print(f"Baseline: {baseline}")
+    print(f"  experiment:      {fm.get('experiment', '?')}")
+    print(f"  timestamp:       {fm.get('timestamp', '?')}")
+    print(f"  git_commit:      {fm.get('git_commit', '?')}")
+    print(f"  git_branch:      {fm.get('git_branch', '?')}")
+    print(f"  git_dirty:       {fm.get('git_dirty', '?')}")
+    print(f"  dataset:         {fm.get('dataset', '?')}")
+    print(f"  dataset_version: {fm.get('dataset_version', '?')}")
+
+    entries = sorted(HISTORY_DIR.glob("*.md"), reverse=True)
+    print(f"\nAll history entries ({len(entries)} total):")
+    for e in entries:
+        tag = " ← baseline" if e == baseline else ""
+        efm = parse_frontmatter(e)
+        print(
+            f"  {e.name}  "
+            f"[{efm.get('git_branch', '?')}  dirty={efm.get('git_dirty', '?')}]{tag}"
+        )
+
+
+def cmd_history_find(args: argparse.Namespace) -> None:
+    """Print the path of the history entry for a specific experiment."""
+    print(_require_entry(args.experiment))
+
+
+def cmd_history_append(args: argparse.Namespace) -> None:
+    """Append triage or hypotheses content to a history entry."""
+    path = _require_entry(args.experiment)
+    section = args.section.capitalize()
+    append_section(path, section, args.content)
+    print(f"Updated {section} in {path}")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -1383,6 +1445,37 @@ def build_parser() -> argparse.ArgumentParser:
         help="Show a diff of what would change without writing the file.",
     )
     p.set_defaults(func=cmd_prompt_pull)
+
+    hist_parser = nouns.add_parser("history", help="Manage local eval run history.")
+    hist_sub = hist_parser.add_subparsers(dest="verb", metavar="SUBCOMMAND")
+    hist_sub.required = True
+
+    p = hist_sub.add_parser(
+        "baseline",
+        help="Print the best prior history entry to use as a regression baseline.",
+    )
+    p.set_defaults(func=cmd_history_baseline)
+
+    p = hist_sub.add_parser(
+        "find",
+        help="Print the path of the history entry for a specific experiment.",
+    )
+    p.add_argument("experiment", help="Experiment name or unique fragment.")
+    p.set_defaults(func=cmd_history_find)
+
+    p = hist_sub.add_parser(
+        "append",
+        help="Append triage or hypotheses content to a history entry.",
+    )
+    p.add_argument("experiment", help="Experiment name or unique fragment.")
+    p.add_argument(
+        "--section",
+        choices=["triage", "hypotheses"],
+        required=True,
+        help="Section to update.",
+    )
+    p.add_argument("--content", required=True, help="Markdown content to write.")
+    p.set_defaults(func=cmd_history_append)
 
     return parser
 
