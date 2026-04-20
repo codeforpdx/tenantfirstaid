@@ -8,41 +8,40 @@ on:
 
 jobs:
   claude:
-    if: contains(github.event.comment.body, '@claude')
+    if: |
+      contains(github.event.comment.body, '@claude') &&
+      contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 5
     permissions:
-      contents: write
+      contents: read
       pull-requests: write
       issues: write
-      id-token: write
       actions: read # Required for Claude to read CI results on PRs
     steps:
-      # Step 1: Get PR info for fork detection
-      - name: Get PR info for fork support
-        if: github.event.issue.pull_request
-        id: pr-info
+      - name: Resolve checkout ref
+        id: ref
         run: |
-          PR_DATA=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.issue.number }})
-          echo "pr_head_owner=$(echo "$PR_DATA" | jq -r '.head.repo.owner.login')" >> $GITHUB_OUTPUT
-          echo "pr_head_repo=$(echo "$PR_DATA" | jq -r '.head.repo.name')" >> $GITHUB_OUTPUT
-          echo "pr_head_ref=$(echo "$PR_DATA" | jq -r '.head.ref')" >> $GITHUB_OUTPUT
-          echo "is_fork=$(echo "$PR_DATA" | jq -r '.head.repo.fork')" >> $GITHUB_OUTPUT
+          if [ -n "$ISSUE_PR_URL" ] || [ -n "$PR_NUMBER" ]; then
+            PR="${PR_NUMBER:-$ISSUE_NUMBER}"
+            echo "ref=refs/pull/${PR}/merge" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${GITHUB_REF}" >> "$GITHUB_OUTPUT"
+          fi
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_PR_URL: ${{ github.event.issue.pull_request.url }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
 
-      # Step 2: Checkout repository (fork or base)
-      - name: Checkout repository
-        uses: actions/checkout@v6
+      # refs/pull/<N>/merge is a GitHub-managed ref on the base repo containing
+      # the pre-merged PR code — works for fork and local branch PRs alike.
+      - uses: actions/checkout@v6
         with:
-          repository: ${{ github.event.issue.pull_request && steps.pr-info.outputs.is_fork == 'true' && format('{0}/{1}', steps.pr-info.outputs.pr_head_owner, steps.pr-info.outputs.pr_head_repo) || github.repository }}
-          ref: ${{ github.event.issue.pull_request && steps.pr-info.outputs.pr_head_ref || github.ref }}
+          ref: ${{ steps.ref.outputs.ref }}
           fetch-depth: 1
 
-      - name: Run Claude Code
-        id: claude
-        uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
-           --allowedTools Read,Edit,Write,WebFetch
+            --allowedTools Read,WebFetch(domain:docs.langchain.com),WebFetch(domain:reference.langchain.com),WebFetch(domain:ai.google.dev),WebFetch(domain:docs.digitalocean.com),WebFetch(domain:docs.github.com),WebFetch(domain:docs.docker.com),WebFetch(domain:docs.astral.sh)
