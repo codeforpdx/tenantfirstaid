@@ -7,8 +7,9 @@ To run:
   % uv run simple_langchain_example.py
 """
 
-from google.api_core.client_options import ClientOptions
 from google.cloud import discoveryengine
+
+from tenantfirstaid.google_auth import discoveryengine_client_options
 
 project_id = "tenantfirstaid"  # Replace with your GCP project ID
 location = "global"  # Values: "global"
@@ -18,16 +19,9 @@ def list_data_stores(
     project_id: str,
     location: str,
 ):  # -> discoveryengine.ListDataStoresResponse:
-    #  For more information, refer to:
-    # https://cloud.google.com/generative-ai-app-builder/docs/locations#specify_a_multi-region_for_your_data_store
-    client_options = (
-        ClientOptions(api_endpoint=f"{location}-discoveryengine.googleapis.com")
-        if location != "global"
-        else None
+    client = discoveryengine.DataStoreServiceClient(
+        client_options=discoveryengine_client_options(location)
     )
-
-    # Create a client
-    client = discoveryengine.DataStoreServiceClient(client_options=client_options)
 
     request = discoveryengine.ListDataStoresRequest(
         # The full resource name of the data store
