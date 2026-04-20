@@ -64,7 +64,7 @@ class SearchResults:
                 out.append(Passage(doc_id=doc_id, type="segment", content=content))
         return out
 
-    def print(self, *, raw: bool = False, width: int = 100) -> None:
+    def display(self, *, raw: bool = False, width: int = 100) -> None:
         """Pretty-print these search results to stdout."""
         if self.corrected_query:
             print(f"Spell-corrected query: {self.corrected_query}\n")
@@ -84,12 +84,12 @@ class SearchResults:
                 if link:
                     print(f"  link:   {link}")
 
-                _print_passages(
+                self._print_passages(
                     "extractive_answer",
                     struct.get("extractive_answers", []),
                     width=width,
                 )
-                _print_passages(
+                self._print_passages(
                     "extractive_segment",
                     struct.get("extractive_segments", []),
                     width=width,
@@ -98,7 +98,7 @@ class SearchResults:
                 for j, snippet in enumerate(struct.get("snippets", [])):
                     text = repair_mojibake(snippet.get("snippet", ""))
                     print(f"  snippet[{j}]:")
-                    print(_wrap(text, width=width))
+                    print(self._wrap(text, width=width))
 
             if raw:
                 print("  raw_struct_data:")
@@ -119,6 +119,23 @@ class SearchResults:
             print("No results found.")
         else:
             print(f"({len(self.results)} results)")
+
+    @staticmethod
+    def _print_passages(key: str, items: list, *, width: int) -> None:
+        for j, item in enumerate(items):
+            content = repair_mojibake(item.get("content", ""))
+            page = item.get("pageNumber", "?")
+            print(f"  {key}[{j}] (page {page}):")
+            print(SearchResults._wrap(content, width=width))
+
+    @staticmethod
+    def _wrap(text: str, *, width: int) -> str:
+        return textwrap.fill(
+            text,
+            width=width,
+            initial_indent="    ",
+            subsequent_indent="    ",
+        )
 
 
 def search(
@@ -177,23 +194,6 @@ def search(
     return SearchResults(
         corrected_query=pager.corrected_query,
         results=list(pager),
-    )
-
-
-def _print_passages(key: str, items: list, *, width: int) -> None:
-    for j, item in enumerate(items):
-        content = repair_mojibake(item.get("content", ""))
-        page = item.get("pageNumber", "?")
-        print(f"  {key}[{j}] (page {page}):")
-        print(_wrap(content, width=width))
-
-
-def _wrap(text: str, *, width: int) -> str:
-    return textwrap.fill(
-        text,
-        width=width,
-        initial_indent="    ",
-        subsequent_indent="    ",
     )
 
 
@@ -394,7 +394,7 @@ def main() -> None:
         datastore_override=datastore,
     )
 
-    response.print(raw=args.raw, width=args.width)
+    response.display(raw=args.raw, width=args.width)
 
 
 if __name__ == "__main__":

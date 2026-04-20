@@ -1,10 +1,7 @@
-"""
-Dump out info on project datastores in Google Workspace
-
-Note: does not require credentials or authentication(?)
+"""Dump info on Vertex AI Search datastores for a GCP project.
 
 To run:
-  % uv run simple_langchain_example.py
+  uv run python -m scripts.vertex_ai_list_datastores
 """
 
 from google.cloud import discoveryengine
@@ -15,10 +12,7 @@ project_id = "tenantfirstaid"  # Replace with your GCP project ID
 location = "global"  # Values: "global"
 
 
-def list_data_stores(
-    project_id: str,
-    location: str,
-):  # -> discoveryengine.ListDataStoresResponse:
+def list_data_stores(project_id: str, location: str) -> None:
     client = discoveryengine.DataStoreServiceClient(
         client_options=discoveryengine_client_options(location)
     )
