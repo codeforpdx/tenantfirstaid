@@ -126,6 +126,11 @@ class RagBuilder:
 
 
 def filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
+    """Build a Vertex AI Search filter string for the given state and optional city.
+
+    City-scoped queries include both city-specific and state-level ("null") documents
+    so the agent sees both layers of law in a single retrieval.
+    """
     if city is None:
         city_filter = 'city: ANY("null")'
     else:
