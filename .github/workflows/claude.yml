@@ -1,48 +1,134 @@
 name: Claude Code
 
+# Both triggers fire in the base repo context regardless of whether the comment
+# came from a fork — secrets and GITHUB_TOKEN write permissions are always available.
+# This is the property that makes issue_comment safe to use with privileged jobs,
+# unlike pull_request which runs in the fork's context without secrets.
+env:
+  # Base tool allowlist shared by both jobs. WebFetch is restricted to known
+  # documentation domains to prevent exfiltration via outbound HTTP.
+  ALLOWED_TOOLS: "Read,WebFetch(domain:docs.langchain.com),WebFetch(domain:reference.langchain.com),WebFetch(domain:ai.google.dev),WebFetch(domain:docs.digitalocean.com),WebFetch(domain:docs.github.com),WebFetch(domain:docs.docker.com),WebFetch(domain:docs.astral.sh)"
+
 on:
   issue_comment:
     types: [created]
+  # pull_request_review_comment covers inline code-review comments only.
+  # Conversation-tab comments on PRs arrive as issue_comment, not this event.
   pull_request_review_comment:
     types: [created]
 
 jobs:
-  claude:
-    if: contains(github.event.comment.body, '@claude')
+  # Handles @claude on plain issues (no associated PR).
+  # Has write permissions so Claude can implement changes and open a PR.
+  claude-issue:
+    if: |
+      github.repository == 'codeforpdx/tenantfirstaid' &&
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request == null &&
+      contains(github.event.comment.body, '@claude') &&
+      contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    # Repo check prevents ANTHROPIC_API_KEY from being used if this workflow is
+    # copied to a fork, even though the secret would be absent there anyway.
+    # Author association check prevents arbitrary commenters from burning API quota.
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     permissions:
-      contents: write
+      contents: write      # Needed to push commits and open PRs.
       pull-requests: write
       issues: write
-      id-token: write
-      actions: read # Required for Claude to read CI results on PRs
     steps:
-      # Step 1: Get PR info for fork detection
-      - name: Get PR info for fork support
-        if: github.event.issue.pull_request
-        id: pr-info
-        run: |
-          PR_DATA=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.issue.number }})
-          echo "pr_head_owner=$(echo "$PR_DATA" | jq -r '.head.repo.owner.login')" >> $GITHUB_OUTPUT
-          echo "pr_head_repo=$(echo "$PR_DATA" | jq -r '.head.repo.name')" >> $GITHUB_OUTPUT
-          echo "pr_head_ref=$(echo "$PR_DATA" | jq -r '.head.ref')" >> $GITHUB_OUTPUT
-          echo "is_fork=$(echo "$PR_DATA" | jq -r '.head.repo.fork')" >> $GITHUB_OUTPUT
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v6
 
-      # Step 2: Checkout repository (fork or base)
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          repository: ${{ github.event.issue.pull_request && steps.pr-info.outputs.is_fork == 'true' && format('{0}/{1}', steps.pr-info.outputs.pr_head_owner, steps.pr-info.outputs.pr_head_repo) || github.repository }}
-          ref: ${{ github.event.issue.pull_request && steps.pr-info.outputs.pr_head_ref || github.ref }}
-          fetch-depth: 1
-
-      - name: Run Claude Code
-        id: claude
-        uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
-           --allowedTools Read,Edit,Write,WebFetch
+            --allowedTools ${{ env.ALLOWED_TOOLS }},Edit,Write
+
+  # Handles @claude on PRs — both inline review comments and conversation-tab comments.
+  # Read-only: Claude can review and comment but cannot push commits.
+  # PR conversation-tab comments arrive as issue_comment with issue.pull_request set;
+  # inline review comments arrive as pull_request_review_comment. Both are routed here.
+  claude-pr:
+    if: |
+      github.repository == 'codeforpdx/tenantfirstaid' &&
+      (github.event_name == 'pull_request_review_comment' || github.event.issue.pull_request != null) &&
+      contains(github.event.comment.body, '@claude') &&
+      contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read       # Read-only: prevents Claude from pushing to the repo.
+      pull-requests: write # Needed to post review comments.
+      issues: write        # Needed to file follow-up issues from a review.
+      actions: read        # Needed to read CI check results on the PR.
+    steps:
+      - name: Find code snapshot
+        id: snapshot
+        # The pr-check.yml snapshot job uploads the PR code as an artifact on each push,
+        # named by PR number and head SHA. We look up that artifact here rather than
+        # checking out the fork directly, so the privileged job never executes untrusted
+        # code — only reads files that the unprivileged snapshot job already captured.
+        #
+        # PR number comes from different fields depending on the trigger:
+        #   pull_request_review_comment → github.event.pull_request.number (PR_NUMBER_PR)
+        #   issue_comment on a PR       → github.event.issue.number (PR_NUMBER_ISSUE)
+        run: |
+          # Artifact name format must match the upload in pr-check.yml snapshot job.
+          PR_NUMBER="${PR_NUMBER_PR:-$PR_NUMBER_ISSUE}"
+          WORKFLOW_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/workflows/pr-check.yml"
+          MAX_ATTEMPTS=8
+          SLEEP_SECONDS=15
+
+          # HEAD_SHA must be fetched via API because neither trigger event carries
+          # the PR head SHA directly in its payload.
+          HEAD_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.head.sha')
+          ARTIFACT_NAME="pr-${PR_NUMBER}-code-${HEAD_SHA}"
+
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            RESULT=$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${ARTIFACT_NAME}&per_page=1" \
+              --jq '.artifacts[0] | select(.expired == false)')
+
+            if [ -n "$RESULT" ] && [ "$RESULT" != "null" ]; then
+              echo "run_id=$(echo "$RESULT" | jq -r '.workflow_run.id')" >> "$GITHUB_OUTPUT"
+              echo "artifact_name=${ARTIFACT_NAME}" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            # If the snapshot job is still running, wait and retry.
+            # If it is not pending (failed, never ran, etc.), fail immediately.
+            BUCKET=$(gh pr checks "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
+              --json name,bucket \
+              --jq '.[] | select(.name == "snapshot") | .bucket' 2>/dev/null || echo "")
+
+            if [ "$BUCKET" != "pending" ]; then
+              gh issue comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
+                --body "No code snapshot is available for this PR. The snapshot job may not have run or may have failed — check the [PR checks workflow](${WORKFLOW_URL}) and re-trigger by commenting \`@claude\` once it completes."
+              exit 1
+            fi
+
+            if [ "$i" -lt "$MAX_ATTEMPTS" ]; then
+              echo "Snapshot job still running (attempt $i/$MAX_ATTEMPTS), waiting ${SLEEP_SECONDS}s..."
+              sleep $SLEEP_SECONDS
+            fi
+          done
+
+          gh issue comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
+            --body "Timed out waiting for the code snapshot to be ready. The [PR checks workflow](${WORKFLOW_URL}) is taking longer than expected — please re-trigger by commenting \`@claude\` once it completes."
+          exit 1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER_ISSUE: ${{ github.event.issue.number }}
+          PR_NUMBER_PR: ${{ github.event.pull_request.number }}
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ steps.snapshot.outputs.artifact_name }}
+          run-id: ${{ steps.snapshot.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --allowedTools ${{ env.ALLOWED_TOOLS }}
