@@ -20,18 +20,12 @@ jobs:
       issues: write
       actions: read # Required for Claude to read CI results on PRs
     steps:
-      - name: Resolve PR number
-        id: pr
-        run: |
-          echo "number=${PR_NUMBER:-$ISSUE_NUMBER}" >> "$GITHUB_OUTPUT"
-        env:
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-
       - name: Find code snapshot
         id: snapshot
         run: |
-          WORKFLOW_URL="https://github.com/${GITHUB_REPOSITORY}/actions/workflows/pr-check.yml"
+          # Artifact name format must match the upload in pr-check.yml snapshot job.
+          PR_NUMBER="${PR_NUMBER_PR:-$PR_NUMBER_ISSUE}"
+          WORKFLOW_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/workflows/pr-check.yml"
           MAX_ATTEMPTS=8
           SLEEP_SECONDS=15
 
@@ -69,7 +63,8 @@ jobs:
           exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          PR_NUMBER_ISSUE: ${{ github.event.issue.number }}
+          PR_NUMBER_PR: ${{ github.event.pull_request.number }}
 
       - uses: actions/download-artifact@v8
         with:
