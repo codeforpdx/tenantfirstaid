@@ -36,6 +36,7 @@ jobs:
       contents: write      # Needed to push commits and open PRs.
       pull-requests: write
       issues: write
+      id-token: write      # Required by claude-code-action for internal token management.
     steps:
       - uses: actions/checkout@v6
 
@@ -62,6 +63,7 @@ jobs:
       pull-requests: write # Needed to post review comments.
       issues: write        # Needed to file follow-up issues from a review.
       actions: read        # Needed to read CI check results on the PR.
+      id-token: write      # Required by claude-code-action for internal token management.
     steps:
       - name: Find code snapshot
         id: snapshot
