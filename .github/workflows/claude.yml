@@ -1,27 +1,73 @@
 name: Claude Code
 
+# Both triggers fire in the base repo context regardless of whether the comment
+# came from a fork — secrets and GITHUB_TOKEN write permissions are always available.
+# This is the property that makes issue_comment safe to use with privileged jobs,
+# unlike pull_request which runs in the fork's context without secrets.
 on:
   issue_comment:
     types: [created]
+  # pull_request_review_comment covers inline code-review comments only.
+  # Conversation-tab comments on PRs arrive as issue_comment, not this event.
   pull_request_review_comment:
     types: [created]
 
 jobs:
-  claude:
+  # Handles @claude on plain issues (no associated PR).
+  # Has write permissions so Claude can implement changes and open a PR.
+  claude-issue:
     if: |
       github.repository == 'codeforpdx/tenantfirstaid' &&
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request == null &&
+      contains(github.event.comment.body, '@claude') &&
+      contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    # Repo check prevents ANTHROPIC_API_KEY from being used if this workflow is
+    # copied to a fork, even though the secret would be absent there anyway.
+    # Author association check prevents arbitrary commenters from burning API quota.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write      # Needed to push commits and open PRs.
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --allowedTools Read,Edit,Write,WebFetch(domain:docs.langchain.com),WebFetch(domain:reference.langchain.com),WebFetch(domain:ai.google.dev),WebFetch(domain:docs.digitalocean.com),WebFetch(domain:docs.github.com),WebFetch(domain:docs.docker.com),WebFetch(domain:docs.astral.sh)
+
+  # Handles @claude on PRs — both inline review comments and conversation-tab comments.
+  # Read-only: Claude can review and comment but cannot push commits.
+  # PR conversation-tab comments arrive as issue_comment with issue.pull_request set;
+  # inline review comments arrive as pull_request_review_comment. Both are routed here.
+  claude-pr:
+    if: |
+      github.repository == 'codeforpdx/tenantfirstaid' &&
+      (github.event_name == 'pull_request_review_comment' || github.event.issue.pull_request != null) &&
       contains(github.event.comment.body, '@claude') &&
       contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: read
-      pull-requests: write
-      issues: write
-      actions: read # Required for Claude to read CI results on PRs
+      contents: read       # Read-only: prevents Claude from pushing to the repo.
+      pull-requests: write # Needed to post review comments.
+      issues: write        # Needed to file follow-up issues from a review.
+      actions: read        # Needed to read CI check results on the PR.
     steps:
       - name: Find code snapshot
         id: snapshot
+        # The pr-check.yml snapshot job uploads the PR code as an artifact on each push,
+        # named by PR number and head SHA. We look up that artifact here rather than
+        # checking out the fork directly, so the privileged job never executes untrusted
+        # code — only reads files that the unprivileged snapshot job already captured.
+        #
+        # PR number comes from different fields depending on the trigger:
+        #   pull_request_review_comment → github.event.pull_request.number (PR_NUMBER_PR)
+        #   issue_comment on a PR       → github.event.issue.number (PR_NUMBER_ISSUE)
         run: |
           # Artifact name format must match the upload in pr-check.yml snapshot job.
           PR_NUMBER="${PR_NUMBER_PR:-$PR_NUMBER_ISSUE}"
@@ -29,6 +75,8 @@ jobs:
           MAX_ATTEMPTS=8
           SLEEP_SECONDS=15
 
+          # HEAD_SHA must be fetched via API because neither trigger event carries
+          # the PR head SHA directly in its payload.
           HEAD_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.head.sha')
           ARTIFACT_NAME="pr-${PR_NUMBER}-code-${HEAD_SHA}"
 
@@ -42,6 +90,8 @@ jobs:
               exit 0
             fi
 
+            # If the snapshot job is still running, wait and retry.
+            # If it is not pending (failed, never ran, etc.), fail immediately.
             BUCKET=$(gh pr checks "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
               --json name,bucket \
               --jq '.[] | select(.name == "snapshot") | .bucket' 2>/dev/null || echo "")
