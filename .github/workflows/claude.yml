@@ -24,7 +24,10 @@ jobs:
         run: |
           if [ -n "$ISSUE_PR_URL" ] || [ -n "$PR_NUMBER" ]; then
             PR="${PR_NUMBER:-$ISSUE_NUMBER}"
-            echo "ref=refs/pull/${PR}/merge" >> "$GITHUB_OUTPUT"
+            # Resolve to a fixed SHA so the checkout is immune to race conditions
+            # between comment time and checkout time (TOCTOU).
+            SHA=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}" --jq '.merge_commit_sha')
+            echo "ref=${SHA}" >> "$GITHUB_OUTPUT"
           else
             echo "ref=${GITHUB_REF}" >> "$GITHUB_OUTPUT"
           fi
@@ -32,9 +35,10 @@ jobs:
           ISSUE_PR_URL: ${{ github.event.issue.pull_request.url }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # refs/pull/<N>/merge is a GitHub-managed ref on the base repo containing
-      # the pre-merged PR code — works for fork and local branch PRs alike.
+      # Checks out the merge commit SHA computed by GitHub at comment time — works
+      # for fork and local branch PRs alike without checking out the fork repo.
       - uses: actions/checkout@v6
         with:
           ref: ${{ steps.ref.outputs.ref }}
