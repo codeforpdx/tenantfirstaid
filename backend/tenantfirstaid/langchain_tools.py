@@ -2,14 +2,23 @@
 This module defines Tools for an Agent to call
 """
 
+import logging
 from typing import Callable, Optional, Type, cast
 
+import httpx
+from google.api_core import exceptions as google_exceptions
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from langchain_core.tools import BaseTool, tool
 from langchain_google_community import VertexAISearchRetriever
 from langgraph.config import get_stream_writer
 from pydantic import BaseModel, Field
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from .constants import (
     LETTER_TEMPLATE,
@@ -18,6 +27,43 @@ from .constants import (
 )
 from .google_auth import load_gcp_credentials
 from .location import OregonCity, UsaState
+
+logger = logging.getLogger(__name__)
+
+
+def _repair_mojibake(text: str) -> str:
+    """Attempt to repair UTF-8 text that was incorrectly decoded as Latin-1.
+
+    Vertex AI may return corpus text with mojibake (e.g. â€™ instead of ')
+    if the source document's UTF-8 encoding was misread as Latin-1 at index
+    time. This reverses that by re-encoding as Latin-1 and decoding as UTF-8.
+
+    Logs a warning if the repair itself appears to corrupt the text (i.e. the
+    round-trip fails or introduces replacement characters).
+    """
+    try:
+        repaired = text.encode("latin-1").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError) as e:
+        # Round-trip failure means the text has non-ASCII characters that are
+        # not the result of UTF-8-as-Latin-1 mojibake (e.g. bare § U+00A7 from
+        # a dropped 0xC2 byte). Correct behaviour — leave the text alone.
+        char = (
+            repr(text[e.start]) if hasattr(e, "start") and e.start < len(text) else "?"
+        )
+        logger.debug(
+            "mojibake repair skipped — round-trip failed at pos %s (char %s): %.120r",
+            getattr(e, "start", "?"),
+            char,
+            text,
+        )
+        return text
+
+    if repaired != text:
+        logger.debug(
+            "mojibake repair applied to RAG passage (first 120 chars): %.120r", text
+        )
+
+    return repaired
 
 
 class RagBuilder:
@@ -60,21 +106,34 @@ class RagBuilder:
             filter=filter,
         )
 
+    @retry(
+        retry=retry_if_exception_type(
+            (httpx.ReadError, google_exceptions.ServiceUnavailable)
+        ),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=0.5, max=4),
+        reraise=True,
+        before_sleep=lambda rs: logger.warning(
+            "RAG search retry #%d after %s", rs.attempt_number, rs.outcome.exception()
+        ),
+    )
     def search(self, query: str) -> str:
         docs = self.rag.invoke(
             input=query,
         )
 
-        return "\n".join([doc.page_content for doc in docs])
+        return "\n".join([_repair_mojibake(doc.page_content) for doc in docs])
 
 
 def _filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
     if city is None:
-        city_or_null = "null"
+        city_filter = 'city: ANY("null")'
     else:
-        city_or_null = city.lower()
+        # Include both city-specific and state-level ("null") documents so the
+        # agent sees both layers of law in a single retrieval.
+        city_filter = f'city: ANY("{city.lower()}", "null")'
 
-    return f"""city: ANY("{city_or_null}") AND state: ANY("{state.lower()}")"""
+    return f"""{city_filter} AND state: ANY("{state.lower()}")"""
 
 
 @tool
@@ -135,7 +194,18 @@ class CityStateLawsInputSchema(BaseModel):
                        Rephrase the user's question using relevant legal terms and
                        ORS references when applicable (e.g. 'week-to-week tenancy
                        nonpayment notice timing ORS 90.394'). Avoid paraphrasing so
-                       broadly that specific statutory details are lost."""
+                       broadly that specific statutory details are lost.
+
+                       Frame queries around the legal relationship and direction of
+                       obligation: who is required, entitled, or prohibited to do what
+                       (e.g. 'landlord required to pay interest on security deposit'
+                       rather than 'landlord security deposit interest'). On retry
+                       after a miss, change the framing angle — try the other party's
+                       perspective or restate as an obligation/entitlement — rather
+                       than repeating the same terms with an ORS number appended.
+                       Always include the specific action being contested in the query
+                       (e.g. 'landlord required to pay interest' not just 'landlord
+                       obligation security deposit')."""
     )
     state: UsaState
     city: Optional[OregonCity] = None
@@ -148,6 +218,26 @@ class CityStateLawsInputSchema(BaseModel):
                        Use a larger value (6–8) when the question spans multiple
                        statutes, involves city overrides, or an initial retrieval
                        missed the relevant passage.""",
+    )
+    max_extractive_answer_count: int = Field(
+        default=1,
+        ge=1,
+        le=5,
+        description="""Extractive answers per document (1–5). Each is a short
+                       passage the search engine identifies as directly relevant.
+                       Increase on retry if the first search returned passages
+                       from the right document but missed the specific subsection
+                       you need.""",
+    )
+    max_extractive_segment_count: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="""Extractive segments per document (1–10). Segments are
+                       longer surrounding blocks of text that provide more context
+                       than answers. Increase on retry when the answer likely sits
+                       adjacent to what was returned (e.g. the right ORS section
+                       was found but a neighboring subsection was missed).""",
     )
 
 

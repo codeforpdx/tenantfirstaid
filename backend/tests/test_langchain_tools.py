@@ -6,17 +6,22 @@ import json
 from typing import Dict, cast
 from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
+from hypothesis import given
+from hypothesis import strategies as st
 from langchain_core.tools import StructuredTool
 
 from tenantfirstaid.constants import DatastoreKey
 from tenantfirstaid.google_auth import load_gcp_credentials
 from tenantfirstaid.langchain_tools import (
     CityStateLawsInputSchema,
+    RagBuilder,
     _filter_builder,
     _make_rag_tool,
+    _repair_mojibake,
     generate_letter,
     get_active_rag_tools,
     get_letter_template,
@@ -200,6 +205,49 @@ def test_retrieve_city_state_laws_returns_joined_docs(mock_rag_class):
     assert "Doc2 content" in result
 
 
+# --- _repair_mojibake property tests ---
+
+
+@pytest.mark.property
+@given(st.text(alphabet=st.characters(max_codepoint=0x7F)))
+def test_repair_mojibake_ascii_unchanged(text: str) -> None:
+    """Pure ASCII text is returned unchanged — no mojibake to repair."""
+    assert _repair_mojibake(text) == text
+
+
+@pytest.mark.property
+@given(st.text(alphabet=st.characters(blacklist_categories=("Cs",))))
+def test_repair_mojibake_repairs_genuine_mojibake(original: str) -> None:
+    """Genuine mojibake (UTF-8 bytes misread as Latin-1) is fully repaired.
+
+    Simulates the Vertex AI encoding defect: the original string's UTF-8
+    bytes are misread as Latin-1, producing mojibake. The repair should
+    recover the original string exactly.
+
+    Surrogates (category Cs, U+D800–U+DFFF) are excluded because they cannot
+    be encoded as UTF-8, so the test setup would raise UnicodeEncodeError
+    before reaching the function under test.
+    """
+    mojibake = original.encode("utf-8").decode("latin-1")
+    assert _repair_mojibake(mojibake) == original
+
+
+@pytest.mark.property
+@given(
+    st.text(alphabet=st.characters(min_codepoint=0x80, max_codepoint=0xBF), min_size=1)
+)
+def test_repair_mojibake_continuation_byte_chars_unchanged(text: str) -> None:
+    """Text with chars in U+0080–U+00BF is returned unchanged.
+
+    These chars (including § U+00A7) encode to Latin-1 bytes 0x80–0xBF,
+    which are UTF-8 continuation bytes. They can never form valid UTF-8
+    without a preceding start byte, so the round-trip fails and the
+    original text is returned as-is. This covers the Vertex AI defect
+    where the leading 0xC2 byte of a UTF-8 § sequence is dropped.
+    """
+    assert _repair_mojibake(text) == text
+
+
 @patch("tenantfirstaid.langchain_tools.RagBuilder")
 def test_retrieve_city_state_laws_empty_results(mock_rag_class):
     """Test behavior when RAG returns no documents."""
@@ -268,7 +316,12 @@ def test_make_rag_tool_custom_filter_builder(mock_rag_class):
         _func(query="test query", state=UsaState("or"))
 
     custom_filter.assert_called_once_with(
-        query="test query", state=UsaState("or"), city=None, max_documents=5
+        query="test query",
+        state=UsaState("or"),
+        city=None,
+        max_documents=5,
+        max_extractive_answer_count=1,
+        max_extractive_segment_count=3,
     )
     mock_rag_class.assert_called_once_with(
         data_store_id="fake-id",
@@ -286,9 +339,9 @@ def test_filter_builder_state_only():
 
 
 def test_filter_builder_with_city():
-    """Test filter with city and state."""
+    """Test filter with city includes state-level docs."""
     result = _filter_builder(UsaState("or"), OregonCity("eugene"))
-    assert 'city: ANY("eugene")' in result
+    assert 'city: ANY("eugene", "null")' in result
     assert 'state: ANY("or")' in result
 
 
@@ -302,3 +355,49 @@ def test_generate_letter_empty_string(mock_get_stream_writer):
     result = _func(letter="")
     mock_writer.assert_called_once_with({"type": "letter", "content": ""})
     assert result == "Letter generated successfully."
+
+
+# --- RagBuilder.search retry tests ---
+
+
+@patch("tenantfirstaid.langchain_tools.load_gcp_credentials")
+@patch("tenantfirstaid.langchain_tools.VertexAISearchRetriever")
+def test_rag_search_retries_on_httpx_read_error(mock_retriever_class, mock_creds):
+    """Transient httpx.ReadError is retried and succeeds on second attempt."""
+    mock_creds.return_value = MagicMock()
+    mock_doc = MagicMock()
+    mock_doc.page_content = "result text"
+
+    mock_instance = mock_retriever_class.return_value
+    mock_instance.invoke.side_effect = [
+        httpx.ReadError("Connection reset by peer"),
+        [mock_doc],
+    ]
+
+    builder = RagBuilder(
+        data_store_id="fake-datastore-id",
+        filter='city: ANY("null") AND state: ANY("or")',
+    )
+    result = builder.search("test query")
+
+    assert result == "result text"
+    assert mock_instance.invoke.call_count == 2
+
+
+@patch("tenantfirstaid.langchain_tools.load_gcp_credentials")
+@patch("tenantfirstaid.langchain_tools.VertexAISearchRetriever")
+def test_rag_search_gives_up_after_three_attempts(mock_retriever_class, mock_creds):
+    """After 3 failed attempts the error is reraised."""
+    mock_creds.return_value = MagicMock()
+
+    mock_instance = mock_retriever_class.return_value
+    mock_instance.invoke.side_effect = httpx.ReadError("Connection reset by peer")
+
+    builder = RagBuilder(
+        data_store_id="fake-datastore-id",
+        filter='city: ANY("null") AND state: ANY("or")',
+    )
+    with pytest.raises(httpx.ReadError):
+        builder.search("test query")
+
+    assert mock_instance.invoke.call_count == 3
