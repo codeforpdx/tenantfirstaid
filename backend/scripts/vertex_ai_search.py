@@ -18,7 +18,7 @@ Usage:
 import argparse
 import json
 import textwrap
-from typing import TypedDict
+from dataclasses import dataclass, field
 
 from google.api_core.client_options import ClientOptions
 from google.cloud import discoveryengine_v1beta as discoveryengine
@@ -29,17 +29,96 @@ from tenantfirstaid.langchain_tools import filter_builder, repair_mojibake
 from tenantfirstaid.location import OregonCity, UsaState
 
 SearchResult = discoveryengine.SearchResponse.SearchResult
+SpellMode = discoveryengine.SearchRequest.SpellCorrectionSpec.Mode
 
 
-class Passage(TypedDict):
+@dataclass
+class Passage:
     doc_id: str
     type: str
     content: str
 
 
-class SearchResults(TypedDict):
+@dataclass
+class SearchResults:
     corrected_query: str
-    results: list[SearchResult]
+    results: list[SearchResult] = field(default_factory=list)
+
+    def passages(self) -> list[Passage]:
+        """Collect all extractive answers and segments from this response."""
+        out: list[Passage] = []
+        for result in self.results:
+            doc = result.document
+            struct = doc.derived_struct_data
+            if not struct:
+                continue
+            doc_id = doc.id or "(no id)"
+            for answer in struct.get("extractive_answers", []):
+                content = repair_mojibake(answer.get("content", ""))
+                out.append(Passage(doc_id=doc_id, type="answer", content=content))
+            for segment in struct.get("extractive_segments", []):
+                content = repair_mojibake(segment.get("content", ""))
+                out.append(Passage(doc_id=doc_id, type="segment", content=content))
+        return out
+
+    def print(self, *, raw: bool = False, width: int = 100) -> None:
+        """Pretty-print these search results to stdout."""
+        if self.corrected_query:
+            print(f"Spell-corrected query: {self.corrected_query}\n")
+
+        def _print_passages(key: str, items: list) -> None:
+            for j, item in enumerate(items):
+                content = repair_mojibake(item.get("content", ""))
+                page = item.get("pageNumber", "?")
+                print(f"  {key}[{j}] (page {page}):")
+                print(_wrap(content, width=width))
+
+        for i, result in enumerate(self.results, 1):
+            doc = result.document
+            struct = doc.derived_struct_data
+
+            doc_id = doc.id or "(no id)"
+            title = struct.get("title", "(no title)") if struct else "(no struct_data)"
+
+            print(f"── Result {i}: {title} ──")
+            print(f"  doc_id: {doc_id}")
+
+            if struct:
+                link = struct.get("link", "")
+                if link:
+                    print(f"  link:   {link}")
+
+                _print_passages(
+                    "extractive_answer", struct.get("extractive_answers", [])
+                )
+                _print_passages(
+                    "extractive_segment", struct.get("extractive_segments", [])
+                )
+
+                for j, snippet in enumerate(struct.get("snippets", [])):
+                    text = repair_mojibake(snippet.get("snippet", ""))
+                    print(f"  snippet[{j}]:")
+                    print(_wrap(text, width=width))
+
+            if raw:
+                print("  raw_struct_data:")
+                print(
+                    textwrap.indent(
+                        json.dumps(
+                            dict(struct) if struct else {},
+                            indent=2,
+                            default=str,
+                        ),
+                        "    ",
+                    )
+                )
+
+            print()
+
+        if not self.results:
+            print("No results found.")
+        else:
+            print(f"({len(self.results)} results)")
 
 
 def search(
@@ -50,7 +129,7 @@ def search(
     max_results: int = 5,
     max_extractive_answer_count: int = 5,
     max_extractive_segment_count: int = 3,
-    spell_correction: discoveryengine.SearchRequest.SpellCorrectionSpec.Mode = discoveryengine.SearchRequest.SpellCorrectionSpec.Mode.AUTO,
+    spell_correction: SpellMode = SpellMode.AUTO,
     datastore_override: str | None = None,
 ) -> SearchResults:
     """Run a search against the Vertex AI Search datastore and return results."""
@@ -108,105 +187,13 @@ def search(
     )
 
 
-def _collect_passages(response: SearchResults) -> list[Passage]:
-    """Collect all extractive answers and segments from a search response."""
-    passages: list[Passage] = []
-    for result in response["results"]:
-        doc = result.document
-        struct = doc.derived_struct_data
-        if not struct:
-            continue
-        doc_id = doc.id or "(no id)"
-        for answer in struct.get("extractive_answers", []):
-            content = repair_mojibake(answer.get("content", ""))
-            passages.append({"doc_id": doc_id, "type": "answer", "content": content})
-        for segment in struct.get("extractive_segments", []):
-            content = repair_mojibake(segment.get("content", ""))
-            passages.append({"doc_id": doc_id, "type": "segment", "content": content})
-    return passages
-
-
-def _print_results(
-    response: SearchResults,
-    *,
-    raw: bool = False,
-    width: int = 100,
-) -> None:
-    """Pretty-print search results to stdout."""
-    if response["corrected_query"]:
-        print(f"Spell-corrected query: {response['corrected_query']}\n")
-
-    count = 0
-    for i, result in enumerate(response["results"], 1):
-        count = i
-        doc = result.document
-        struct = doc.derived_struct_data
-
-        doc_id = doc.id or "(no id)"
-        title = struct.get("title", "(no title)") if struct else "(no struct_data)"
-
-        print(f"── Result {i}: {title} ──")
-        print(f"  doc_id: {doc_id}")
-
-        if struct:
-            link = struct.get("link", "")
-            if link:
-                print(f"  link:   {link}")
-
-            for j, answer in enumerate(struct.get("extractive_answers", [])):
-                content = repair_mojibake(answer.get("content", ""))
-                page = answer.get("pageNumber", "?")
-                wrapped = textwrap.fill(
-                    content,
-                    width=width,
-                    initial_indent="    ",
-                    subsequent_indent="    ",
-                )
-                print(f"  extractive_answer[{j}] (page {page}):")
-                print(wrapped)
-
-            for j, segment in enumerate(struct.get("extractive_segments", [])):
-                content = repair_mojibake(segment.get("content", ""))
-                page = segment.get("pageNumber", "?")
-                wrapped = textwrap.fill(
-                    content,
-                    width=width,
-                    initial_indent="    ",
-                    subsequent_indent="    ",
-                )
-                print(f"  extractive_segment[{j}] (page {page}):")
-                print(wrapped)
-
-            for j, snippet in enumerate(struct.get("snippets", [])):
-                text = repair_mojibake(snippet.get("snippet", ""))
-                wrapped = textwrap.fill(
-                    text,
-                    width=width,
-                    initial_indent="    ",
-                    subsequent_indent="    ",
-                )
-                print(f"  snippet[{j}]:")
-                print(wrapped)
-
-        if raw:
-            print("  raw_struct_data:")
-            print(
-                textwrap.indent(
-                    json.dumps(
-                        dict(struct) if struct else {},
-                        indent=2,
-                        default=str,
-                    ),
-                    "    ",
-                )
-            )
-
-        print()
-
-    if count == 0:
-        print("No results found.")
-    else:
-        print(f"({count} results)")
+def _wrap(text: str, *, width: int) -> str:
+    return textwrap.fill(
+        text,
+        width=width,
+        initial_indent="    ",
+        subsequent_indent="    ",
+    )
 
 
 def _shmoo(
@@ -218,7 +205,7 @@ def _shmoo(
     targets: list[str],
     max_answer_sweep: int = 5,
     max_segment_sweep: int = 10,
-    datastore_override: str | None = None,
+    datastore: str,
 ) -> None:
     """Sweep extractive answer and segment counts, reporting where targets appear."""
     targets_lower = [t.lower() for t in targets]
@@ -228,17 +215,18 @@ def _shmoo(
         seen: set[str] = set()
         hits = []
         for p in passages:
-            key = f"{p['doc_id']}:{p['type']}"
-            content_lower = p["content"].lower()
+            key = f"{p.doc_id}:{p.type}"
+            content_lower = p.content.lower()
             if key not in seen and any(t in content_lower for t in targets_lower):
                 seen.add(key)
                 hits.append(key)
         return hits
 
-    print(f"Query:   {query}")
-    print(f"Filter:  {filter_builder(state, city)}")
-    print(f"Targets: {targets}")
-    print(f"Docs:    {max_results}")
+    print(f"Query:     {query}")
+    print(f"Filter:    {filter_builder(state, city)}")
+    print(f"Datastore: {datastore}")
+    print(f"Targets:   {targets}")
+    print(f"Docs:      {max_results}")
     print()
 
     # Each axis is swept independently with the other fixed at 1, avoiding O(m×n)
@@ -256,9 +244,9 @@ def _shmoo(
             max_results=max_results,
             max_extractive_answer_count=n,
             max_extractive_segment_count=1,
-            datastore_override=datastore_override,
+            datastore_override=datastore,
         )
-        passages = _collect_passages(response)
+        passages = response.passages()
         hits = _check(passages)
         marker = "  <-- new" if len(hits) > prev_hit_count else ""
         locations = ", ".join(hits) if hits else "(none)"
@@ -279,9 +267,9 @@ def _shmoo(
             max_results=max_results,
             max_extractive_answer_count=1,
             max_extractive_segment_count=n,
-            datastore_override=datastore_override,
+            datastore_override=datastore,
         )
-        passages = _collect_passages(response)
+        passages = response.passages()
         hits = _check(passages)
         marker = "  <-- new" if len(hits) > prev_hit_count else ""
         locations = ", ".join(hits) if hits else "(none)"
@@ -382,7 +370,7 @@ def main() -> None:
             targets=args.targets,
             max_answer_sweep=args.max_answer_sweep,
             max_segment_sweep=args.max_segment_sweep,
-            datastore_override=args.datastore,
+            datastore=datastore,
         )
         return
 
@@ -402,10 +390,10 @@ def main() -> None:
         max_results=args.max_results,
         max_extractive_answer_count=args.answers,
         max_extractive_segment_count=args.segments,
-        datastore_override=args.datastore,
+        datastore_override=datastore,
     )
 
-    _print_results(response, raw=args.raw, width=args.width)
+    response.print(raw=args.raw, width=args.width)
 
 
 if __name__ == "__main__":
