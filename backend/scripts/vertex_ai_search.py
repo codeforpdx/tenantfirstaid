@@ -4,10 +4,10 @@ Useful for debugging retrieval quality independently of the agent framework:
 what passages does the datastore actually return for a given query and filter?
 
 Usage:
-    uv run python -m scripts.vertex_ai_search "security deposit interest" --state or
-    uv run python -m scripts.vertex_ai_search "ORS 90.155 notice delivery" --state or --city portland
-    uv run python -m scripts.vertex_ai_search "nonpayment notice timing" --state or --max-results 10
-    uv run python -m scripts.vertex_ai_search "ORS 90.427" --state or --raw
+    uv run python -m scripts.vertex_ai_search search "security deposit interest" --state or
+    uv run python -m scripts.vertex_ai_search search "ORS 90.155 notice delivery" --state or --city portland
+    uv run python -m scripts.vertex_ai_search search "nonpayment notice timing" --state or --max-results 10
+    uv run python -m scripts.vertex_ai_search search "ORS 90.427" --state or --raw
 
     # Sweep extraction params to find diminishing returns:
     uv run python -m scripts.vertex_ai_search shmoo \\
@@ -44,7 +44,6 @@ def search(
     datastore_override: Optional[str] = None,
 ) -> SearchPager:
     """Run a search against the Vertex AI Search datastore and return the raw response."""
-    assert SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is not None
     credentials = load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
 
     location = SINGLETON.GOOGLE_CLOUD_LOCATION or "global"
@@ -210,7 +209,7 @@ def _shmoo(
     targets_lower = [t.lower() for t in targets]
 
     def _check(passages: List[dict]) -> List[str]:
-        """Return list of (doc_id, type) pairs where any target matched."""
+        """Return list of strings of the form "doc_id:type" where any target matched."""
         hits = []
         for p in passages:
             content_lower = p["content"].lower()
@@ -260,6 +259,7 @@ def _shmoo(
             max_results=max_results,
             max_extractive_answer_count=1,
             max_extractive_segment_count=n,
+            datastore_override=datastore_override,
         )
         passages = _collect_passages(response)
         hits = _check(passages)
@@ -342,14 +342,13 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # Support bare invocation (no subcommand) for backwards compatibility.
     if args.command is None:
-        # Re-parse as if "search" was specified.
         parser.parse_args(["search", "--help"])
-        return
 
     state = UsaState.from_maybe_str(args.state)
     city = OregonCity.from_maybe_str(args.city) if args.city else None
+    if args.city and city is None:
+        print(f"Warning: unrecognized city '{args.city}', no city filter applied.")
 
     datastore = args.datastore or SINGLETON.VERTEX_AI_DATASTORES[DatastoreKey.LAWS]
 
