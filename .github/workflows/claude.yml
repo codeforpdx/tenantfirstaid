@@ -4,6 +4,11 @@ name: Claude Code
 # came from a fork — secrets and GITHUB_TOKEN write permissions are always available.
 # This is the property that makes issue_comment safe to use with privileged jobs,
 # unlike pull_request which runs in the fork's context without secrets.
+env:
+  # Base tool allowlist shared by both jobs. WebFetch is restricted to known
+  # documentation domains to prevent exfiltration via outbound HTTP.
+  ALLOWED_TOOLS: "Read,WebFetch(domain:docs.langchain.com),WebFetch(domain:reference.langchain.com),WebFetch(domain:ai.google.dev),WebFetch(domain:docs.digitalocean.com),WebFetch(domain:docs.github.com),WebFetch(domain:docs.docker.com),WebFetch(domain:docs.astral.sh)"
+
 on:
   issue_comment:
     types: [created]
@@ -38,7 +43,7 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
-            --allowedTools Read,Edit,Write,WebFetch(domain:docs.langchain.com),WebFetch(domain:reference.langchain.com),WebFetch(domain:ai.google.dev),WebFetch(domain:docs.digitalocean.com),WebFetch(domain:docs.github.com),WebFetch(domain:docs.docker.com),WebFetch(domain:docs.astral.sh)
+            --allowedTools ${{ env.ALLOWED_TOOLS }},Edit,Write
 
   # Handles @claude on PRs — both inline review comments and conversation-tab comments.
   # Read-only: Claude can review and comment but cannot push commits.
@@ -126,4 +131,4 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
-            --allowedTools Read,WebFetch(domain:docs.langchain.com),WebFetch(domain:reference.langchain.com),WebFetch(domain:ai.google.dev),WebFetch(domain:docs.digitalocean.com),WebFetch(domain:docs.github.com),WebFetch(domain:docs.docker.com),WebFetch(domain:docs.astral.sh)
+            --allowedTools ${{ env.ALLOWED_TOOLS }}
