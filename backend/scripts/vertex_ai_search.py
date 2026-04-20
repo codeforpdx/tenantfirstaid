@@ -52,7 +52,7 @@ def search(
     """Run a search against the Vertex AI Search datastore and return the raw response."""
     credentials = load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
 
-    location = SINGLETON.GOOGLE_CLOUD_LOCATION or "global"
+    location = SINGLETON.GOOGLE_CLOUD_LOCATION
     client_options = (
         ClientOptions(api_endpoint=f"{location}-discoveryengine.googleapis.com")
         if location != "global"
@@ -235,7 +235,7 @@ def _shmoo(
     # Sweep extractive answers (segments fixed at 1).
     print(f"{'answers':>8}  {'hits':>4}  where")
     print(f"{'-------':>8}  {'----':>4}  -----")
-    prev_hit_count = -1
+    prev_hit_count = 0
     for n in range(1, max_answer_sweep + 1):
         response = search(
             query,
@@ -258,7 +258,7 @@ def _shmoo(
     # Sweep extractive segments (answers fixed at 1).
     print(f"{'segments':>8}  {'hits':>4}  where")
     print(f"{'--------':>8}  {'----':>4}  -----")
-    prev_hit_count = -1
+    prev_hit_count = 0
     for n in range(1, max_segment_sweep + 1):
         response = search(
             query,

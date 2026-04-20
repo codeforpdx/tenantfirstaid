@@ -105,8 +105,12 @@ class _GoogEnvAndPolicy:
             ("GOOGLE_CLOUD_LOCATION", _gcp_location),
             ("GOOGLE_APPLICATION_CREDENTIALS", _gcp_creds),
         ):
-            if value is None:
-                raise ValueError(f"[{name}] environment variable is not set.")
+            # Catches both unset (None) and explicitly empty (e.g. VAR="").
+            # Does not catch whitespace-only values.
+            if not value:
+                raise ValueError(
+                    f"[{name}] environment variable is not set or is empty."
+                )
 
         self.MODEL_NAME: Final[str] = cast(str, _model_name)
         self.GOOGLE_CLOUD_PROJECT: Final[str] = cast(str, _gcp_project)
