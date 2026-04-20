@@ -129,6 +129,19 @@ jobs:
           run-id: ${{ steps.snapshot.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Initialize git repo for claude-code-action
+        run: |
+          # claude-code-action internally runs git fetch to resolve PR context,
+          # which requires a git repo with a configured remote. We initialize one
+          # from the artifact files and point the remote at the base repo so the
+          # fetch succeeds without touching the fork.
+          git init
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git add -A
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git commit -m "snapshot"
+
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
