@@ -18,7 +18,7 @@ Usage:
 import argparse
 import json
 import textwrap
-from typing import List, Optional
+from typing import TypedDict
 
 from google.api_core.client_options import ClientOptions
 from google.cloud import discoveryengine_v1beta as discoveryengine
@@ -28,20 +28,26 @@ from google.cloud.discoveryengine_v1beta.services.search_service.pagers import (
 
 from tenantfirstaid.constants import SINGLETON, DatastoreKey
 from tenantfirstaid.google_auth import load_gcp_credentials
-from tenantfirstaid.langchain_tools import _filter_builder, _repair_mojibake
+from tenantfirstaid.langchain_tools import filter_builder, repair_mojibake
 from tenantfirstaid.location import OregonCity, UsaState
+
+
+class Passage(TypedDict):
+    doc_id: str
+    type: str
+    content: str
 
 
 def search(
     query: str,
     *,
     state: UsaState,
-    city: Optional[OregonCity] = None,
+    city: OregonCity | None = None,
     max_results: int = 5,
     max_extractive_answer_count: int = 5,
     max_extractive_segment_count: int = 3,
     spell_correction: int = 1,
-    datastore_override: Optional[str] = None,
+    datastore_override: str | None = None,
 ) -> SearchPager:
     """Run a search against the Vertex AI Search datastore and return the raw response."""
     credentials = load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
@@ -85,7 +91,7 @@ def search(
         serving_config=serving_config,
         query=query,
         page_size=max_results,
-        filter=_filter_builder(state, city),
+        filter=filter_builder(state, city),
         content_search_spec=content_search_spec,
         spell_correction_spec=spell_correction_spec,
     )
@@ -93,9 +99,9 @@ def search(
     return client.search(request)
 
 
-def _collect_passages(response: SearchPager) -> List[dict]:
+def _collect_passages(response: SearchPager) -> list[Passage]:
     """Collect all extractive answers and segments from a search response."""
-    passages = []
+    passages: list[Passage] = []
     for result in response.results:
         doc = result.document
         struct = doc.derived_struct_data
@@ -103,10 +109,10 @@ def _collect_passages(response: SearchPager) -> List[dict]:
             continue
         doc_id = doc.id or "(no id)"
         for answer in struct.get("extractive_answers", []):
-            content = _repair_mojibake(answer.get("content", ""))
+            content = repair_mojibake(answer.get("content", ""))
             passages.append({"doc_id": doc_id, "type": "answer", "content": content})
         for segment in struct.get("extractive_segments", []):
-            content = _repair_mojibake(segment.get("content", ""))
+            content = repair_mojibake(segment.get("content", ""))
             passages.append({"doc_id": doc_id, "type": "segment", "content": content})
     return passages
 
@@ -139,7 +145,7 @@ def _print_results(
                 print(f"  link:   {link}")
 
             for j, answer in enumerate(struct.get("extractive_answers", [])):
-                content = _repair_mojibake(answer.get("content", ""))
+                content = repair_mojibake(answer.get("content", ""))
                 page = answer.get("pageNumber", "?")
                 wrapped = textwrap.fill(
                     content,
@@ -151,7 +157,7 @@ def _print_results(
                 print(wrapped)
 
             for j, segment in enumerate(struct.get("extractive_segments", [])):
-                content = _repair_mojibake(segment.get("content", ""))
+                content = repair_mojibake(segment.get("content", ""))
                 page = segment.get("pageNumber", "?")
                 wrapped = textwrap.fill(
                     content,
@@ -163,7 +169,7 @@ def _print_results(
                 print(wrapped)
 
             for j, snippet in enumerate(struct.get("snippets", [])):
-                text = _repair_mojibake(snippet.get("snippet", ""))
+                text = repair_mojibake(snippet.get("snippet", ""))
                 wrapped = textwrap.fill(
                     text,
                     width=width,
@@ -198,17 +204,17 @@ def _shmoo(
     query: str,
     *,
     state: UsaState,
-    city: Optional[OregonCity] = None,
+    city: OregonCity | None = None,
     max_results: int = 5,
-    targets: List[str],
+    targets: list[str],
     max_answer_sweep: int = 5,
     max_segment_sweep: int = 10,
-    datastore_override: Optional[str] = None,
+    datastore_override: str | None = None,
 ) -> None:
     """Sweep extractive answer and segment counts, reporting where targets appear."""
     targets_lower = [t.lower() for t in targets]
 
-    def _check(passages: List[dict]) -> List[str]:
+    def _check(passages: list[Passage]) -> list[str]:
         """Return list of strings of the form "doc_id:type" where any target matched."""
         hits = []
         for p in passages:
@@ -217,12 +223,14 @@ def _shmoo(
                 hits.append(f"{p['doc_id']}:{p['type']}")
         return hits
 
-    filter_str = _filter_builder(state, city)
     print(f"Query:   {query}")
-    print(f"Filter:  {filter_str}")
+    print(f"Filter:  {filter_builder(state, city)}")
     print(f"Targets: {targets}")
     print(f"Docs:    {max_results}")
     print()
+
+    # Each axis is swept independently with the other fixed at 1, avoiding O(m×n)
+    # API calls. The independent maxima are sufficient for tuning each parameter.
 
     # Sweep extractive answers (segments fixed at 1).
     print(f"{'answers':>8}  {'hits':>4}  where")
@@ -343,7 +351,8 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command is None:
-        parser.parse_args(["search", "--help"])
+        parser.print_help()
+        raise SystemExit(1)
 
     state = UsaState.from_maybe_str(args.state)
     city = OregonCity.from_maybe_str(args.city) if args.city else None
@@ -366,9 +375,8 @@ def main() -> None:
         return
 
     # "search" command.
-    filter_str = _filter_builder(state, city)
     print(f"Query:     {args.query}")
-    print(f"Filter:    {filter_str}")
+    print(f"Filter:    {filter_builder(state, city)}")
     print(f"Datastore: {datastore}")
     print(f"Docs:      {args.max_results}")
     print(f"Answers:   {args.answers}")
