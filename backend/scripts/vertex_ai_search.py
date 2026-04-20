@@ -19,12 +19,12 @@ import argparse
 import json
 import textwrap
 from dataclasses import dataclass, field
+from typing import Literal
 
-from google.api_core.client_options import ClientOptions
 from google.cloud import discoveryengine_v1beta as discoveryengine
 
 from tenantfirstaid.constants import SINGLETON, DatastoreKey
-from tenantfirstaid.google_auth import load_gcp_credentials
+from tenantfirstaid.google_auth import discoveryengine_client_options, load_gcp_credentials
 from tenantfirstaid.langchain_tools import filter_builder, repair_mojibake
 from tenantfirstaid.location import OregonCity, UsaState
 
@@ -35,7 +35,7 @@ SpellMode = discoveryengine.SearchRequest.SpellCorrectionSpec.Mode
 @dataclass
 class Passage:
     doc_id: str
-    type: str
+    type: Literal["answer", "segment"]
     content: str
 
 
@@ -66,13 +66,6 @@ class SearchResults:
         if self.corrected_query:
             print(f"Spell-corrected query: {self.corrected_query}\n")
 
-        def _print_passages(key: str, items: list) -> None:
-            for j, item in enumerate(items):
-                content = repair_mojibake(item.get("content", ""))
-                page = item.get("pageNumber", "?")
-                print(f"  {key}[{j}] (page {page}):")
-                print(_wrap(content, width=width))
-
         for i, result in enumerate(self.results, 1):
             doc = result.document
             struct = doc.derived_struct_data
@@ -89,10 +82,10 @@ class SearchResults:
                     print(f"  link:   {link}")
 
                 _print_passages(
-                    "extractive_answer", struct.get("extractive_answers", [])
+                    "extractive_answer", struct.get("extractive_answers", []), width=width
                 )
                 _print_passages(
-                    "extractive_segment", struct.get("extractive_segments", [])
+                    "extractive_segment", struct.get("extractive_segments", []), width=width
                 )
 
                 for j, snippet in enumerate(struct.get("snippets", [])):
@@ -136,16 +129,9 @@ def search(
     credentials = load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
 
     location = SINGLETON.GOOGLE_CLOUD_LOCATION
-    # https://cloud.google.com/generative-ai-app-builder/docs/locations#specify_a_multi-region_for_your_data_store
-    client_options = (
-        ClientOptions(api_endpoint=f"{location}-discoveryengine.googleapis.com")
-        if location != "global"
-        else None
-    )
-
     client = discoveryengine.SearchServiceClient(
         credentials=credentials,
-        client_options=client_options,
+        client_options=discoveryengine_client_options(location),
     )
 
     datastore = datastore_override or SINGLETON.VERTEX_AI_DATASTORES[DatastoreKey.LAWS]
@@ -185,6 +171,14 @@ def search(
         corrected_query=pager.corrected_query,
         results=list(pager),
     )
+
+
+def _print_passages(key: str, items: list, *, width: int) -> None:
+    for j, item in enumerate(items):
+        content = repair_mojibake(item.get("content", ""))
+        page = item.get("pageNumber", "?")
+        print(f"  {key}[{j}] (page {page}):")
+        print(_wrap(content, width=width))
 
 
 def _wrap(text: str, *, width: int) -> str:
