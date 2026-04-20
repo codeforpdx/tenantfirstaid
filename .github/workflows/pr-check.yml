@@ -12,6 +12,34 @@ on:
       - "releases/*"
 
 jobs:
+  # This job captures a snapshot of the PR code at the head SHA and uploads it as an artifact.
+  # The claude-pr job later looks up this artifact to provide Claude with the PR code, since
+  # claude-pr cannot access the PR code directly to avoid execution of untrusted code from the
+  # PR in the claude-code context.
+  snapshot:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
+      # Artifact name format must match the lookup in claude.yml Find code snapshot step.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pr-${{ github.event.pull_request.number }}-code-${{ github.event.pull_request.head.sha }}
+          path: |
+            .
+            !.git
+            !node_modules
+            !backend/.venv
+            !**/__pycache__
+          retention-days: 10
+
   backend-test:
     runs-on: ubuntu-latest
     defaults:
@@ -82,30 +110,6 @@ jobs:
       - name: Run additional tests that require repo secrets
         if: env.PR_FROM_FORK != 'true'
         run: uv run pytest -v -s -m "require_repo_secrets" --cov --cov-append --cov-report term-missing
-
-  snapshot:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    timeout-minutes: 5
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 1
-
-      # Artifact name format must match the lookup in claude.yml Find code snapshot step.
-      - uses: actions/upload-artifact@v7
-        with:
-          name: pr-${{ github.event.pull_request.number }}-code-${{ github.event.pull_request.head.sha }}
-          path: |
-            .
-            !.git
-            !node_modules
-            !backend/.venv
-            !**/__pycache__
-          retention-days: 10
 
   frontend-build:
     runs-on: ubuntu-latest
