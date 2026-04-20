@@ -22,20 +22,24 @@ from typing import TypedDict
 
 from google.api_core.client_options import ClientOptions
 from google.cloud import discoveryengine_v1beta as discoveryengine
-from google.cloud.discoveryengine_v1beta.services.search_service.pagers import (
-    SearchPager,
-)
 
 from tenantfirstaid.constants import SINGLETON, DatastoreKey
 from tenantfirstaid.google_auth import load_gcp_credentials
 from tenantfirstaid.langchain_tools import filter_builder, repair_mojibake
 from tenantfirstaid.location import OregonCity, UsaState
 
+SearchResult = discoveryengine.SearchResponse.SearchResult
+
 
 class Passage(TypedDict):
     doc_id: str
     type: str
     content: str
+
+
+class SearchResults(TypedDict):
+    corrected_query: str
+    results: list[SearchResult]
 
 
 def search(
@@ -46,13 +50,14 @@ def search(
     max_results: int = 5,
     max_extractive_answer_count: int = 5,
     max_extractive_segment_count: int = 3,
-    spell_correction: int = 1,
+    spell_correction: discoveryengine.SearchRequest.SpellCorrectionSpec.Mode = discoveryengine.SearchRequest.SpellCorrectionSpec.Mode.AUTO,
     datastore_override: str | None = None,
-) -> SearchPager:
-    """Run a search against the Vertex AI Search datastore and return the raw response."""
+) -> SearchResults:
+    """Run a search against the Vertex AI Search datastore and return results."""
     credentials = load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
 
     location = SINGLETON.GOOGLE_CLOUD_LOCATION
+    # https://cloud.google.com/generative-ai-app-builder/docs/locations#specify_a_multi-region_for_your_data_store
     client_options = (
         ClientOptions(api_endpoint=f"{location}-discoveryengine.googleapis.com")
         if location != "global"
@@ -96,13 +101,17 @@ def search(
         spell_correction_spec=spell_correction_spec,
     )
 
-    return client.search(request)
+    pager = client.search(request)
+    return SearchResults(
+        corrected_query=pager.corrected_query,
+        results=list(pager),
+    )
 
 
-def _collect_passages(response: SearchPager) -> list[Passage]:
+def _collect_passages(response: SearchResults) -> list[Passage]:
     """Collect all extractive answers and segments from a search response."""
     passages: list[Passage] = []
-    for result in response.results:
+    for result in response["results"]:
         doc = result.document
         struct = doc.derived_struct_data
         if not struct:
@@ -118,17 +127,17 @@ def _collect_passages(response: SearchPager) -> list[Passage]:
 
 
 def _print_results(
-    response: SearchPager,
+    response: SearchResults,
     *,
     raw: bool = False,
     width: int = 100,
 ) -> None:
     """Pretty-print search results to stdout."""
-    if hasattr(response, "corrected_query") and response.corrected_query:
-        print(f"Spell-corrected query: {response.corrected_query}\n")
+    if response["corrected_query"]:
+        print(f"Spell-corrected query: {response['corrected_query']}\n")
 
     count = 0
-    for i, result in enumerate(response.results, 1):
+    for i, result in enumerate(response["results"], 1):
         count = i
         doc = result.document
         struct = doc.derived_struct_data
@@ -215,12 +224,15 @@ def _shmoo(
     targets_lower = [t.lower() for t in targets]
 
     def _check(passages: list[Passage]) -> list[str]:
-        """Return list of strings of the form "doc_id:type" where any target matched."""
+        """Return deduplicated list of strings of the form "doc_id:type" where any target matched."""
+        seen: set[str] = set()
         hits = []
         for p in passages:
+            key = f"{p['doc_id']}:{p['type']}"
             content_lower = p["content"].lower()
-            if any(t in content_lower for t in targets_lower):
-                hits.append(f"{p['doc_id']}:{p['type']}")
+            if key not in seen and any(t in content_lower for t in targets_lower):
+                seen.add(key)
+                hits.append(key)
         return hits
 
     print(f"Query:   {query}")
