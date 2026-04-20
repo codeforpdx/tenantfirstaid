@@ -83,6 +83,29 @@ jobs:
         if: env.PR_FROM_FORK != 'true'
         run: uv run pytest -v -s -m "require_repo_secrets" --cov --cov-append --cov-report term-missing
 
+  snapshot:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pr-${{ github.event.pull_request.number }}-code
+          path: |
+            .
+            !.git
+            !node_modules
+            !backend/.venv
+            !**/__pycache__
+          retention-days: 10
+          overwrite: true
+
   frontend-build:
     runs-on: ubuntu-latest
 

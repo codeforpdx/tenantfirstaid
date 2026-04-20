@@ -12,37 +12,72 @@ jobs:
       contains(github.event.comment.body, '@claude') &&
       contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: write
       issues: write
       actions: read # Required for Claude to read CI results on PRs
     steps:
-      - name: Resolve checkout ref
-        id: ref
+      - name: Resolve PR number
+        id: pr
         run: |
-          if [ -n "$ISSUE_PR_URL" ] || [ -n "$PR_NUMBER" ]; then
-            PR="${PR_NUMBER:-$ISSUE_NUMBER}"
-            # Resolve to a fixed SHA so the checkout is immune to race conditions
-            # between comment time and checkout time (TOCTOU).
-            SHA=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}" --jq '.merge_commit_sha')
-            echo "ref=${SHA}" >> "$GITHUB_OUTPUT"
-          else
-            echo "ref=${GITHUB_REF}" >> "$GITHUB_OUTPUT"
-          fi
+          echo "number=${PR_NUMBER:-$ISSUE_NUMBER}" >> "$GITHUB_OUTPUT"
         env:
-          ISSUE_PR_URL: ${{ github.event.issue.pull_request.url }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Checks out the merge commit SHA computed by GitHub at comment time — works
-      # for fork and local branch PRs alike without checking out the fork repo.
-      - uses: actions/checkout@v6
+      - name: Find code snapshot
+        id: snapshot
+        run: |
+          WORKFLOW_URL="https://github.com/${GITHUB_REPOSITORY}/actions/workflows/pr-check.yml"
+          MAX_ATTEMPTS=8
+          SLEEP_SECONDS=15
+
+          HEAD_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.head.sha')
+          COMMIT_TIME=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}" \
+            --jq '.commit.committer.date')
+
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            RESULT=$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=pr-${PR_NUMBER}-code&per_page=1" \
+              --jq '.artifacts[0] | select(.expired == false)')
+
+            if [ -n "$RESULT" ] && [ "$RESULT" != "null" ]; then
+              ARTIFACT_TIME=$(echo "$RESULT" | jq -r '.created_at')
+              if [[ "$ARTIFACT_TIME" > "$COMMIT_TIME" ]]; then
+                echo "run_id=$(echo "$RESULT" | jq -r '.workflow_run.id')" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+            fi
+
+            BUCKET=$(gh pr checks "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
+              --json name,bucket \
+              --jq '.[] | select(.name == "snapshot") | .bucket' 2>/dev/null || echo "")
+
+            if [ "$BUCKET" != "pending" ]; then
+              gh issue comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
+                --body "No code snapshot is available for this PR. The snapshot job may not have run or may have failed — check the [PR checks workflow](${WORKFLOW_URL}) and re-trigger by commenting \`@claude\` once it completes."
+              exit 1
+            fi
+
+            if [ "$i" -lt "$MAX_ATTEMPTS" ]; then
+              echo "Snapshot job still running (attempt $i/$MAX_ATTEMPTS), waiting ${SLEEP_SECONDS}s..."
+              sleep $SLEEP_SECONDS
+            fi
+          done
+
+          gh issue comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
+            --body "Timed out waiting for the code snapshot to be ready. The [PR checks workflow](${WORKFLOW_URL}) is taking longer than expected — please re-trigger by commenting \`@claude\` once it completes."
+          exit 1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+
+      - uses: actions/download-artifact@v8
         with:
-          ref: ${{ steps.ref.outputs.ref }}
-          fetch-depth: 1
+          name: pr-${{ steps.pr.outputs.number }}-code
+          run-id: ${{ steps.snapshot.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: anthropics/claude-code-action@v1
         with:
