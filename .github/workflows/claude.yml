@@ -9,6 +9,7 @@ on:
 jobs:
   claude:
     if: |
+      github.repository == 'codeforpdx/tenantfirstaid' &&
       contains(github.event.comment.body, '@claude') &&
       contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
@@ -35,19 +36,16 @@ jobs:
           SLEEP_SECONDS=15
 
           HEAD_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.head.sha')
-          COMMIT_TIME=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}" \
-            --jq '.commit.committer.date')
+          ARTIFACT_NAME="pr-${PR_NUMBER}-code-${HEAD_SHA}"
 
           for i in $(seq 1 $MAX_ATTEMPTS); do
-            RESULT=$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=pr-${PR_NUMBER}-code&per_page=1" \
+            RESULT=$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${ARTIFACT_NAME}&per_page=1" \
               --jq '.artifacts[0] | select(.expired == false)')
 
             if [ -n "$RESULT" ] && [ "$RESULT" != "null" ]; then
-              ARTIFACT_TIME=$(echo "$RESULT" | jq -r '.created_at')
-              if [[ "$ARTIFACT_TIME" > "$COMMIT_TIME" ]]; then
-                echo "run_id=$(echo "$RESULT" | jq -r '.workflow_run.id')" >> "$GITHUB_OUTPUT"
-                exit 0
-              fi
+              echo "run_id=$(echo "$RESULT" | jq -r '.workflow_run.id')" >> "$GITHUB_OUTPUT"
+              echo "artifact_name=${ARTIFACT_NAME}" >> "$GITHUB_OUTPUT"
+              exit 0
             fi
 
             BUCKET=$(gh pr checks "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
@@ -75,7 +73,7 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
-          name: pr-${{ steps.pr.outputs.number }}-code
+          name: ${{ steps.snapshot.outputs.artifact_name }}
           run-id: ${{ steps.snapshot.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 

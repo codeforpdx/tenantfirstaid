@@ -96,7 +96,7 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: pr-${{ github.event.pull_request.number }}-code
+          name: pr-${{ github.event.pull_request.number }}-code-${{ github.event.pull_request.head.sha }}
           path: |
             .
             !.git
@@ -104,7 +104,6 @@ jobs:
             !backend/.venv
             !**/__pycache__
           retention-days: 10
-          overwrite: true
 
   frontend-build:
     runs-on: ubuntu-latest
