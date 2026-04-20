@@ -47,6 +47,7 @@ runs exemplars <experiment> <scenario-id> --evaluator "<key>"
 Run `runs trace <uuid> --verbose` on each pair in parallel.
 
 For each trace, extract:
+- **Model thinking**: the `thinking` field inside AIMessage content blocks — read this first. It is the most direct evidence for distinguishing failure modes: confabulation shows up as the model stating a rule in its thinking with no retrieved text supporting it; reasoning failure shows the model correctly identifying the relevant passage in its thinking but misapplying it in the output; retrieval miss shows the model noting uncertainty or falling back to general knowledge because the retrieved passages lacked the relevant statute.
 - **RAG queries**: the `query` arg and `max_documents` passed to `retrieve_city_state_laws` on each call
 - **Retrieved passages**: the tool response text — look for the specific statutory language the correct answer requires
 - **Model output**: the final answer text
