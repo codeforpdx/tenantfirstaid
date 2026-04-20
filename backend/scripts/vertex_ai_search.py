@@ -24,7 +24,10 @@ from typing import Literal
 from google.cloud import discoveryengine_v1beta as discoveryengine
 
 from tenantfirstaid.constants import SINGLETON, DatastoreKey
-from tenantfirstaid.google_auth import discoveryengine_client_options, load_gcp_credentials
+from tenantfirstaid.google_auth import (
+    discoveryengine_client_options,
+    load_gcp_credentials,
+)
 from tenantfirstaid.langchain_tools import filter_builder, repair_mojibake
 from tenantfirstaid.location import OregonCity, UsaState
 
@@ -82,10 +85,14 @@ class SearchResults:
                     print(f"  link:   {link}")
 
                 _print_passages(
-                    "extractive_answer", struct.get("extractive_answers", []), width=width
+                    "extractive_answer",
+                    struct.get("extractive_answers", []),
+                    width=width,
                 )
                 _print_passages(
-                    "extractive_segment", struct.get("extractive_segments", []), width=width
+                    "extractive_segment",
+                    struct.get("extractive_segments", []),
+                    width=width,
                 )
 
                 for j, snippet in enumerate(struct.get("snippets", [])):
