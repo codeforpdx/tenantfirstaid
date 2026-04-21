@@ -7,8 +7,21 @@ Supports both file-path credentials (local development) and inline JSON
 import json
 from pathlib import Path
 
+from google.api_core.client_options import ClientOptions
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
+
+
+def discoveryengine_client_options(location: str) -> ClientOptions | None:
+    """Return ClientOptions for the Discovery Engine API endpoint.
+
+    Returns None for the "global" location so the client uses its default
+    endpoint. All other locations use a regional endpoint.
+    See: https://cloud.google.com/generative-ai-app-builder/docs/locations#specify_a_multi-region_for_your_data_store
+    """
+    if location == "global":
+        return None
+    return ClientOptions(api_endpoint=f"{location}-discoveryengine.googleapis.com")
 
 
 def _parse_inline_json(raw: str) -> dict:

@@ -2,7 +2,7 @@ import os
 from collections.abc import Mapping
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Final, Optional
+from typing import Final, Optional, cast
 
 from dotenv import load_dotenv
 from langchain_google_genai import HarmBlockThreshold, HarmCategory
@@ -91,24 +91,31 @@ class _GoogEnvAndPolicy:
         if path_to_env.exists():
             load_dotenv(override=True)
 
-        # Assign & Check slot attributes for required environment variables
+        # Assign & Check slot attributes for required environment variables.
         # Note: assign explicitly since typecheckers do not understand slotted attributes
         #       that are assigned by __setattr__()
-        self.MODEL_NAME: Final = os.getenv("MODEL_NAME")
-        self.GOOGLE_CLOUD_PROJECT: Final = os.getenv("GOOGLE_CLOUD_PROJECT")
-        self.GOOGLE_CLOUD_LOCATION: Final = os.getenv("GOOGLE_CLOUD_LOCATION")
-        self.GOOGLE_APPLICATION_CREDENTIALS: Final = os.getenv(
-            "GOOGLE_APPLICATION_CREDENTIALS"
-        )
+        _model_name = os.getenv("MODEL_NAME")
+        _gcp_project = os.getenv("GOOGLE_CLOUD_PROJECT")
+        _gcp_location = os.getenv("GOOGLE_CLOUD_LOCATION")
+        _gcp_creds = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
-        for c in (
-            "MODEL_NAME",
-            "GOOGLE_CLOUD_PROJECT",
-            "GOOGLE_CLOUD_LOCATION",
-            "GOOGLE_APPLICATION_CREDENTIALS",
+        for name, value in (
+            ("MODEL_NAME", _model_name),
+            ("GOOGLE_CLOUD_PROJECT", _gcp_project),
+            ("GOOGLE_CLOUD_LOCATION", _gcp_location),
+            ("GOOGLE_APPLICATION_CREDENTIALS", _gcp_creds),
         ):
-            if getattr(self, c) is None:
-                raise ValueError(f"[{c}] environment variable is not set.")
+            # Catches both unset (None) and explicitly empty (e.g. VAR="").
+            # Does not catch whitespace-only values.
+            if not value:
+                raise ValueError(
+                    f"[{name}] environment variable is not set or is empty."
+                )
+
+        self.MODEL_NAME: Final[str] = cast(str, _model_name)
+        self.GOOGLE_CLOUD_PROJECT: Final[str] = cast(str, _gcp_project)
+        self.GOOGLE_CLOUD_LOCATION: Final[str] = cast(str, _gcp_location)
+        self.GOOGLE_APPLICATION_CREDENTIALS: Final[str] = cast(str, _gcp_creds)
 
         # _parse_datastores raises ValueError if any matched var is set but empty.
         self.VERTEX_AI_DATASTORES: Final[dict[str, str]] = _parse_datastores(os.environ)

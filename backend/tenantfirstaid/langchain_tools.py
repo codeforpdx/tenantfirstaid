@@ -31,7 +31,7 @@ from .location import OregonCity, UsaState
 logger = logging.getLogger(__name__)
 
 
-def _repair_mojibake(text: str) -> str:
+def repair_mojibake(text: str) -> str:
     """Attempt to repair UTF-8 text that was incorrectly decoded as Latin-1.
 
     Vertex AI may return corpus text with mojibake (e.g. â€™ instead of ')
@@ -122,10 +122,15 @@ class RagBuilder:
             input=query,
         )
 
-        return "\n".join([_repair_mojibake(doc.page_content) for doc in docs])
+        return "\n".join([repair_mojibake(doc.page_content) for doc in docs])
 
 
-def _filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
+def filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
+    """Build a Vertex AI Search filter string for the given state and optional city.
+
+    City-scoped queries include both city-specific and state-level ("null") documents
+    so the agent sees both layers of law in a single retrieval.
+    """
     if city is None:
         city_filter = 'city: ANY("null")'
     else:
@@ -242,12 +247,12 @@ class CityStateLawsInputSchema(BaseModel):
 
 
 def _default_filter_from_city_state(**kwargs: object) -> str:
-    """Adapter that extracts state/city from tool kwargs and calls _filter_builder.
+    """Adapter that extracts state/city from tool kwargs and calls filter_builder.
 
     All other kwargs (query, max_documents, etc.) are intentionally ignored;
     custom filter_builders may use them if needed.
     """
-    return _filter_builder(
+    return filter_builder(
         state=cast(UsaState, kwargs["state"]),
         city=cast(Optional[OregonCity], kwargs.get("city")),
     )

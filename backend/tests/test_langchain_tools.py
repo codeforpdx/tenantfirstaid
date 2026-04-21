@@ -19,12 +19,12 @@ from tenantfirstaid.google_auth import load_gcp_credentials
 from tenantfirstaid.langchain_tools import (
     CityStateLawsInputSchema,
     RagBuilder,
-    _filter_builder,
     _make_rag_tool,
-    _repair_mojibake,
+    filter_builder,
     generate_letter,
     get_active_rag_tools,
     get_letter_template,
+    repair_mojibake,
     retrieve_city_state_laws,
     retrieve_oregon_law_help,
 )
@@ -205,14 +205,14 @@ def test_retrieve_city_state_laws_returns_joined_docs(mock_rag_class):
     assert "Doc2 content" in result
 
 
-# --- _repair_mojibake property tests ---
+# --- repair_mojibake property tests ---
 
 
 @pytest.mark.property
 @given(st.text(alphabet=st.characters(max_codepoint=0x7F)))
 def test_repair_mojibake_ascii_unchanged(text: str) -> None:
     """Pure ASCII text is returned unchanged — no mojibake to repair."""
-    assert _repair_mojibake(text) == text
+    assert repair_mojibake(text) == text
 
 
 @pytest.mark.property
@@ -229,7 +229,7 @@ def test_repair_mojibake_repairs_genuine_mojibake(original: str) -> None:
     before reaching the function under test.
     """
     mojibake = original.encode("utf-8").decode("latin-1")
-    assert _repair_mojibake(mojibake) == original
+    assert repair_mojibake(mojibake) == original
 
 
 @pytest.mark.property
@@ -245,7 +245,7 @@ def test_repair_mojibake_continuation_byte_chars_unchanged(text: str) -> None:
     original text is returned as-is. This covers the Vertex AI defect
     where the leading 0xC2 byte of a UTF-8 § sequence is dropped.
     """
-    assert _repair_mojibake(text) == text
+    assert repair_mojibake(text) == text
 
 
 @patch("tenantfirstaid.langchain_tools.RagBuilder")
@@ -333,14 +333,14 @@ def test_make_rag_tool_custom_filter_builder(mock_rag_class):
 
 def test_filter_builder_state_only():
     """Test filter with state only (no city) produces null city."""
-    result = _filter_builder(UsaState("or"), None)
+    result = filter_builder(UsaState("or"), None)
     assert 'city: ANY("null")' in result
     assert 'state: ANY("or")' in result
 
 
 def test_filter_builder_with_city():
     """Test filter with city includes state-level docs."""
-    result = _filter_builder(UsaState("or"), OregonCity("eugene"))
+    result = filter_builder(UsaState("or"), OregonCity("eugene"))
     assert 'city: ANY("eugene", "null")' in result
     assert 'state: ANY("or")' in result
 
