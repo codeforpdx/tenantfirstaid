@@ -80,3 +80,4 @@ chatlog.jsonl
 !/backend/scripts/generate_conversation/tenant_questions_facts_full.csv
 combined_training_gemini-2.0.jsonl
 /.claude/settings.local.json
+/.claude/scheduled_tasks.lock
