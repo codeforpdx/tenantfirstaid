@@ -32,7 +32,6 @@ HISTORY_DIR = Path(__file__).parent.parent / ".eval_history"
 # Non-sensitive env var names and prefixes to capture.
 _ENV_EXACT = {
     "MODEL_NAME",
-    "ROUTER_MODEL_NAME",
     "GOOGLE_CLOUD_PROJECT",
     "GOOGLE_CLOUD_LOCATION",
     "SHOW_MODEL_THINKING",
