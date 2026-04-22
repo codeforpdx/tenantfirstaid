@@ -129,6 +129,7 @@ def test_streaming_empty_chunk_skipped(mock_create_agent, oregon_state):
 
 # ── stream retry logic ─────────────────────────────────────────────────────────
 
+_CREATE_AGENT = "_LangChainChatManager__create_agent_for_session"
 _STREAM_ONCE = "_LangChainChatManager__stream_once"
 _GOOD_CHUNK: dict = {"type": "text", "text": "ok"}
 
@@ -139,7 +140,10 @@ def _good_stream(*_args, **_kwargs):
 
 @patch("tenantfirstaid.langchain_chat_manager.time.sleep")
 @patch.object(LangChainChatManager, _STREAM_ONCE)
-def test_retry_succeeds_on_second_attempt(mock_stream_once, mock_sleep, oregon_state):
+@patch.object(LangChainChatManager, _CREATE_AGENT)
+def test_retry_succeeds_on_second_attempt(
+    _mock_create, mock_stream_once, mock_sleep, oregon_state
+):
     """First call raises a transient error; second succeeds and yields the chunk."""
     mock_stream_once.side_effect = [
         httpcore.ReadError("reset"),
@@ -158,7 +162,10 @@ def test_retry_succeeds_on_second_attempt(mock_stream_once, mock_sleep, oregon_s
 
 @patch("tenantfirstaid.langchain_chat_manager.time.sleep")
 @patch.object(LangChainChatManager, _STREAM_ONCE)
-def test_no_retry_after_partial_yield(mock_stream_once, mock_sleep, oregon_state):
+@patch.object(LangChainChatManager, _CREATE_AGENT)
+def test_no_retry_after_partial_yield(
+    _mock_create, mock_stream_once, mock_sleep, oregon_state
+):
     """If bytes were already sent to the client, re-raise immediately — no retry."""
 
     def _partial_then_error(*_args, **_kwargs):
@@ -179,8 +186,9 @@ def test_no_retry_after_partial_yield(mock_stream_once, mock_sleep, oregon_state
 
 @patch("tenantfirstaid.langchain_chat_manager.time.sleep")
 @patch.object(LangChainChatManager, _STREAM_ONCE)
+@patch.object(LangChainChatManager, _CREATE_AGENT)
 def test_raises_after_max_retries_exhausted(
-    mock_stream_once, _mock_sleep, oregon_state
+    _mock_create, mock_stream_once, _mock_sleep, oregon_state
 ):
     """After _MAX_STREAM_RETRIES transient failures, the error propagates."""
     cm = LangChainChatManager()
@@ -196,7 +204,10 @@ def test_raises_after_max_retries_exhausted(
 
 
 @patch.object(LangChainChatManager, _STREAM_ONCE)
-def test_non_retryable_exception_propagates_immediately(mock_stream_once, oregon_state):
+@patch.object(LangChainChatManager, _CREATE_AGENT)
+def test_non_retryable_exception_propagates_immediately(
+    _mock_create, mock_stream_once, oregon_state
+):
     """ValueError and similar errors are not caught and don't trigger a retry."""
     mock_stream_once.side_effect = ValueError("bad input")
     cm = LangChainChatManager()
@@ -211,7 +222,10 @@ def test_non_retryable_exception_propagates_immediately(mock_stream_once, oregon
 
 @patch("tenantfirstaid.langchain_chat_manager.time.sleep")
 @patch.object(LangChainChatManager, _STREAM_ONCE)
-def test_retry_restores_messages(mock_stream_once, _mock_sleep, oregon_state):
+@patch.object(LangChainChatManager, _CREATE_AGENT)
+def test_retry_restores_messages(
+    _mock_create, mock_stream_once, _mock_sleep, oregon_state
+):
     """Message list is restored to its pre-attempt state before each retry."""
     original: list = [{"role": "human", "content": "Help"}]
     msgs: list = list(original)
@@ -227,7 +241,10 @@ def test_retry_restores_messages(mock_stream_once, _mock_sleep, oregon_state):
 
 
 @patch.object(LangChainChatManager, _STREAM_ONCE)
-def test_all_transient_error_types_trigger_retry(mock_stream_once, oregon_state):
+@patch.object(LangChainChatManager, _CREATE_AGENT)
+def test_all_transient_error_types_trigger_retry(
+    _mock_create, mock_stream_once, oregon_state
+):
     """httpcore.ReadError, httpx.ReadError, and ConnectionError all retry."""
     for exc_type in (httpcore.ReadError, httpx.ReadError, ConnectionError):
         mock_stream_once.side_effect = [exc_type("reset"), _good_stream()]
