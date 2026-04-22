@@ -8,13 +8,9 @@ from tenantfirstaid.location import OregonCity, UsaState
 
 
 @pytest.fixture(autouse=True)
-def _no_eval_history_writes(request):
-    """Prevent tests from writing to the real eval_history directory.
-
-    Skipped for test_eval_history.py, which tests those functions directly
-    and manages its own HISTORY_DIR isolation via tmp_path patches.
-    """
-    if request.fspath.basename == "test_eval_history.py":
+def _no_eval_history_writes(request: pytest.FixtureRequest):
+    """Prevent tests from writing to the real eval_history directory."""
+    if request.node.get_closest_marker("allow_eval_history_writes"):
         yield
         return
     with (

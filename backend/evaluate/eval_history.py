@@ -322,26 +322,19 @@ def append_section(log_path: Path, section: str, content: str) -> None:
     """
     text = log_path.read_text(encoding="utf-8")
     placeholder = "_(to be filled by /analyze-experiment)_"
-    # Replace only within the named section to avoid clobbering other sections.
-    section_header = f"## {section}"
-    idx = text.find(section_header)
-    if idx == -1:
-        # Section missing — append it.
+
+    pattern = re.compile(
+        rf"^(## {re.escape(section)}\n\n)(.*?)(?=\n## |\Z)",
+        re.MULTILINE | re.DOTALL,
+    )
+    match = pattern.search(text)
+    if match is None:
         text = text.rstrip() + f"\n\n## {section}\n\n{content}\n"
     else:
-        block_start = idx + len(section_header)
-        # Find the next ## heading or end of file.
-        next_section = text.find("\n## ", block_start)
-        block = (
-            text[block_start:next_section] if next_section != -1 else text[block_start:]
-        )
-        new_block = block.replace(placeholder, content, 1)
-        if new_block == block:
-            # Placeholder already replaced — append instead of duplicating.
-            new_block = block.rstrip() + f"\n\n{content}\n"
-        text = (
-            text[:block_start]
-            + new_block
-            + (text[next_section:] if next_section != -1 else "")
-        )
+        header, body = match.group(1), match.group(2)
+        if placeholder in body:
+            new_body = body.replace(placeholder, content, 1)
+        else:
+            new_body = body.rstrip() + f"\n\n{content}\n"
+        text = text[: match.start()] + header + new_body + text[match.end() :]
     log_path.write_text(text, encoding="utf-8")
