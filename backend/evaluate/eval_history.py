@@ -79,22 +79,6 @@ def _git_state() -> dict[str, str | bool]:
     }
 
 
-def _is_ancestor(commit: str) -> bool:
-    """Return True if commit is an ancestor of the current HEAD."""
-    if not commit:
-        return False
-    try:
-        subprocess.check_call(
-            ["git", "merge-base", "--is-ancestor", commit, "HEAD"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            cwd=HISTORY_DIR.parent,
-        )
-        return True
-    except subprocess.CalledProcessError:
-        return False
-
-
 def _head_ancestor_commits() -> frozenset[str]:
     """Return all commit SHAs reachable from HEAD in a single git call.
 
@@ -332,7 +316,7 @@ def find_entry(experiment_name: str) -> Optional[Path]:
     if not HISTORY_DIR.exists():
         return None
     slug = _sanitize(experiment_name)
-    matches = sorted(HISTORY_DIR.glob(f"*-{slug}.md"), reverse=True)
+    matches = sorted(HISTORY_DIR.glob(f"*T??????Z-{slug}.md"), reverse=True)
     return matches[0] if matches else None
 
 

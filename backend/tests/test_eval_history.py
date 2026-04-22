@@ -1,6 +1,5 @@
 """Tests for evaluate/eval_history.py."""
 
-import subprocess
 from pathlib import Path
 from unittest.mock import patch
 
@@ -8,7 +7,6 @@ import pytest
 
 from evaluate.eval_history import (
     _capture_env,
-    _is_ancestor,
     _results_table,
     _sanitize,
     append_section,
@@ -406,24 +404,3 @@ def test_find_baseline_falls_back_to_any_entry(tmp_path):
         result = find_baseline()
 
     assert result == entry
-
-
-# ── _is_ancestor ───────────────────────────────────────────────────────────────
-
-
-def test_is_ancestor_returns_false_for_empty_commit():
-    assert _is_ancestor("") is False
-
-
-def test_is_ancestor_returns_true_for_head():
-    # HEAD is always its own ancestor via merge-base.
-    result = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        capture_output=True,
-        text=True,
-        cwd=Path(__file__).parent.parent,
-    )
-    if result.returncode != 0:
-        pytest.skip("git not available or not in a git repo")
-    head = result.stdout.strip()
-    assert _is_ancestor(head) is True

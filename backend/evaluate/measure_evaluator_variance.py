@@ -71,20 +71,25 @@ def _fetch_runs_and_examples(
 
 def _fetch_stored_scores(
     client: Client,
-    runs: List[Any],
+    probed_runs: Dict[str, List[Any]],
     evaluator_keys: List[str],
-) -> Dict[str, List[float]]:
-    """Return stored feedback scores keyed by evaluator name.
+) -> Dict[str, Dict[str, List[float]]]:
+    """Return stored feedback scores keyed by eid then evaluator name.
 
-    Fetches feedback for all runs in a single batch and filters to the
-    requested evaluator feedback keys. Only scores (not comments) are included.
+    Issues a single list_feedback call across all runs and partitions results
+    by example id. Only scores (not comments) are included.
     """
-    run_ids = [str(r.id) for r in runs]
-    scores: Dict[str, List[float]] = defaultdict(list)
-    for feedback in client.list_feedback(run_ids=run_ids):
-        if feedback.key in evaluator_keys and feedback.score is not None:
-            scores[feedback.key].append(float(feedback.score))
-    return dict(scores)
+    run_id_to_eid = {
+        str(run.id): eid for eid, runs in probed_runs.items() for run in runs
+    }
+    scores: Dict[str, Dict[str, List[float]]] = {
+        eid: defaultdict(list) for eid in probed_runs
+    }
+    for feedback in client.list_feedback(run_ids=list(run_id_to_eid)):
+        eid = run_id_to_eid.get(str(feedback.run_id))
+        if eid and feedback.key in evaluator_keys and feedback.score is not None:
+            scores[eid][feedback.key].append(float(feedback.score))
+    return {eid: dict(v) for eid, v in scores.items()}
 
 
 def _evaluate_once(
@@ -192,28 +197,26 @@ def measure_evaluator_variance(
         f"Will make {total_evals} evaluator calls ({total_runs} runs × {k} repeats × {len(evaluators)} evaluators)."
     )
 
+    # Slice runs once so both the task-building and assembly loops use the same lists.
+    probed_runs: Dict[str, List[Any]] = {
+        eid: (runs[:runs_per_scenario] if runs_per_scenario is not None else runs)
+        for eid, runs in runs_by_example.items()
+    }
+
     # Optionally fetch stored scores from the experiment for delta display.
     # stored_scores[eid][eval_name] = [score, ...]
     stored_scores: Dict[str, Dict[str, List[float]]] = {}
     if show_delta:
         print("Fetching stored feedback scores for delta comparison...")
-        for eid, runs in runs_by_example.items():
-            probe_runs = runs[:runs_per_scenario] if runs_per_scenario else runs
-            stored_scores[eid] = _fetch_stored_scores(
-                client, probe_runs, list(evaluators.keys())
-            )
+        stored_scores = _fetch_stored_scores(
+            client, probed_runs, list(evaluators.keys())
+        )
 
     # Re-evaluate each run k times and collect per-scenario scores.
     # Build a flat list of tasks and submit them all to a thread pool for concurrency.
     scenarios: List[ScenarioResult] = []
     # results[eid][eval_name][run_idx][repeat] = score
     all_results: Dict[str, Dict[str, Dict[int, Dict[int, Optional[float]]]]] = {}
-
-    # Slice runs once so both the task-building and assembly loops use the same lists.
-    probed_runs: Dict[str, List[Any]] = {
-        eid: (runs[:runs_per_scenario] if runs_per_scenario is not None else runs)
-        for eid, runs in runs_by_example.items()
-    }
 
     tasks = []
     for eid, runs in probed_runs.items():
