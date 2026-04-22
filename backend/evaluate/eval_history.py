@@ -16,6 +16,7 @@ parse_frontmatter(path) -> dict — extracts key: value pairs from YAML frontmat
 append_section(path, section, content) — replaces placeholder or appends content
 """
 
+import logging
 import os
 import re
 import statistics
@@ -28,6 +29,7 @@ from typing import Optional
 from evaluate.results_display import ScenarioResult
 
 HISTORY_DIR = Path(__file__).parent.parent / ".eval_history"
+_logger = logging.getLogger(__name__)
 
 # Non-sensitive env var names and prefixes to capture.
 _ENV_EXACT = {
@@ -35,6 +37,7 @@ _ENV_EXACT = {
     "GOOGLE_CLOUD_PROJECT",
     "GOOGLE_CLOUD_LOCATION",
     "SHOW_MODEL_THINKING",
+    "LANGSMITH_PROJECT",
 }
 _ENV_PREFIXES = ("VERTEX_AI_DATASTORE",)
 
@@ -92,6 +95,23 @@ def _is_ancestor(commit: str) -> bool:
         return False
 
 
+def _head_ancestor_commits() -> frozenset[str]:
+    """Return all commit SHAs reachable from HEAD in a single git call.
+
+    Used by find_baseline() to avoid one subprocess per history entry.
+    """
+    try:
+        out = subprocess.check_output(
+            ["git", "log", "--format=%H"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+            cwd=HISTORY_DIR.parent,
+        ).strip()
+        return frozenset(out.splitlines()) if out else frozenset()
+    except subprocess.CalledProcessError:
+        return frozenset()
+
+
 def _sanitize(name: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_-]", "-", name)[:80]
 
@@ -133,8 +153,8 @@ def _write_entry(
     path: Path,
     experiment_name: str,
     entry_type: str,
-    git: dict,
-    env: dict,
+    git: dict[str, str | bool],
+    env: dict[str, str],
     cmdline: str,
     extra_frontmatter: list[str],
     scenarios: list[ScenarioResult],
@@ -282,6 +302,7 @@ def find_baseline() -> Optional[Path]:
     if not entries:
         return None
 
+    ancestors = _head_ancestor_commits()
     tiers: list[list[Path]] = [[], [], [], []]
     for path in entries:
         fm = parse_frontmatter(path)
@@ -290,7 +311,7 @@ def find_baseline() -> Optional[Path]:
         dirty = fm.get("git_dirty", "true").lower() == "true"
         commit = fm.get("git_commit", "")
         branch = fm.get("git_branch", "")
-        is_ancestor = _is_ancestor(commit)
+        is_ancestor = bool(commit) and commit in ancestors
 
         tiers[3].append(path)
         if not dirty:
