@@ -201,17 +201,19 @@ def measure_evaluator_variance(
             )
 
     # Re-evaluate each run k times and collect per-scenario scores.
-    # Build a flat list of (eid, run_idx, run, eval_name, repeat) tasks and
-    # submit them all to a thread pool for concurrency.
+    # Build a flat list of tasks and submit them all to a thread pool for concurrency.
     scenarios: List[ScenarioResult] = []
     # results[eid][eval_name][run_idx][repeat] = score
     all_results: Dict[str, Dict[str, Dict[int, Dict[int, Optional[float]]]]] = {}
 
+    # Slice runs once so both the task-building and assembly loops use the same lists.
+    probed_runs: Dict[str, List[Any]] = {
+        eid: (runs[:runs_per_scenario] if runs_per_scenario is not None else runs)
+        for eid, runs in runs_by_example.items()
+    }
+
     tasks = []
-    for eid in runs_by_example:
-        runs = runs_by_example[eid]
-        if runs_per_scenario is not None:
-            runs = runs[:runs_per_scenario]
+    for eid, runs in probed_runs.items():
         example = examples_by_id[eid]
         ref_outputs = example.outputs or {}
         all_results[eid] = {
@@ -257,10 +259,8 @@ def measure_evaluator_variance(
                 print(f"  {completed}/{total_tasks} done...", flush=True)
 
     # Assemble per-scenario results and print σ breakdown.
-    for eid in sorted(runs_by_example, key=lambda e: scenario_ids.get(e, 0)):
-        runs = runs_by_example[eid]
-        if runs_per_scenario is not None:
-            runs = runs[:runs_per_scenario]
+    for eid in sorted(probed_runs, key=lambda e: scenario_ids.get(e, 0)):
+        runs = probed_runs[eid]
         sid = scenario_ids.get(eid, 0)
         query = queries.get(eid, "")
         label = f'"{query[:68]}{"..." if len(query) > 68 else ""}"'
