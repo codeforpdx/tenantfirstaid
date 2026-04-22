@@ -341,7 +341,10 @@ def test_find_baseline_prefers_clean_main_ancestor(tmp_path):
 
     with (
         patch("evaluate.eval_history.HISTORY_DIR", tmp_path),
-        patch("evaluate.eval_history._is_ancestor", return_value=True),
+        patch(
+            "evaluate.eval_history._head_ancestor_commits",
+            return_value=frozenset(["abc"]),
+        ),
     ):
         result = find_baseline()
 
@@ -357,7 +360,10 @@ def test_find_baseline_falls_back_to_clean_ancestor(tmp_path):
 
     with (
         patch("evaluate.eval_history.HISTORY_DIR", tmp_path),
-        patch("evaluate.eval_history._is_ancestor", return_value=True),
+        patch(
+            "evaluate.eval_history._head_ancestor_commits",
+            return_value=frozenset(["abc"]),
+        ),
     ):
         result = find_baseline()
 
@@ -379,7 +385,10 @@ def test_find_baseline_skips_variance_entries(tmp_path):
 
     with (
         patch("evaluate.eval_history.HISTORY_DIR", tmp_path),
-        patch("evaluate.eval_history._is_ancestor", return_value=True),
+        patch(
+            "evaluate.eval_history._head_ancestor_commits",
+            return_value=frozenset(["abc"]),
+        ),
     ):
         result = find_baseline()
 
@@ -392,7 +401,7 @@ def test_find_baseline_falls_back_to_any_entry(tmp_path):
 
     with (
         patch("evaluate.eval_history.HISTORY_DIR", tmp_path),
-        patch("evaluate.eval_history._is_ancestor", return_value=False),
+        patch("evaluate.eval_history._head_ancestor_commits", return_value=frozenset()),
     ):
         result = find_baseline()
 
@@ -414,6 +423,7 @@ def test_is_ancestor_returns_true_for_head():
         text=True,
         cwd=Path(__file__).parent.parent,
     )
-    if result.returncode == 0:
-        head = result.stdout.strip()
-        assert _is_ancestor(head) is True
+    if result.returncode != 0:
+        pytest.skip("git not available or not in a git repo")
+    head = result.stdout.strip()
+    assert _is_ancestor(head) is True

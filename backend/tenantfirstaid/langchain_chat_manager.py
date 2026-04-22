@@ -127,10 +127,14 @@ class LangChainChatManager:
                 )
                 time.sleep(self._RETRY_DELAY_SECONDS)
             try:
-                yield from self.__stream_once(messages, city, state, config)
+                yielded_any = False
+                for chunk in self.__stream_once(messages, city, state, config):
+                    yielded_any = True
+                    yield chunk
                 return
-            except (httpcore.ReadError, httpx.ReadError, ConnectionError, OSError):
-                if attempt >= self._MAX_STREAM_RETRIES:
+            except (httpcore.ReadError, httpx.ReadError, ConnectionError):
+                # Don't retry after partial output — the client would receive duplicates.
+                if attempt >= self._MAX_STREAM_RETRIES or yielded_any:
                     raise
 
     def __stream_once(

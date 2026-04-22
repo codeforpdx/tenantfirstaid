@@ -37,6 +37,9 @@ from evaluate.langsmith_evaluators import (
 from evaluate.results_display import ScenarioResult, print_consistency_stats
 from tenantfirstaid.constants import LANGSMITH_API_KEY
 
+# How many progress lines to emit during the thread-pool run.
+_PROGRESS_INTERVALS = 20
+
 # All available evaluators, keyed by their feedback_key.
 _ALL_EVALUATORS = {
     "legal correctness": legal_correctness_evaluator,
@@ -252,10 +255,17 @@ def measure_evaluator_variance(
 
         for future in as_completed(future_to_task):
             eid, run_idx, eval_name, repeat = future_to_task[future]
-            score = future.result()
+            try:
+                score = future.result()
+            except Exception as exc:  # noqa: BLE001
+                print(f"  [thread error: {exc}]", flush=True)
+                score = None
             all_results[eid][eval_name][run_idx][repeat] = score
             completed += 1
-            if completed % max(1, total_tasks // 20) == 0 or completed == total_tasks:
+            if (
+                completed % max(1, total_tasks // _PROGRESS_INTERVALS) == 0
+                or completed == total_tasks
+            ):
                 print(f"  {completed}/{total_tasks} done...", flush=True)
 
     # Assemble per-scenario results and print σ breakdown.
