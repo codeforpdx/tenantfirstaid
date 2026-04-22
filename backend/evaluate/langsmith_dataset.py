@@ -46,7 +46,7 @@ from langsmith import Client
 from langsmith import utils as langsmith_utils
 
 from evaluate.eval_history import (
-    HISTORY_DIR,
+    HISTORY_DIR,  # used in cmd_history_baseline for the full entry listing
     append_section,
     find_baseline,
     find_entry,
