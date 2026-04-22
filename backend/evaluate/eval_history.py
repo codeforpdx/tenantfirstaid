@@ -296,7 +296,7 @@ def find_baseline() -> Optional[Path]:
         return None
 
     entries = sorted(
-        (p for p in HISTORY_DIR.glob("*.md") if not p.name.startswith("variance-")),
+        HISTORY_DIR.glob("*.md"),
         reverse=True,
     )
     if not entries:
