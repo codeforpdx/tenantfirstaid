@@ -27,7 +27,7 @@ from typing import Optional
 
 from evaluate.results_display import ScenarioResult
 
-HISTORY_DIR = Path(__file__).parent.parent / "eval_history"
+HISTORY_DIR = Path(__file__).parent.parent / ".eval_history"
 
 # Non-sensitive env var names and prefixes to capture.
 _ENV_EXACT = {
