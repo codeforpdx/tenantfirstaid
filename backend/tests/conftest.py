@@ -1,7 +1,29 @@
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
 import pytest
 from flask import Flask
 
 from tenantfirstaid.location import OregonCity, UsaState
+
+
+@pytest.fixture(autouse=True)
+def _no_eval_history_writes(request: pytest.FixtureRequest):
+    """Prevent tests from writing to the real eval_history directory."""
+    if request.node.get_closest_marker("allow_eval_history_writes"):
+        yield
+        return
+    with (
+        patch(
+            "evaluate.run_langsmith_evaluation.write_run_entry",
+            return_value=MagicMock(spec=Path),
+        ),
+        patch(
+            "evaluate.measure_evaluator_variance.write_variance_entry",
+            return_value=MagicMock(spec=Path),
+        ),
+    ):
+        yield
 
 
 @pytest.fixture

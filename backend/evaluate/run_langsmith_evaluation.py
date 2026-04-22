@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 from langchain_core.messages import HumanMessage
 from langsmith import Client, evaluate
 
+from evaluate.eval_history import write_run_entry
 from evaluate.langsmith_evaluators import (
     # citation_accuracy_evaluator,
     # citation_format_evaluator,
@@ -193,9 +194,22 @@ def run_evaluation(
     else:
         print("No feedback columns found.")
 
-    print_consistency_stats(_df_to_scenario_results(df, client=ls_client))
+    scenario_results = _df_to_scenario_results(df, client=ls_client)
+    print_consistency_stats(scenario_results)
 
     print(f"\nExperiment: {results.experiment_name}")
+
+    dataset_version = (
+        dataset.modified_at.isoformat() if dataset.modified_at else "unknown"
+    )
+    write_run_entry(
+        experiment_name=results.experiment_name,
+        scenarios=scenario_results,
+        dataset_name=dataset_name,
+        dataset_version=dataset_version,
+        num_repetitions=num_repetitions,
+    )
+
     return results
 
 
