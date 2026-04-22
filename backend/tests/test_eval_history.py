@@ -4,6 +4,8 @@ import subprocess
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from evaluate.eval_history import (
     _capture_env,
     _is_ancestor,
@@ -17,6 +19,9 @@ from evaluate.eval_history import (
     write_variance_entry,
 )
 from evaluate.results_display import ScenarioResult
+
+pytestmark = pytest.mark.allow_eval_history_writes
+
 
 # ── _sanitize ──────────────────────────────────────────────────────────────────
 
