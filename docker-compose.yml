@@ -1,0 +1,60 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        TYPE: dev
+    container_name: tenantfirstaid-backend-dev
+    ports:
+      # we map port 3000 on the host to avoid MacOS conflict with ControlCenter
+      - "3000:5000"
+    volumes:
+      # Mount source for hot reload
+      - ./backend/tenantfirstaid:/app/tenantfirstaid:ro
+      - ./backend/tests:/app/tests:ro
+      - ./backend/scripts:/app/scripts:ro
+      # Mount Google credentials from host
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/app/secrets/google-creds.json:ro
+    environment:
+      - ENV=dev
+      - FLASK_ENV=development
+      - SHOW_MODEL_THINKING=${SHOW_MODEL_THINKING:-true}
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
+      - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-global}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/google-creds.json
+      - VERTEX_AI_DATASTORE=${VERTEX_AI_DATASTORE}
+      - MODEL_NAME=${MODEL_NAME:-gemini-2.5-pro}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY}
+      - LANGSMITH_TRACING=${LANGSMITH_TRACING:-true}
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-true}
+    networks:
+      - tenantfirstaid
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        TYPE: dev
+    container_name: tenantfirstaid-frontend-dev
+    ports:
+      # Map port 5173 in the container to port 5173 on the host for Vite dev server
+      - "5173:5173"
+    volumes:
+      # Mount source for hot reload
+      - ./frontend/src:/app/src:ro
+      - ./frontend/public:/app/public:ro
+      - ./frontend/index.html:/app/index.html:ro
+      - ./frontend/vite.config.ts:/app/vite.config.ts:ro
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    depends_on:
+      - backend
+    networks:
+      - tenantfirstaid
+
+networks:
+  tenantfirstaid:
+    driver: bridge
