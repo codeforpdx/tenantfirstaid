@@ -175,6 +175,7 @@ def test_measure_evaluator_variance_calls_evaluator_k_times(fake_pairs):
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch("evaluate.measure_evaluator_variance.print_consistency_stats"),
+        patch("builtins.print"),
     ):
         measure_evaluator_variance("fake-experiment", k=3)
 
@@ -203,6 +204,7 @@ def test_measure_evaluator_variance_scenario_filter(fake_pairs):
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch("evaluate.measure_evaluator_variance.print_consistency_stats"),
+        patch("builtins.print"),
     ):
         # Only scenario 1 (2 runs), k=2 → 4 calls.
         measure_evaluator_variance("fake-experiment", k=2, scenario_ids_filter=[1])
@@ -224,6 +226,7 @@ def test_measure_evaluator_variance_runs_per_scenario_limit(fake_pairs):
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch("evaluate.measure_evaluator_variance.print_consistency_stats"),
+        patch("builtins.print"),
     ):
         # 2 scenarios × 1 run × k=2 = 4 calls.
         measure_evaluator_variance("fake-experiment", k=2, runs_per_scenario=1)
@@ -257,3 +260,92 @@ def test_measure_evaluator_variance_no_matching_scenario_prints_message(
         measure_evaluator_variance("fake-experiment", scenario_ids_filter=[99])
 
     assert "No runs found" in capsys.readouterr().out
+
+
+# ── concurrent evaluation (#10) ───────────────────────────────────────────────
+
+
+def test_measure_evaluator_variance_results_collected_from_threads(fake_pairs):
+    """All futures complete and scores are aggregated correctly under concurrency."""
+    original_evaluator = MagicMock(side_effect=lambda **kw: {"score": 0.75})
+
+    with (
+        patch(
+            "evaluate.measure_evaluator_variance._fetch_runs_and_examples",
+            return_value=fake_pairs,
+        ),
+        patch(
+            "evaluate.measure_evaluator_variance._ALL_EVALUATORS",
+            {"legal correctness": original_evaluator},
+        ),
+        patch("evaluate.measure_evaluator_variance.Client"),
+        patch(
+            "evaluate.measure_evaluator_variance.print_consistency_stats"
+        ) as mock_stats,
+        patch("builtins.print"),
+    ):
+        measure_evaluator_variance("fake-experiment", k=2, max_workers=4)
+
+    mock_stats.assert_called_once()
+    scenarios = mock_stats.call_args[0][0]
+    assert len(scenarios) == 2
+    for s in scenarios:
+        flat = s.scores.get("legal correctness", [])
+        assert all(v == pytest.approx(0.75) for v in flat)
+
+
+def test_measure_evaluator_variance_thread_error_does_not_abort(fake_pairs):
+    """An exception inside a worker thread is caught; the run still completes."""
+    call_count = 0
+
+    def flaky_evaluator(**kw):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 2:
+            raise RuntimeError("simulated thread failure")
+        return {"score": 1.0}
+
+    with (
+        patch(
+            "evaluate.measure_evaluator_variance._fetch_runs_and_examples",
+            return_value=fake_pairs,
+        ),
+        patch(
+            "evaluate.measure_evaluator_variance._ALL_EVALUATORS",
+            {"legal correctness": flaky_evaluator},
+        ),
+        patch("evaluate.measure_evaluator_variance.Client"),
+        patch("evaluate.measure_evaluator_variance.print_consistency_stats"),
+        patch("builtins.print"),
+    ):
+        # Should not raise despite one worker throwing.
+        measure_evaluator_variance("fake-experiment", k=2, max_workers=2)
+
+
+# ── write_variance_entry called (#11) ─────────────────────────────────────────
+
+
+def test_measure_evaluator_variance_calls_write_variance_entry(fake_pairs):
+    """write_variance_entry is called once with the correct experiment name and k."""
+    mock_evaluator = MagicMock(return_value={"score": 1.0})
+    with (
+        patch(
+            "evaluate.measure_evaluator_variance._fetch_runs_and_examples",
+            return_value=fake_pairs,
+        ),
+        patch(
+            "evaluate.measure_evaluator_variance._ALL_EVALUATORS",
+            {"legal correctness": mock_evaluator},
+        ),
+        patch("evaluate.measure_evaluator_variance.Client"),
+        patch("evaluate.measure_evaluator_variance.print_consistency_stats"),
+        patch("builtins.print"),
+        patch("evaluate.measure_evaluator_variance.write_variance_entry") as mock_write,
+    ):
+        measure_evaluator_variance("fake-experiment", k=3)
+
+    mock_write.assert_called_once()
+    _, kwargs = mock_write.call_args
+    assert kwargs["experiment_name"] == "fake-experiment"
+    assert kwargs["k"] == 3
+    assert len(kwargs["scenarios"]) == 2
