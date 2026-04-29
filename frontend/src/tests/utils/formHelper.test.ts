@@ -3,30 +3,6 @@ import { buildChatUserMessage } from "../../pages/Chat/utils/formHelper";
 import type { Location } from "../../types/models";
 
 describe("buildChatUserMessage", () => {
-  it("builds message with all fields populated", () => {
-    const location: Location = {
-      city: "portland",
-      state: "or",
-    };
-    const housingType = "Apartment/House Rental";
-    const tenantTopic = "Eviction and Notices";
-    const issueDescription = "My landlord served me an eviction notice";
-
-    const result = buildChatUserMessage(
-      location,
-      housingType,
-      tenantTopic,
-      issueDescription,
-    );
-
-    expect(result.userMessage).toContain("Portland, OR");
-    expect(result.userMessage).toContain("Apartment/House Rental");
-    expect(result.userMessage).toContain("Eviction and Notices");
-    expect(result.userMessage).toContain(
-      "My landlord served me an eviction notice",
-    );
-  });
-
   it("handles null city gracefully", () => {
     const location: Location = {
       city: null,

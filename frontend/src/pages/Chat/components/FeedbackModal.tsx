@@ -65,7 +65,7 @@ export default function FeedbackModal({ messages, setOpenFeedback }: Props) {
             border border-green-medium hover:border-green-dark
             hover:bg-green-light`}
           onClick={() => {
-            if (feedback.trim() === "") handleModalClose();
+            if (feedback.trim() === "") return handleModalClose();
             setStatus("sending");
             setTimeout(() => {
               sendFeedback(messages, feedback, emailsToCC, wordsToRedact);

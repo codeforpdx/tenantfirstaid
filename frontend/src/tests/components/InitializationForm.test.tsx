@@ -166,12 +166,9 @@ describe("InitializationForm", () => {
 
     // Changes styling for generate button when other is selected
     await waitFor(() => {
-      const genButton = screen.queryByRole("link", {
-        name: "generate letter",
-      });
-      if (genButton) {
-        expect(genButton).toHaveClass("opacity-50");
-      }
+      expect(screen.getByRole("link", { name: "generate letter" })).toHaveClass(
+        "opacity-50",
+      );
     });
   });
 
