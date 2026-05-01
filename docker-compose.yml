@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: ${RUNTIME_TARGET:-runtime}
+    image: tenantfirstaid-backend:${RUNTIME_TARGET:-runtime}
+    ports:
+      - "5001:5001"
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      target: ${FRONTEND_TARGET:-local}
+    image: tenantfirstaid-frontend:${FRONTEND_TARGET:-local}
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_PROXY_TARGET=http://backend:5001
+    depends_on:
+      - backend
+    restart: unless-stopped

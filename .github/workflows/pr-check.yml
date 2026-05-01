@@ -77,13 +77,13 @@ jobs:
         run: uv sync --dev
 
       - name: Run formatter checks
-        run: uv run ruff format --check
+        run: uv run poe format-check
 
       - name: Run lint checks
-        run: uv run ruff check
+        run: uv run poe lint-check
 
       - name: Run type checks
-        run: uv run ty check
+        run: uv run poe type-check
 
       - name: Authenticate with Google Cloud (when not from a forked repo)
         if: env.PR_FROM_FORK != 'true'
@@ -105,11 +105,11 @@ jobs:
 
       # NOTE: tests require GOOGLE_* env vars to be set from one of the above steps
       - name: Run tests that mock services that require repo secrets
-        run: uv run pytest -v -s -m "not require_repo_secrets" --cov --cov-report term-missing
+        run: uv run poe test-only-without-secrets
 
       - name: Run additional tests that require repo secrets
         if: env.PR_FROM_FORK != 'true'
-        run: uv run pytest -v -s -m "require_repo_secrets" --cov --cov-append --cov-report term-missing
+        run: uv run poe test-only-with-secrets
 
   frontend-build:
     runs-on: ubuntu-latest

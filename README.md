@@ -164,6 +164,67 @@ Live at https://tenantfirstaid.com/
      % npm run test -- --run
      ```
 
+### Docker (simple usage)
+
+The project has separate Dockerfiles for backend and frontend, each with multiple build stages.
+
+#### Stage examples
+
+Use `--target` to pick a stage from a Dockerfile:
+
+```sh
+# backend runtime image
+docker build -f backend/Dockerfile --target runtime -t tenantfirstaid-backend:runtime backend
+
+# frontend local/dev image
+docker build -f frontend/Dockerfile --target local -t tenantfirstaid-frontend:local .
+```
+
+#### Important targets
+
+Build backend runtime (serves API):
+
+```sh
+docker build -f backend/Dockerfile --target runtime -t tenantfirstaid-backend:runtime backend
+```
+
+Build frontend local (dev server):
+
+```sh
+docker build -f frontend/Dockerfile --target local -t tenantfirstaid-frontend:local .
+```
+
+Build frontend production (serves built static app):
+
+```sh
+docker build -f frontend/Dockerfile --target production -t tenantfirstaid-frontend:production .
+```
+
+#### Docker Compose (quick start)
+
+`docker-compose.yml` starts both services together:
+
+```sh
+docker compose up --build
+```
+
+By default, compose uses:
+
+- backend target: `runtime`
+- frontend target: `local`
+
+Override targets at runtime:
+
+```sh
+RUNTIME_TARGET=ci FRONTEND_TARGET=ci docker compose up --build
+```
+
+Stop services:
+
+```sh
+docker compose down
+```
+
 ## Contributing
 
 We currently have regular project meetups: https://www.meetup.com/codepdx/ . Also check out https://www.codepdx.org/ to find our Discord server.

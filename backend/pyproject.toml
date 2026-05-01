@@ -52,6 +52,7 @@ dev = [
     "types-jsonschema>=4.26.0.20260202",
     "langgraph-cli[inmem]>=0.4.15",
     "hypothesis>=6.151.9",
+    "poethepoet>=0.44.0",
 ]
 
 [tool.ruff.lint]
@@ -75,3 +76,18 @@ branch = true
 [tool.coverage.report]
 fail_under = 80
 show_missing = true
+
+[tool.poe.tasks]
+# --- formatting / linting ---
+format = "ruff format ."
+format-check = "ruff format --check ."
+lint-check = "ruff check ."
+type-check = "ty check ."
+
+# --- tests ---
+test-only-without-secrets = "pytest --verbose --capture=no -m 'not require_repo_secrets' --cov --cov-report term-missing"
+test-only-with-secrets = "pytest --verbose --capture=no -m 'require_repo_secrets' --cov-append --cov-report term-missing"
+
+# --- grouped tasks ---
+ci = ["format-check", "lint-check", "type-check", "test-only-without-secrets"]
+fix = ["format", "lint-check"]
