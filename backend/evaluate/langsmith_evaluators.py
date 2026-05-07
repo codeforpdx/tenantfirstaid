@@ -13,9 +13,15 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, Final
 
+from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from openevals import create_llm_as_judge
 from openevals.types import SimpleEvaluator
+
+BACKEND_DIR: Final = Path(__file__).parents[1]
+# Load backend/.env before constructing the Vertex AI judge so local eval runs
+# do not depend on callers exporting the repo's environment manually.
+load_dotenv(BACKEND_DIR / ".env", override=True)
 
 # NOTE: can (should?) use different models for chatbot LLM & evaluator
 EVALUATOR_MODEL_NAME: Final = "gemini-3-flash-preview"
