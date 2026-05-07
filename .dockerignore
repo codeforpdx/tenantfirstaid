@@ -1,0 +1,29 @@
+.git
+.github
+.claude
+.gitignore
+
+# Python artifacts
+**/__pycache__
+**/*.py[cod]
+**/*.egg-info/
+**/.venv
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.coverage
+**/htmlcov/
+
+# Frontend artifacts
+**/node_modules
+frontend/dist/
+frontend/coverage/
+
+# Secrets
+**/.env
+**/.env.*
+
+# Docs and config not needed at build time
+docs/
+*.md
+docker-compose*.yml

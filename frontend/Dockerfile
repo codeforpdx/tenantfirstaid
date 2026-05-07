@@ -1,13 +1,17 @@
-FROM node:22-bookworm-slim AS base
+ARG PORT=5173
+
+# -----------------------------------------------
+# base: install deps and copy source
+# -----------------------------------------------
+FROM node:24-bookworm-slim@sha256:03eae3ef7e88a9de535496fb488d67e02b9d96a063a8967bae657744ecd513f2 AS base
 
 WORKDIR /workspace/frontend
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl ca-certificates python3 \
+    && apt-get install -y --no-install-recommends python3 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && ln -s /root/.local/bin/uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:latest@sha256:798712e57f879c5393777cbda2bb309b29fcdeb0532129d4b1c3125c5385975a /uv /usr/local/bin/uv
 
 COPY frontend/package*.json ./
 RUN npm ci
@@ -15,28 +19,49 @@ RUN npm ci
 COPY frontend/ ./
 COPY backend/ ../backend/
 
+# -----------------------------------------------
+# local: dev server for local development
+# -----------------------------------------------
 FROM base AS local
 
-EXPOSE 5173
+ARG PORT
+ENV PORT=${PORT}
 
-CMD ["sh", "-c", "npm run generate-types && npm run dev -- --host 0.0.0.0 --port 5173"]
+EXPOSE ${PORT}
 
+CMD ["sh", "-c", "npm run generate-types && npm run dev -- --host 0.0.0.0 --port ${PORT}"]
+
+# -----------------------------------------------
+# ci: run all checks and build
+# -----------------------------------------------
 FROM base AS ci
 
 CMD ["sh", "-c", "npm run generate-types && npm run typecheck && npm run lint && npm run test -- --run && npm run build"]
 
+# -----------------------------------------------
+# production-build: compile static assets
+# -----------------------------------------------
 FROM base AS production-build
 
 RUN npm run generate-types && npm run build
 
-FROM node:22-bookworm-slim AS production
+# -----------------------------------------------
+# production: minimal image to serve static files
+# -----------------------------------------------
+FROM node:22-bookworm-slim@sha256:d415caac2f1f77b98caaf9415c5f807e14bc8d7bdea62561ea2fef4fbd08a73c AS production
+
+ARG PORT
+ENV PORT=${PORT}
 
 WORKDIR /app
 
 COPY --from=production-build /workspace/frontend/dist ./dist
 
-RUN npm install -g serve@14
+RUN npm install -g --ignore-scripts serve@14 \
+    && useradd --system --no-create-home appuser \
+    && chown -R appuser /app
+USER appuser
 
-EXPOSE 5173
+EXPOSE ${PORT}
 
-CMD ["serve", "-s", "dist", "-l", "5173"]
+CMD ["sh", "-c", "serve -s dist -l ${PORT}"]

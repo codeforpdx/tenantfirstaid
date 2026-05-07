@@ -4,11 +4,19 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: ${RUNTIME_TARGET:-runtime}
+      args:
+        PORT: ${BACKEND_PORT:-5001}
     image: tenantfirstaid-backend:${RUNTIME_TARGET:-runtime}
     ports:
-      - "5001:5001"
+      - "${BACKEND_PORT:-5001}:${BACKEND_PORT:-5001}"
     env_file:
       - ./backend/.env
+    environment:
+      # Override the host path from env_file with the container-internal path.
+      # The host file is mounted as a read-only volume below.
+      - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/gcp-credentials.json
+    volumes:
+      - ${GCP_CREDENTIALS_FILE}:/run/secrets/gcp-credentials.json:ro
     restart: unless-stopped
 
   frontend:
@@ -16,11 +24,13 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
       target: ${FRONTEND_TARGET:-local}
+      args:
+        PORT: ${FRONTEND_PORT:-5173}
     image: tenantfirstaid-frontend:${FRONTEND_TARGET:-local}
     ports:
-      - "5173:5173"
+      - "${FRONTEND_PORT:-5173}:${FRONTEND_PORT:-5173}"
     environment:
-      - VITE_API_PROXY_TARGET=http://backend:5001
+      - VITE_API_PROXY_TARGET=http://backend:${BACKEND_PORT:-5001}
     depends_on:
       - backend
     restart: unless-stopped
