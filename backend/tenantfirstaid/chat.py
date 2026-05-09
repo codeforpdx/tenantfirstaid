@@ -6,7 +6,7 @@ from typing import Any, Dict, Generator, List
 
 from flask import Response, current_app, request, stream_with_context
 from flask.views import View
-from langchain_core.messages import ContentBlock
+from langchain_core.messages import AnyMessage, ContentBlock
 
 from .langchain_chat_manager import LangChainChatManager
 from .location import OregonCity, UsaState
@@ -65,7 +65,7 @@ class ChatView(View):
 
         data: Dict[str, Any] = request.json
 
-        messages: List[Dict[str, Any]] = data["messages"]
+        messages: List[AnyMessage | Dict[str, Any]] = data["messages"]
         city: OregonCity | None = OregonCity.from_maybe_str(data["city"])
         state: UsaState = UsaState.from_maybe_str(data["state"])
 

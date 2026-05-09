@@ -114,7 +114,9 @@ class RagBuilder:
         wait=wait_exponential(multiplier=0.5, max=4),
         reraise=True,
         before_sleep=lambda rs: logger.warning(
-            "RAG search retry #%d after %s", rs.attempt_number, rs.outcome.exception()
+            "RAG search retry #%d after %s",
+            rs.attempt_number,
+            rs.outcome.exception() if rs.outcome else None,
         ),
     )
     def search(self, query: str) -> str:
