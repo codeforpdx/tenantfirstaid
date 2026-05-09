@@ -66,6 +66,9 @@ markers = [
 filterwarnings = [
     # Third-party library using deprecated Pydantic v1 API internally.
     "ignore::pydantic.warnings.PydanticDeprecatedSince20:langsmith",
+    # langgraph triggers its own pending-deprecation warning at import time;
+    # we don't construct JsonPlusSerializer ourselves.
+    "ignore:The default value of `allowed_objects` will change:langchain_core._api.deprecation.LangChainPendingDeprecationWarning",
 ]
 
 [tool.coverage.run]
