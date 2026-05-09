@@ -20,7 +20,7 @@ For the purpose of these rules, the following definitions apply:
 (1) "Abuse" means abuse as defined in OAR 411-020-0002 (Adult Protective Services).
 (2) "Activities of Daily Living (ADL)" mean those personal functional activities required by an individual for continued well-being, which are essential for health and safety. Activities include eating, dressing and grooming, bathing and personal hygiene, mobility, elimination, and cognition.
 (3) "Acuity-Based Staffing Tool (ABST)" means the tool described in ORS 443.432 or an acuity-based staffing tool adopted by a facility that meets requirements established by the Department in OAR 411-054-0037. An ABST is used by a facility to assess the acuity of each resident and determine the amount of staff time necessary to meet the 24-hour scheduled and unscheduled needs of each resident. Facilities may choose to use the ABST established by the Department, or use another Department-approved ABST.
-(4) “ABST Care Elements” means the required individual care elements that must be addressed and documented in a resident’s ABST evaluation as outlined in 411-054-0037(3).
+(4) "ABST Care Elements" means the required individual care elements that must be addressed and documented in a resident's ABST evaluation as outlined in 411-054-0037(3).
 (5) "Acute Sexual Assault" means any non-consensual or unwanted sexual contact that warrants medical treatment or forensic collection.
 (6) "Administrator" means the person who is designated by the licensee that is responsible for the daily operation and maintenance of the facility as described in OAR 411-054-0065.
 (7) "Advance Directive" means a document that contains a health care instruction or a power of attorney for health care.
@@ -57,8 +57,8 @@ For the purpose of these rules, the following definitions apply:
 (20) "Competency" means to possess specific knowledge, technical skill, and the ability to perform tasks related to the role and responsibilities of direct care staff.
 (21) "Competency Assessment" means an evaluation of knowledge, technical skill and ability to carry out care pursuant to the requirements in OAR 411-054-0070. Evaluation shall include verification and documentation of direct care staff competency through observation, written testing or verbal testing.
 (22) "Condition" means a provision attached to a new or existing license that limits or restricts the scope of the license or imposes additional requirements on the licensee.
-(23) “Consistently” means regularly and typically. This means occurring steadily and with regularity over a period of time.
-(24) “Consumer Summary” means a summary of services provided by the facility. This statement also includes a summary of services not provided. This summary is one of the documents that must be provided to potential residents before move-in.
+(23) "Consistently" means regularly and typically. This means occurring steadily and with regularity over a period of time.
+(24) "Consumer Summary" means a summary of services provided by the facility. This statement also includes a summary of services not provided. This summary is one of the documents that must be provided to potential residents before move-in.
 (25) "Conversion Facility (CF)" means a nursing facility that has followed the requirements in these rules to become a residential care facility through the conversion facility process.
 (26) "Department" means the Oregon Department of Human Services (ODHS).
 (27) "Designated Representative" means:
@@ -72,7 +72,7 @@ For the purpose of these rules, the following definitions apply:
 (29) "Direct Care Staff" means a facility employee whose primary responsibility is to provide personal care services to residents.
 (a) These personal care services may include:
 (A) Medication administration.
-(B) Individualized resident-focused activities, as outlined in a resident’s person-centered service plan.
+(B) Individualized resident-focused activities, as outlined in a resident's person-centered service plan.
 (C) Assistance with activities of daily living.
 (D) Supervision and support of residents.
 (E) Serving meals, but not meal preparation.
@@ -84,12 +84,12 @@ For the purpose of these rules, the following definitions apply:
 (34) "Entity" means an individual, a trust or estate, a partnership, a corporation (including associations, joint stock companies, and insurance companies), a state, or a political subdivision or instrumentality, including a municipal corporation of a state.
 (35) "Exception" means a written variance granted by the Department from a regulation or provision of these rules.
 (36) "Facility" means the residential care or assisted living facility licensee and the operations, policies, procedures, and employees of the residential care or assisted living facility. For purposes of HCBS, "facility" can also mean "provider".
-(37) “Gender expression” means an individual’s gender-related appearance and behavior, whether or not these are stereotypically associated with the sex the individual was assigned at birth.
-(38) “Gender identity” means an individual’s internal, deeply held knowledge or sense of the individual’s gender, regardless of physical appearance, surgical history, genitalia, legal sex, sex assigned at birth or name and sex as it appears in medical records or as it is described by any other individual, including a family member, conservator or legal representative of the individual. An individual’s gender identity is the last gender identity expressed by an individual who lacks the present ability to communicate.
-(39) “Gender nonconforming” means having a gender expression that does not conform to stereotypical expectations of one’s gender.
-(40) “Gender transition” means a process by which an individual begins to live according to that individual’s gender identity rather than the sex the person was assigned at birth. The process may or may not include changing the individual’s clothing, appearance, name or identification documents or undergoing medical treatments.
-(41) “Harass” or “harassment” means to act in a manner that is unwanted, unwelcomed or uninvited, or that demeans, threatens or offends a resident.
-(a) This includes bullying, denigrating or threatening a resident based on a resident’s actual or perceived status as a member of one of the protected classes in Oregon, as provided:
+(37) "Gender expression" means an individual's gender-related appearance and behavior, whether or not these are stereotypically associated with the sex the individual was assigned at birth.
+(38) "Gender identity" means an individual's internal, deeply held knowledge or sense of the individual's gender, regardless of physical appearance, surgical history, genitalia, legal sex, sex assigned at birth or name and sex as it appears in medical records or as it is described by any other individual, including a family member, conservator or legal representative of the individual. An individual's gender identity is the last gender identity expressed by an individual who lacks the present ability to communicate.
+(39) "Gender nonconforming" means having a gender expression that does not conform to stereotypical expectations of one's gender.
+(40) "Gender transition" means a process by which an individual begins to live according to that individual's gender identity rather than the sex the person was assigned at birth. The process may or may not include changing the individual's clothing, appearance, name or identification documents or undergoing medical treatments.
+(41) "Harass" or "harassment" means to act in a manner that is unwanted, unwelcomed or uninvited, or that demeans, threatens or offends a resident.
+(a) This includes bullying, denigrating or threatening a resident based on a resident's actual or perceived status as a member of one of the protected classes in Oregon, as provided:
 (A) Race.
 (B) Color.
 (C) National origin.
@@ -100,11 +100,11 @@ For the purpose of these rules, the following definitions apply:
 (H) Gender identity.
 (I) Age.
 (J) Marital status.
-(b) An example of “harassment” includes, but is not limited to, requiring a resident to show identity documents in order to gain entrance to a restroom or other area of a facility that is available to other individuals of the same gender identity as the resident.
+(b) An example of "harassment" includes, but is not limited to, requiring a resident to show identity documents in order to gain entrance to a restroom or other area of a facility that is available to other individuals of the same gender identity as the resident.
 (42) "FPS" means the Facilities, Planning, and Safety Program within the Public Health Division of the Oregon Health Authority (OHA).
 (43) "HCB" means "Home and Community-Based."
 (44) "HCBS" means "Home and Community-Based Services." HCBS are services provided in the home or community of an individual. ODHS, Safety, Oversight and Quality and OHA provide oversight and license, certify, and endorse programs, settings, or settings designated as HCB.
-(45) “Health Care Facility” means a facility, as defined in ORS 442.015(12)(a), that provides acute care or a higher level of care to a resident according to OAR 411-054-0080.
+(45) "Health Care Facility" means a facility, as defined in ORS 442.015(12)(a), that provides acute care or a higher level of care to a resident according to OAR 411-054-0080.
 (46) "Homelike Environment" means a living environment that creates an atmosphere supportive of the resident's preferred lifestyle. Homelike environment is also supported by the use of residential building materials and furnishings.
 (47) "Hospice Program" means a coordinated program of home and inpatient care, available 24 hours a day, that utilizes an interdisciplinary team of personnel trained to provide palliative and supportive services to a patient-family unit experiencing a life-threatening disease with a limited medical prognosis. A hospice program is an institution for purposes of ORS 146.100.
 (48) "Immediate Jeopardy" means a situation where the failure of a residential care facility to comply with a Department rule has caused, or is likely to cause, a resident:
@@ -120,22 +120,22 @@ For the purpose of these rules, the following definitions apply:
 (54) "Informed Consent" means options, risks, and benefits have been explained to an individual, and, as applicable, the legal representative of the individual, in a manner that the individual, and, as applicable, the legal representative, comprehends.
 (55) "Individuality" means recognizing variability in residents' needs and preferences and having flexibility to organize services in response to different needs and preferences.
 (56) "Intensive Intervention Community (IIC)" means an RCF endorsed to house fewer than six socially dependent individuals or individuals with physical disabilities. The purpose of the IIC is to serve individuals with co-occurring mental, emotional, or behavioral disturbances who are more appropriately served in smaller settings.
-(57) “Involuntary Move-Out” means a move out of a resident to which the resident or the resident’s legal representative does not agree.
-(58) “Language Access” means the facility must take reasonable steps to provide meaningful language access to a resident with limited English proficiency or a resident with a disability that makes it difficult to communicate using standard English.
-(59) “LGBTQIA2S+” means lesbian, gay, bisexual, transgender, queer, intersex, asexual, Two Spirit, nonbinary or other minority gender identity or sexual orientation. These terms are defined below:
-(a) “Lesbian” means the sexual orientation of a person who is female, feminine or nonbinary and who is physically, romantically or emotionally attracted to other women. Some lesbians may prefer to identify as gay, a gay woman, queer or in other ways.
-(b) “Gay” means the sexual orientation of a person attracted to people of the same gender. Although often used as an umbrella term, it is used more specifically to describe men attracted to men.
-(c) “Bisexual” means a person who has the potential to be physically, romantically and/or emotionally attracted to people of more than one gender, not necessarily at the same time, in the same way or to the same degree.
-(d) “Transgender” means having a gender identity or gender expression that differs from the sex one was assigned at birth, regardless of whether one has undergone or is in the process of undergoing gender-affirming care. Being transgender does not imply any specific sexual orientation. Therefore, transgender people may identify as straight, gay, lesbian, bisexual, etc.
-(e) “Queer” means individuals who do not identify as exclusively straight or individual who have non-binary or gender-expansive identities and is often used as a catch-all to refer to the LGBTQIA2S+ population as a whole. This term was previously used as a slur, but has been reclaimed by many parts of the LGBTQIA2S+ movement. It can also include transgender people who identify as male or female. The term should only be used to refer to a specific person if that person self-identifies as queer.
-(f) “Intersex” means someone born with a variety of differences in their sex traits and reproductive anatomy. Intersex traits greatly vary, including differences in, but limited to, hormone production and reproductive anatomy.
-(g) “Asexual” or “Ace” means a complete or partial lack of sexual attraction or lack of interest in sexual activity with others. Asexuality exists on a spectrum, and asexual people may experience no, little or conditional sexual attraction. Many people who are asexual still identify with a specific romantic orientation.
-(h) “2S” or “Two-Spirit” means a term used within some Indigenous communities, encompassing cultural, spiritual, sexual and gender identity. The term reflects complex indigenous understandings of gender roles, spirituality, and the long history of sexual and gender diversity in Indigenous cultures. The definition and common use of the term two-spirit may vary among Tribes and Tribal communities.
-(i) The “+” means all other identities and expressions of gender, romantic and sexual orientation, including minority gender identities.
-(j) “Nonbinary” means a person who does not identify exclusively as a man or a woman. Non-binary people may identify as being both a man and a woman, somewhere in between, or as falling completely outside these categories. While many also identify as transgender, not all non-binary people do. Non-binary can also be used as an umbrella term encompassing identities such as agender, bigender, genderqueer or gender-fluid.
+(57) "Involuntary Move-Out" means a move out of a resident to which the resident or the resident's legal representative does not agree.
+(58) "Language Access" means the facility must take reasonable steps to provide meaningful language access to a resident with limited English proficiency or a resident with a disability that makes it difficult to communicate using standard English.
+(59) "LGBTQIA2S+" means lesbian, gay, bisexual, transgender, queer, intersex, asexual, Two Spirit, nonbinary or other minority gender identity or sexual orientation. These terms are defined below:
+(a) "Lesbian" means the sexual orientation of a person who is female, feminine or nonbinary and who is physically, romantically or emotionally attracted to other women. Some lesbians may prefer to identify as gay, a gay woman, queer or in other ways.
+(b) "Gay" means the sexual orientation of a person attracted to people of the same gender. Although often used as an umbrella term, it is used more specifically to describe men attracted to men.
+(c) "Bisexual" means a person who has the potential to be physically, romantically and/or emotionally attracted to people of more than one gender, not necessarily at the same time, in the same way or to the same degree.
+(d) "Transgender" means having a gender identity or gender expression that differs from the sex one was assigned at birth, regardless of whether one has undergone or is in the process of undergoing gender-affirming care. Being transgender does not imply any specific sexual orientation. Therefore, transgender people may identify as straight, gay, lesbian, bisexual, etc.
+(e) "Queer" means individuals who do not identify as exclusively straight or individual who have non-binary or gender-expansive identities and is often used as a catch-all to refer to the LGBTQIA2S+ population as a whole. This term was previously used as a slur, but has been reclaimed by many parts of the LGBTQIA2S+ movement. It can also include transgender people who identify as male or female. The term should only be used to refer to a specific person if that person self-identifies as queer.
+(f) "Intersex" means someone born with a variety of differences in their sex traits and reproductive anatomy. Intersex traits greatly vary, including differences in, but limited to, hormone production and reproductive anatomy.
+(g) "Asexual" or "Ace" means a complete or partial lack of sexual attraction or lack of interest in sexual activity with others. Asexuality exists on a spectrum, and asexual people may experience no, little or conditional sexual attraction. Many people who are asexual still identify with a specific romantic orientation.
+(h) "2S" or "Two-Spirit" means a term used within some Indigenous communities, encompassing cultural, spiritual, sexual and gender identity. The term reflects complex indigenous understandings of gender roles, spirituality, and the long history of sexual and gender diversity in Indigenous cultures. The definition and common use of the term two-spirit may vary among Tribes and Tribal communities.
+(i) The "+" means all other identities and expressions of gender, romantic and sexual orientation, including minority gender identities.
+(j) "Nonbinary" means a person who does not identify exclusively as a man or a woman. Non-binary people may identify as being both a man and a woman, somewhere in between, or as falling completely outside these categories. While many also identify as transgender, not all non-binary people do. Non-binary can also be used as an umbrella term encompassing identities such as agender, bigender, genderqueer or gender-fluid.
 (60) "Licensed Nurse" means an Oregon licensed practical or registered nurse.
 (61) "Licensee" means the entity that owns the residential care or assisted living facility business, and to whom an assisted living or residential care facility license has been issued.
-(62) “Licensing Complaint Unit (LCU)” means the Safety, Oversight and Quality staff who investigate allegations of licensing violations.
+(62) "Licensing Complaint Unit (LCU)" means the Safety, Oversight and Quality staff who investigate allegations of licensing violations.
 (63) "Legal Representative" means a person who has the legal authority to act for an individual.
 (a) The legal representative only has authority to act within the scope and limits of his or her authority as designated by the court or other agreement. Legal representatives acting outside of his or her authority or scope must meet the definition of designated representative.
 (b) For an individual 18 years of age and older, a guardian appointed by a court order or an agent legally designated as the health care representative, where the court order or the written designation provide authority for the appointed or designated person to make the decisions indicated where the term "legal representative" is used in this rule.
@@ -169,7 +169,7 @@ For the purpose of these rules, the following definitions apply:
 (a) Resident's AAA or APD case manager assigned to provide case management services or person-centered service planning for and with individuals; or
 (b) Person of the individual's choice for individuals who pay privately.
 (74) "Personal Incidental Funds (PIF)" means the monthly amount allowed each Medicaid resident for personal incidental needs. For purposes of this definition, personal incidental funds include monthly payments, as allowed, and previously accumulated resident savings.
-(75) “Preferred Language” means the chosen language of for the resident. Preferred language must be legally recognized language.
+(75) "Preferred Language" means the chosen language of for the resident. Preferred language must be legally recognized language.
 (76) "Pre-Service Training" means training that must be completed before direct care staff provide care to residents.
 (77) "Primary Care Provider" means the health care provider primarily responsible for the on-going diagnosis and treatment of the resident where they currently reside.
 (78) "Privacy" means a specific area or time over which the resident maintains a large degree of control. Privacy is supported with services that are delivered with respect for the resident's civil rights.
@@ -180,7 +180,7 @@ For the purpose of these rules, the following definitions apply:
 (b) Anti-depressant.
 (c) Anti-anxiety.
 (d) Hypnotic.
-(82) “Qualified facility staff,” for purposes of OAR 411-054-0080, means the facility nurse, administrator, or administrator’s designee.
+(82) "Qualified facility staff," for purposes of OAR 411-054-0080, means the facility nurse, administrator, or administrator's designee.
 (83) "Quality Measurement Program" means the quality metrics program, as described in OAR 411-054-0320.
 (84) "Quality Measurement Council" means a group of individuals appointed by the Governor to develop and oversee the Quality Metric Reporting Program as described in OAR 411-054-0320.
 (85) "Remodel" means a renovation or conversion of a building that requires a building permit and meets the criteria for review by the Facilities Planning and Safety Program as described in OAR 333-675-0000.
@@ -191,17 +191,17 @@ For the purpose of these rules, the following definitions apply:
 (90) "Residential Care Facility (RCF)" means a building, complex, or distinct part thereof, consisting of shared or individual living units in a homelike surrounding, where six or more seniors and adult individuals with disabilities may reside. The residential care facility offers and coordinates a range of supportive services available on a 24-hour basis to meet the activities of daily living, health, and social needs of the residents as described in these rules. A program approach is used to promote resident self-direction and participation in decisions that emphasize choice, dignity, individuality, and independence.
 (91) "Residential Care Facility Administrator (RCFA)" means an administrator of a residential care or assisted living facility, as defined in ORS 678.710 and licensed by the Oregon Health Licensing Office, according to OAR chapter 853. All individuals serving as administrators in residential care or assisted living facilities will be required to hold this license as of January 1, 2022.
 (92) "Restraint" means:
-(a) Physical restraints are any manual method, or physical or mechanical device, material, or equipment attached to or adjacent to the individual’s body that the individual cannot remove easily, which restricts freedom of movement or normal access of the individual to the individual’s body. Any manual method includes physically restraining someone by manually holding someone in place.
-(b) Chemical restraints are any substance or drug used for the purpose of discipline or convenience that has the effect of restricting the individual’s freedom of movement or behavior and is not used to treat the individual’s medical or psychiatric condition.
+(a) Physical restraints are any manual method, or physical or mechanical device, material, or equipment attached to or adjacent to the individual's body that the individual cannot remove easily, which restricts freedom of movement or normal access of the individual to the individual's body. Any manual method includes physically restraining someone by manually holding someone in place.
+(b) Chemical restraints are any substance or drug used for the purpose of discipline or convenience that has the effect of restricting the individual's freedom of movement or behavior and is not used to treat the individual's medical or psychiatric condition.
 (93) "Retaliation" means to threaten, intimidate, or take an action that is detrimental to an individual (for example, harassment, abuse, or coercion).
 (94) "Risk Agreement" means a process where a resident's high-risk behavior or choices are reviewed with the resident. Alternatives to and consequences of the behavior or choices are explained to the resident and the resident's decision to modify behavior or accept the consequences is documented.
 (95) "Service Plan" means a written, individualized plan for services, developed by a service planning team and the resident or the resident's legal representative, that reflects the resident's capabilities, choices, and if applicable, measurable goals, and managed risk issues. The service plan defines the division of responsibility in the implementation of the services.
 (96) "Service Planning Team" means two or more individuals, as set forth in OAR 411-054-0036, that assist the resident in determining what services and care are needed, preferred, and may be provided to the resident. For IICs, the term "interdisciplinary team" is synonymous with "service planning team."
 (97) "Services" mean supervision or assistance provided in support of a resident's needs, preferences, and comfort, including health care and activities of daily living, that help develop, increase, maintain, or maximize the resident's level of independent, psychosocial, and physical functioning.
-(98) “Sexual orientation” means romantic or sexual attraction, or a lack of romantic or sexual attraction, to other people.
-(99) “Staffing Assessment” means a review conducted by the Department to determine if a facility is using an acuity-based staffing tool according to administrative rule.
-(100) “Staffing Levels” means the number of staff required to provide the levels, intensity and qualifications of staff necessary to meet the scheduled and unscheduled needs of each resident 24 hours a day, seven days a week. Staffing levels are established by using an acuity-based staffing tool to determine the amount of time and expertise necessary to provide services to assist with activities of daily living and related tasks.
-(101) “Staffing Plan” means a plan outlining the staffing levels required to meet the scheduled and unscheduled needs of all residents within a facility. Staffing plans should incorporate and be consistent with the facility’s acuity-based staffing tool data.
+(98) "Sexual orientation" means romantic or sexual attraction, or a lack of romantic or sexual attraction, to other people.
+(99) "Staffing Assessment" means a review conducted by the Department to determine if a facility is using an acuity-based staffing tool according to administrative rule.
+(100) "Staffing Levels" means the number of staff required to provide the levels, intensity and qualifications of staff necessary to meet the scheduled and unscheduled needs of each resident 24 hours a day, seven days a week. Staffing levels are established by using an acuity-based staffing tool to determine the amount of time and expertise necessary to provide services to assist with activities of daily living and related tasks.
+(101) "Staffing Plan" means a plan outlining the staffing levels required to meet the scheduled and unscheduled needs of all residents within a facility. Staffing plans should incorporate and be consistent with the facility's acuity-based staffing tool data.
 (102) "Subject Individual" means any individual 16 years of age or older on whom the Department may conduct a background check as defined in OAR 407-007-0210 and from whom the Department may require fingerprints for the purpose of conducting a national background check.
 (a) For the purpose of these rules, subject individual includes:
 (A) All applicants, licensees, and operators of a residential care or assisted living facility.
@@ -213,13 +213,13 @@ For the purpose of these rules, the following definitions apply:
 (103) "Substantial Compliance" means a level of compliance with state law and rules of the Department such that any identified deficiencies pose a risk of no more than negligible harm to the health or safety of residents of a facility.
 (104) "Supportive Device" means a device that may have restraining qualities that supports and improves a resident's physical functioning.
 (105) "These Rules" mean the rules in OAR chapter 411, division 054.
-(106) “Transgender” means having a gender identity or gender expression that differs from the sex one was assigned at birth, regardless of whether one has undergone or is in the process of undergoing gender-affirming care. Being transgender does not imply any specific sexual orientation. Therefore, transgender people may identify as straight, gay, lesbian, bisexual, etc.
+(106) "Transgender" means having a gender identity or gender expression that differs from the sex one was assigned at birth, regardless of whether one has undergone or is in the process of undergoing gender-affirming care. Being transgender does not imply any specific sexual orientation. Therefore, transgender people may identify as straight, gay, lesbian, bisexual, etc.
 (107) "Underserved" means services are significantly unavailable within the service area in a comparable setting for:
 (a) The general public.
 (b) A specific population, for example, residents with dementia or traumatic brain injury.
 (108) "Unit" means the personal and sleeping space of an individual receiving services in an RCF or ALF setting, as agreed to in the Residency Agreement.
 (109) "Universal Worker" means a facility employee whose assignments include other tasks (for example, housekeeping, laundry, or food service) in addition to providing direct resident services. Universal worker does not include administrators, clerical or administrative staff, building maintenance staff, or licensed nurses who provide services as specified in OAR 411-054-0034.
-(110) “Voluntary Move-Out” means the facility and the resident, or resident’s legal representative, have mutually agreed the facility can no longer meet the resident’s health, behavior or care needs.
+(110) "Voluntary Move-Out" means the facility and the resident, or resident's legal representative, have mutually agreed the facility can no longer meet the resident's health, behavior or care needs.
 Statutory/Other Authority: ORS 410.070, 441.122, 443.450 & 443.738
 Statutes/Other Implemented: ORS 441.111, 443.400 - 443.455, 443.738, 443.991 & 678.710
 History:
@@ -322,7 +322,7 @@ Requirements for New Construction or Initial Licensure
 (g) An independent market analysis completed by a third-party professional that meets the requirements of section (4) of this rule.
 (4) Conversion Facility Letter of Intent. If a nursing facility licensee has elected to convert the license to a residential care facility through the conversion facility process, the licensee must submit a conversion facility "Letter of Intent" to the Department at least 90 days prior to the planned closure of the nursing facility. This letter must outline the:
 (a) Effective date of the proposed conversion; and
-(b) Licensee’s intent to follow OAR 411-085-0025(2) regarding nursing facility closure requirements.
+(b) Licensee's intent to follow OAR 411-085-0025(2) regarding nursing facility closure requirements.
 (5) MARKET ANALYSIS. The applicant must submit a current market analysis to the Department before applying for a building permit. A market analysis is not required for CFs or change of owner applicants of existing licensed buildings. The market analysis must include:
 (a) A description of the intended population to be served, including underserved populations and those eligible to receive services through the state medical assistance program, as applicable.
 (b) A current demographic overview of the area to be served.
@@ -377,7 +377,7 @@ SPD 16-2008, f. 12-31-08, cert. ef. 1-1-09
 SPD 14-2007, f. 8-31-07, cert. ef. 11-1-07
 411-054-0013
 Application for Initial Licensure and License Renewal
-(1) APPLICATION. Applicants for initial licensure and license renewal must complete the Department’s application form. A licensing fee, as described in ORS 443.415, must be submitted to the Department.
+(1) APPLICATION. Applicants for initial licensure and license renewal must complete the Department's application form. A licensing fee, as described in ORS 443.415, must be submitted to the Department.
 (a) The application form must be signed by the applicant's legally authorized representative, dated, and contain all information requested by the Department.
 (b) A licensing fee must be submitted to the Department. The initial licensing fee for a new building or recently purchased building is paid according to number of beds, as required by ORS 443.415:
 (A) For 1 to 15 beds: application fee shall be $2,000 and the biennial renewal fee shall be $1,000.
@@ -403,7 +403,7 @@ Application for Initial Licensure and License Renewal
 (a) Prior to issuance of a license or a license renewal, the applicant must demonstrate to the satisfaction of the Department that the applicant can provide services in a manner consistent with the requirements of these rules.
 (b) The Department may consider the background and qualifications of any individual with a 10 percent or more incident of ownership in the applicant when determining whether an applicant may be licensed. For those who serve the Medicaid population, the background and qualifications of any individual with a 5 percent or more incident of ownership, regardless of the individual's effect on the operation of the facility, may be considered.
 (c) The Department may consider the applicant's history of compliance with Department rules and orders including the history of compliance of any individual with a 10 percent or more incident of ownership in the applicant. For those who serve the Medicaid population, the history of compliance of the applicant and any individual with a 5 percent or more incident of ownership, regardless of the individual's effect on the operation of the facility, may be considered.
-(4) KITCHEN INSPECTION. The Department shall annually conduct an in-person inspection of each facility’s kitchen and other places where food is prepared.
+(4) KITCHEN INSPECTION. The Department shall annually conduct an in-person inspection of each facility's kitchen and other places where food is prepared.
 (a) During a year in which the facility is surveyed, the kitchen inspection shall be completed as part of the standard survey.
 (b) During a year in which a facility is not surveyed, the kitchen inspection shall require a separate visit and inspection by the Department. The fee for this separate kitchen inspection is $200.
 (c) This section (4) will not go into effect until July 1, 2022.
@@ -464,7 +464,7 @@ Change of Ownership or Management
 (d) The licensee is responsible for the operation of the facility and resident services until a new license is issued to the new owner.
 (2) A building inspection may be requested at the Department's discretion. The Department may require physical improvements if the health or safety of residents is negatively impacted.
 (3) Resident records maintained by the licensee must be turned over to the new owner when the license application is approved, and the new licensee assumes possession or control of the facility.
-(4) The new owner or licensee shall send a revised copy of the Consumer Summary Statement to the Department prior to a change of ownership or management. The revised copy must include new ownership or management information and any other amendments to the document. All Consumer Summary Statements are posted to the Department’s licensing webpage.
+(4) The new owner or licensee shall send a revised copy of the Consumer Summary Statement to the Department prior to a change of ownership or management. The revised copy must include new ownership or management information and any other amendments to the document. All Consumer Summary Statements are posted to the Department's licensing webpage.
 Statutory/Other Authority: ORS 410.070 & 443.450
 Statutes/Other Implemented: ORS 443.400 - 443.455 & 443.991
 History:
@@ -519,15 +519,15 @@ Facility Administration
 (g) A policy on facility employees not receiving gifts or money from residents.
 (h) Protocols for preventing and controlling infection, as described in OAR 411-054-0050.
 (i) LGBTQIA2S+ Nondiscrimination Notice:
-“(Name of care facility) does not discriminate and does not permit discrimination, including but not limited to bullying, abuse or harassment, based on an individual’s actual or perceived sexual orientation, gender identity, gender expression or human immunodeficiency virus status, or based on an individual’s association with another individual on account of the other individual’s actual or perceived sexual orientation, gender identity, gender expression or human immunodeficiency virus status. If you believe you have experienced this kind of discrimination, you may file a complaint with the Oregon Department of Human Services at (provide current contact information).”
+"(Name of care facility) does not discriminate and does not permit discrimination, including but not limited to bullying, abuse or harassment, based on an individual's actual or perceived sexual orientation, gender identity, gender expression or human immunodeficiency virus status, or based on an individual's association with another individual on account of the other individual's actual or perceived sexual orientation, gender identity, gender expression or human immunodeficiency virus status. If you believe you have experienced this kind of discrimination, you may file a complaint with the Oregon Department of Human Services at (provide current contact information)."
 (j) ABST Policy for accurate and consistent implementation of the ABST. The policy must explain how a facility evaluates and accounts for both scheduled and unscheduled resident needs.
 (8) RECORDS. The facility must ensure the preparation, completeness, accuracy, and preservation of resident records.
 (a) The facility must develop and implement a written policy that prohibits the falsification of records.
 (b) Unless required or allowed by state or federal law, a facility shall not disclose any personally identifiable information regarding:
-(A) A resident’s sexual orientation;
+(A) A resident's sexual orientation;
 (B) Whether a resident is LGBTQIA2S+;
-(C) A resident’s gender transition status; or
-(D) A resident’s human immunodeficiency virus status.
+(C) A resident's gender transition status; or
+(D) A resident's human immunodeficiency virus status.
 (c) The facility shall take appropriate steps to minimize the likelihood of inadvertent or accidental disclosure of information described in subsection (b) of this section to other residents, visitors or facility staff, except to the minimum extent necessary for facility staff to perform their duties. Facilities must notify residents or resident representatives if the facility inadvertently or accidentally discloses such information to unauthorized persons.
 (d) Resident records must be kept for a minimum of three years after the resident is no longer in the facility.
 (e) Upon closure of a facility, the licensee must provide the Department with written notification of the location of all records.
@@ -574,18 +574,18 @@ The facility must provide the following documents to potential residents before 
 (a) Similar to the residency agreement, this summary statement must be provided to a potential resident before move-in. The consumer summary must include the following:
 (A) A summary of the services provided by the facility.
 (B) A summary of the services and types of care the facility does not provide.
-(C) A statement that, if the facility is not capable of meeting the resident’s needs for care and services, the facility may require the resident to move to another facility or care setting, in accordance with OAR 411-054-0080.
-(D) A statement explaining that, if a resident leaves the facility to receive acute medical, psychiatric, nursing or other specialized care, the facility will evaluate the facility’s ability to meet the resident’s care needs before the resident is permitted to return to the facility, in accordance with OAR 411-054-0080(6).
-(E) An explanation of the resident’s right to appeal should the facility either require the resident to leave the facility, or not permit the resident to return following treatment as described in paragraph (D). Appeal rights are explained in OAR 411-054-0080(7).
+(C) A statement that, if the facility is not capable of meeting the resident's needs for care and services, the facility may require the resident to move to another facility or care setting, in accordance with OAR 411-054-0080.
+(D) A statement explaining that, if a resident leaves the facility to receive acute medical, psychiatric, nursing or other specialized care, the facility will evaluate the facility's ability to meet the resident's care needs before the resident is permitted to return to the facility, in accordance with OAR 411-054-0080(6).
+(E) An explanation of the resident's right to appeal should the facility either require the resident to leave the facility, or not permit the resident to return following treatment as described in paragraph (D). Appeal rights are explained in OAR 411-054-0080(7).
 (F) A statement as to whether the facility will arrange or coordinate hospice care for a resident upon request.
 (b) The information in the summary statement outlined in subsection (a) above must:
 (A) Be in writing.
 (B) Be written in plain English.
 (C) Be explained to the individual or the person acting on behalf of the individual in a manner the individual or representative understands.
-(D) Be provided separately from all other disclosure documents, such as the Uniform Disclosure Statement (APD form 9098A), and the facility’s Residency Agreement.
+(D) Be provided separately from all other disclosure documents, such as the Uniform Disclosure Statement (APD form 9098A), and the facility's Residency Agreement.
 (E) Be signed by the individual or the person acting on behalf of the individual, acknowledging that the individual or representative understands the content and implications of the information.
-(c) The facility must submit an updated Consumer Summary Statement to the Department any time the facility has a management or ownership change. The Consumer Summary Statement must be submitted to the Department 60 days prior to the change of ownership or management. All Consumer Summary Statements will be posted on the Department’s licensing webpage.
-(4) LGBTQIA2S+ PROTECTIONS. A facility shall provide a copy of the LGBTQIA2S+ Protections as described in OAR 411-054-0027(2), and the facility’s LGBTQIA2S+ Nondiscrimination Notice, as described in OAR 411-054-0025(7)(i).
+(c) The facility must submit an updated Consumer Summary Statement to the Department any time the facility has a management or ownership change. The Consumer Summary Statement must be submitted to the Department 60 days prior to the change of ownership or management. All Consumer Summary Statements will be posted on the Department's licensing webpage.
+(4) LGBTQIA2S+ PROTECTIONS. A facility shall provide a copy of the LGBTQIA2S+ Protections as described in OAR 411-054-0027(2), and the facility's LGBTQIA2S+ Nondiscrimination Notice, as described in OAR 411-054-0025(7)(i).
 (5) All disclosure information and residency agreements must be written in compliance with these rules.
 (a) The facility may not include any provision in the residency agreement, summary statement or disclosure information that is in conflict with these rules and may not ask or require a resident to waive any of the resident's rights or the facility's liability for negligence.
 (b) The facility must retain a copy of the original and any subsequent signed and dated residency agreements and must provide copies to the resident or to the resident's designated representative.
@@ -621,17 +621,17 @@ Resident Rights and Protections
 (s) To have a safe and homelike environment.
 (t) To be free of discrimination in regard to race, color, national origin, gender, sexual orientation, or religion.
 (u) To receive proper notification if requested to move-out of the facility, and to be required to move-out only for reasons stated in OAR 411-054-0080 (Involuntary Move-out Criteria) and have the opportunity for an administrative hearing, if applicable.
-(2) LGBTQIA2S+ PROTECTIONS. A facility and the staff of the facility may not take any of the following actions based in whole or in part on a resident’s actual or perceived sexual orientation, gender identity, gender expression or human immunodeficiency virus status:
+(2) LGBTQIA2S+ PROTECTIONS. A facility and the staff of the facility may not take any of the following actions based in whole or in part on a resident's actual or perceived sexual orientation, gender identity, gender expression or human immunodeficiency virus status:
 (a) Deny admission to a facility, transfer or refuse to transfer a resident within a facility or to another facility or discharge or evict a resident from a facility;
-(b) Deny a request by a resident to choose the resident’s roommate, when a resident is sharing a room;
-(c) Refuse to assign a room to a transgender or other LGBTQIA2S+ resident other than in accordance with the resident’s gender identity, unless at the request of the resident or if required by federal law;
+(b) Deny a request by a resident to choose the resident's roommate, when a resident is sharing a room;
+(c) Refuse to assign a room to a transgender or other LGBTQIA2S+ resident other than in accordance with the resident's gender identity, unless at the request of the resident or if required by federal law;
 (d) Prohibit a resident from using, or harass a resident who seeks to use or does use, a restroom that is available to other individuals of the same gender identity as the resident, regardless of whether the resident is making a gender transition, has taken or is taking hormones, has undergone gender affirmation surgery or presents as gender nonconforming. Harassment includes, but is not limited to, requiring a resident to show documentation of gender identity in order to gain entrance to a restroom or other area of a care facility that is available to other individuals of the same gender identity as the resident;
-(e) Repeatedly and willfully refuse to use a resident’s name or pronouns after being reasonably informed of the resident’s name or pronouns;
+(e) Repeatedly and willfully refuse to use a resident's name or pronouns after being reasonably informed of the resident's name or pronouns;
 (f) Deny a resident the right to wear or be dressed in clothing, accessories or cosmetics, or to engage in grooming practices, that are permitted to any other resident;
-(g) Restrict a resident’s right to associate with other residents or with visitors, including the resident’s right to consensual sexual relations or to display physical affection, unless the restriction is uniformly applied to all residents in a nondiscriminatory manner;
-(h) Deny or restrict medical or nonmedical care that is appropriate to a resident’s organs and bodily needs, or provide medical or nonmedical care that, to a similarly situated, reasonable person, unduly demeans the resident’s dignity or causes avoidable discomfort;
-(i) Fail to accept a resident’s verbal or written attestation of the resident’s gender identity or require a resident to provide proof of the resident’s gender identity using any form of identification;
-(j) Fail to take reasonable actions, within the care facility’s control, to prevent discrimination or harassment when the facility knows or should have known about the discrimination or harassment;
+(g) Restrict a resident's right to associate with other residents or with visitors, including the resident's right to consensual sexual relations or to display physical affection, unless the restriction is uniformly applied to all residents in a nondiscriminatory manner;
+(h) Deny or restrict medical or nonmedical care that is appropriate to a resident's organs and bodily needs, or provide medical or nonmedical care that, to a similarly situated, reasonable person, unduly demeans the resident's dignity or causes avoidable discomfort;
+(i) Fail to accept a resident's verbal or written attestation of the resident's gender identity or require a resident to provide proof of the resident's gender identity using any form of identification;
+(j) Fail to take reasonable actions, within the care facility's control, to prevent discrimination or harassment when the facility knows or should have known about the discrimination or harassment;
 (k) Refuse or willfully fail to provide any service, care or reasonable accommodation to a resident; or
 (l) Refuse or willfully fail to provide any service, care or reasonable accommodation to a potential resident applying for services or care.
 (3) HCBS RIGHTS.
@@ -673,10 +673,10 @@ Reporting and Investigating Abuse and Other Actions Affecting Resident Welfare
 (d) Follow-up action; and
 (e) Administrator's review.
 (4) IMMUNITY AND PROHIBITION OF RETALIATION.
-(a) The facility shall not interfere with a good faith disclosure of information by an employee or volunteer concerning abuse or other action affecting a resident’s safety or welfare. The information that is shared may include the reporting of violations of licensing or certification requirements, criminal activity at the facility, violations of state or federal laws or any practice that threatens the health and safety of a resident of the facility to:
+(a) The facility shall not interfere with a good faith disclosure of information by an employee or volunteer concerning abuse or other action affecting a resident's safety or welfare. The information that is shared may include the reporting of violations of licensing or certification requirements, criminal activity at the facility, violations of state or federal laws or any practice that threatens the health and safety of a resident of the facility to:
 (A) The Long-Term Care Ombudsman, the Oregon Department of Human Services, a law enforcement agency or other entity with legal or regulatory authority over the facility; or
 (B) A family member, guardian, friend or other person who is acting on behalf of the resident.
-(b) Unless performed with the intent to comply with state or federal law, including but not limited to protecting residents’ rights or carrying out a facility’s policies and procedures that are consistent with state and federal law, it is interference with the disclosure of information as described in subsection (a) if a facility:
+(b) Unless performed with the intent to comply with state or federal law, including but not limited to protecting residents' rights or carrying out a facility's policies and procedures that are consistent with state and federal law, it is interference with the disclosure of information as described in subsection (a) if a facility:
 (A) Asks or requires an employee or volunteer to sign a nondisclosure or similar agreement prohibiting the employee or volunteer from disclosing the information;
 (B) Trains an employee or volunteer not to disclose the information; or
 (C) Takes actions or communicates to the employee or volunteer that the employee or volunteer may not disclose the information.
@@ -713,7 +713,7 @@ Resident Services
 (2) The facility must provide or arrange for the following:
 (a) Transportation for medical and social purposes; and
 (b) Ancillary services for medically related care (e.g., physician, pharmacist, therapy, podiatry, barber or beauty services, social or recreational opportunities, hospice, and home health) and other services necessary to support the resident.
-(3) Upon admission of a resident, the facility shall provide the resident or the resident’s representative with information developed by the Long-Term Care Ombudsman describing the availability and services of the ombudsman. The facility shall document that the facility provided this information as required.
+(3) Upon admission of a resident, the facility shall provide the resident or the resident's representative with information developed by the Long-Term Care Ombudsman describing the availability and services of the ombudsman. The facility shall document that the facility provided this information as required.
 Statutory/Other Authority: ORS 410.070 & 443.450
 Statutes/Other Implemented: ORS 443.400 - 443.455 & 443.991
 History:
@@ -835,7 +835,7 @@ SPD 11-2012, f. 8-31-12, cert. ef. 9-1-12
 SPD 13-2009, f. 9-30-09, cert. ef. 10-1-09
 SPD 14-2007, f. 8-31-07, cert. ef. 11-1-07
 411-054-0036
-Service Plan — General
+Service Plan -- General
 (1) If the resident has a Person-Centered Service Plan pursuant to 411-004-0030, the facility must incorporate all elements identified in the person-centered service plan into the resident's service plan.
 (2) SERVICE PLAN. The service plan must reflect the resident's needs as identified in the evaluation and include resident preferences that support the principles of dignity, privacy, choice, individuality, and independence.
 (a) The service plan must be completed:
@@ -847,7 +847,7 @@ Service Plan — General
 (e) When the resident experiences a significant change of condition the service plan must be reviewed and updated as needed.
 (f) A copy of the service plan, including each update, must be offered to the resident or to the resident's legal representative.
 (g) The facility administrator is responsible for ensuring the implementation of services.
-(h) Review and update the resident’s ABST evaluation based on changes to the resident’s service plan, quarterly updates or a significant change of condition.
+(h) Review and update the resident's ABST evaluation based on changes to the resident's service plan, quarterly updates or a significant change of condition.
 (3) SERVICE PLAN REQUIREMENTS BEFORE MOVE-IN.
 (a) Based on the resident evaluation performed before move-in, an initial service plan must be developed before move-in that reflects the identified needs and preferences of the resident.
 (b) The initial service plan must be reviewed within 30-days of move- in to ensure that any changes made to the plan during the initial 30- days, accurately reflect the resident's needs and preferences.
@@ -885,29 +885,29 @@ SPD 14-2007, f. 8-31-07, cert. ef. 11-1-07
 411-054-0037
 Acuity-Based Staffing Tool
 (1) DEVELOP AND MAINTAIN ACUITY-BASED STAFFING. Facilities must select and implement a Department-approved Acuity-Based Staffing Tool (ABST) for determining appropriate staffing levels. Individual resident needs and care elements must be the primary consideration when developing and maintaining an ABST. Regardless of the ABST adopted, all requirements set forth in this rule and OAR 411-054-0034 (Resident Move-in Evaluation) must be met. Facilities shall:
-(a) Select and implement the Department’s developed ABST or submit a proprietary ABST to the Department for approval as outlined in paragraph (2) of this rule.
+(a) Select and implement the Department's developed ABST or submit a proprietary ABST to the Department for approval as outlined in paragraph (2) of this rule.
 (b) Accurately capture care time and care elements that staff are providing to each resident as outlined in each individual service plan. Established care time for each care element must be resident specific, rather than a predetermined average.
 (c) Develop a staffing plan for each shift, that meets the scheduled and unscheduled needs of all residents.
 (d) Develop ABST reports and posted staffing plans that reflect distinct and segregated areas as outlined in OAR 411-054-0070(1).
 (e) If applicable, determine ABST time for residents on a Specific Needs Settings Contract and residents not on a Specific Needs Setting Contract to build posted staffing plan as outlined in this rule.
 (f) Develop written policies and procedures to accurately and consistently implement the ABST. The policy must explain how a facility evaluates and accounts for both scheduled and unscheduled resident needs.
-(g) Provide the relevant ABST information for a specific resident if requested by the Department, that specific resident, that specific resident’s legal representative, or the Long-Term Care Ombudsman.
+(g) Provide the relevant ABST information for a specific resident if requested by the Department, that specific resident, that specific resident's legal representative, or the Long-Term Care Ombudsman.
 (2) PROPRIETARY ABST. A facility that chooses to use a proprietary ABST must implement a Department-approved ABST that meets this rule.
 (a) REQUIRED ELEMENTS. The proprietary ABST the facility adopts must meet the following requirements:
-(A) Facilities can group or combine ABST care elements in their ABST reports, however each resident’s ABST evaluation must individually address and document all ABST care elements outlined in paragraph (3) of this rule.
+(A) Facilities can group or combine ABST care elements in their ABST reports, however each resident's ABST evaluation must individually address and document all ABST care elements outlined in paragraph (3) of this rule.
 (B) When calculating total time, the ABST must include the care elements for each resident and staff time needed to complete each individual care element.
 (C) Ensure the ABST can produce a report that identifies all residents currently residing in the facility, the care elements for each of the residents, and the staff time required to complete the care elements for each resident.
-(D) ABST total time must present in minutes per shift, per day. If the proprietary ABST does not have this functionality, at a minimum the ABST total time must present in daily minutes. If a Proprietary ABST presents total time in daily minutes the facility’s ABST policy must describe how staffing per shift is determined.
-(E) Identify the date the resident’s ABST evaluation was last completed.
+(D) ABST total time must present in minutes per shift, per day. If the proprietary ABST does not have this functionality, at a minimum the ABST total time must present in daily minutes. If a Proprietary ABST presents total time in daily minutes the facility's ABST policy must describe how staffing per shift is determined.
+(E) Identify the date the resident's ABST evaluation was last completed.
 (F) If applicable, determine ABST time for both residents on a Specific Needs Contract and residents not on a Specific Needs Contract to build posted staffing plans as outlined in this rule.
 (b) PROPRIETARY ABST REVIEW REQUEST. If a facility proposes to use a proprietary ABST, the facility must submit the Proprietary ABST ODHS Review Request form (se528132), including but not limited to the following:
 (A) Facilities who want to implement or switch to a proprietary ABST must submit Proprietary ABST ODHS Review Request form (se528132) prior to implementation.
-(B) Sample ABST report displaying the ABST care elements, and the staff time needed to complete the displayed care elements, with a total time in minutes shown per shift, per day. If the proprietary ABST only provides total time in daily minutes, the facility’s ABST policy must describe how staffing per shift is determined.
-(C) The facility’s ABST policy required under OAR 411-054-0025(7)(i).
+(B) Sample ABST report displaying the ABST care elements, and the staff time needed to complete the displayed care elements, with a total time in minutes shown per shift, per day. If the proprietary ABST only provides total time in daily minutes, the facility's ABST policy must describe how staffing per shift is determined.
+(C) The facility's ABST policy required under OAR 411-054-0025(7)(i).
 (c) ABST SUMMARY STATEMENT. If the proprietary review request is approved, a facility must develop and maintain an ABST Summary Statement that meets the requirements, as outlined in the Proprietary ABST ODHS Review Request form (se528132). This includes providing a general guide explaining how the ABST functions. The summary statement must be available upon request by the Department.
-(d) DEPARTMENT REVIEW OF PROPOSED PROPRIETARY ABST REQUEST. The Department will review and either approve or deny the facility’s proprietary ABST. The Department may request additional documentation, potentially including a virtual demonstration, to make the determination. If the ABST is deemed to not meet this rule, the Department may deny or rescind approval at any time. The Department shall provide the facility with a written explanation of the reasons for the denial or decision to rescind approval. If a facility appeals a decision to rescind, the facility may continue to use the facility’s existing proprietary ABST until a final order has been issued.
+(d) DEPARTMENT REVIEW OF PROPOSED PROPRIETARY ABST REQUEST. The Department will review and either approve or deny the facility's proprietary ABST. The Department may request additional documentation, potentially including a virtual demonstration, to make the determination. If the ABST is deemed to not meet this rule, the Department may deny or rescind approval at any time. The Department shall provide the facility with a written explanation of the reasons for the denial or decision to rescind approval. If a facility appeals a decision to rescind, the facility may continue to use the facility's existing proprietary ABST until a final order has been issued.
 (e) APPEALS PROCESS. The Department will determine whether to approve or deny the request. If the proprietary ABST is denied or rescinded, the facility is entitled to a contested case hearing pursuant to ORS chapter 183. Prior to a contested case hearing, the facility may request an informal conference.
-(f) ANNUAL STATEMENT. Once approved, the facility must provide the Department an annual statement attesting no substantive changes have occurred to the design of the facility’s proprietary ABST that impacts its functionality. The facility must submit statements to the Department every year, between January 1 and March 31.
+(f) ANNUAL STATEMENT. Once approved, the facility must provide the Department an annual statement attesting no substantive changes have occurred to the design of the facility's proprietary ABST that impacts its functionality. The facility must submit statements to the Department every year, between January 1 and March 31.
 (g) If the facility makes substantive changes to the proprietary ABST design, and if those changes impact ABST functionality making the prior submitted information inaccurate or invalid, then the facility must re-submit to the Department the Proprietary ABST ODHS Review Request Form (se528132) as described in this rule for review prior to implementing the new or revised ABST.
 (3) ABST CARE ELEMENTS. The required ABST care elements include activities of daily living and other tasks related to resident care and services, as outlined in OAR 411-054-0030, 411-054-0034, and 411-057-0160. If any individual care element requires more than one staff, additional time must be accounted for as described in 411-054-0070(1). The ABST must individually address and document the care time required to complete each of the following individual ABST care elements:
 (a) Personal hygiene.
@@ -936,21 +936,21 @@ Acuity-Based Staffing Tool
 (a) Before a resident moves in.
 (b) Whenever there is a significant change of condition as defined in OAR 411-054-0040(1)(b).
 (c) No less than quarterly and corresponding with resident service plan updates, updating as required by OAR 411-054-0034.
-(5) DEVELOP AND MAINTAIN UPDATED POSTED STAFFING PLAN. Each facility should use the results of an ABST to develop and update the facility’s posted staffing plan. The staffing plan must outline the staffing numbers required to meet the scheduled and unscheduled needs of all residents in the facility, for each shift. The ABST and staffing plan must be reviewed at the frequency required in paragraph (4) of this rule.
+(5) DEVELOP AND MAINTAIN UPDATED POSTED STAFFING PLAN. Each facility should use the results of an ABST to develop and update the facility's posted staffing plan. The staffing plan must outline the staffing numbers required to meet the scheduled and unscheduled needs of all residents in the facility, for each shift. The ABST and staffing plan must be reviewed at the frequency required in paragraph (4) of this rule.
 (a) The posted staffing plan must incorporate:
 (A) The total ABST care time in minutes per shift, per day. If a proprietary ABST does not have this functionality, at a minimum the ABST total time must be shown in daily minutes as referenced in paragraph (2) of this rule.
 (B) The unscheduled care needs of residents.
 (C) The staffing requirements outlined in OAR 411-054-0070(1).
 (D) Any other applicable factors to be considered. (e.g., disruptions to normal facility operations.)
 (E) The time for paid or unpaid staff meal breaks must be accounted for and should not be included in the total scheduled staff time per shift.
-(F) The facility’s distinct and segregated areas as outlined in OAR 411-054-0070(1) to meet the scheduled and unscheduled needs of residents who reside in each segregated area. Each distinct and segregated area must have a posted staffing plan.
+(F) The facility's distinct and segregated areas as outlined in OAR 411-054-0070(1) to meet the scheduled and unscheduled needs of residents who reside in each segregated area. Each distinct and segregated area must have a posted staffing plan.
 (G) The staffing needs required under the Specific Needs Contracts, if applicable.
 (b) The facility must maintain staffing documentation to show consistent staffing to meet or exceed the posted staffing plan 24 hours a day, seven days a week.
 (c) The facility must maintain historical posted staffing plans. The posted staffing plan must contain the date(s) it was effective. Records must be kept for a minimum of three years.
 (6) CONSISTENTLY MEETING NEEDS. The facility must consistently meet the scheduled and unscheduled needs of all residents, 24 hours a day, seven days a week.
-(7) ABST REPORTING OF SPECIFIC NEEDS CONTRACTS AND EXCEPTIONAL PAYMENTS. Staffing required by a Specific Needs Contract (Contract), as described in OAR chapter 411, division 027, must be included in a facility’s ABST.
+(7) ABST REPORTING OF SPECIFIC NEEDS CONTRACTS AND EXCEPTIONAL PAYMENTS. Staffing required by a Specific Needs Contract (Contract), as described in OAR chapter 411, division 027, must be included in a facility's ABST.
 (a) If all residents within the facility are receiving service through a Contract:
-(A) The facility’s staffing plan must include the number of staff required by the Contract and additional staff time, if required to meet the scheduled and unscheduled needs of the residents.
+(A) The facility's staffing plan must include the number of staff required by the Contract and additional staff time, if required to meet the scheduled and unscheduled needs of the residents.
 (B) If the ABST staffing analysis indicates numbers higher than the Contract, the facility must staff to the numbers indicated by the ABST.
 (b) If certain residents within the facility are served under a Contract, and other residents are not served by a Contract:
 (A) The facility must maintain a posted staffing plan that includes the staffing required for residents served by the Contract as well as the staffing required for residents not served by the Contract.
@@ -961,8 +961,8 @@ Acuity-Based Staffing Tool
 (a) Current ABST report.
 (b) ABST total staff time in minutes necessary to meet the scheduled needs of residents daily, per shift, per day. If a proprietary ABST does not have this functionality, at a minimum the ABST total time must be shown in daily minutes as referenced in paragraph (2) of this rule.
 (c) The date the last ABST evaluation for each individual resident was completed.
-(d) The facility’s proprietary ABST Summary Statement, if applicable.
-(e) The Department’s ABST Proprietary Review Request form documenting the Department’s approval, upon request of the Department.
+(d) The facility's proprietary ABST Summary Statement, if applicable.
+(e) The Department's ABST Proprietary Review Request form documenting the Department's approval, upon request of the Department.
 (f) The staffing needs required under the Specific Needs Contracts or Exceptional Payments, if applicable.
 (9) REVIEW BY DEPARTMENT.
 (a) The Department is required to assess facility staffing levels each time the Department conducts a survey or an investigation into a complaint regarding:
@@ -976,14 +976,14 @@ Acuity-Based Staffing Tool
 (C) Consistently staffing to the posted staffing plan as required by paragraph (5) of this rule.
 (10) REQUIRED REGULATORY ACTION.
 (a) The Department is required to take the following actions if it determines the facility:
-(A) Has not selected and implemented an ABST, the Department will require the facility to adopt and implement the ODHS ABST until the facility selects and implements either the Department’s ABST or a Department-approved proprietary ABST.
+(A) Has not selected and implemented an ABST, the Department will require the facility to adopt and implement the ODHS ABST until the facility selects and implements either the Department's ABST or a Department-approved proprietary ABST.
 (B) Is not meeting the scheduled and unscheduled needs of all residents 24 hours a day, seven days a week, the Department shall place a license condition in accordance with OAR 411-054-0110(3)(a), (b), (c) or (f). The facility will be monitored for continued compliance or until the licensed condition is withdrawn.
 (b) The Department may issue corrective action in accordance with OAR 411-054-0106 to compel compliance if the facility is not:
 (A) Consistently staffing to the levels, intensity and qualifications indicated by the ABST.
 (B) Updating the posted staffing plan to meet the scheduled and unscheduled needs of all residents.
 (C) Updating the ABST for all residents at required frequencies, as outlined in paragraph (4) of this rule.
 (D) Accurately capturing the care element time in the ABST based on the typical time taken to complete the task for each individual resident.
-(E) Accurately capturing the care being provided by staff or outlined in the resident’s personal service plan.
+(E) Accurately capturing the care being provided by staff or outlined in the resident's personal service plan.
 (F) Using a Department-approved ABST.
 Statutory/Other Authority: ORS 410.070, 443.450 & 443.738
 Statutes/Other Implemented: ORS 443.400 - 443.455, 443.738, 443.991 & 678.710
@@ -1045,7 +1045,7 @@ Resident Health Services
 (a) Include written policies and procedures on medical emergency response for all shifts.
 (b) Include an Oregon licensed nurse who is regularly scheduled for onsite duties at the facility and who is available for phone consultation.
 (c) Assure an adequate number of nursing hours relevant to the census and acuity of the resident population. IICs must meet contract requirements concerning nursing hours.
-(d) Ensure that the facility RN is notified of nursing needs as identified in OAR 411-054-0034 (Resident Move-In and Evaluation) or OAR 411-054-0036 (Service Plan – General).
+(d) Ensure that the facility RN is notified of nursing needs as identified in OAR 411-054-0034 (Resident Move-In and Evaluation) or OAR 411-054-0036 (Service Plan - General).
 (e) Define the duties, responsibilities and limitations of the facility nurse in policy and procedures, admission, and disclosure material.
 (f) Licensed nurses must deliver the following nursing services:
 (A) Registered nurse (RN) assessment in accordance with facility policy and resident condition. At minimum, the RN must assess all residents with a significant change of condition. The assessment may be a full or problem focused assessment as determined by the RN. A chart review or phone consultation may be performed as part of this assessment. The RN must document findings, resident status, and interventions made as a result of this assessment. The assessment must be timely, but is not required prior to emergency response in acute situations.
@@ -1075,7 +1075,7 @@ SPD 14-2007, f. 8-31-07, cert. ef. 11-1-07
 411-054-0050
 Infection Prevention and Control
 (1) Facilities must establish and maintain infection prevention and control protocols to provide a safe, sanitary and comfortable environment. This includes protocols to prevent the development and transmission of communicable diseases.
-(2) Each facility must designate an individual to be the facility’s “Infection Control Specialist” responsible for carrying out the infection prevention and control protocols and serving as the primary point of contact for the Department regarding disease outbreaks. The Infection Control Specialist must:
+(2) Each facility must designate an individual to be the facility's "Infection Control Specialist" responsible for carrying out the infection prevention and control protocols and serving as the primary point of contact for the Department regarding disease outbreaks. The Infection Control Specialist must:
 (a) Be qualified by education, training and experience or certification; and
 (b) Complete specialized training in infection prevention and control protocols within three months of being designated under this paragraph, unless the designee has received the specialized training within the 24-month period prior to the time of the designation. The Department will describe trainings that will be acceptable to meet the specialized training requirement in rule, by January 1, 2022.
 (3) Each facility must establish infection prevention and control protocols and have an Infection Control Specialist, trained as required in this rule, by July 1, 2022.
@@ -1123,7 +1123,7 @@ Medications and Treatments
 (E) Instructions for p.r.n. treatments, including resident specific parameters.
 (F) Initials of person administering the treatments.
 (G) Any deviation from instructions or refusal of treatment must be documented.
-(4) MEDICATION AND TREATMENT – GENERAL. The facility must maintain legible signatures of staff that administer medications and treatments, either on the MAR or on a separate signature page, filed with the MAR.
+(4) MEDICATION AND TREATMENT - GENERAL. The facility must maintain legible signatures of staff that administer medications and treatments, either on the MAR or on a separate signature page, filed with the MAR.
 (a) If the facility administers or assists a resident with medication, all medication obtained through a pharmacy must be clearly labeled with the pharmacist's label, in the original container, in accordance with the facility's established medication delivery system.
 (b) The facility shall ensure that prescription drugs dispensed to residents are packaged in a manner that reduces errors in the tracking and administration of the drugs, including, but not limited to, the use of unit dose systems or blister packs.
 (A) The facility shall have as its primary goal dispensing prescription drugs in unit dose systems, blister packs or similar packaging.
@@ -1181,7 +1181,7 @@ APD 17-2017(Temp), f. & cert. ef. 8-1-17 thru 1-27-18
 SPD 14-2007, f. 8-31-07, cert. ef. 11-1-07
 411-054-0065
 Administrator Qualifications and Requirements
-(1) FULL-TIME ADMINISTRATOR. Each licensed residential care and assisted living facility must employ a full-time administrator. The administrator must be scheduled to be on-site in the facility at least 40 hours per week. Each individual serving as an administrator of a residential care or assisted living facility must soon obtain an administrator’s license. This new licensing program will be phased in over a two-year period; by January 1, 2022, in order to work as an administrator, individuals must obtain a full “Residential Care Facility Administrator” license from the Health Licensing Office, Oregon Health Authority, as required by OAR chapter 853. Until January 1, 2022, there are three different options available to administrators. These three options are outlined in sections (2), (3) and (4) below:
+(1) FULL-TIME ADMINISTRATOR. Each licensed residential care and assisted living facility must employ a full-time administrator. The administrator must be scheduled to be on-site in the facility at least 40 hours per week. Each individual serving as an administrator of a residential care or assisted living facility must soon obtain an administrator's license. This new licensing program will be phased in over a two-year period; by January 1, 2022, in order to work as an administrator, individuals must obtain a full "Residential Care Facility Administrator" license from the Health Licensing Office, Oregon Health Authority, as required by OAR chapter 853. Until January 1, 2022, there are three different options available to administrators. These three options are outlined in sections (2), (3) and (4) below:
 (2) FULL ADMINISTRATOR LICENSE.
 (a) Individuals who applied to the Health Licensing Office by July 1, 2019 and met all requirements of OAR chapter 853, were issued a full residential care administrator license.
 (b) At any time, individuals who apply to the Health Licensing Office and complete all requirements in OAR chapter 853, including passing the Oregon laws and rules examination, will be issued a full administrator license.
@@ -1240,11 +1240,11 @@ Staffing Requirements and Training
 (B) Facilities must be able to demonstrate how their staffing system works.
 (j) All staff will have a written position description that specifies their specific duties and responsibilities.
 (2) REQUIREMENTS APPLICABLE TO ALL TRAINING. The facility shall:
-(a) Have a training program that includes methods to determine competency of direct care staff through evaluation, observation, or written testing. Facility shall also maintain documentation regarding each direct care staff’s demonstrated competency.
+(a) Have a training program that includes methods to determine competency of direct care staff through evaluation, observation, or written testing. Facility shall also maintain documentation regarding each direct care staff's demonstrated competency.
 (b) Maintain written documentation of all trainings completed by each employee.
 (3) PRE-SERVICE ORIENTATION FOR ALL EMPLOYEES. Prior to beginning their job responsibilities, all employees must complete orientation training regarding:
 (a) A review of their written position description with their job responsibilities.
-(b) RESIDENTS’ RIGHTS. Residents' rights and the values of community-based care, including the Department-approved LGBTQIA2S+ trainings.
+(b) RESIDENTS' RIGHTS. Residents' rights and the values of community-based care, including the Department-approved LGBTQIA2S+ trainings.
 (A) Effective December 31, 2024, all staff must have completed the required training. All new staff, hired on and after January 1, 2025, must complete the required training prior to beginning job responsibilities.
 (B) The Department-approved LGBTQIA2S+ trainings shall address the elements described in paragraph (6)(b) of this rule.
 (c) Abuse and reporting requirements.
@@ -1271,7 +1271,7 @@ Staffing Requirements and Training
 (A) Documentation of dementia training:
 (i) A certificate of completion shall be issued to direct care staff who satisfactorily complete approved dementia training. Facilities shall also maintain records of all direct care staff who have successfully completed pre-service dementia training.
 (ii) Each facility shall maintain written documentation of continuing education completed, including required pre-service dementia training, for all direct care staff.
-(B) Portability of pre-service dementia training: After completing the pre-service training, if a direct care staff person is hired within 24 months by a different facility, the hiring facility may choose to accept the previous training or require the direct care staff to complete the hiring facility’s pre-service dementia training.
+(B) Portability of pre-service dementia training: After completing the pre-service training, if a direct care staff person is hired within 24 months by a different facility, the hiring facility may choose to accept the previous training or require the direct care staff to complete the hiring facility's pre-service dementia training.
 (C) A certificate of completion must be made available to the Department upon request.
 (D) Pre-service dementia care training must include the following subject areas:
 (i) Education on the dementia disease process, including the progression of the disease, memory loss, and psychiatric and behavioral symptoms.
@@ -1294,7 +1294,7 @@ Staffing Requirements and Training
 (D) Identification of changes in the resident's physical, emotional and mental functioning and documentation and reporting on the resident's changes of condition.
 (E) Conditions that require assessment, treatment, observation and reporting.
 (F) General food safety, serving and sanitation.
-(G) If the direct care staff person’s duties include the administration of medication or treatments, appropriate facility staff, in accordance with OAR 411-054-0055 (Medications and Treatments) must document that they have observed and evaluated the individual's ability to perform safe medication and treatment administration unsupervised.
+(G) If the direct care staff person's duties include the administration of medication or treatments, appropriate facility staff, in accordance with OAR 411-054-0055 (Medications and Treatments) must document that they have observed and evaluated the individual's ability to perform safe medication and treatment administration unsupervised.
 (6) ANNUAL AND BIENNIAL INSERVICE FOR ALL STAFF.
 (a) Annual infectious disease training requires the following:
 (A) Administrators and employees will be required to complete annual training on infectious disease outbreak and infection control. Such training will be included within the current number of required annual training hours and will not necessitate additional hours of training.
@@ -1308,9 +1308,9 @@ Staffing Requirements and Training
 (ii) Applying to the Department to request approval of a biennial LGBTQIA2S+ training to be provided by the facility.
 (C) ORS 441.116 requires all LGBTQIA2S+ trainings address:
 (i) Caring for LGBTQIA2S+ residents and residents living with human immunodeficiency virus.
-(ii) Preventing discrimination based on a resident’s sexual orientation, gender identity, gender expression or human immunodeficiency virus status.
+(ii) Preventing discrimination based on a resident's sexual orientation, gender identity, gender expression or human immunodeficiency virus status.
 (iii) The defined terms commonly associated with LGBTQIA2S+ individuals and human immunodeficiency virus status.
-(iv) Best practices for communicating with or about LGBTQIA2S+ residents and residents living with human immunodeficiency virus, including the use of an individual’s chosen name and pronouns.
+(iv) Best practices for communicating with or about LGBTQIA2S+ residents and residents living with human immunodeficiency virus, including the use of an individual's chosen name and pronouns.
 (v) A description of the health and social challenges historically experienced by LGBTQIA2S+ residents and residents living with human immunodeficiency virus, including discrimination when seeking or receiving care at care facilities and the demonstrated physical and mental health effects within the LGBTQIA2S+ community associated with such discrimination.
 (vi) Strategies to create a safe and affirming environment for LGBTQIA2S+ residents and residents living with human immunodeficiency virus, including suggested changes to care facility policies and procedures, forms, signage, communication between residents and their families, activities, in-house services and staff training.
 (vii) The facility, individual or entity providing the training must demonstrate a commitment to advancing quality care for LGBTQIA2S+ residents and residents living with human immunodeficiency virus in this state.
@@ -1321,7 +1321,7 @@ Staffing Requirements and Training
 (II) The proposed methodology for providing the training either online or in person.
 (III) An outline of the training.
 (IV) Copies of the materials to be used in the training.
-(iii) The Department will review the materials and determine whether to approve or deny the training. No later than 90 days after the request is received, the Department will inform the facility in writing of the Department’s decision.
+(iii) The Department will review the materials and determine whether to approve or deny the training. No later than 90 days after the request is received, the Department will inform the facility in writing of the Department's decision.
 (c) Annual Home and Community-Based Services (HCBS) training requires the following:
 (A) All staff will be required to complete annual training concerning the Home and Community-Based Services regulations.
 (B) Annual in-service training must be documented in the employee record.
@@ -1336,7 +1336,7 @@ Staffing Requirements and Training
 (E) The facility shall determine the competency of direct care staff in dementia care in the following ways:
 (i) Utilize approved dementia care training for its direct care staff, coupled with methods to perform a competency assessment as defined in OAR 411-054-0005(19).
 (ii) Ensure direct care staff have demonstrated competency in any duty they are assigned. Facility staff in a supervisory role shall perform assessment of each direct care staff.
-(iii) Maintain written documentation of all dementia care training completed by each direct care staff and shall maintain documentation regarding each employee’s assessed competency.
+(iii) Maintain written documentation of all dementia care training completed by each direct care staff and shall maintain documentation regarding each employee's assessed competency.
 (8) APPROVAL OF DEMENTIA TRAINING CURRICULUM. All dementia care training provided to direct care staff must be approved by a private or non-profit organization that is approved by the Department through a "Request for Application" (RFA) process.
 (9) ADDITIONAL REQUIREMENTS. Staff:
 (a) Under 18 years of age may not perform medication administration or delegated nursing tasks. Staff under the age of 18 must be directly supervised when providing bathing, toileting, incontinence care or transferring services.
@@ -1344,7 +1344,7 @@ Staffing Requirements and Training
 (c) Must have sufficient communication and language skills to enable them to perform their duties and communicate with residents, other staff, family members, and health care professionals, as needed.
 (10) Contractors who provide services or supports directly to residents must complete the required LGBTQIA2S+ trainings outlined in paragraph (6)(b)(C) of this rule.
 (a) Contractors who must be trained include, but are not limited to, RN and administrative consultants, housekeeping services, dietary services, beauticians, barbers, or other contractors who provide services or supports directly to residents.
-(b) Exempt from this training requirement are contractors who contract directly with the resident or the resident’s representative, and contractors who do not generally provide services or supports directly to residents, including, but not limited to, contractors for landscaping, pest control, deliveries and building repairs.
+(b) Exempt from this training requirement are contractors who contract directly with the resident or the resident's representative, and contractors who do not generally provide services or supports directly to residents, including, but not limited to, contractors for landscaping, pest control, deliveries and building repairs.
 (c) By December 31, 2024, facilities shall ensure that all contracts entered into with entities described in paragraph (a) of this section shall include language requiring contractors provide Department-approved LGBTQIA2S+ training to their employees within 12 months of entering into the contract with the facility and every two years thereafter.
 (d) For existing contracts in effect January 1, 2025, facilities shall require the contractor provide Department-approved LGBTQIA2s+ training to employees by December 31, 2025, and every two years thereafter.
 (e) For new contracts created after January 1, 2025, facilities shall require contractors provide the Department-approved LGBTQIA2S+ training to employees within 12 months of entering into the contract with the facility, and every two years thereafter.
@@ -1376,65 +1376,65 @@ The Department of Human Services, Aging and People with Disabilities Office enco
 (e) The resident exhibits behavior that poses a danger to self or others;
 (f) The resident engages in illegal drug use, or commits a criminal act that causes potential harm to the resident or others; or
 (g) Non-payment of charges.
-(3) Prior to issuing a move-out notice, the facility shall communicate with the resident or resident’s legal representative regarding the reasons for the move-out and attempt to resolve the reason for move out. The facility must document efforts to resolve the move out.
+(3) Prior to issuing a move-out notice, the facility shall communicate with the resident or resident's legal representative regarding the reasons for the move-out and attempt to resolve the reason for move out. The facility must document efforts to resolve the move out.
 (4) PROCESS FOR ISSUING AN INVOLUNTARY 30-DAY MOVE-OUT NOTICE. Except as otherwise provided in these rules, the following apply to a 30-day move out:
-(a) A facility may not require a resident to engage in an involuntary move out from the facility without first providing 30-day notice to the resident, resident’s legal representative, the Office of the Long-Term Care Ombudsman, and the resident’s case manager, if the resident has a case manager.
-(b) Before the facility issues a 30-day notice to the resident, the resident’s legal representative, the Office of the Long-Term Care Ombudsman, or the resident’s case manager, the facility must first submit the written notice to the Department for review and receive a written response from the Department stating the notice and other documentation submitted by the facility complies with these rules.
+(a) A facility may not require a resident to engage in an involuntary move out from the facility without first providing 30-day notice to the resident, resident's legal representative, the Office of the Long-Term Care Ombudsman, and the resident's case manager, if the resident has a case manager.
+(b) Before the facility issues a 30-day notice to the resident, the resident's legal representative, the Office of the Long-Term Care Ombudsman, or the resident's case manager, the facility must first submit the written notice to the Department for review and receive a written response from the Department stating the notice and other documentation submitted by the facility complies with these rules.
 (5) As part of the facility submission of the 30-day notice to the Department as described in (4), the facility must demonstrate that the facility has made all relevant, appropriate efforts to resolve the reason(s) for the requested move-out. At a minimum, the facility must provide to the Department the following written information concerning the proposed move-out:
 (a) A copy of the proposed 30-Day Move-out and Administrative Hearing Request (form APD 0567 and form MSC 0443), which includes a written explanation of the reason(s) for the requested move out.
 (b) The two (2) most recent service plans, showing modifications made in attempt to resolve the reason for the requested move out. The only exception to this specific requirement involves any proposed move-out due to resident non-payment issues.
-(c) All relevant documentation that supports the facility’s reason(s) for the proposed 30-Day Move-out Notice.
-(6) After receiving the facility’s documentation under (5) of this rule, the Department may request additional documentation from the facility concerning the proposed move-out. Such requested documentation may include, but is not limited to:
-(a) Documentation of the facility’s attempts to resolve the reason for the proposed move-out such as related progress notes, relevant Medication Administration Record(s), evaluations, clinical assessments, physician notes, and other documentation demonstrating the facility has attempted to staff resident’s temporary or intermittent needs.
-(b) Documentation that demonstrates the proposed move-out is consistent with the facility’s:
+(c) All relevant documentation that supports the facility's reason(s) for the proposed 30-Day Move-out Notice.
+(6) After receiving the facility's documentation under (5) of this rule, the Department may request additional documentation from the facility concerning the proposed move-out. Such requested documentation may include, but is not limited to:
+(a) Documentation of the facility's attempts to resolve the reason for the proposed move-out such as related progress notes, relevant Medication Administration Record(s), evaluations, clinical assessments, physician notes, and other documentation demonstrating the facility has attempted to staff resident's temporary or intermittent needs.
+(b) Documentation that demonstrates the proposed move-out is consistent with the facility's:
 (A) Uniform Disclosure Statement, as required by OAR 411-054-0026(1).
 (B) Residency Agreement, as required by OAR 411-054-0026(2).
 (C) Consumer Summary Statement, as required by OAR 411-054-0026(3).
 (c) Names and contact information of additional parties or witnesses, as appropriate, to allow the Department to obtain additional facts regarding the reason for the move.
 (7) After receiving all information required under (5) and requested under (6) of this rule, the Department will have two business days to review the 30-day involuntary move out notice and any related documentation and provide the facility with written notice indicating whether or not the Department has determined the facility has provided satisfactory documentation in compliance with these rules. If the Department determines sufficient documentation has not been provided, the Department will deny the move-out notice. A denial does not prohibit a facility from submitting or resubmitting a move-out notice that satisfies the criteria contained in (5) of this rule.
 (8) The Department will provide written notice to the facility with a determination regarding the proposed move-out. However, if the Department determines regulatory criteria established in rule were not met, the facility may not issue the move-out notice.
-(9) The facility may issue the notice if the Department has determined regulatory criteria were met; the facility must email a copy of the final version of form APD 0567 to the Department, the resident, the resident's legal representative, the resident’s case manager, and the Office of the Long-Term Care Ombudsman.
+(9) The facility may issue the notice if the Department has determined regulatory criteria were met; the facility must email a copy of the final version of form APD 0567 to the Department, the resident, the resident's legal representative, the resident's case manager, and the Office of the Long-Term Care Ombudsman.
 (a) The 30-Day Move-Out and Hearing Notification form (form APD 0567) must include notice of both the move-out and the right to request a hearing (form MSC 0443).
 (b) If the correct form, containing both notices, is not delivered to all necessary parties, the 30-Day Move-Out and Hearing Notice form is insufficient, and the timeline does not start until both notices are jointly supplied.
 (10) Informal conferences and administrative hearings requested under (9) will be conducted according to (19) of this rule.
 (11) LESS THAN 30-DAY MOVE-OUT NOTICE. The resident must be given 30 days advance written notice before being asked to move out or not return to the facility, except in the following unusual circumstances:
-(a) A resident has been admitted or treated at a health care facility for a significant medical or psychiatric event. At the time the resident is to return to the facility, qualified facility staff have evaluated the resident's health, medical, behavioral or care needs and have determined the facility is unable to meet the resident's needs pursuant to section (1) of this rule due to the resident’s significant and ongoing change of condition related to a medical or psychiatric event, whether that event was the reason for leaving the facility for treatment, or arose while the resident was being treated at the health care facility.
-(A) A “significant medical or psychiatric event” is defined as a serious illness, injury, impairment, or physical or mental condition that results in a change of condition such that the facility cannot meet the needs of the resident, and the resident requires inpatient care in a health care facility on a continuing and permanent basis.
-(B) For the duration of the resident’s time in the health care facility, a facility must stay informed of the status of the resident’s health by communicating with the health care facility on a consistent, ongoing basis.
+(a) A resident has been admitted or treated at a health care facility for a significant medical or psychiatric event. At the time the resident is to return to the facility, qualified facility staff have evaluated the resident's health, medical, behavioral or care needs and have determined the facility is unable to meet the resident's needs pursuant to section (1) of this rule due to the resident's significant and ongoing change of condition related to a medical or psychiatric event, whether that event was the reason for leaving the facility for treatment, or arose while the resident was being treated at the health care facility.
+(A) A "significant medical or psychiatric event" is defined as a serious illness, injury, impairment, or physical or mental condition that results in a change of condition such that the facility cannot meet the needs of the resident, and the resident requires inpatient care in a health care facility on a continuing and permanent basis.
+(B) For the duration of the resident's time in the health care facility, a facility must stay informed of the status of the resident's health by communicating with the health care facility on a consistent, ongoing basis.
 (C) When a resident has been admitted or treated at a health care facility for a significant medical or psychiatric event, once the health care facility has given notice to the facility that the resident is ready to be discharged to return to the facility, qualified facility staff shall evaluate the resident's health, medical, behavioral or care needs within a reasonable time, but no later than 24 hours after the resident has been deemed ready for discharge.
-(b) The resident’s behavior places the health or safety of the resident or others in jeopardy and undue delay in moving the resident increases the risk of harm.
+(b) The resident's behavior places the health or safety of the resident or others in jeopardy and undue delay in moving the resident increases the risk of harm.
 (12) PROCESS FOR ISSUING AN INVOLUNTARY LESS THAN 30-DAY MOVE-OUT NOTICE. A facility may not issue a move-out notice before first submitting written documentation described in (13) of this rule to the Department and then receiving written response from the Department stating the written documentation submitted by the facility is in compliance with these rules.
-(13) Prior to providing notice to the resident or the resident’s legal representative, the facility must provide to the Department the following written information concerning the proposed less than 30-day move-out:
+(13) Prior to providing notice to the resident or the resident's legal representative, the facility must provide to the Department the following written information concerning the proposed less than 30-day move-out:
 (a) A copy of the proposed Less Than 30-Day Move-out and Hearing Notice form (form APD 0568 and form MSC 0443), which includes a written explanation of the reason(s) for the requested move out.
 (b) The two (2) most recent service plans, showing service plan modification, if possible.
 (c) Appropriate documentation that demonstrates the efforts taken to address all service needs of the resident, including providing intermittent direct nursing services or obtaining home health, hospice, or a third-party referral, as required by rule.
 (d) Documentation demonstrating compliance with 411-054-0070(1) and 411-054-0030(2)(b).
 (e) Explanation of whether the facility has the ability to respond to 24-hour care needs and also assist residents to access health care services from outside vendors, as defined by 411-054-0045(1) and (2).
-(f) Any and all additional documentation that supports the facility’s reasons for proposing a Less Than 30-day Move-out notice.
-(14) After receiving the facility’s documentation under (13) of this rule, the Department may request additional documentation from the facility concerning the proposed less than 30-day move-out, as deemed necessary by the Department. Such requested documentation may include, but is not limited to:
-(a) Documentation of attempts to resolve the reason for the requested move-out such as related progress notes, relevant Medication Administration Record(s), evaluations, clinical assessments, physician notes, and other documentation demonstrating the facility has attempted to staff resident’s temporary or intermittent needs, as required by OAR 411-054-0045(1)(f)(F).
-(b) Documentation that demonstrates the proposed move-out is consistent with the facility’s:
+(f) Any and all additional documentation that supports the facility's reasons for proposing a Less Than 30-day Move-out notice.
+(14) After receiving the facility's documentation under (13) of this rule, the Department may request additional documentation from the facility concerning the proposed less than 30-day move-out, as deemed necessary by the Department. Such requested documentation may include, but is not limited to:
+(a) Documentation of attempts to resolve the reason for the requested move-out such as related progress notes, relevant Medication Administration Record(s), evaluations, clinical assessments, physician notes, and other documentation demonstrating the facility has attempted to staff resident's temporary or intermittent needs, as required by OAR 411-054-0045(1)(f)(F).
+(b) Documentation that demonstrates the proposed move-out is consistent with the facility's:
 (A) Uniform Disclosure Statement, as required by OAR 411-054-0026(1).
 (B) Residency Agreement, as required by OAR 411-054-0026(2).
 (C) Consumer Summary Statement, as required by OAR 411-054-0026(3).
 (c) Names and contact information concerning additional parties or witnesses, as appropriate, to allow the Department to obtain additional statements or evidence regarding the reason for the move.
 (15) After receiving all information required under (13) and requested under (14) of this rule, the Department will have two business days to review the involuntary move-out notice and any related documentation and provide the facility with written notice indicating whether or not the Department has determined the facility has provided documentation in compliance with these rules. If the Department determines sufficient documentation has not been provided, the Department will deny the move-out notice. A denial does not prohibit a facility from submitting or resubmitting a move-out notice that satisfies the criteria contained in (13) of this rule.
 (16) The Department will provide written notice to the facility with a determination regarding the proposed move-out. If the Department determines regulatory criteria were not met, the facility may not issue the move-out notice.
-(17) The facility may issue the notice if the Department has determined regulatory criteria has been met; the facility must submit the final version of form APD 0568 and form MSC 0443 to the Department, the resident, the resident's legal representative, the resident’s case manager, and the Office of the Long-Term Care Ombudsman.
+(17) The facility may issue the notice if the Department has determined regulatory criteria has been met; the facility must submit the final version of form APD 0568 and form MSC 0443 to the Department, the resident, the resident's legal representative, the resident's case manager, and the Office of the Long-Term Care Ombudsman.
 (a) The Less Than 30-Day Move-Out and Hearing Notice (form APD 0568) must include notice of both the move-out and the rights to request a hearing (form MSC 0443). The completed form must contain both notices and be delivered to all required parties.
 (b) The facility must provide as much notice to the resident as possible but must always provide at least 24 hours.
 (c) The facility must email a copy of the Less Than 30-Day Move-Out and Hearing Notice form to the Department and to the Office of the Long-Term Care Ombudsman on the same day the notice is delivered to the resident or the resident's legal representative.
-(d) The facility is responsible for providing a request for hearing from the resident or the resident’s legal representative, to the Department, within 24 hours of receiving it.
+(d) The facility is responsible for providing a request for hearing from the resident or the resident's legal representative, to the Department, within 24 hours of receiving it.
 (18) Administrative hearings requested under (17) will be conducted according to (19) of this rule.
 (19) INFORMAL CONFERENCE AND ADMINISTRATIVE HEARING. Except when a facility has had its license revoked, not renewed, voluntarily surrendered, or terminates its Medicaid contract, a resident who receives an involuntary move-out notice is entitled to an administrative hearing, provided the resident or resident's designee requests an administrative hearing in a timely manner.
 (a) A resident who receives a Move-Out and Hearing Notice can request a formal administrative hearing:
 (A) Residents have the following deadlines for requesting an administrative hearing after receipt of the notice:
 (i) Within ten (10) business days, for a 30-day notice.
 (ii) Within five (5) business days, for a less than 30-day notice.
-(B) If a resident wants to preserve the right to an administrative hearing, the resident, the resident’s legal representative, or the Long Term Care Ombudsman may check the appropriate box on the Move-Out and Hearing Notice (form APD 0567 and form MSC 0443), and return the notice to the facility. Residents may also exercise their administrative hearing rights by informing the facility, verbally or in writing, of the request for an administrative hearing.
-(C) If the resident or resident’s legal representative informs the facility of the request for a hearing, the facility must immediately notify the Department.
+(B) If a resident wants to preserve the right to an administrative hearing, the resident, the resident's legal representative, or the Long Term Care Ombudsman may check the appropriate box on the Move-Out and Hearing Notice (form APD 0567 and form MSC 0443), and return the notice to the facility. Residents may also exercise their administrative hearing rights by informing the facility, verbally or in writing, of the request for an administrative hearing.
+(C) If the resident or resident's legal representative informs the facility of the request for a hearing, the facility must immediately notify the Department.
 (D) In cases involving a less than 30-day notice or where the resident is incapacitated and does not have a legal representative, the Office of the Long-Term Care Ombudsman is allowed to provide notice to the Department on behalf of the resident, requesting an administrative hearing.
-(E) The resident, resident’s legal representative, the Long Term Care Ombudsman, or the facility may request the Department facilitate an informal conference before the administrative hearing, to discuss the move-out.
+(E) The resident, resident's legal representative, the Long Term Care Ombudsman, or the facility may request the Department facilitate an informal conference before the administrative hearing, to discuss the move-out.
 (F) The Department may extend the time allowed requesting an informal conference or administrative hearing if the Department determines that good cause exists for failure to make a timely request.
 (G) The Department shall immediately notify the Office of Administrative Hearings of the request for a formal administrative hearing and, for a less than 30-day move-out, shall request an expedited hearing be held within 5 business days.
 (H) The Department may decide to hold an informal conference to resolve the matter without a formal administrative hearing. The Department shall notify all appropriate parties of the informal conference and shall facilitate the conference.
@@ -1442,7 +1442,7 @@ The Department of Human Services, Aging and People with Disabilities Office enco
 (i) Within ten (10) business days of the Department receiving the request for hearing, for a 30 day move-out.
 (ii) Within four (4) business days of the Department receiving the request for hearing, for a less than 30-day move-out.
 (J) No formal administrative hearing shall be held if the resident is satisfied with the outcome of the informal conference.
-(b) The resident who has received a Less Than 30-Day Move-Out Notice will be allowed to continue to reside in the facility until the hearing process is completed unless substantial evidence is provided by the facility to the Department documenting that the change of behavior or medical condition of the resident creates a serious and immediate threat to the resident, other residents, or staff and all reasonable alternatives to move-out (consistent with the orders of the attending physician or primary care provider) have been attempted and documented in the resident’s medical record.
+(b) The resident who has received a Less Than 30-Day Move-Out Notice will be allowed to continue to reside in the facility until the hearing process is completed unless substantial evidence is provided by the facility to the Department documenting that the change of behavior or medical condition of the resident creates a serious and immediate threat to the resident, other residents, or staff and all reasonable alternatives to move-out (consistent with the orders of the attending physician or primary care provider) have been attempted and documented in the resident's medical record.
 (A) When a hearing has been requested, the Department shall request the Office of Administrative Hearings hold an expedited administrative hearing within five (5) business days.
 (B) When a hearing has been requested, but the resident has been moved out of the facility, the facility must hold the resident's room, without charge for room and board or services, pending resolution of the administrative hearing. The facility may not rent the resident's unit pending resolution of the administrative hearing.
 (20) A resident who was admitted January 1, 2006 or later may be moved without advance notice if all of the following are met:
@@ -1464,19 +1464,19 @@ APD 10-2016, f. 6-27-16, cert. ef. 6-28-16
 SPD 14-2007, f. 8-31-07, cert. ef. 11-1-07
 411-054-0085
 Refunds and Financial Management
-(1) RESIDENT DEATH. If a resident dies, the licensee may not require payment for more than 15 days, or the time specified in the admission agreement, whichever is less, after the date of the resident’s death.
+(1) RESIDENT DEATH. If a resident dies, the licensee may not require payment for more than 15 days, or the time specified in the admission agreement, whichever is less, after the date of the resident's death.
 (2) RESIDENT UNABLE TO RETURN. If a resident must leave the facility for medical reasons and the resident or the resident's representative indicates the intent not to return, the facility may not charge the resident for more than 15 days after the date notification is received from the resident or the resident's representative, or the time specified in the admission agreement, whichever is less.
-(a) If the resident’s personal belongings are not removed from the facility within the 15-day timeframe, the facility may charge the resident as specified in the admission agreement. However, the facility may not charge for more than 30 days after receiving notification that the resident is unable to return.
-(b) A reasonable storage fee may be charged for storage of the resident’s belongings beyond 30 days if the admission agreement includes fees for storage.
+(a) If the resident's personal belongings are not removed from the facility within the 15-day timeframe, the facility may charge the resident as specified in the admission agreement. However, the facility may not charge for more than 30 days after receiving notification that the resident is unable to return.
+(b) A reasonable storage fee may be charged for storage of the resident's belongings beyond 30 days if the admission agreement includes fees for storage.
 (3) SUBSTANTIATED ABUSE. If a resident dies or leaves a facility due to substantiated neglect, substantiated abuse, or due to conditions of imminent danger of life, health, or safety, as substantiated by the Department, the facility may not charge the resident beyond the resident's last day in the facility.
-(4) INVOLUNTARY MOVE-OUT. If the facility gives written notice for the resident to leave, the facility waives the right to charge for services or room and board beyond the date of the resident’s departure. If applicable, the facility may pursue past due charges that the resident incurred prior to move-out.
+(4) INVOLUNTARY MOVE-OUT. If the facility gives written notice for the resident to leave, the facility waives the right to charge for services or room and board beyond the date of the resident's departure. If applicable, the facility may pursue past due charges that the resident incurred prior to move-out.
 (5) REFUNDS. The provider must refund any advance payments within 30 days after the resident leaves the facility.
 (6) RATE INCREASES. The facility must provide 30 days written notice prior to any facility-wide increases, additions, or changes.
-(7) SERVICE RATE INCREASES. The facility must provide immediate written notice to the resident at the time the facility determines the resident’s service rates shall increase due to increased service provision, as negotiated in the resident's service plan.
-(8) MEDICAID PERSONAL INCIDENTAL FUNDS. The facility must have written policies, procedures, and accounting records for handling residents’ personal incidental funds that are managed in the resident’s own best interest.
+(7) SERVICE RATE INCREASES. The facility must provide immediate written notice to the resident at the time the facility determines the resident's service rates shall increase due to increased service provision, as negotiated in the resident's service plan.
+(8) MEDICAID PERSONAL INCIDENTAL FUNDS. The facility must have written policies, procedures, and accounting records for handling residents' personal incidental funds that are managed in the resident's own best interest.
 (a) The resident may manage their personal financial resources, or may authorize another individual or the facility to manage their personal incidental funds.
 (b) The facility must hold, manage, and account for the personal incidental funds of the resident when requested in writing by the resident.
-(c) Records must include the Resident Account Record (SDS 713) or other comparable expenditure form if the facility manages or handles a resident’s personal incidental funds.
+(c) Records must include the Resident Account Record (SDS 713) or other comparable expenditure form if the facility manages or handles a resident's personal incidental funds.
 (A) The resident account record must show in detail, with supporting documentation, all monies received on behalf of the resident and the disposition of all funds received.
 (B) Individuals shopping for residents must provide a list showing description and price of items purchased, along with payment receipts for these items.
 (C) The facility must provide a copy of the individual Resident Account Record to the resident on a quarterly basis.
@@ -1513,7 +1513,7 @@ Fire and Life Safety
 (c) Requesting change in resident rooms, and
 (d) Arranging for special equipment.
 After making necessary changes, if the facility fails to meet the applicable evacuation level, the facility must issue an involuntary move-out notice to the residents in accordance with OAR 411-054-0080.
-(3) Fire detection and protection equipment, including visual signals with alarms for hearing impaired residents, must be maintained in accordance with the OFC and the manufacturer’s instructions.
+(3) Fire detection and protection equipment, including visual signals with alarms for hearing impaired residents, must be maintained in accordance with the OFC and the manufacturer's instructions.
 (a) The facility must provide and maintain one or more 2A:10B:C fire extinguishers on each floor in accordance with the OFC.
 (b) Flammable and combustible liquids and hazardous materials must be safely and properly stored in original containers in accordance with the fire authority having jurisdiction.
 (4) SAFETY PROGRAM. A safety program must be developed and implemented to avoid hazards to residents, such as dangerous substances, sharp objects, unprotected electrical outlets, slippery floors or stairs, exposed heating devices, broken glass, water temperatures, and fire prevention.
@@ -1573,7 +1573,7 @@ Inspections and Investigations
 (b) The State Long Term Care Ombudsman must have access to all resident and facility records that relate to an investigation. Certified Ombudsman volunteers may have access to facility records that relate to an investigation and access to resident records with written permission from the resident or guardian.
 (c) The State Fire Marshal or authorized representative must be permitted access to the facility and records pertinent to resident evacuation and fire safety.
 (d) The Oregon Health Authority and appropriate Local Public Health Authority must be permitted access to the facility and records pertinent to investigation of illness or outbreak, as authorized by law.
-(2) The facility shall not interfere with a good faith disclosure of information by an employee or volunteer concerning abuse or other action affecting a resident’s safety or welfare, as described in OAR 411-054-0028(4).
+(2) The facility shall not interfere with a good faith disclosure of information by an employee or volunteer concerning abuse or other action affecting a resident's safety or welfare, as described in OAR 411-054-0028(4).
 (3) Staff of the Department shall visit and inspect every facility at least but not limited to once every two years for a full in-person survey to determine whether the facility is maintained and operated in accordance with these rules.
 (a) For each year during which a facility does not have a full survey, the Department shall conduct an in-person inspection of the kitchen and other areas where food is prepared for residents.
 (b) Subsection (a) will not go into effect until July 1, 2022.
@@ -1633,11 +1633,11 @@ SPD 16-2008, f. 12-31-08, cert. ef. 1-1-09
 SPD 14-2007, f. 8-31-07, cert. ef. 11-1-07
 411-054-0106
 Regulatory Framework
-(1) PURPOSE. The goal of the regulatory framework is to provide transparency, accuracy, and equity related to regulatory actions taken by the Department in response to facilities’ lack of substantial compliance with Oregon Administrative Rules. The framework should include application of preventative, positive, and progressively more restrictive measures taken by the Department in response to facilities’ lack of substantial compliance with Oregon Administrative Rules. Whenever possible and appropriate, the framework shall be based on a progressive method of regulation based on scope and severity, which includes positive reinforcement, as well as sanctions and penalties.
+(1) PURPOSE. The goal of the regulatory framework is to provide transparency, accuracy, and equity related to regulatory actions taken by the Department in response to facilities' lack of substantial compliance with Oregon Administrative Rules. The framework should include application of preventative, positive, and progressively more restrictive measures taken by the Department in response to facilities' lack of substantial compliance with Oregon Administrative Rules. Whenever possible and appropriate, the framework shall be based on a progressive method of regulation based on scope and severity, which includes positive reinforcement, as well as sanctions and penalties.
 (2) FOCUS. The framework will address measures related to the scope and severity of noncompliance, including but not limited to:
 (a) Whether the facility has qualified awake direct care staff in consistent numbers to consistently meet the scheduled and unscheduled needs of each resident 24 hours a day; and
 (b) The impact of any compliance deficiencies on the rights, health, welfare and safety of the residents.
-(3) PROCESS. The framework will provide information on processes related to the Department’s:
+(3) PROCESS. The framework will provide information on processes related to the Department's:
 (a) Accurate and equitable assessment of substantial compliance based on regulatory requirements.
 (b) Employment of progressive and positive action to promote and achieve facility substantial compliance.
 (c) Accurate and equitable imposition of corrective actions.
@@ -1647,10 +1647,10 @@ Regulatory Framework
 (b) Technical support to facilities.
 (c) Consultation with policy analysts to clarify regulatory requirements.
 (d) Corrective action involving civil penalties.
-(e) Imposition of sanctions, including, but not limited to conditions on a provider’s license.
+(e) Imposition of sanctions, including, but not limited to conditions on a provider's license.
 (f) Suspension, non-renewal or revocation of license.
 (5) ENHANCED OVERSIGHT AND SUPERVISION PROGRAM.
-(a) Facilities that consistently demonstrate a lack of substantial compliance with the requirements of rules adopted to regulate residential care facilities or assisted living facilities or perform substantially below statewide averages on quality metrics will be considered for the Enhanced Oversight and Supervision Program. “Consistently” is defined as regularly and typically for purposes of this rule.
+(a) Facilities that consistently demonstrate a lack of substantial compliance with the requirements of rules adopted to regulate residential care facilities or assisted living facilities or perform substantially below statewide averages on quality metrics will be considered for the Enhanced Oversight and Supervision Program. "Consistently" is defined as regularly and typically for purposes of this rule.
 (b) The Department shall take one or more of the following actions, the Department deems necessary, to improve the performance of a facility:
 (A) Increase the frequency of surveys of the facility.
 (B) Conduct surveys that focus on areas of consistent non-compliance as identified by the Department.
@@ -1658,7 +1658,7 @@ Regulatory Framework
 (c) The Department shall terminate the enhanced oversight and supervision of a facility as follows, after:
 (A) Three years, if the facility has shown substantial compliance according to the Department; or
 (B) One year, if the facility submits a written assertion of substantial compliance and the Department determines the facility no longer meets the criteria of the program.
-(d) The Department shall publish notice on the Department’s licensing website of any facility enrolled in the Enhanced Oversight and Supervision program.
+(d) The Department shall publish notice on the Department's licensing website of any facility enrolled in the Enhanced Oversight and Supervision program.
 Statutory/Other Authority: ORS 410.070 & 443.450
 Statutes/Other Implemented: ORS 443.400 - 443.455 & 443.991
 History:
@@ -1710,20 +1710,20 @@ Conditions
 (8) HEARING.
 (a) Right to Hearing. If the Department imposes an Order, the licensee is entitled to a contested case hearing pursuant to ORS chapter 183.
 (b) Hearing Request. The Department must receive the licensee's request for a hearing within 21 calendar days of the date of Order. If a request for hearing is not received by the Department within 21 calendar days of the date of the Order, the licensee will have waived the right to a hearing under ORS chapter 183.
-(c) A licensee’s request for a hearing does not delay enforcement.
+(c) A licensee's request for a hearing does not delay enforcement.
 (d) Date of Hearing. When a timely request for hearing is received, the hearing shall be held as soon as practical.
 (e) Consolidation. If a request for hearing is received on an Order, and a subsequent Order is issued, the Department may consolidate the Orders into a single contested case hearing.
 (9) REQUEST FOR REINSPECTION OR REEVALUATION.
 (a) Assertion of substantial compliance. Following the Order on a facility, the Department shall:
-(A) Within 15 business days of receiving the facility’s written assertion of substantial compliance and request for reinspection, the Department shall reinspect or reevaluate the facility to determine if the facility has achieved substantial compliance.
+(A) Within 15 business days of receiving the facility's written assertion of substantial compliance and request for reinspection, the Department shall reinspect or reevaluate the facility to determine if the facility has achieved substantial compliance.
 (B) Notify the facility by telephone or electronic means of the findings of the reinspection or reevaluation within five business days after completion of the reinspection or reevaluation.
-(C) Issue a written report to the facility within 30 business days after the reinspection or reevaluation notifying the facility of the Department’s determinations.
+(C) Issue a written report to the facility within 30 business days after the reinspection or reevaluation notifying the facility of the Department's determinations.
 (b) If the Department finds the facility has achieved substantial compliance and that systems are in place to ensure similar deficiencies do not reoccur, the Department shall withdraw the Order.
 (c) If after reinspection or reevaluation, the Department determines the violation continues to exist, the Department may not withdraw the Order and is not obligated to reinspect or reevaluate the facility again for at least 45 business days after the first reinspection or reevaluation.
 (A) The Department shall provide the facility notice of the decision not to withdraw the Order in writing.
 (B) The notice shall inform the facility of the right to a contested case hearing pursuant to ORS chapter 183.
 (d) If the Department does not meet the requirements of this section, a license condition is automatically removed on the date the Department failed to meet the requirements of this section, unless the Director extends the applicable period for no more than 15 business days. The Director may not delegate the power to make a determination regarding an extension under this paragraph.
-(e) Nothing in this section limits the Department’s authority to visit or inspect the facility at any time.
+(e) Nothing in this section limits the Department's authority to visit or inspect the facility at any time.
 (10) EXCEPTIONS TO ORDER IMPOSING LICENSE CONDITION. When a restriction of admissions is in effect pursuant to an Order, the Department, in its sole discretion, may authorize the facility to admit new residents for whom the Department determines that alternate placement is not feasible.
 (11) Conditions may be imposed for the duration of the licensure period (two years) or limited to some other shorter period of time. If the condition corresponds to the licensing period, the reasons for the condition will be considered at the time of renewal to determine if the conditions are still appropriate. The effective date and expiration date of the condition will be indicated on the attachment to the license.
 Statutory/Other Authority: ORS 183, 410.070 & 443.450
@@ -1743,11 +1743,11 @@ Civil Penalties
 (b) "Resident rights" means that each resident must be assured the same civil and human rights accorded to other citizens as described in OAR 411-054-0027.
 (c)"Monitoring" means when a residential care or assisted living facility is surveyed, inspected, or investigated by an employee or designee of the Department or an employee or designee of the State Fire Marshal.
 (d) As used in this rule:
-(A) "Harm" means a measurable negative impact to a resident’s physical, mental, financial, or emotional well-being.
-(B) "Minor harm” means harm resulting in no more than temporary physical, mental or emotional discomfort or pain without loss of function, or in financial loss of less than $1,000.
-(C) "Moderate harm” means harm resulting in temporary loss of physical, mental or emotional function, or in financial loss of $1,000 or more, but less than $5,000.
-(D) "Serious harm” means harm resulting in long-term or permanent loss of physical, mental or emotional function, or in financial loss of $5,000 or more.
-(E) “Financial loss” means loss of resident property or money as a result of financial exploitation, as defined in ORS 124.050. Financial loss does not include loss of resident property or money that results from action or inaction of an individual not employed or contracted with the facility, or that arises from the action or inaction of an individual employed or contracted with the facility if the action or inaction occurs while the individual is not performing employment or contractual duties.
+(A) "Harm" means a measurable negative impact to a resident's physical, mental, financial, or emotional well-being.
+(B) "Minor harm" means harm resulting in no more than temporary physical, mental or emotional discomfort or pain without loss of function, or in financial loss of less than $1,000.
+(C) "Moderate harm" means harm resulting in temporary loss of physical, mental or emotional function, or in financial loss of $1,000 or more, but less than $5,000.
+(D) "Serious harm" means harm resulting in long-term or permanent loss of physical, mental or emotional function, or in financial loss of $5,000 or more.
+(E) "Financial loss" means loss of resident property or money as a result of financial exploitation, as defined in ORS 124.050. Financial loss does not include loss of resident property or money that results from action or inaction of an individual not employed or contracted with the facility, or that arises from the action or inaction of an individual employed or contracted with the facility if the action or inaction occurs while the individual is not performing employment or contractual duties.
 (e) The Director shall assess the severity of a violation using the following criteria:
 (A) Level 1 - is a violation that results in no actual harm or in potential for only minor harm.
 (B) Level 2 - is a violation that results in minor harm or potential for moderate harm.
@@ -1758,11 +1758,11 @@ Civil Penalties
 (B) A pattern violation occurs when more than a very limited number of residents or employees are affected, or the situation has occurred in more than a limited number of locations but the locations are not dispersed throughout the facility.
 (C) A widespread violation occurs when the problems causing the deficiency are pervasive and affect many locations throughout the facility or represent a systemic failure that affected, or has the potential to affect, a large portion or all of the residents or employees.
 (3) Determining Civil Penalties.
-(a) When the Director is considering imposition of a civil penalty under ORS 443.455(2)(a), ORS 441.710, or Or Laws 2017, ch 679, § 4 on a residential care or assisted living facility the Director shall comply with the requirements of this section.
+(a) When the Director is considering imposition of a civil penalty under ORS 443.455(2)(a), ORS 441.710, or Or Laws 2017, ch 679, 4 on a residential care or assisted living facility the Director shall comply with the requirements of this section.
 (b) When imposing a civil penalty on a facility pursuant to this section, the Director shall consider:
 (A) Any prior violations of laws or rules pertaining to the facility and, as a mitigating factor, whether violations were incurred under prior ownership or management of the facility.
 (B) The financial benefits, if any, realized by the facility as a result of the violation.
-(C) The facility’s past history of correcting violations and preventing the reoccurrence of violations.
+(C) The facility's past history of correcting violations and preventing the reoccurrence of violations.
 (D) The severity and scope of the violation.
 (4) Civil Penalty Amounts.
 (a) The Director may impose civil penalties as follows, for a:
@@ -1807,7 +1807,7 @@ Civil Penalties
 (13) If the order is not appealed, the amount of the penalty is payable within 10 calendar days after the order is entered. If the order is appealed and is sustained, the amount of the penalty is payable within 10 calendar days after the court decision. The order, if not appealed or sustained on appeal, shall constitute a judgment and may be filed in accordance with the provisions of ORS 18.005 to 18.428. Execution may be issued upon the order in the same manner as execution upon a judgment of a court of record.
 (14) A violation of any general order or final order pertaining to a residential care or assisted living facility issued by the Department, other than a Level 1 violation, is subject to a civil penalty.
 (15) Judicial review of civil penalties imposed under ORS 441.710 shall be as provided under ORS 183.480, except the court may, in its discretion, reduce the amount of the penalty.
-(16) All penalties recovered under ORS 443.455, Or Laws 2017, ch 679, § 4, and 441.710 to 441.740 shall be paid to the Quality Care Fund.
+(16) All penalties recovered under ORS 443.455, Or Laws 2017, ch 679, 4, and 441.710 to 441.740 shall be paid to the Quality Care Fund.
 Statutory/Other Authority: ORS 410.070 & 443.450
 Statutes/Other Implemented: ORS 441.705 - 441.745, 443.400 - 443.455 & 443.991
 History:
@@ -1845,14 +1845,14 @@ SPD 14-2007, f. 8-31-07, cert. ef. 11-1-07
 Temporary Manager
 (1) APPOINTMENT. The Division, with the consent of the licensee, may appoint a temporary manager to assume control of the day-to-day operation of the facility in accordance with Oregon Laws 2009, chapter 539, sections 14 through 18. The appointment may be for a period not to exceed six months.
 (2) CRITERIA. A temporary manager may be appointed if the Division determines that the health or safety of residents in the facility are, or in the immediate future shall be, in jeopardy based upon:
-(a) The licensee’s unwillingness or inability to comply with Department rules in the operation of the facility;
+(a) The licensee's unwillingness or inability to comply with Department rules in the operation of the facility;
 (b) The imminent insolvency of the facility;
 (c) The Division's revocation or suspension of the license of the facility; or
 (d) The Division's determination that the licensee intends to cease operations and to close the facility without adequate arrangements for the relocation of the residents.
 (3) DUTIES AND POWERS. The temporary manager has all of the duties and powers, as agreed upon between the Division and the licensee that are necessary to ensure the safety and well-being of the residents and the continued operation of the facility.
 (4) QUALIFICATIONS. In order to qualify for appointment as temporary manager, the prospective appointee must:
 (a) Be, or employ a person who is, qualified to serve as administrator for the type of facility being served;
-(b) Be familiar with the Division’s rules for the operation of the facility to be served;
+(b) Be familiar with the Division's rules for the operation of the facility to be served;
 (c) Be familiar with the needs of the resident population in the facility to be served; and
 (d) Have a demonstrated history (five year minimum) of operating and managing a similar facility in substantial compliance with Department rules.
 Statutory/Other Authority: ORS 410.070 & 443.450
@@ -2021,7 +2021,7 @@ An assisted living facility (ALF), as defined by OAR 411-054-0005, shall be buil
 (b) If a change in use and building code occupancy classification occurs, license approval shall be contingent on meeting the requirements of the building codes.
 (c) An ALF must comply with FPS program requirements for submission of building drawings and specifications as described in OAR 333-675-0000 through 333-675-0050.
 (3) GENERAL BUILDING EXTERIOR.
-(a) All exterior pathways and accesses to the ALF’s common-use areas, entrance, and exit ways must be made of hard, smooth material, be accessible, and maintained in good repair.
+(a) All exterior pathways and accesses to the ALF's common-use areas, entrance, and exit ways must be made of hard, smooth material, be accessible, and maintained in good repair.
 (b) An ALF must take measures to prevent the entry of rodents, flies, mosquitoes, and other insects. There must be locked storage for all poisons, chemicals, rodenticides, and other toxic materials. All materials must be properly labeled.
 (c) ALF grounds must be kept orderly and free of litter and refuse. Garbage must be stored in covered refuse containers.
 (d) As described in OAR chapter 411, division 057, memory care communities licensed as an ALF must be located on the ground floor.
@@ -2053,7 +2053,7 @@ An assisted living facility (ALF), as defined by OAR 411-054-0005, shall be buil
 (A) Each unit must provide usable space totaling at least 100 cubic feet for resident clothing and belongings and include one clothes closet with a minimum of four linear feet of hanging space.
 (B) The rod must be adjustable for reach ranges per building codes. In calculating useable space, closet height may not exceed eight feet and a depth of two feet.
 (C) Kitchen cabinets must not be included when measuring storage space.
-(D) A lockable storage space (e.g., drawer, cabinet, or closet) must be provided for the safekeeping of a resident’s small valuable items and funds. Both the administrator and resident may have keys.
+(D) A lockable storage space (e.g., drawer, cabinet, or closet) must be provided for the safekeeping of a resident's small valuable items and funds. Both the administrator and resident may have keys.
 (c) WINDOWS.
 (A) Each resident's living room and bedroom must have an exterior window that has an area at least one-tenth of the floor area of the room.
 (B) Unit windows must be equipped with curtains or blinds for privacy and control of sunlight.
@@ -2089,7 +2089,7 @@ An assisted living facility (ALF), as defined by OAR 411-054-0005, shall be buil
 (C) On-site laundry facilities, used by staff for facility and resident laundry, must have capacity for locked storage of chemicals and equipment.
 (D) An ALF must provide covered or enclosed clean linen storage that may be on shelves or carts. Clean linens may be stored in closets outside the laundry area.
 (E) The wall base of the laundry facilities must be continuous and coved with the floor, tightly sealed to the wall and constructed without voids that may harbor insects or moisture.
-(d) SOILED LINEN PROCESSING. For the purpose of this rule, "soiled linens and soiled clothing," means linens or clothing contaminated by an individual’s bodily fluids (for example, urine, feces, and blood).
+(d) SOILED LINEN PROCESSING. For the purpose of this rule, "soiled linens and soiled clothing," means linens or clothing contaminated by an individual's bodily fluids (for example, urine, feces, and blood).
 (A) There must be a separate area with closed containers that ensure the separate storage and handling of soiled linens and soiled clothing. There must be space and equipment to handle soiled linen and soiled clothing processing needs that is separate from regular linen and clothing.
 (B) Arrangement must provide a one-way flow of soiled linens and soiled clothing from the soiled area to the clean area and preclude potential for contamination of clean linens and clothing.
 (C) The soiled linen area must include a flushing rim clinical sink with a handheld rinsing device and a hand wash sink or lavatory.
@@ -2129,7 +2129,7 @@ An assisted living facility (ALF), as defined by OAR 411-054-0005, shall be buil
 (11) CALL SYSTEM. An ALF must provide a call system that connects resident units to the care staff center or staff pagers. Wireless call systems are allowed.
 (a) A manually operated emergency call system must be provided at each resident bathroom, central bathing rooms, and public-use restrooms.
 (b) EXIT DOOR ALARMS. Exit door alarms or other acceptable systems must be provided for security purposes and to alert staff when residents exit the ALF. The door alarm system may be integrated with the call system.
-(c) Security devices intended to alert staff of an individual resident’s potential elopement may include, but not be limited to, electronic pendants, bracelets, pins.
+(c) Security devices intended to alert staff of an individual resident's potential elopement may include, but not be limited to, electronic pendants, bracelets, pins.
 (12) TELEPHONES.
 (a) RESIDENT PHONES. Each unit must have at least one telephone jack to allow for individual phone service.
 (b) PUBLIC TELEPHONE. There must be an accessible local access public telephone in a private area that allows a resident or another individual to conduct a private conversation.
@@ -2142,17 +2142,17 @@ SPD 13-2009, f. 9-30-09, cert. ef. 10-1-09
 SPD 14-2007, f. 8-31-07, cert. ef. 11-1-07
 411-054-0320
 Quality Measurement Program and Council
-(1) The purpose of the Quality Measurement Program is to allow facilities and the public to compare residential care and assisted living facility performance on each quality metric. The Department shall provide and maintain a web-based report based on metrics defined in Or Laws 2017, ch 679, § 15(1) and any other metrics determined by the Quality Measurement Council. The first report from this program will be published July 1, 2021.
+(1) The purpose of the Quality Measurement Program is to allow facilities and the public to compare residential care and assisted living facility performance on each quality metric. The Department shall provide and maintain a web-based report based on metrics defined in Or Laws 2017, ch 679, 15(1) and any other metrics determined by the Quality Measurement Council. The first report from this program will be published July 1, 2021.
 (2) Quality Measurement Council. The Quality Measurement Council is appointed by the Governor, and consists of the following members:
 (a) One individual representing the Oregon Patient Safety Commission.
 (b) One individual representing residential care facilities or assisted living facilities.
-(c) One consumer representative from an Alzheimer’s advocacy organization.
+(c) One consumer representative from an Alzheimer's advocacy organization.
 (d) One licensed health care practitioner with experience in geriatrics.
 (e) Two individuals associated with academic institutions who have expertise in research data and analytics and community-based care and quality reporting.
 (f) The Long-Term Care Ombudsman or a designee of the Long-Term Care Ombudsman.
 (g) One direct care worker or a representative of a direct care worker who works in a residential care facility.
 (h) One individual representing the Department.
-(3) A staff coordinator shall be assigned by the Department to support the council. The staff coordinator will assist the council as needed and ensure the annual report required by Or Laws 2017, ch 679, § 15(3) and (4) are implemented.
+(3) A staff coordinator shall be assigned by the Department to support the council. The staff coordinator will assist the council as needed and ensure the annual report required by Or Laws 2017, ch 679, 15(3) and (4) are implemented.
 (4) The council shall determine the form and manner for facilities to report metrics for the prior calendar year. Data that identifies a resident is excluded from this requirement.
 (a) In developing quality metrics, the council shall consider whether:
 (A) Reported data reflects and promotes quality care; and
@@ -2175,12 +2175,12 @@ Quality Measurement Program and Council
 (A) Describe statewide patterns and trends that emerge from the collected data.
 (B) Describe compliance data maintained by the Department.
 (C) Identify facilities that substantially fail to report data as required.
-(D) Allow facilities and the public to compare a facility’s performance on each quality metric, by demographics, geographic region, facility type, and other categories the Department believes may be useful to consumers and facilities.
+(D) Allow facilities and the public to compare a facility's performance on each quality metric, by demographics, geographic region, facility type, and other categories the Department believes may be useful to consumers and facilities.
 (E) Show trends in performance for each quality metric.
 (F) Identify patterns of performance by geographic regions, and other categories the Department believes will be useful to consumers.
 (G) Identify the number, severity, and scope of regulatory violations by each geographic region.
 (H) Show average timelines for surveys and investigations of abuse or regulatory noncompliance.
-(d) Quality metric data reported to the Department under this section may not be used against the facility, as required under Or Laws 2017, ch 679, § 15(7). This section does not exempt a facility from complying with state law. Also, the Department may use quality metric data obtained during the normal course of business or compliance activity, as required by Or Laws 2017, ch 679, § 15(8).
+(d) Quality metric data reported to the Department under this section may not be used against the facility, as required under Or Laws 2017, ch 679, 15(7). This section does not exempt a facility from complying with state law. Also, the Department may use quality metric data obtained during the normal course of business or compliance activity, as required by Or Laws 2017, ch 679, 15(8).
 (7) Online Training. The Department shall develop online training modules for facilities and the public.
 (a) Training modules shall address the top two statewide issues identified by surveys or reviews of facilities during the prior year.
 (b) Training modules shall be available and accessible by January 1, 2019.

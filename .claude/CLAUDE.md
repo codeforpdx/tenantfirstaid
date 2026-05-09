@@ -75,6 +75,16 @@ npm run test -- --run --coverage  # With coverage
 
 - Write comments as full sentences and end them with a period.
 
+## Document files (`backend/scripts/documents/`)
+
+All `.txt` law documents must be **pure ASCII**. Vertex AI RAG ingestion has produced mojibake when UTF-8 is present. Before adding or modifying any `.txt` file in this directory, verify with:
+
+```bash
+LC_ALL=C grep -cP '[^\x00-\x7F]' path/to/file.txt  # must output 0
+```
+
+Common offenders are smart quotes (`'` `"` `"`) — replace them with straight ASCII equivalents (`'` `"`).
+
 ## Commit messages
 
 Concise, imperative mood, small focused commits. Write like a humble experienced engineer — casual, no listicles, highlight non-obvious choices. No robot speak, marketing buzzwords, or vague fluff.
