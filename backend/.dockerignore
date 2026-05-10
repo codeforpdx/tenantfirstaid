@@ -9,6 +9,7 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
-*.md
+evaluate/EVALUATION.md
+scripts/documents/
 .env
 .env.*

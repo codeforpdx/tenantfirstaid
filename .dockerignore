@@ -25,5 +25,7 @@ frontend/coverage/
 
 # Docs and config not needed at build time
 docs/
-*.md
+README.md
+Architecture.md
+Deployment.md
 docker-compose*.yml
