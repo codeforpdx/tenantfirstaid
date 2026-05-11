@@ -100,8 +100,7 @@ class TestTemporaryFormattedHandler:
         from unittest.mock import patch
 
         isolated_logger.setLevel(logging.WARNING)
-        with patch("sys.stderr") as mock_stderr:
-            mock_stderr.isatty.return_value = False
+        with patch("sys.stderr.isatty", return_value=False):
             with temporary_formatted_handler(isolated_logger):
                 # Redirect the handler's stream to a buffer so we can read the output.
                 handler = isolated_logger.handlers[-1]
