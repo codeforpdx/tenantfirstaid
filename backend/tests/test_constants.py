@@ -80,10 +80,17 @@ class TestStrtobool:
 
 class TestGoogEnvAndPolicy:
     @pytest.fixture(autouse=True)
+    def _no_env_file(self):
+        # Exercise the "no .env, rely on ambient environment" path for every
+        # test in this class, so each test can inject env vars via os.environ
+        # without a real .env file interfering.
+        with patch("tenantfirstaid.constants.Path.exists", return_value=False):
+            yield
+
+    @pytest.fixture(autouse=True)
     def _silence_missing_env_warning(self, caplog):
-        # These tests deliberately patch Path.exists -> False to exercise the
-        # "no .env, rely on ambient environment" path, which emits a warning.
-        # Suppress it so the test output stays clean.
+        # The "no .env" path emits a warning; suppress it by default so test
+        # output stays clean. Individual tests can override via caplog.set_level.
         caplog.set_level(logging.CRITICAL, logger="tenantfirstaid.constants")
 
     REQUIRED_ENV = {
@@ -94,24 +101,21 @@ class TestGoogEnvAndPolicy:
         "GOOGLE_APPLICATION_CREDENTIALS": "/tmp/creds.json",
     }
 
-    @patch("tenantfirstaid.constants.Path.exists", return_value=False)
     @patch.dict("os.environ", REQUIRED_ENV, clear=False)
-    def test_init_with_all_vars(self, mock_path):
+    def test_init_with_all_vars(self):
         singleton = _GoogEnvAndPolicy()
         assert singleton.MODEL_NAME == "gemini-2.5-pro"
         assert singleton.GOOGLE_CLOUD_PROJECT == "test-project"
         assert singleton.VERTEX_AI_DATASTORES["laws"] == "test-datastore"
 
     @pytest.mark.parametrize("missing_var", REQUIRED_ENV.keys())
-    @patch("tenantfirstaid.constants.Path.exists", return_value=False)
-    def test_missing_required_var_raises(self, mock_path, missing_var):
+    def test_missing_required_var_raises(self, missing_var):
         env = {k: v for k, v in self.REQUIRED_ENV.items() if k != missing_var}
         with patch.dict("os.environ", env, clear=True):
             with pytest.raises(ValueError, match="environment variable is not set"):
                 _GoogEnvAndPolicy()
 
-    @patch("tenantfirstaid.constants.Path.exists", return_value=False)
-    def test_missing_env_file_emits_warning_with_resolved_path(self, mock_path, caplog):
+    def test_missing_env_file_emits_warning_with_resolved_path(self, caplog):
         # Override the autouse silencer: we want to assert the warning.
         caplog.set_level(logging.WARNING, logger="tenantfirstaid.constants")
         with patch.dict("os.environ", self.REQUIRED_ENV, clear=False):
@@ -125,8 +129,7 @@ class TestGoogEnvAndPolicy:
             "/backend/.env, proceeding with existing environment variables."
         )
 
-    @patch("tenantfirstaid.constants.Path.exists", return_value=False)
-    def test_missing_laws_datastore_raises(self, mock_path):
+    def test_missing_laws_datastore_raises(self):
         env = {
             **self.REQUIRED_ENV,
             "VERTEX_AI_DATASTORE_OREGONLAWHELP": "store-1",
