@@ -35,7 +35,7 @@ class LangChainChatManager:
 
         self.logger = logging.getLogger(__name__)
 
-        # defer agent instantiation until 'generate_stream_response'
+        # Defer agent instantiation until 'generate_stream_response'.
         self.agent = None
         self.system_prompt: Optional[SystemMessage] = None
 

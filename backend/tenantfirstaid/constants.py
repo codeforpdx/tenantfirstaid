@@ -91,7 +91,7 @@ class _GoogEnvAndPolicy:
         2. explicitly set each slotted attribute
         3. check that the slotted attributes are not None
         """
-        # read .env at object creation time
+        # Read .env at object creation time.
         path_to_env = Path(__file__).parent.parent / ".env"
         if path_to_env.exists():
             load_dotenv(dotenv_path=path_to_env, override=True)
