@@ -8,15 +8,17 @@ a single stderr handler with the colorized format used across the codebase.
 import logging
 import os
 import sys
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
+
+_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 
 
 class _ColoredLevelFormatter(logging.Formatter):
     """Formatter that colorizes the level name when emitting to a TTY.
 
-    Colors are only applied when the handler's stream is a TTY, so log files
-    and CI captures stay free of ANSI escapes.
+    The TTY check happens once at construction (based on `sys.stderr`), so
+    log files and CI captures stay free of ANSI escapes.
     """
 
     _LEVEL_COLORS = {
@@ -26,9 +28,9 @@ class _ColoredLevelFormatter(logging.Formatter):
     }
     _RESET = "\033[0m"
 
-    def __init__(self, fmt: str, use_color: bool) -> None:
-        super().__init__(fmt)
-        self._use_color = use_color
+    def __init__(self) -> None:
+        super().__init__(_FORMAT)
+        self._use_color = sys.stderr.isatty()
 
     def format(self, record: logging.LogRecord) -> str:
         if self._use_color and record.levelno in self._LEVEL_COLORS:
@@ -43,8 +45,15 @@ class _ColoredLevelFormatter(logging.Formatter):
         return super().format(record)
 
 
+def _make_stderr_handler() -> logging.StreamHandler:
+    """Build a stderr handler wired with the project formatter."""
+    handler = logging.StreamHandler(stream=sys.stderr)
+    handler.setFormatter(_ColoredLevelFormatter())
+    return handler
+
+
 def configure_logging() -> None:
-    """Install a single stderr handler with a consistent colorized format.
+    """Install a single stderr handler with the project formatter.
 
     Idempotent: if the root logger already has a handler, this is a no-op so
     we don't double-log under pytest, gunicorn, or repeated imports.
@@ -52,14 +61,7 @@ def configure_logging() -> None:
     root = logging.getLogger()
     if root.handlers:
         return
-    handler = logging.StreamHandler(stream=sys.stderr)
-    handler.setFormatter(
-        _ColoredLevelFormatter(
-            "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-            use_color=sys.stderr.isatty(),
-        )
-    )
-    root.addHandler(handler)
+    root.addHandler(_make_stderr_handler())
     root.setLevel(logging.DEBUG if os.getenv("ENV") == "dev" else logging.INFO)
 
 
@@ -72,13 +74,7 @@ def temporary_formatted_handler(logger: logging.Logger) -> Iterator[None]:
     appear in the project format. Propagation is suspended inside the block
     so the message is not also emitted via Python's `lastResort` handler.
     """
-    handler = logging.StreamHandler(stream=sys.stderr)
-    handler.setFormatter(
-        _ColoredLevelFormatter(
-            "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-            use_color=sys.stderr.isatty(),
-        )
-    )
+    handler = _make_stderr_handler()
     previous_propagate = logger.propagate
     logger.addHandler(handler)
     logger.propagate = False
