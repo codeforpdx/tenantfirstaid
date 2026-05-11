@@ -3,6 +3,7 @@ ensure that only keys that should exist are readable
 ensure that symbols are read-only
 """
 
+import logging
 from unittest.mock import patch
 
 import pytest
@@ -78,6 +79,13 @@ class TestStrtobool:
 
 
 class TestGoogEnvAndPolicy:
+    @pytest.fixture(autouse=True)
+    def _silence_missing_env_warning(self, caplog):
+        # These tests deliberately patch Path.exists -> False to exercise the
+        # "no .env, rely on ambient environment" path, which emits a warning.
+        # Suppress it so the test output stays clean.
+        caplog.set_level(logging.CRITICAL, logger="tenantfirstaid.constants")
+
     REQUIRED_ENV = {
         "MODEL_NAME": "gemini-2.5-pro",
         "VERTEX_AI_DATASTORE_LAWS": "test-datastore",
