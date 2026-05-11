@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from collections.abc import Mapping
 from enum import StrEnum, auto
 from pathlib import Path
@@ -7,6 +8,62 @@ from typing import Final, Optional, cast
 
 from dotenv import load_dotenv
 from langchain_google_genai import HarmBlockThreshold, HarmCategory
+
+
+class _ColoredLevelFormatter(logging.Formatter):
+    """Formatter that colorizes the level name when emitting to a TTY.
+
+    Colors are only applied when the handler's stream is a TTY, so log files
+    and CI captures stay free of ANSI escapes.
+    """
+
+    _LEVEL_COLORS = {
+        logging.WARNING: "\033[33m",  # yellow
+        logging.ERROR: "\033[31m",  # red
+        logging.CRITICAL: "\033[1;31m",  # bold red
+    }
+    _RESET = "\033[0m"
+
+    def __init__(self, fmt: str, use_color: bool) -> None:
+        super().__init__(fmt)
+        self._use_color = use_color
+
+    def format(self, record: logging.LogRecord) -> str:
+        if self._use_color and record.levelno in self._LEVEL_COLORS:
+            original = record.levelname
+            record.levelname = (
+                f"{self._LEVEL_COLORS[record.levelno]}{original}{self._RESET}"
+            )
+            try:
+                return super().format(record)
+            finally:
+                record.levelname = original
+        return super().format(record)
+
+
+def _configure_root_logger() -> None:
+    """Install a single stderr handler with a consistent colorized format.
+
+    Done at import time so any module logging through `logging.getLogger(...)`
+    inherits the same look. We only attach if no handler is already present,
+    to avoid double-logging when something else (e.g. pytest, gunicorn) has
+    already configured logging.
+    """
+    root = logging.getLogger()
+    if root.handlers:
+        return
+    handler = logging.StreamHandler(stream=sys.stderr)
+    handler.setFormatter(
+        _ColoredLevelFormatter(
+            "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            use_color=sys.stderr.isatty(),
+        )
+    )
+    root.addHandler(handler)
+    root.setLevel(logging.DEBUG if os.getenv("ENV") == "dev" else logging.INFO)
+
+
+_configure_root_logger()
 
 logger = logging.getLogger(__name__)
 

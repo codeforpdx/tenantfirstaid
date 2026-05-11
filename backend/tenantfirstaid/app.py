@@ -1,4 +1,3 @@
-import logging
 import os
 from pathlib import Path
 
@@ -50,12 +49,6 @@ app.config["MAIL_USE_TLS"] = True
 app.config["MAIL_USERNAME"] = os.getenv("SENDER_EMAIL")
 app.config["MAIL_PASSWORD"] = os.getenv("APP_PASSWORD")
 app.config["MAIL_DEFAULT_SENDER"] = os.getenv("SENDER_EMAIL")
-
-# Logging configuration
-logging.basicConfig(
-    level=logging.DEBUG if os.getenv("ENV") == "dev" else logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-)
 
 mail = Mail(app)
 
