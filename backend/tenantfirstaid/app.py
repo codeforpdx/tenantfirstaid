@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 
 from flask import Flask
 from flask_cors import CORS
@@ -7,13 +6,13 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_mailman import Mail
 
-if Path(".env").exists():
-    from dotenv import load_dotenv
-
-    load_dotenv(override=True)
-
+# .chat → constants loads .env via an absolute path; do not re-load here.
 from .chat import ChatView
 from .feedback import send_feedback
+from .logger import configure_logging
+
+# Configure logging after .chat (→ constants → .env load) so ENV from .env is honored.
+configure_logging()
 
 app = Flask(__name__)
 

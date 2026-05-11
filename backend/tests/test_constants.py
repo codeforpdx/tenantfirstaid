@@ -111,6 +111,21 @@ class TestGoogEnvAndPolicy:
                 _GoogEnvAndPolicy()
 
     @patch("tenantfirstaid.constants.Path.exists", return_value=False)
+    def test_missing_env_file_emits_warning_with_resolved_path(self, mock_path, caplog):
+        # Override the autouse silencer: we want to assert the warning.
+        caplog.set_level(logging.WARNING, logger="tenantfirstaid.constants")
+        with patch.dict("os.environ", self.REQUIRED_ENV, clear=False):
+            _GoogEnvAndPolicy()
+        warnings = [r for r in caplog.records if r.name == "tenantfirstaid.constants"]
+        assert warnings, "expected a warning when .env is missing"
+        msg = warnings[-1].getMessage()
+        assert "No .env file found" in msg
+        # The resolved path is absolute and points at backend/.env.
+        assert msg.endswith(
+            "/backend/.env, proceeding with existing environment variables."
+        )
+
+    @patch("tenantfirstaid.constants.Path.exists", return_value=False)
     def test_missing_laws_datastore_raises(self, mock_path):
         env = {
             **self.REQUIRED_ENV,

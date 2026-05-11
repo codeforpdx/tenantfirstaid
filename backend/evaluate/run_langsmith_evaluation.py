@@ -24,6 +24,10 @@ from evaluate.results_display import ScenarioResult, print_consistency_stats
 from tenantfirstaid.constants import LANGSMITH_API_KEY, SINGLETON
 from tenantfirstaid.langchain_chat_manager import LangChainChatManager
 from tenantfirstaid.location import OregonCity, UsaState
+from tenantfirstaid.logger import configure_logging
+
+# Configure logging after constants import so ENV from .env is honored.
+configure_logging()
 
 # Suppress the noisy additionalProperties warning from langchain_google_vertexai
 # https://github.com/langchain-ai/langchain-google/issues/1038#issuecomment-3707773510
