@@ -32,10 +32,10 @@ All commands run from `backend/`.
 
 ```bash
 # Full dataset evaluation (default: 20 repetitions per scenario)
-uv run python -m evaluate.run_langsmith_evaluation
+uv run run-langsmith-evaluation
 
 # Custom label and repetition count
-uv run python -m evaluate.run_langsmith_evaluation \
+uv run run-langsmith-evaluation \
   --dataset "tenant-legal-qa-scenarios" \
   --experiment "my-experiment" \
   --num-repetitions 10
@@ -121,7 +121,7 @@ Two independent noise sources affect scores:
 To isolate evaluator variance (cheap — no new agent calls):
 
 ```bash
-uv run python -m evaluate.measure_evaluator_variance \
+uv run measure-evaluator-variance \
   --experiment <experiment-name> \
   --evaluator "legal correctness" \
   -k 5
@@ -184,13 +184,13 @@ To test a rubric change without re-running the agent:
 
 ```bash
 # Quick pass — re-score existing outputs once
-uv run python -m evaluate.measure_evaluator_variance \
+uv run measure-evaluator-variance \
   --experiment <experiment-name> \
   --evaluator "legal correctness" \
   -k 1
 
 # Focus on a noisy scenario
-uv run python -m evaluate.measure_evaluator_variance \
+uv run measure-evaluator-variance \
   --experiment <experiment-name> \
   --evaluator "legal correctness" \
   --scenario 2 -k 5

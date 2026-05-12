@@ -285,10 +285,10 @@ uv run langsmith-dataset example remove \
 cd backend/evaluate
 
 # Run evaluation on the full dataset
-uv run run_langsmith_evaluation.py
+uv run run-langsmith-evaluation
 
 # Run with a custom experiment label (useful for comparing before/after a change)
-uv run run_langsmith_evaluation.py \
+uv run run-langsmith-evaluation \
   --dataset "tenant-legal-qa-scenarios" \
   --experiment "my-experiment" \
   --num-repetitions 1
@@ -381,12 +381,12 @@ This matters because the two sources call for different fixes: agent variance re
 
 ```bash
 # Re-score all runs from an experiment 5 times each (default)
-uv run python -m evaluate.measure_evaluator_variance \
+uv run measure-evaluator-variance \
   --experiment <experiment-name> \
   --evaluator "legal correctness"
 
 # Use more repeats for a tighter estimate; limit to 3 runs per scenario to keep it fast
-uv run python -m evaluate.measure_evaluator_variance \
+uv run measure-evaluator-variance \
   --experiment <experiment-name> \
   --evaluator "legal correctness" \
   -k 7 \
@@ -448,7 +448,7 @@ To decompose variance per scenario, use σ²_agent = σ²_total − σ²_evaluat
 Once you identify a noisy scenario, use `--scenario` to focus on it:
 
 ```bash
-uv run python -m evaluate.measure_evaluator_variance \
+uv run measure-evaluator-variance \
   --experiment <experiment-name> \
   --evaluator "legal correctness" \
   --scenario 2
@@ -765,13 +765,13 @@ After editing a rubric, use `measure_evaluator_variance.py` to re-score an exist
 
 ```bash
 # Score every existing run once with the updated rubric
-uv run python -m evaluate.measure_evaluator_variance \
+uv run measure-evaluator-variance \
   --experiment <experiment-name> \
   --evaluator "legal correctness" \
   -k 1
 
 # Focus on a specific scenario that was noisy
-uv run python -m evaluate.measure_evaluator_variance \
+uv run measure-evaluator-variance \
   --experiment <experiment-name> \
   --evaluator "legal correctness" \
   --scenario 2 \
@@ -867,7 +867,7 @@ Results appear in the same Experiments view used by the offline CLI, with the sa
 **Limitation:** the UI runs each example exactly once. The `--num-repetitions` option (useful for measuring scoring variance across runs) is only available through the CLI:
 
 ```bash
-uv run run_langsmith_evaluation.py --num-repetitions 3
+uv run run-langsmith-evaluation --num-repetitions 3
 ```
 
 #### How the deployment accepts dataset inputs
