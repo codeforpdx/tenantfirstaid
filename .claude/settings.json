@@ -36,6 +36,7 @@
         "frontend-design@claude-plugins-official": true,
         "github@claude-plugins-official": true,
         "typescript-lsp@claude-plugins-official": true,
-        "legal@knowledge-work-plugins": true
+        "legal@knowledge-work-plugins": true,
+        "ultrareview@claude-plugins-official": true
     }
 }
