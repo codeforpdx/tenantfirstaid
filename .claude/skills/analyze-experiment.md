@@ -1,6 +1,6 @@
 # Analyze LangSmith Experiment
 
-Analyze an evaluation experiment using the `langsmith_dataset` CLI.
+Analyze an evaluation experiment using the `langsmith_dataset` CLI. Use the `/langsmith` skills for LangSmith-specific guidance (tracing, datasets, evaluators).
 The argument is an experiment name or UUID (e.g. `/analyze-experiment tfa-2026-04-13` or `/analyze-experiment c663e09e-...`).
 
 ## Instructions

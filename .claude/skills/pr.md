@@ -1,6 +1,6 @@
 # Pull Requests
 
-Reference for commit messages, PR expectations, code review, and GitHub Actions security.
+Reference for commit messages, PR expectations, code review, and GitHub Actions security. Use the `/github` plugin for GitHub operations (issues, PRs, checks).
 
 ## Commit messages
 
@@ -17,7 +17,7 @@ Use the PR template (`.github/pull_request_template.md`). For frontend, backend,
 
 ## PR reviews
 
-Use `/ultrareview` for comprehensive multi-agent code review. It covers code quality, security, performance, testing, and documentation — with inline comments for specific issues and top-level comments for general observations.
+Use `/review` for code review by default. Use `/ultrareview` only if the user explicitly asks for it — it is significantly more expensive but provides comprehensive multi-agent review with inline comments for specific issues and top-level comments for general observations.
 
 Project-specific things to flag that ultrareview may not know without context:
 

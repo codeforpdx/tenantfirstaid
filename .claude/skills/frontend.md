@@ -8,7 +8,7 @@ Reference for frontend development workflow. Run all commands from `frontend/`.
 npm run generate-types    # Required before build/typecheck — generates src/types/models.ts
 npm run lint              # Lint (eslint)
 npm run format            # Format (prettier)
-npm run typecheck         # Type-check (tsc)
+npm run typecheck         # Type-check (tsc) — use the typescript-lsp plugin for inline diagnostics
 npm run build             # Build (auto-generates types first)
 npm run test -- --run     # Run tests (vitest)
 npm run test -- --run --coverage  # With coverage

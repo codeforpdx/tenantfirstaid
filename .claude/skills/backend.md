@@ -21,7 +21,7 @@ uv run pytest -m langchain
 make test TEST_OPTIONS="--cov tenantfirstaid --cov-report html --cov-branch"
 ```
 
-All Python commands must be run via `uv run python ...`.
+All Python commands must be run via `uv run python ...`. Use the `/uv` skill for uv-specific guidance.
 
 ## Environment variables
 

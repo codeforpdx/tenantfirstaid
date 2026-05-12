@@ -1,6 +1,6 @@
 # Evaluation
 
-Guide for running, analyzing, and improving LangSmith evaluations.
+Guide for running, analyzing, and improving LangSmith evaluations. Use the `/langsmith` skills for LangSmith-specific guidance (tracing, datasets, evaluators).
 
 ## Account tier check
 
