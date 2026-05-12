@@ -199,7 +199,7 @@ def run_evaluation(
     return results
 
 
-if __name__ == "__main__":
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Run LangSmith evaluation",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -230,3 +230,7 @@ if __name__ == "__main__":
         num_repetitions=args.num_repetitions,
         max_concurrency=args.max_concurrency,
     )
+
+
+if __name__ == "__main__":
+    main()

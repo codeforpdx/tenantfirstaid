@@ -261,7 +261,7 @@ def _per_run_sigmas_from_scenario(
     return sigmas
 
 
-if __name__ == "__main__":
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Measure LLM judge variance on fixed agent outputs",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -310,3 +310,7 @@ if __name__ == "__main__":
         evaluator_names=args.evaluators,
         scenario_ids_filter=args.scenarios,
     )
+
+
+if __name__ == "__main__":
+    main()

@@ -23,6 +23,8 @@ dependencies = [
 
 [project.scripts]
 langsmith-dataset = "evaluate.langsmith_dataset:main"
+run-langsmith-evaluation = "evaluate.run_langsmith_evaluation:main"
+measure-evaluator-variance = "evaluate.measure_evaluator_variance:main"
 generate-metadata = "scripts.generate_metadata_jsonl:main"
 
 [tool.setuptools.packages.find]
