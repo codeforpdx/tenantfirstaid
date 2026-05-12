@@ -11,9 +11,9 @@ If σ_evaluator << σ_total, the noise is agent-side and more agent samples are
 the right fix. If σ_evaluator is comparable to σ_total, fix the judge first.
 
 Usage:
-    uv run python -m evaluate.measure_evaluator_variance --experiment <name>
-    uv run python -m evaluate.measure_evaluator_variance --experiment <name> -k 10
-    uv run python -m evaluate.measure_evaluator_variance --experiment <name> --runs-per-scenario 3
+    uv run measure-evaluator-variance --experiment <name>
+    uv run measure-evaluator-variance --experiment <name> -k 10
+    uv run measure-evaluator-variance --experiment <name> --runs-per-scenario 3
 """
 
 import argparse

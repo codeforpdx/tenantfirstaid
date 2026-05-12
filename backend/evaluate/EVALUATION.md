@@ -282,7 +282,7 @@ uv run langsmith-dataset example remove \
 ## Running evaluations
 
 ```bash
-cd backend/evaluate
+# Run from backend/
 
 # Run evaluation on the full dataset
 uv run run-langsmith-evaluation
