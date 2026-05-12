@@ -66,6 +66,7 @@ backend/
 |   ├── langchain_chat_manager.py       # Per-session agent wrapper with streaming support
 |   ├── langchain_tools.py              # LangChain Agent tools (i.e. RAG retriever)
 |   ├── google_auth.py                  # GCP credential loading (inline JSON or file path)
+|   ├── logger.py                       # Project-wide logging setup (colorized stderr handler, `configure_logging()` entrypoint hook)
 |   ├── system_prompt.md                # System prompt (editable without Python knowledge)
 |   ├── letter_template.md              # Letter template (editable without Python knowledge)
 │   ├── feedback.py                     # Message feedback logic and email integration
@@ -373,6 +374,12 @@ Each chunk is a serialized `ResponseChunk` (`text`, `reasoning`, `letter`, or `d
 - **Google Gemini 2.5 Pro**: Large language model
 - **Vertex AI RAG**: Document retrieval system
 - **Google Cloud AI Platform**: Managed AI services
+
+### Configuration and Logging
+
+Environment variables are loaded once, at `constants.py` import time, from an absolute path (`backend/.env`). This makes the load order independent of the current working directory and avoids the duplicate-load pattern that previously lived in `app.py`. If the `.env` file is missing the module emits a warning and falls back to the ambient environment, which is the normal case in deployed environments where secrets come from systemd rather than a file.
+
+Logging is centralized in `logger.py`. Entrypoints (`app.py`, `run_langsmith_evaluation.py`) call `configure_logging()` once to install a single stderr handler with a shared format; level defaults to `DEBUG` when `ENV=dev` and `INFO` otherwise. The formatter colorizes `WARNING`/`ERROR`/`CRITICAL` level names only when stderr is a TTY, so log files and CI captures stay free of ANSI escapes. `configure_logging()` is idempotent — repeated imports under pytest or gunicorn workers do not double-install handlers. For the narrow case where `constants.py` needs to emit a formatted warning during import (before any entrypoint has run), `temporary_formatted_handler()` attaches the project formatter to a single logger for the duration of a `with` block.
 
 ### Endpoints
 
