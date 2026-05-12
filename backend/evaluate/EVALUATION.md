@@ -1,5 +1,8 @@
 # Automated Evaluation with LangSmith
 
+| 💡 Using Claude Code? Type `/evaluation` in the Claude Code UI for guided evaluation workflow assistance. |
+|---|
+
 ## What is this and why does it matter?
 
 The chatbot gives legal information to tenants. Getting that information wrong — citing the wrong statute, misstating a deadline, using a dismissive tone — has real consequences for real people. We need a systematic way to check quality, not just hope spot-checks catch problems.
