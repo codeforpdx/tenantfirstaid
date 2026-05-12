@@ -803,6 +803,8 @@ Heuristic evaluators (citation format, tool usage, performance) are Python code 
 
 ## Bound evaluators (running evaluations from the LangSmith UI)
 
+> **Sources:** [Automatically run evaluators on experiments](https://docs.langchain.com/langsmith/bind-evaluator-to-dataset) — LangSmith docs · [Reusable evaluators and evaluator templates](https://www.langchain.com/blog/reusable-langsmith-evaluator-templates) — LangChain blog
+
 Instead of running `run_langsmith_evaluation.py` locally, you can bind an LLM-as-judge evaluator directly to the dataset in LangSmith and run experiments from the browser against your Cloud deployment. This is useful for non-developers who want to iterate on the system prompt or test examples without a local Python setup.
 
 ### How it works
@@ -830,9 +832,19 @@ sequenceDiagram
 
 ### Setting up a bound evaluator (example: Legal Correctness)
 
-1. Go to **LangSmith → Datasets → `tenant-legal-qa-scenarios`**.
-2. Open the **Evaluators** tab and click **+ Add Evaluator**.
-3. Choose **LLM-as-Judge**.
+LangSmith maintains a workspace-level **Evaluators** library (left sidebar → **Evaluators**) where evaluators live independently of any single dataset. You configure an evaluator once, then attach it to one or more datasets. This avoids re-entering the prompt and model settings for each dataset.
+
+**First time:** create the evaluator in the library.
+
+1. Go to **LangSmith → Evaluators → + New Evaluator**.
+2. Choose **LLM-as-Judge**.
+
+**Subsequent datasets:** attach the existing evaluator.
+
+1. Go to **LangSmith → Datasets → `tenant-legal-qa-scenarios` → Evaluators tab**.
+2. Click **+ Add Evaluator** and select the evaluator from the list. Skip the steps below.
+
+If creating for the first time, continue:
 
 #### Prompt
 
@@ -893,7 +905,7 @@ The dataset stores examples as `query/state/city`, but the underlying agent expe
 
 ### Keeping bound evaluators in sync with the codebase
 
-There is no API to update a bound evaluator prompt programmatically. When you edit a rubric in `evaluators/`, update the bound evaluator prompt manually in the LangSmith UI (Datasets → `tenant-legal-qa-scenarios` → Evaluators → edit the evaluator).
+There is no SDK or API to update a bound evaluator prompt programmatically — management is UI-only. When you edit a rubric in `evaluators/`, update the bound evaluator prompt in the LangSmith Evaluators library (left sidebar → **Evaluators** → select the evaluator → edit prompt). Because the evaluator is shared across all attached datasets, one edit propagates everywhere.
 
 If a lawyer edits the rubric wording in the LangSmith Playground, pull the changes back to the local files. First check what changed with a dry run:
 
