@@ -53,19 +53,19 @@ All commands run from `backend/`. The JSONL file is the source of truth — alwa
 
 ```bash
 # Push local file to LangSmith (first-time or after editing locally)
-uv run python -m evaluate.langsmith_dataset dataset push \
+uv run langsmith-dataset dataset push \
   dataset-tenant-legal-qa-examples.jsonl tenant-legal-qa-scenarios
 
 # Pull after editing in the browser (overwrites local file)
-uv run python -m evaluate.langsmith_dataset dataset pull \
+uv run langsmith-dataset dataset pull \
   tenant-legal-qa-scenarios dataset-tenant-legal-qa-examples.jsonl
 
 # Check for drift between local and remote before pushing/pulling
-uv run python -m evaluate.langsmith_dataset dataset diff \
+uv run langsmith-dataset dataset diff \
   dataset-tenant-legal-qa-examples.jsonl tenant-legal-qa-scenarios
 
 # Validate schema before pushing
-uv run python -m evaluate.langsmith_dataset dataset validate \
+uv run langsmith-dataset dataset validate \
   dataset-tenant-legal-qa-examples.jsonl
 ```
 
@@ -73,14 +73,14 @@ uv run python -m evaluate.langsmith_dataset dataset validate \
 
 ```bash
 # List all examples
-uv run python -m evaluate.langsmith_dataset example list tenant-legal-qa-scenarios
+uv run langsmith-dataset example list tenant-legal-qa-scenarios
 
 # Append new examples without touching existing ones
-uv run python -m evaluate.langsmith_dataset example append \
+uv run langsmith-dataset example append \
   tenant-legal-qa-scenarios new-examples.jsonl
 
 # Remove an example by scenario_id
-uv run python -m evaluate.langsmith_dataset example remove \
+uv run langsmith-dataset example remove \
   tenant-legal-qa-scenarios 42
 ```
 
@@ -199,10 +199,10 @@ uv run python -m evaluate.measure_evaluator_variance \
 **Plus-tier only:** bound evaluators in the LangSmith UI. When rubric wording is edited in the browser Playground, pull it back:
 
 ```bash
-uv run python -m evaluate.langsmith_dataset prompt list
-uv run python -m evaluate.langsmith_dataset prompt pull tfa-legal-correctness \
+uv run langsmith-dataset prompt list
+uv run langsmith-dataset prompt pull tfa-legal-correctness \
   evaluators/legal_correctness.md --dry-run   # review diff first
-uv run python -m evaluate.langsmith_dataset prompt pull tfa-legal-correctness \
+uv run langsmith-dataset prompt pull tfa-legal-correctness \
   evaluators/legal_correctness.md
 git add evaluate/evaluators/legal_correctness.md && git commit -m "update rubric from Prompt Hub"
 ```

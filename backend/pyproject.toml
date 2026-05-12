@@ -21,6 +21,10 @@ dependencies = [
   "langgraph>=1.0.10",
 ]
 
+[project.scripts]
+langsmith-dataset = "evaluate.langsmith_dataset:main"
+generate-metadata = "scripts.generate_metadata_jsonl:main"
+
 [tool.setuptools.packages.find]
 where = ["."]
 exclude = ["data*"]

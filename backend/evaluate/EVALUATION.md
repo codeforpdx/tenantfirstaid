@@ -155,7 +155,7 @@ All dataset operations go through `langsmith_dataset.py`. Commands below assume 
 ### Initial push (first-time or after local edits)
 
 ```bash
-uv run langsmith_dataset.py dataset push \
+uv run langsmith-dataset dataset push \
   dataset-tenant-legal-qa-examples.jsonl \
   tenant-legal-qa-scenarios
 ```
@@ -165,7 +165,7 @@ Creates the dataset in LangSmith if it doesn't exist, then uploads all examples.
 ### Pull after editing in the browser
 
 ```bash
-uv run langsmith_dataset.py dataset pull \
+uv run langsmith-dataset dataset pull \
   tenant-legal-qa-scenarios \
   dataset-tenant-legal-qa-examples.jsonl
 ```
@@ -175,7 +175,7 @@ Overwrites the local file with whatever is currently in LangSmith. Commit the re
 ### Validate the local file
 
 ```bash
-uv run langsmith_dataset.py dataset validate \
+uv run langsmith-dataset dataset validate \
   dataset-tenant-legal-qa-examples.jsonl
 ```
 
@@ -185,7 +185,7 @@ Checks every line against the schema before pushing, catching formatting mistake
 
 ```bash
 # Show which examples differ between the local file and LangSmith
-uv run langsmith_dataset.py dataset diff \
+uv run langsmith-dataset dataset diff \
   dataset-tenant-legal-qa-examples.jsonl \
   tenant-legal-qa-scenarios
 ```
@@ -225,7 +225,7 @@ Examples created through the LangSmith browser UI will not have a `scenario_id` 
 1. **Pull** the dataset to get the current state, including any UI-created examples:
 
    ```bash
-   uv run langsmith_dataset.py dataset pull \
+   uv run langsmith-dataset dataset pull \
      tenant-legal-qa-scenarios \
      dataset-tenant-legal-qa-examples.jsonl
    ```
@@ -246,14 +246,14 @@ Examples created through the LangSmith browser UI will not have a `scenario_id` 
 4. **Validate** the file:
 
    ```bash
-   uv run langsmith_dataset.py dataset validate \
+   uv run langsmith-dataset dataset validate \
      dataset-tenant-legal-qa-examples.jsonl
    ```
 
 5. **Push** to write the assigned IDs back to LangSmith:
 
    ```bash
-   uv run langsmith_dataset.py dataset push \
+   uv run langsmith-dataset dataset push \
      dataset-tenant-legal-qa-examples.jsonl \
      tenant-legal-qa-scenarios
    ```
@@ -266,14 +266,14 @@ Examples created through the LangSmith browser UI will not have a `scenario_id` 
 
 ```bash
 # List all examples (shows scenario_id, tags, and the first 80 characters of the question)
-uv run langsmith_dataset.py example list tenant-legal-qa-scenarios
+uv run langsmith-dataset example list tenant-legal-qa-scenarios
 
 # Append new examples from a JSONL file without touching existing ones
-uv run langsmith_dataset.py example append \
+uv run langsmith-dataset example append \
   tenant-legal-qa-scenarios new-examples.jsonl
 
 # Remove an example by its scenario_id
-uv run langsmith_dataset.py example remove \
+uv run langsmith-dataset example remove \
   tenant-legal-qa-scenarios 42
 ```
 
@@ -495,7 +495,7 @@ From there you can:
 To compare two experiments from the command line:
 
 ```bash
-uv run python evaluate/langsmith_dataset.py experiment compare \
+uv run langsmith-dataset experiment compare \
   tfa-baseline tfa-my-experiment
 ```
 
@@ -692,7 +692,7 @@ Cloud deployments don't use a `.env` file. Instead, environment variables are co
 
 The dataset hasn't been pushed yet. Run:
 ```bash
-uv run langsmith_dataset.py dataset push \
+uv run langsmith-dataset dataset push \
   dataset-tenant-legal-qa-examples.jsonl \
   tenant-legal-qa-scenarios
 ```
@@ -883,19 +883,19 @@ If a lawyer edits the rubric wording in the LangSmith Playground, pull the chang
 First, find the prompt name:
 
 ```bash
-uv run langsmith_dataset.py prompt list
+uv run langsmith-dataset prompt list
 ```
 
 Then dry-run to review the diff:
 
 ```bash
-uv run langsmith_dataset.py prompt pull tfa-legal-correctness evaluators/legal_correctness.md --dry-run
+uv run langsmith-dataset prompt pull tfa-legal-correctness evaluators/legal_correctness.md --dry-run
 ```
 
 Then write and commit:
 
 ```bash
-uv run langsmith_dataset.py prompt pull tfa-legal-correctness evaluators/legal_correctness.md
+uv run langsmith-dataset prompt pull tfa-legal-correctness evaluators/legal_correctness.md
 git add evaluate/evaluators/legal_correctness.md
 git commit -m "update legal correctness rubric from Prompt Hub"
 ```

@@ -50,7 +50,7 @@ generate-metadata: uv.lock
 ifeq ($(strip $(GCS_BUCKET_NAME)),)
 	$(error GCS_BUCKET_NAME is required: make generate-metadata GCS_BUCKET_NAME=my-bucket)
 endif
-	$(PYTHON) run python -m scripts.generate_metadata_jsonl --bucket $(GCS_BUCKET_NAME) $(LOC_OPTIONS)
+	$(PYTHON) run generate-metadata --bucket $(GCS_BUCKET_NAME) $(LOC_OPTIONS)
 
 clean:
 	find . -type d -name '__pycache__' -exec rm -r {} +

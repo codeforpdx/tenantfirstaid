@@ -7,7 +7,7 @@ The argument is an experiment name or UUID (e.g. `/analyze-experiment tfa-2026-0
 
 The CLI entry point is:
 ```
-uv run python -m evaluate.langsmith_dataset <noun> <verb> [args]
+uv run langsmith-dataset <noun> <verb> [args]
 ```
 Run all CLI commands from `backend/` with `dangerouslyDisableSandbox: true` (requires network access to LangSmith).
 
