@@ -9,6 +9,9 @@ Live at https://tenantfirstaid.com/
 [![PR Checks](https://github.com/codeforpdx/tenantfirstaid/actions/workflows/pr-check.yml/badge.svg)](https://github.com/codeforpdx/tenantfirstaid/actions/workflows/pr-check.yml)
 [![CI-CD (Production)](https://github.com/codeforpdx/tenantfirstaid/actions/workflows/deploy.production.yml/badge.svg)](https://github.com/codeforpdx/tenantfirstaid/actions/workflows/deploy.production.yml)
 
+| 💡 Using Claude Code? Type `/onboarding` in the Claude Code UI for guided setup assistance. |
+|---|
+
 ### Prerequisites
 
 <details>
@@ -63,6 +66,9 @@ Live at https://tenantfirstaid.com/
 1. `npm run dev`
 1. Go to http://localhost:5173
 1. Start chatting
+
+| 💡 Using Claude Code? Type `/backend` in the Claude Code UI for backend workflow reference. |
+|---|
 
 ### Backend Development & Checks
 
@@ -135,6 +141,9 @@ Live at https://tenantfirstaid.com/
   ```
   `--keep-going` will continue to run checks, even if previous `make` rule fail. Omit if you want to stop after the first `make` rule fails.
 
+| 💡 Using Claude Code? Type `/frontend` in the Claude Code UI for frontend workflow reference. |
+|---|
+
 ### Frontend Development & Checks
 
 1. change to the `frontend/` directory
@@ -163,6 +172,9 @@ Live at https://tenantfirstaid.com/
      ```sh
      % npm run test -- --run
      ```
+
+| 💡 Using Claude Code? Type `/backend` or `/frontend` in the Claude Code UI for Docker target reference, or `/onboarding` for the compose quick start. |
+|---|
 
 ### Docker
 
