@@ -2,7 +2,7 @@
 
 ## Overview
 
-Tenant First Aid is a chatbot application that provides legal information related to housing and eviction in Oregon. The system uses a Retrieval-Augmented Generation (RAG) architecture to provide accurate, contextual responses based on Oregon housing law documents.  The LangChain framework is used to abstract models and agents.
+Tenant First Aid is a chatbot application that provides legal information related to housing, eviction, and family law in Oregon. The system uses a Retrieval-Augmented Generation (RAG) architecture to provide accurate, contextual responses based on Oregon housing law documents.  The LangChain framework is used to abstract models and agents.
 
 The application follows a modern web architecture with a Flask-based Python backend serving a React frontend, deployed on Digital Ocean infrastructure.
 
@@ -123,11 +123,12 @@ The system uses **LangChain agents** with **Vertex AI RAG** tools for document r
 
 #### Tool-Based Retrieval
 
-The agent has access to three tools:
+The agent has access to the following tools:
 
-1. **City-Specific and State Law Retrieval**: Searches documents filtered by city (optional) and state
-2. **Letter Template**: Returns a pre-formatted letter template for the model to fill in
-3. **Generate Letter**: Emits the completed letter as a custom stream chunk for the frontend to render separately from chat text
+1. **City-Specific and State Law Retrieval**: Searches housing law documents filtered by city (optional) and state
+1. **Oregon Law Help Retrieval**: Searches the OregonLawHelp corpus for housing and family law guidance (active only when `VERTEX_AI_DATASTORE_OREGON_LAW_HELP` is set)
+1. **Letter Template**: Returns a pre-formatted letter template for the model to fill in
+1. **Generate Letter**: Emits the completed letter as a custom stream chunk for the frontend to render separately from chat text
 
 The LLM decides how to call the tool based on the user's query and location context.
 
