@@ -307,9 +307,10 @@ retrieve_oregon_law_help: BaseTool = _make_rag_tool(
     DatastoreKey.OREGON_LAW_HELP,
     "retrieve_oregon_law_help",
     (
-        "Retrieve relevant housing law information from the OregonLawHelp RAG corpus."
-        " Use this alongside retrieve_city_state_laws to broaden coverage with"
-        " plain-language guidance from OregonLawHelp.org."
+        "Retrieve relevant housing or family law information from the OregonLawHelp RAG corpus."
+        " Use this for questions about divorce, child custody, child support, domestic"
+        " relations, and other family law topics in Oregon, or to broaden housing law"
+        " coverage with plain-language guidance from OregonLawHelp.org."
     ),
     args_schema=QueryOnlyInputSchema,
 )
@@ -318,8 +319,7 @@ retrieve_oregon_law_help: BaseTool = _make_rag_tool(
 # datastore key; each tool is included only when its datastore is configured.
 RAG_TOOL_REGISTRY: list[tuple[DatastoreKey, BaseTool]] = [
     (DatastoreKey.LAWS, retrieve_city_state_laws),
-    # Uncomment when VERTEX_AI_DATASTORE_OREGON_LAW_HELP is configured and needed for new tooling.
-    # (DatastoreKey.OREGON_LAW_HELP, retrieve_oregon_law_help),
+    (DatastoreKey.OREGON_LAW_HELP, retrieve_oregon_law_help),
 ]
 
 

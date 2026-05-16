@@ -294,6 +294,22 @@ def test_get_active_rag_tools_filters_by_configured_datastores():
     assert active[0].name == "retrieve_city_state_laws"
 
 
+def test_get_active_rag_tools_returns_all_configured_datastores():
+    """Only tools whose datastore key is present in env are returned."""
+    with patch.dict(
+        "tenantfirstaid.langchain_tools.SINGLETON.VERTEX_AI_DATASTORES",
+        {
+            DatastoreKey.LAWS: "fake-laws-id",
+            DatastoreKey.OREGON_LAW_HELP: "fake-olh-id",
+        },
+        clear=True,
+    ):
+        active = get_active_rag_tools()
+    names = {t.name for t in active}
+    assert "retrieve_city_state_laws" in names
+    assert "retrieve_oregon_law_help" in names
+
+
 @patch("tenantfirstaid.langchain_tools.RagBuilder")
 def test_make_rag_tool_custom_filter_builder(mock_rag_class):
     """Custom filter_builder is called instead of the default."""
