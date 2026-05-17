@@ -102,9 +102,6 @@ def _sanitize(name: str) -> str:
 
 def _entry_path(experiment_name: str) -> Path:
     HISTORY_DIR.mkdir(exist_ok=True)
-    gitignore = HISTORY_DIR / ".gitignore"
-    if not gitignore.exists():
-        gitignore.write_text("*\n", encoding="utf-8")
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     return HISTORY_DIR / f"{ts}-{_sanitize(experiment_name)}.md"
 

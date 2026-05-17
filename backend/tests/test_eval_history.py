@@ -185,26 +185,6 @@ def _scenarios() -> list[ScenarioResult]:
     ]
 
 
-def test_write_run_entry_creates_gitignore(tmp_path):
-    history_dir = tmp_path / "eval_history"
-    with (
-        patch("evaluate.eval_history.HISTORY_DIR", history_dir),
-        patch("evaluate.eval_history._git_state", _fake_git_state),
-        patch("evaluate.eval_history._capture_env", return_value={}),
-    ):
-        write_run_entry(
-            experiment_name="my-exp",
-            scenarios=[],
-            dataset_name="ds",
-            dataset_version="v1",
-            num_repetitions=1,
-        )
-
-    gitignore = history_dir / ".gitignore"
-    assert gitignore.exists()
-    assert "!.gitignore" in gitignore.read_text()
-
-
 def test_write_run_entry_creates_file(tmp_path):
     with (
         patch("evaluate.eval_history.HISTORY_DIR", tmp_path),
