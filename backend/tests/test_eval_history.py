@@ -89,7 +89,7 @@ def test_results_table_handles_missing_evaluator():
 # ── parse_frontmatter ─────────────────────────────────────────────────────────
 
 
-def testparse_frontmatter_extracts_keys(tmp_path):
+def test_parse_frontmatter_extracts_keys(tmp_path):
     f = tmp_path / "entry.md"
     f.write_text("---\nexperiment: my-exp\ngit_dirty: false\n---\n\nbody\n")
     fm = parse_frontmatter(f)
@@ -97,7 +97,7 @@ def testparse_frontmatter_extracts_keys(tmp_path):
     assert fm["git_dirty"] == "false"
 
 
-def testparse_frontmatter_ignores_indented_lines(tmp_path):
+def test_parse_frontmatter_ignores_indented_lines(tmp_path):
     f = tmp_path / "entry.md"
     f.write_text("---\nenv:\n  MODEL_NAME: gemini\ngit_commit: abc\n---\n")
     fm = parse_frontmatter(f)
@@ -105,7 +105,7 @@ def testparse_frontmatter_ignores_indented_lines(tmp_path):
     assert fm["git_commit"] == "abc"
 
 
-def testparse_frontmatter_returns_empty_if_no_delimiter(tmp_path):
+def test_parse_frontmatter_returns_empty_if_no_delimiter(tmp_path):
     f = tmp_path / "entry.md"
     f.write_text("no frontmatter here\n")
     assert parse_frontmatter(f) == {}

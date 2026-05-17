@@ -764,15 +764,14 @@ To refine how the judge scores responses, edit the rubric file and commit. You c
 After editing a rubric, use `measure_evaluator_variance.py` to re-score an existing experiment's outputs with the new rubric — no new agent calls needed. Pass `--show-delta` to see how the updated rubric changed scores compared to what was originally recorded in the experiment. Evaluator calls run concurrently; use `--max-workers` to control parallelism (default: 10).
 
 ```bash
-<<<<<<< HEAD
-# Re-score all runs and show per-scenario deltas vs. stored scores and tone rubric)
+# Re-score all runs and show per-scenario deltas vs. stored scores
 uv run measure-evaluator-variance \
   --experiment <experiment-name> \
   --evaluator "legal correctness" \
   --show-delta \
   -k 5
 
-# Focus on a specific scenario; increase workers for a large experiment and tone rubric)
+# Focus on a specific scenario; increase workers for a large experiment
 uv run measure-evaluator-variance \
   --experiment <experiment-name> \
   --evaluator "legal correctness" \

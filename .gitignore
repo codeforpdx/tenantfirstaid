@@ -82,3 +82,4 @@ chatlog.jsonl
 combined_training_gemini-2.0.jsonl
 /.claude/settings.local.json
 /.claude/scheduled_tasks.lock
+/backend/.eval_history/

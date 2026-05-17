@@ -1,6 +1,6 @@
 """Lab notebook for evaluation runs.
 
-One Markdown file per run lives in backend/eval_log/ (gitignored, so it
+One Markdown file per run lives in backend/.eval_history/ (gitignored, so it
 persists across git switch/rebase). Each file captures git state, env vars,
 the command line, and per-scenario results. The analyze-experiment skill reads
 these to establish baselines and appends triage and hypothesis sections after
@@ -104,7 +104,7 @@ def _entry_path(experiment_name: str) -> Path:
     HISTORY_DIR.mkdir(exist_ok=True)
     gitignore = HISTORY_DIR / ".gitignore"
     if not gitignore.exists():
-        gitignore.write_text("*\n!.gitignore\n", encoding="utf-8")
+        gitignore.write_text("*\n", encoding="utf-8")
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     return HISTORY_DIR / f"{ts}-{_sanitize(experiment_name)}.md"
 
@@ -316,7 +316,7 @@ def find_entry(experiment_name: str) -> Optional[Path]:
     if not HISTORY_DIR.exists():
         return None
     slug = _sanitize(experiment_name)
-    matches = sorted(HISTORY_DIR.glob(f"*T??????Z-{slug}.md"), reverse=True)
+    matches = sorted(HISTORY_DIR.glob(f"*T??????Z-*{slug}*.md"), reverse=True)
     return matches[0] if matches else None
 
 
