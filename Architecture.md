@@ -126,7 +126,7 @@ The system uses **LangChain agents** with **Vertex AI RAG** tools for document r
 The agent has access to the following tools:
 
 1. **City-Specific and State Law Retrieval**: Searches housing law documents filtered by city (optional) and state
-1. **Oregon Law Help Retrieval**: Searches the OregonLawHelp corpus for housing and family law guidance (active only when `VERTEX_AI_DATASTORE_OREGON_LAW_HELP` is set)
+1. **Oregon Law Help Retrieval**: Searches the OregonLawHelp corpus for housing and family law guidance (active only when `VERTEX_AI_DATASTORE_OREGON_LAW_HELP_HOUSING` and/or `VERTEX_AI_DATASTORE_OREGON_LAW_HELP_FAMILY` is set)
 1. **Letter Template**: Returns a pre-formatted letter template for the model to fill in
 1. **Generate Letter**: Emits the completed letter as a custom stream chunk for the frontend to render separately from chat text
 

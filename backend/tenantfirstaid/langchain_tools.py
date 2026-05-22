@@ -301,25 +301,41 @@ retrieve_city_state_laws: BaseTool = _make_rag_tool(
     filter_builder=_default_filter_from_city_state,
 )
 
-# Defined here for testability; inactive until added to RAG_TOOL_REGISTRY and
-# VERTEX_AI_DATASTORE_OREGON_LAW_HELP is configured.
-retrieve_oregon_law_help: BaseTool = _make_rag_tool(
-    DatastoreKey.OREGON_LAW_HELP,
-    "retrieve_oregon_law_help",
+# Oregon Law Help Housing Tool
+retrieve_oregon_law_help_housing: BaseTool = _make_rag_tool(
+    DatastoreKey.OREGON_LAW_HELP_HOUSING,
+    "retrieve_oregon_law_help_housing",
     (
-        "Retrieve relevant housing or family law information from the OregonLawHelp RAG corpus."
-        " Use this for questions about divorce, child custody, child support, domestic"
-        " relations, and other family law topics in Oregon, or to broaden housing law"
-        " coverage with plain-language guidance from OregonLawHelp.org."
+        "Retrieve relevant housing law information from the OregonLawHelp Housing RAG corpus."
+        " Use this for questions about rental housing, mobile and manufactured homes, and"
+        " housing assistance in Oregon to help explain laws and statutes"
+        " with plain-language guidance from OregonLawHelp.org."
+        " If the answer relies on this content, cite it explicitly as OregonLawHelp Housing Topics."
     ),
     args_schema=QueryOnlyInputSchema,
 )
+
+# Oregon Law Help Family Tool
+retrieve_oregon_law_help_family: BaseTool = _make_rag_tool(
+    DatastoreKey.OREGON_LAW_HELP_FAMILY,
+    "retrieve_oregon_law_help_family",
+    (
+        "Retrieve relevant family law information from the OregonLawHelp Family RAG corpus."
+        " Use this for questions about divorce, child custody, child support, domestic"
+        " relations, and other family law topics in Oregon"
+        " coverage with plain-language guidance from OregonLawHelp.org."
+        " If the answer relies on this content, cite it explicitly as OregonLawHelp Family."
+    ),
+    args_schema=QueryOnlyInputSchema,
+)
+
 
 # Registry of (datastore_key, tool) pairs. Multiple tools may share the same
 # datastore key; each tool is included only when its datastore is configured.
 RAG_TOOL_REGISTRY: list[tuple[DatastoreKey, BaseTool]] = [
     (DatastoreKey.LAWS, retrieve_city_state_laws),
-    (DatastoreKey.OREGON_LAW_HELP, retrieve_oregon_law_help),
+    (DatastoreKey.OREGON_LAW_HELP_HOUSING, retrieve_oregon_law_help_housing),
+    (DatastoreKey.OREGON_LAW_HELP_FAMILY, retrieve_oregon_law_help_family),
 ]
 
 
