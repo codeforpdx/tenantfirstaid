@@ -19,7 +19,8 @@ class DatastoreKey(StrEnum):
     """Datastore keys — must match the suffix of the corresponding VERTEX_AI_DATASTORE_<NAME> env var (lowercased)."""
 
     LAWS = auto()
-    OREGON_LAW_HELP = auto()
+    OREGON_LAW_HELP_HOUSING = auto()
+    OREGON_LAW_HELP_FAMILY = auto()
 
 
 def _parse_datastores(env: Mapping[str, str]) -> dict[str, str]:

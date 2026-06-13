@@ -171,8 +171,10 @@ class TestParseDatastores:
         assert result["letters"] == "store-2"
 
     def test_name_is_lowercased(self):
-        result = _parse_datastores({"VERTEX_AI_DATASTORE_OREGON_LAW_HELP": "store-1"})
-        assert result["oregon_law_help"] == "store-1"
+        result = _parse_datastores(
+            {"VERTEX_AI_DATASTORE_OREGON_LAW_HELP_HOUSING": "store-1"}
+        )
+        assert result["oregon_law_help_housing"] == "store-1"
 
     def test_whitespace_trimmed(self):
         result = _parse_datastores({"VERTEX_AI_DATASTORE_LAWS": "  my-store  "})

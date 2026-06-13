@@ -44,11 +44,20 @@ def test_prepare_system_prompt_includes_city_state(oregon_state, portland_city):
     )
 
 
+def test_system_prompt_requires_housing_and_oregonlawhelp_retrieval(oregon_state):
+    prompt = prepare_system_prompt(None, oregon_state)
+    assert "retrieve_city_state_laws" in prompt.content
+    assert "retrieve_oregon_law_help_housing" in prompt.content
+    assert "OregonLawHelp Housing" in prompt.content
+
+
 def test_tools_include_rag_retrieval():
     """Test that tools list includes RAG retrieval and letter template tools."""
-    assert len(tools) == 3
+    assert len(tools) == 5
     tool_names = [tool.name for tool in tools]
     assert "retrieve_city_state_laws" in tool_names
+    assert "retrieve_oregon_law_help_housing" in tool_names
+    assert "retrieve_oregon_law_help_family" in tool_names
     assert "generate_letter" in tool_names
     assert "get_letter_template" in tool_names
 
