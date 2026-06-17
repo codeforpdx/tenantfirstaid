@@ -81,7 +81,7 @@ interface LetterViewProps {
 }
 
 function LetterView({ jurisdiction, org }: LetterViewProps) {
-  const { addMessage, messages, setMessages } = useMessages();
+  const { addMessage, messages, setMessages, clearMessages } = useMessages();
   const isOngoing = messages.length > 0;
   const { letterContent } = useLetterContent(messages);
   const [startStreaming, setStartStreaming] = useState(false);
@@ -205,6 +205,7 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
                   addMessage={addMessage}
                   setMessages={setMessages}
                   isOngoing={isOngoing}
+                  clearMessages={clearMessages}
                 />
               )}
             </div>

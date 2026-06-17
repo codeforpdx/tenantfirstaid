@@ -29,6 +29,7 @@ describe("MessageWindow component", () => {
     addMessage: vi.fn(),
     setMessages: vi.fn(),
     isOngoing: true,
+    clearMessages: vi.fn(),
   };
 
   it("hides first 2 messages on letter page", () => {

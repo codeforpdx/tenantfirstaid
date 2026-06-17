@@ -41,7 +41,7 @@ export default function Chat() {
 
 function ChatView() {
   useSyncJurisdiction();
-  const { addMessage, messages, setMessages } = useMessages();
+  const { addMessage, messages, setMessages, clearMessages } = useMessages("chat_messages");
   const isOngoing = messages.length > 0;
   const { letterContent } = useLetterContent(messages);
 
@@ -61,6 +61,7 @@ function ChatView() {
               addMessage={addMessage}
               setMessages={setMessages}
               isOngoing={isOngoing}
+              clearMessages={clearMessages}
             />
           </div>
         </MessageContainer>

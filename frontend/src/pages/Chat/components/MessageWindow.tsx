@@ -17,6 +17,7 @@ interface Props {
   ) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   isOngoing: boolean;
+  clearMessages: () => void;
 }
 
 /**
@@ -28,6 +29,7 @@ export default function MessageWindow({
   addMessage,
   setMessages,
   isOngoing,
+  clearMessages,
 }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -44,7 +46,7 @@ export default function MessageWindow({
     : messages;
 
   const handleClearSession = () => {
-    window.location.reload();
+    clearMessages();
   };
 
   useEffect(() => {
