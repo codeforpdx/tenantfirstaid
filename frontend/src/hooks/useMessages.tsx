@@ -79,7 +79,7 @@ export default function useMessages(storageKey?: string) {
       content: typeof msg.content === "string" ? msg.content : msg.text,
       id: msg.id ?? "",
     }));
-    sessionStorage.setItem(storageKey, JSON.stringify(toStore));
+    toStore.length === 0 ? sessionStorage.removeItem(storageKey) : sessionStorage.setItem(storageKey, JSON.stringify(toStore));
   }, [messages, storageKey])
 
   const addMessage = useMutation({
@@ -94,7 +94,6 @@ export default function useMessages(storageKey?: string) {
   });
 
   function clearMessages() {
-    if (storageKey) sessionStorage.removeItem(storageKey);
     setMessages([]);
   }
 

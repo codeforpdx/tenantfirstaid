@@ -94,7 +94,7 @@ describe("useMessages", () => {
     });
 
     expect(result.current.messages).toEqual([]);
-    expect(sessionStorage.getItem("test_key")).toBe("[]");
+    expect(sessionStorage.getItem("test_key")).toBeNull();
   });
 
   it("clearMessages without a storageKey only resets state", () => {
