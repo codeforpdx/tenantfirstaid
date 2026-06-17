@@ -63,9 +63,13 @@ async function addNewMessage(
  * Provides message state, a setter, and a mutation for posting new messages.
  */
 export default function useMessages(storageKey?: string) {
-  const [messages, setMessages] = useState<ChatMessage[]>(() => 
-    storageKey? loadFromStorage(storageKey) : []
+  const [messages, setMessages] = useState<ChatMessage[]>(() =>
+    storageKey ? loadFromStorage(storageKey) : []
   );
+
+  useEffect(() => {
+    setMessages(storageKey ? loadFromStorage(storageKey) : []);
+  }, [storageKey]);
 
   useEffect(() => {
     if (!storageKey) return;

@@ -8,7 +8,7 @@ import MessageContainer from "./shared/components/MessageContainer";
 import FeaturesPanel from "./shared/components/FeaturesPanel";
 import MobilePanel from "./shared/components/MobilePanel";
 import { Navigate, useParams } from "react-router-dom";
-import { classifyStateSegment, pathFor } from "./shared/utils/jurisdiction";
+import { classifyStateSegment, pathFor, resolveJurisdiction } from "./shared/utils/jurisdiction";
 import { DEFAULT_JURISDICTION } from "./shared/constants/jurisdictions";
 import clsx from "clsx";
 
@@ -41,7 +41,9 @@ export default function Chat() {
 
 function ChatView() {
   useSyncJurisdiction();
-  const { addMessage, messages, setMessages, clearMessages } = useMessages("chat_messages");
+  const { state, city } = useParams();
+  const jurisdiction = resolveJurisdiction(state, city);
+  const { addMessage, messages, setMessages, clearMessages } = useMessages(`chat_messages:${jurisdiction.key}`);
   const isOngoing = messages.length > 0;
   const { letterContent } = useLetterContent(messages);
 
