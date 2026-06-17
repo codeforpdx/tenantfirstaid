@@ -83,7 +83,11 @@ export default function useMessages(storageKey?: string) {
       content: typeof msg.content === "string" ? msg.content : msg.text,
       id: msg.id ?? "",
     }));
-    toStore.length === 0 ? sessionStorage.removeItem(storageKey) : sessionStorage.setItem(storageKey, JSON.stringify(toStore));
+    if (toStore.length === 0) {
+      sessionStorage.removeItem(storageKey);
+      return;
+    } 
+    sessionStorage.setItem(storageKey, JSON.stringify(toStore));
   }, [messages, storageKey])
 
   const addMessage = useMutation({
