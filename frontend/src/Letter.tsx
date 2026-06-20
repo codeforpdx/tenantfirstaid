@@ -86,7 +86,7 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
   const { letterContent } = useLetterContent(messages);
   const [startStreaming, setStartStreaming] = useState(false);
   const streamLocationRef = useRef<Location | null>(null);
-  const [isGenerating, setIsGenerating] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(letterContent === "");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasInitialized = useRef(false);
@@ -107,24 +107,33 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
   // Adds the initial user message once and triggers streaming.
   useEffect(() => {
     if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
+    if (letterContent !== "") {
+      setIsGenerating(false);
+      return;
+    }
+
     const loc = toLocation(jurisdiction);
     const output = buildLetterUserMessage(org, loc);
-    hasInitialized.current = true;
-    const userMessageId = Date.now().toString();
-    const content = [
-      buildLocationPrefix(loc.city, loc.state),
-      issueDescription,
-      output.userMessage,
-    ]
-      .join(" ")
-      .trim();
-    setMessages((prev) => [
-      ...prev,
-      new HumanMessage({ content, id: userMessageId }),
-    ]);
+
+    if (messages.length === 0) {
+      const userMessageId = Date.now().toString();
+      const content = [
+        buildLocationPrefix(loc.city, loc.state),
+        issueDescription,
+        output.userMessage,
+      ]
+        .join(" ")
+        .trim();
+      setMessages((prev) => [
+        ...prev,
+        new HumanMessage({ content, id: userMessageId }),
+      ]);
+    }
     streamLocationRef.current = output.selectedLocation;
     setStartStreaming(true);
-  }, [jurisdiction, org, setMessages, issueDescription]);
+  }, [jurisdiction, org, setMessages, issueDescription, letterContent, messages.length]);
 
   useEffect(() => {
     if (startStreaming === false || streamLocationRef.current === null) return;
