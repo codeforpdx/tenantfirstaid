@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Location } from "../types/models";
 import type { ChatMessage, UiMessage } from "../shared/types/messages";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
@@ -66,12 +66,22 @@ export default function useMessages(storageKey?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
     storageKey ? loadFromStorage(storageKey) : []
   );
+  // Refs to track storage key changes and prevent overwriting messages during extra setups/re-renders.
+  const loadedStorageKeyRef = useRef(storageKey);
+  const isChangingStorageKeyRef = useRef(false);
 
   useEffect(() => {
+    if (loadedStorageKeyRef.current === storageKey) return;
+    loadedStorageKeyRef.current = storageKey;
+    isChangingStorageKeyRef.current = true;
     setMessages(storageKey ? loadFromStorage(storageKey) : []);
   }, [storageKey]);
 
   useEffect(() => {
+    if (isChangingStorageKeyRef.current) {
+      isChangingStorageKeyRef.current = false;
+      return;
+    }
     if (!storageKey) return;
     const toStore: StoredMessage[] = messages
     .filter(
