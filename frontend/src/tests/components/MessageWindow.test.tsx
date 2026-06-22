@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import MessageWindow from "../../pages/Chat/components/MessageWindow";
@@ -104,5 +104,26 @@ describe("MessageWindow component", () => {
     );
 
     expect(screen.getByText("Welcome to Tenant First Aid!")).toBeInTheDocument();
+  });
+
+  it("delegates clearing to the provided callback", () => {
+    const clearMessages = vi.fn();
+    const queryClient = new QueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <HousingContextProvider>
+          <MemoryRouter initialEntries={["/chat/or/portland"]}>
+            <MessageWindow
+              {...defaultProps}
+              clearMessages={clearMessages}
+            />
+          </MemoryRouter>
+        </HousingContextProvider>
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "clear chat" }));
+
+    expect(clearMessages).toHaveBeenCalledTimes(1);
   });
 });

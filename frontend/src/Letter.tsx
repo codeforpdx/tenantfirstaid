@@ -28,6 +28,7 @@ import FrequentInquiries from "./pages/Chat/components/FrequentInquiries";
 import MobilePanel from "./shared/components/MobilePanel";
 import clsx from "clsx";
 import { buildLocationPrefix } from "./shared/utils/buildLocationPrefix";
+import { reloadPage } from "./shared/utils/reloadPage";
 
 /**
  * Routes /letter requests by classifying the leading segment: an out-of-state
@@ -192,9 +193,9 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
 
   function handleClearMessages() {
     clearMessages();
-    window.location.reload();
+    reloadPage();
   }
-  
+
   return (
     <>
       <LetterGenerationDialog ref={dialogRef} />

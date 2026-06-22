@@ -42,7 +42,15 @@ vi.mock("../../hooks/useLetterContent", () => ({
 }));
 
 vi.mock("../../pages/Chat/components/MessageWindow", () => ({
-  default: () => <div data-testid="message-window" />,
+  default: ({ clearMessages }: { clearMessages: () => void }) => (
+    <div data-testid="message-window">
+      <button onClick={clearMessages}>Clear Letter</button>
+    </div>
+  ),
+}));
+
+vi.mock("../../shared/utils/reloadPage", () => ({
+  reloadPage: vi.fn(),
 }));
 
 vi.mock("../../LetterGenerationDialog", () => ({
@@ -57,11 +65,13 @@ vi.mock("../../LetterGenerationDialog", () => ({
 import * as streamHelper from "../../pages/Chat/utils/streamHelper";
 import useMessages from "../../hooks/useMessages";
 import { useLetterContent } from "../../hooks/useLetterContent";
+import { reloadPage } from "../../shared/utils/reloadPage";
 import HousingContextProvider from "../../contexts/HousingContext";
 
 let mockStreamText: ReturnType<typeof vi.fn>;
 let mockUseMessages: ReturnType<typeof vi.fn>;
 let mockUseLetterContent: ReturnType<typeof vi.fn>;
+let mockReloadPage: ReturnType<typeof vi.fn>;
 
 const renderLetter = async (initialEntry = "/letter/or/portland?org=org") => {
   const { default: Letter } = await import("../../Letter");
@@ -84,6 +94,7 @@ describe("Letter component - effect orchestration", () => {
     mockStreamText = vi.mocked(streamHelper.streamText);
     mockUseMessages = vi.mocked(useMessages);
     mockUseLetterContent = vi.mocked(useLetterContent);
+    mockReloadPage = vi.mocked(reloadPage);
 
     mockStreamText.mockClear();
     mockStreamText.mockResolvedValue(undefined);
@@ -93,6 +104,7 @@ describe("Letter component - effect orchestration", () => {
       addMessage: vi.fn(),
       messages: [],
       setMessages: vi.fn(),
+      clearMessages: vi.fn(),
     });
   });
 
@@ -166,6 +178,7 @@ describe("Letter component - effect orchestration", () => {
         }),
       ],
       setMessages: mockSetMessages,
+      clearMessages: vi.fn(),
     });
     mockUseLetterContent.mockReturnValue({
       letterContent: "Dear Landlord,",
@@ -192,6 +205,7 @@ describe("Letter component - effect orchestration", () => {
       addMessage: vi.fn(),
       messages: [restoredPrompt],
       setMessages: mockSetMessages,
+      clearMessages: vi.fn(),
     });
 
     await renderLetter();
@@ -208,6 +222,36 @@ describe("Letter component - effect orchestration", () => {
         .length > 1;
     });
     expect(duplicatedPrompt).toBe(false);
+  });
+
+  it("clears the letter before reloading the page", async () => {
+    const callOrder: string[] = [];
+    const mockClearMessages = vi.fn(() => {
+      callOrder.push("clear");
+    });
+    mockReloadPage.mockImplementation(() => {
+      callOrder.push("reload");
+    });
+    mockUseMessages.mockReturnValue({
+      addMessage: vi.fn(),
+      messages: [
+        new HumanMessage({ content: "Generate my letter", id: "1" }),
+        new AIMessage({
+          content: '{"type":"letter","content":"Dear Landlord,"}\n',
+          id: "2",
+        }),
+      ],
+      setMessages: vi.fn(),
+      clearMessages: mockClearMessages,
+    });
+    mockUseLetterContent.mockReturnValue({
+      letterContent: "Dear Landlord,",
+    });
+
+    await renderLetter();
+    fireEvent.click(screen.getByText("Clear Letter"));
+
+    expect(callOrder).toEqual(["clear", "reload"]);
   });
 
   it("dialog closes when close button clicked", async () => {
