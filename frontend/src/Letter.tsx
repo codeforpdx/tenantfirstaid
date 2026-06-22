@@ -190,6 +190,11 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
     dialogRef.current?.showModal();
   }, []);
 
+  function handleClearMessages() {
+    clearMessages();
+    window.location.reload();
+  }
+  
   return (
     <>
       <LetterGenerationDialog ref={dialogRef} />
@@ -210,11 +215,12 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
                 </div>
               ) : (
                 <MessageWindow
+                  mode="letter"
                   messages={messages}
                   addMessage={addMessage}
                   setMessages={setMessages}
                   isOngoing={isOngoing}
-                  clearMessages={clearMessages}
+                  clearMessages={handleClearMessages}
                 />
               )}
             </div>

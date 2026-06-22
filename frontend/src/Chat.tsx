@@ -59,6 +59,7 @@ function ChatView() {
             )}
           >
             <MessageWindow
+              mode="chat"
               messages={messages}
               addMessage={addMessage}
               setMessages={setMessages}

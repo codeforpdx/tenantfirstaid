@@ -112,6 +112,9 @@ export default function useMessages(storageKey?: string) {
   });
 
   function clearMessages() {
+    if (storageKey) {
+      sessionStorage.removeItem(storageKey);
+    }
     setMessages([]);
   }
 

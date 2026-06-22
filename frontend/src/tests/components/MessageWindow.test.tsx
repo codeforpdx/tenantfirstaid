@@ -25,6 +25,7 @@ describe("MessageWindow component", () => {
   ];
 
   const defaultProps = {
+    mode: "chat" as const,
     messages,
     addMessage: vi.fn(),
     setMessages: vi.fn(),
@@ -38,7 +39,7 @@ describe("MessageWindow component", () => {
       <QueryClientProvider client={queryClient}>
         <HousingContextProvider>
           <MemoryRouter initialEntries={["/letter/some-org"]}>
-            <MessageWindow {...defaultProps} />
+            <MessageWindow {...defaultProps} mode="letter" />
           </MemoryRouter>
         </HousingContextProvider>
       </QueryClientProvider>,
@@ -64,5 +65,44 @@ describe("MessageWindow component", () => {
     expect(screen.getByText("first message")).toBeInTheDocument();
     expect(screen.getByText("second message")).toBeInTheDocument();
     expect(screen.getByText("third message")).toBeInTheDocument();
+  });
+
+  it("does not show the chat initialization form for an empty letter", () => {
+    const queryClient = new QueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <HousingContextProvider>
+          <MemoryRouter initialEntries={["/letter/or/portland"]}>
+            <MessageWindow
+              {...defaultProps}
+              mode="letter"
+              messages={[]}
+              isOngoing={false}
+            />
+          </MemoryRouter>
+        </HousingContextProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.queryByText("Welcome to Tenant First Aid!")).toBeNull();
+  });
+
+  it("shows the chat initialization form for an empty chat", () => {
+    const queryClient = new QueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <HousingContextProvider>
+          <MemoryRouter initialEntries={["/chat/or/portland"]}>
+            <MessageWindow
+              {...defaultProps}
+              messages={[]}
+              isOngoing={false}
+            />
+          </MemoryRouter>
+        </HousingContextProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText("Welcome to Tenant First Aid!")).toBeInTheDocument();
   });
 });
