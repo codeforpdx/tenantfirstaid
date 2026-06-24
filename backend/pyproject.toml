@@ -90,4 +90,7 @@ show_missing = true
 
 [tool.uv]
 exclude-newer = "1 week"
-exclude-newer-package = { langsmith = "4 days", svglib = "4 days" }  # TODO: both exceptions can be removed after 2026-06-28 (langsmith 0.8.18 release, svglib 2.0.2 release)
+
+[tool.uv.exclude-newer-package]
+langsmith = "4 days"  # TODO: remove after 2026-06-28 (langsmith 0.8.18 release)
+svglib = "4 days"  # TODO: remove after 2026-06-28 (svglib 2.0.2 release)
