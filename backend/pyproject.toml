@@ -48,7 +48,7 @@ dev = [
     "pytest-asyncio>=0.23.0",
     "pytest-cov>=6.1.1",
     "pytest-mock>=3.14.1",
-    "langsmith[pytest]>=0.7.17",
+    "langsmith[pytest]>=0.8.18",
     "openevals>=0.1.2",
     "types-Flask>=1.1.6",
     "types-flask-cors>=6.0.0.20250809",
@@ -90,3 +90,4 @@ show_missing = true
 
 [tool.uv]
 exclude-newer = "1 week"
+exclude-newer-package = { langsmith = "4 days" }

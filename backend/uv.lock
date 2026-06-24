@@ -12,7 +12,10 @@ resolution-markers = [
 
 [options]
 exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
-exclude-newer-span = "P4D"
+exclude-newer-span = "P1W"
+
+[options.exclude-newer-package]
+langsmith = { timestamp = "0001-01-01T00:00:00Z", span = "P4D" }
 
 [[package]]
 name = "aiohappyeyeballs"
@@ -3363,7 +3366,7 @@ dev = [
     { name = "jsonschema", specifier = ">=4.26.0" },
     { name = "langchain-google-vertexai", specifier = ">=3.2.2" },
     { name = "langgraph-cli", extras = ["inmem"], specifier = ">=0.4.15" },
-    { name = "langsmith", extras = ["pytest"], specifier = ">=0.7.17" },
+    { name = "langsmith", extras = ["pytest"], specifier = ">=0.8.18" },
     { name = "mypy", specifier = ">=1.16.1" },
     { name = "openevals", specifier = ">=0.1.2" },
     { name = "pandas", specifier = ">=3.0.1" },
