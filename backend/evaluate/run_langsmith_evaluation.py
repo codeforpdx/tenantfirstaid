@@ -55,14 +55,14 @@ def agent_wrapper(inputs) -> Dict[str, str]:
 
     return {
         "Model-Under-Test Output": "\n".join(
-            [response["text"] for response in responses if ("text" in response)]  # type: ignore bad-typed-dict-key
+            [response["text"] for response in responses if (response["type"] == "text")]
         ),
         # SHOW_MODEL_THINKING env var controls whether reasoning is included in the output for evaluation debugging.
         "Model-Under-Test Reasoning": "\n".join(
             [
-                response["reasoning"]  # type: ignore bad-typed-dict-key
+                response["reasoning"]
                 for response in responses
-                if ("reasoning" in response)
+                if (response["type"] == "reasoning")
             ]
         )
         or "N/A - Set env var `SHOW_MODEL_THINKING=true` to capture reasoning",
