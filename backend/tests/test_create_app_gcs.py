@@ -3,9 +3,8 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from google.api_core import exceptions as gcp_exceptions
-
 from gcs_helpers import patch_singleton
+from google.api_core import exceptions as gcp_exceptions
 
 from scripts.create_app_gcs import (
     AppError,
