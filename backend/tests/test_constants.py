@@ -8,7 +8,7 @@ import re
 from unittest.mock import patch
 
 import pytest
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from tenantfirstaid.constants import (
@@ -35,6 +35,9 @@ def _arbitrary_case(s: str) -> st.SearchStrategy[str]:
 
 
 @pytest.mark.property
+@settings(
+    deadline=None
+)  # _strtobool is trivial; deadline only catches cold-start noise.
 @given(data=st.data(), word=st.sampled_from(_TRUTHY))
 def test_strtobool_truthy_any_case(data, word):
     """All recognized truthy strings should return True in any casing."""
@@ -42,6 +45,9 @@ def test_strtobool_truthy_any_case(data, word):
 
 
 @pytest.mark.property
+@settings(
+    deadline=None
+)  # _strtobool is trivial; deadline only catches cold-start noise.
 @given(data=st.data(), word=st.sampled_from(_FALSY))
 def test_strtobool_falsy_any_case(data, word):
     """All recognized falsy strings should return False in any casing."""
@@ -49,6 +55,9 @@ def test_strtobool_falsy_any_case(data, word):
 
 
 @pytest.mark.property
+@settings(
+    deadline=None
+)  # _strtobool is trivial; deadline only catches cold-start noise.
 @given(st.text().filter(lambda s: s.lower() not in _RECOGNIZED))
 def test_strtobool_unrecognized_raises(s):
     """Any string outside the recognized set should raise ValueError."""
