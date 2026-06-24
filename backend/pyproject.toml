@@ -93,4 +93,4 @@ show_missing = true
 exclude-newer = "1 week"
 [tool.uv.exclude-newer-package]
 langsmith = "4 days"  # TODO: remove after 2026-06-28 (langsmith 0.8.18 release)
-pydantic-settings = "4 days"  # TODO: remove after 2026-06-28 (pydantic-settings 2.0.2 release)
+pydantic-settings = "4 days"  # TODO: remove after 2026-06-28 (pydantic-settings 2.14.2 release)
