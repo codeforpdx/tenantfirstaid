@@ -58,7 +58,7 @@ class TestBuildEntries:
         entries = build_entries(doc_tree, "my-bucket", {"or"})
         entry = entries[0]
         assert entry.id == "ORS090"
-        assert entry.struct_data == {"city": None, "state": "or"}
+        assert entry.struct_data == {"city": "null", "state": "or"}
         assert entry.content.mime_type == "text/plain"
         assert entry.content.uri == "gs://my-bucket/ORS090.txt"
 
