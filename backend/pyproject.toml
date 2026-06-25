@@ -10,7 +10,7 @@ dependencies = [
   "flask-cors>=4.0.0",
   "xhtml2pdf>=0.2.17",
   "gunicorn>=23.0.0",
-  "svglib<1.6", # holding version back because 1.6.0 now requires manual platform installation of https://www.cairographics.org/download/
+  "svglib>=2.0.2",
   "python-dotenv",
   "langchain>=1.2.10,<2.0.0",
   "langchain-core>=1.2.11",
@@ -91,6 +91,8 @@ show_missing = true
 
 [tool.uv]
 exclude-newer = "1 week"
+
 [tool.uv.exclude-newer-package]
 langsmith = "4 days"  # TODO: remove after 2026-06-28 (langsmith 0.8.18 release)
+svglib = "4 days"  # TODO: remove after 2026-06-28 (svglib 2.0.2 release)
 pydantic-settings = "4 days"  # TODO: remove after 2026-06-28 (pydantic-settings 2.14.2 release)
