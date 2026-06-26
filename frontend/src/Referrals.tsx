@@ -9,10 +9,15 @@ const REFERRALS = [
     contact: (
       <>
         Tenants whose landlord has taken them to eviction court can call the
-        Eviction Defense Project line (888-585-9638) or email the Project
-        (evictiondefense@oregonlawcenter.org) to seek legal help. Tenants
-        should leave a message on the intake line or by emailing with their
-        name, date of birth, and eviction case number.
+        Eviction Defense Project line (888-585-9638) or email the Project (
+        <a
+          href="mailto:evictiondefense@oregonlawcenter.org"
+          className="text-blue-600 underline"
+        >
+          evictiondefense@oregonlawcenter.org
+        </a>
+        ) to seek legal help. Tenants should leave a message on the intake line
+        or by emailing with their name, date of birth, and eviction case number.
       </>
     ),
   },
@@ -24,11 +29,22 @@ const REFERRALS = [
       <>
         503-389-5919
         <br />
-        info@clear-clinic.org
+        <a
+          href="mailto:info@clear-clinic.org"
+          className="text-blue-600 underline"
+        >
+          info@clear-clinic.org
+        </a>
         <br />
-        https://clear-clinic.org/services
-        <br />
-        T &amp; Th 9am–5pm
+        <a
+          href="https://clear-clinic.org/services"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 underline"
+        >
+          https://clear-clinic.org/services
+        </a>
+        <br />T &amp; Th 9am–5pm
       </>
     ),
   },
@@ -52,13 +68,26 @@ const REFERRALS = [
     locations: "Portland only",
     contact: (
       <>
-        RentalServices@portlandoregon.gov
+        <a
+          href="mailto:RentalServices@portlandoregon.gov"
+          className="text-blue-600 underline"
+        >
+          RentalServices@portlandoregon.gov
+        </a>
         <br />
         503-823-1303
         <br />
         M, W &amp; F 9–11am, 1–4pm
         <br />
-        Online booking: https://www.portland.gov/phb/rental-services/helpdesk
+        Online booking:{" "}
+        <a
+          href="https://www.portland.gov/phb/rental-services/helpdesk"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 underline"
+        >
+          https://www.portland.gov/phb/rental-services/helpdesk
+        </a>
       </>
     ),
   },
@@ -83,7 +112,7 @@ export default function Referrals() {
               <th className="w-[270px] border border-gray-medium px-4 py-3 text-left font-semibold">
                 Service
               </th>
-              <th className="w-[150px] border border-gray-medium px-4 py-3 text-left font-semibold">
+              <th className="w-[150px] border border-gray-medium px-4 py-3 text-center font-semibold">
                 Locations
               </th>
               <th className="w-[500px] border border-gray-medium px-4 py-3 text-left font-semibold">
@@ -100,7 +129,7 @@ export default function Referrals() {
                 <td className="border border-gray-medium px-4 py-3 align-top">
                   {service}
                 </td>
-                <td className="border border-gray-medium px-4 py-3 align-top">
+                <td className="border border-gray-medium px-4 py-3 text-center align-top">
                   {locations}
                 </td>
                 <td className="border border-gray-medium px-4 py-3 align-top">
