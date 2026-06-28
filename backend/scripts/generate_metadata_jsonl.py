@@ -68,7 +68,13 @@ def build_entries(documents_dir: Path, bucket: str, scopes: set[str]) -> list[Do
         entries.append(
             Document(
                 id=txt_file.stem,
-                struct_data={"city": city, "state": "or"},
+                # State-level docs use the literal string "null" (not JSON null,
+                # which Vertex drops on import) so the retriever's city: ANY("null")
+                # filter matches them.
+                struct_data={
+                    "city": city if city is not None else "null",
+                    "state": "or",
+                },
                 content=Document.Content(
                     mime_type="text/plain",
                     uri=f"gs://{bucket}/{txt_file.name}",
