@@ -666,7 +666,7 @@ def cmd_experiment_markdown(args: argparse.Namespace) -> None:
     p = _read_project(client, args.experiment)
     runs = sorted(
         client.list_runs(project_id=p.id, execution_order=1, start_time=start_time),
-        key=lambda r: r.start_time or datetime.min,
+        key=lambda r: r.start_time or datetime.min.replace(tzinfo=timezone.utc),
     )
 
     lines = [
@@ -689,7 +689,7 @@ def cmd_experiment_markdown(args: argparse.Namespace) -> None:
             f"- **run id:** `{run.id}`",
             f"- **time:** {run.start_time.isoformat() if run.start_time else '?'}",
             "",
-            "**script:**",
+            "**transcript:**",
             "",
             _render_transcript(inputs.get("messages")),
             "",
@@ -1512,12 +1512,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--days",
         type=int,
-        default=14,
+        default=RETENTION_DAYS,
         metavar="N",
         help=(
-            "Only include runs from the last N days (default: 14, the LangSmith "
+            f"Only include runs from the last N days (default: {RETENTION_DAYS}, the LangSmith "
             "default retention window). Shrink for a more recent slice; values "
-            "above 14 are clamped since older traces are already purged."
+            f"above {RETENTION_DAYS} are clamped since older traces are already purged."
         ),
     )
     p.add_argument(

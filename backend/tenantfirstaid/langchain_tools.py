@@ -82,6 +82,10 @@ class RagBuilder:
         filter: Optional[str] = None,
         max_documents: int = 3,
         *,
+        # Retained as an ad-hoc escape hatch: _make_rag_tool never sets
+        # get_extractive_answers=True, so these two knobs are effectively
+        # dormant in production. Flip get_extractive_answers=True in a
+        # one-off RagBuilder call to experiment with answer-mode retrieval.
         get_extractive_answers: bool = False,
         max_extractive_answer_count: int = 1,
         max_extractive_segment_count: int = 3,
