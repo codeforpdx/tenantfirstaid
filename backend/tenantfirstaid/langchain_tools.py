@@ -81,6 +81,10 @@ class RagBuilder:
         name: Optional[str] = "tfa-retriever",
         filter: Optional[str] = None,
         max_documents: int = 3,
+        *,
+        get_extractive_answers: bool = False,
+        max_extractive_answer_count: int = 1,
+        max_extractive_segment_count: int = 3,
     ) -> None:
         if SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is None:
             raise ValueError("GOOGLE_APPLICATION_CREDENTIALS is not set")
@@ -96,7 +100,16 @@ class RagBuilder:
             location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,
             data_store_id=data_store_id,
             engine_data_type=0,  # 0 = unstructured; all TFA datastores are unstructured docs
-            get_extractive_answers=True,  # TODO: figure out if this is useful
+            # Default to extractive segments rather than answers. Extractive answers
+            # are short, individually selected sentences that, for statutory queries,
+            # tend to surface annotation/case-note lines that lexically match the
+            # query (e.g. "duty to mitigate damages" from NOTES OF DECISIONS) while
+            # the operative statutory text — which lives in longer segments — is
+            # never returned. Segments return the surrounding block, so the citable
+            # subsection text (e.g. ORS 90.410(3), ORS 90.302(2)(e)) comes through.
+            get_extractive_answers=get_extractive_answers,
+            max_extractive_answer_count=max_extractive_answer_count,
+            max_extractive_segment_count=max_extractive_segment_count,
             # Suggestion-only: spell corrections are recorded in the response but the
             # original query is used for retrieval. Prevents auto-correction from
             # mangling ORS references and other legal terminology.
@@ -217,7 +230,13 @@ class CityStateLawsInputSchema(BaseModel):
     state: UsaState
     city: Optional[OregonCity] = None
     max_documents: int = Field(
-        default=5,
+        # A truncation analysis over the extractive-segments-dfe32555 experiment
+        # (36 real agent queries) found every meaningful statute that production
+        # retrieved at md=5 was also present at doc-rank <=3 — ranks 4-5 were
+        # always redundant duplicates. Defaulting to 3 cuts the retrieval payload
+        # ~40% with zero observed truncation. (Reducing segments below 3, by
+        # contrast, did truncate ~14% of queries, so that knob is left at 3.)
+        default=3,
         ge=1,
         le=8,  # Total number of documents in the laws datastore.
         description="""Number of passages to retrieve (1–8). Use a smaller value
@@ -226,25 +245,16 @@ class CityStateLawsInputSchema(BaseModel):
                        statutes, involves city overrides, or an initial retrieval
                        missed the relevant passage.""",
     )
-    max_extractive_answer_count: int = Field(
-        default=1,
-        ge=1,
-        le=5,
-        description="""Extractive answers per document (1–5). Each is a short
-                       passage the search engine identifies as directly relevant.
-                       Increase on retry if the first search returned passages
-                       from the right document but missed the specific subsection
-                       you need.""",
-    )
     max_extractive_segment_count: int = Field(
         default=3,
         ge=1,
         le=10,
         description="""Extractive segments per document (1–10). Segments are
-                       longer surrounding blocks of text that provide more context
-                       than answers. Increase on retry when the answer likely sits
-                       adjacent to what was returned (e.g. the right ORS section
-                       was found but a neighboring subsection was missed).""",
+                       blocks of statutory text returned with their surrounding
+                       context — this is how the operative subsection text (e.g. a
+                       specific ORS paragraph) is surfaced. Increase on retry when
+                       the right ORS section was found but the specific subsection
+                       you need sits adjacent to what was returned.""",
     )
 
 
@@ -282,11 +292,21 @@ def _make_rag_tool(
         schema_data = {k: v for k, v in kwargs.items() if k in args_schema.model_fields}
         validated = args_schema.model_validate(schema_data).model_dump()
         rag_filter = filter_builder(**validated) if filter_builder is not None else None
+        # Forward extractive-count knobs when the schema exposes them. These were
+        # previously validated but silently dropped, so the model's documented
+        # "increase on retry" guidance had no effect. RagBuilder defaults cover
+        # schemas that omit them (e.g. QueryOnlyInputSchema).
+        extractive_kwargs = {
+            k: validated[k]
+            for k in ("max_extractive_answer_count", "max_extractive_segment_count")
+            if k in validated
+        }
         helper = RagBuilder(
             data_store_id=SINGLETON.VERTEX_AI_DATASTORES[datastore_key],
             name=tool_name,
             filter=rag_filter,
             max_documents=validated["max_documents"],
+            **extractive_kwargs,
         )
         return helper.search(query=validated["query"])
 
