@@ -184,7 +184,7 @@ def test_measure_evaluator_variance_calls_evaluator_k_times(fake_pairs):
         ),
         patch(
             "evaluate.measure_evaluator_variance._ALL_EVALUATORS",
-            {"legal correctness": mock_evaluator},
+            {"legal correctness": lambda: mock_evaluator},
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch("evaluate.measure_evaluator_variance.print_consistency_stats"),
@@ -213,7 +213,7 @@ def test_measure_evaluator_variance_scenario_filter(fake_pairs):
         ),
         patch(
             "evaluate.measure_evaluator_variance._ALL_EVALUATORS",
-            {"legal correctness": mock_evaluator},
+            {"legal correctness": lambda: mock_evaluator},
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch("evaluate.measure_evaluator_variance.print_consistency_stats"),
@@ -235,7 +235,7 @@ def test_measure_evaluator_variance_runs_per_scenario_limit(fake_pairs):
         ),
         patch(
             "evaluate.measure_evaluator_variance._ALL_EVALUATORS",
-            {"legal correctness": mock_evaluator},
+            {"legal correctness": lambda: mock_evaluator},
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch("evaluate.measure_evaluator_variance.print_consistency_stats"),
@@ -289,7 +289,7 @@ def test_measure_evaluator_variance_results_collected_from_threads(fake_pairs):
         ),
         patch(
             "evaluate.measure_evaluator_variance._ALL_EVALUATORS",
-            {"legal correctness": original_evaluator},
+            {"legal correctness": lambda: original_evaluator},
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch(
@@ -325,7 +325,7 @@ def test_measure_evaluator_variance_thread_error_does_not_abort(fake_pairs):
         ),
         patch(
             "evaluate.measure_evaluator_variance._ALL_EVALUATORS",
-            {"legal correctness": flaky_evaluator},
+            {"legal correctness": lambda: flaky_evaluator},
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch("evaluate.measure_evaluator_variance.print_consistency_stats"),
@@ -348,7 +348,7 @@ def test_measure_evaluator_variance_calls_write_variance_entry(fake_pairs):
         ),
         patch(
             "evaluate.measure_evaluator_variance._ALL_EVALUATORS",
-            {"legal correctness": mock_evaluator},
+            {"legal correctness": lambda: mock_evaluator},
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch("evaluate.measure_evaluator_variance.print_consistency_stats"),
