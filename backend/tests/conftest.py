@@ -1,11 +1,14 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import evaluate.measure_evaluator_variance
-import evaluate.run_langsmith_evaluation
 import pytest
 from flask import Flask
 
+# Imported for side effects: the autouse fixture below patches attributes on
+# these submodules by string path, which requires them to be importable as
+# attributes of the `evaluate` package.
+import evaluate.measure_evaluator_variance  # noqa: F401
+import evaluate.run_langsmith_evaluation  # noqa: F401
 from tenantfirstaid.location import OregonCity, UsaState
 
 

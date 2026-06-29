@@ -898,6 +898,29 @@ _CORPUS_DIR = EVALUATE_DIR.parent / "scripts" / "documents"
 _MIN_SEGMENT_LEN = 10  # ignore fragments shorter than this when checking elided quotes
 
 
+def _target_segments(target: str) -> list[str]:
+    """Split a STOPGAP target on '...' into the verbatim segments worth matching.
+
+    Targets may use '...' to elide text; the clauses around the ellipsis may not
+    be adjacent in the source, so each is matched independently.  Segments shorter
+    than _MIN_SEGMENT_LEN chars are dropped to avoid false matches on punctuation
+    fragments.  Returned segments preserve case; match case-insensitively.
+    """
+    return [s.strip() for s in target.split("...") if len(s.strip()) >= _MIN_SEGMENT_LEN]
+
+
+def _target_in_text(target: str, text: str) -> bool:
+    """True if every verbatim segment of a STOPGAP target appears in text.
+
+    Matching is case-insensitive; callers should whitespace-normalize text so
+    that quotes spanning line-breaks still match.  A target with no segment that
+    clears _MIN_SEGMENT_LEN never matches.
+    """
+    segments = _target_segments(target)
+    lowered = text.lower()
+    return bool(segments) and all(seg.lower() in lowered for seg in segments)
+
+
 def _check_stopgaps_against_corpus(
     stopgaps: list[dict[str, Any]],
     corpus_dir: Path,
@@ -915,7 +938,9 @@ def _check_stopgaps_against_corpus(
     """
     corpus_files = sorted(corpus_dir.rglob("*.txt"))
     if not corpus_files:
-        log.warning("No corpus .txt files found under %s — skipping corpus check", corpus_dir)
+        log.warning(
+            "No corpus .txt files found under %s — skipping corpus check", corpus_dir
+        )
         return
 
     # Collapse all whitespace runs to a single space so multi-line statutory text
@@ -927,10 +952,7 @@ def _check_stopgaps_against_corpus(
     any_miss = False
     for sg in stopgaps:
         for target in sg["targets"]:
-            segments = [s.strip() for s in target.split("...")]
-            for seg in segments:
-                if len(seg) < _MIN_SEGMENT_LEN:
-                    continue
+            for seg in _target_segments(target):
                 if seg.lower() not in corpus_text:
                     log.warning(
                         "STOPGAP corpus mismatch — segment not found verbatim in local "
@@ -947,7 +969,9 @@ def _check_stopgaps_against_corpus(
                     any_miss = True
 
     if not any_miss:
-        log.info("Corpus check passed — all STOPGAP target segments found verbatim in corpus")
+        log.info(
+            "Corpus check passed — all STOPGAP target segments found verbatim in corpus"
+        )
 
 
 def _collect_tool_queries(client: Any, experiment: str) -> list[str]:
@@ -1045,11 +1069,10 @@ def _check_retrieval_from_traces(
             coverage_gap = True
             continue
 
-        targets_lower = [t.lower() for t in sg["targets"]]
         hits = 0
         for r in relevant_runs:
-            norm = [re.sub(r"\s+", " ", resp).lower() for resp in r["responses"]]
-            if any(t in n for n in norm for t in targets_lower):
+            norm = [re.sub(r"\s+", " ", resp) for resp in r["responses"]]
+            if any(_target_in_text(t, n) for n in norm for t in sg["targets"]):
                 hits += 1
         total_relevant = len(relevant_runs)
 
@@ -1523,7 +1546,6 @@ def cmd_runs_stopgap_check(args: argparse.Namespace) -> None:
     print(f"\nRetrieval params: {max_results} docs x {max_segments} segments\n")
 
     for sg in stopgaps:
-        targets_lower = [t.lower() for t in sg["targets"]]
         hits = 0
         rows: list[tuple[str, str]] = []
 
@@ -1539,8 +1561,8 @@ def cmd_runs_stopgap_check(args: argparse.Namespace) -> None:
             for result in res.results:
                 struct = result.document.derived_struct_data or {}
                 for seg in struct.get("extractive_segments", []):
-                    content = (seg.get("content") or "").lower()
-                    if any(t in content for t in targets_lower):
+                    content = re.sub(r"\s+", " ", seg.get("content") or "")
+                    if any(_target_in_text(t, content) for t in sg["targets"]):
                         hit = True
                         break
                 if hit:

@@ -17,8 +17,8 @@ from evaluate.langsmith_dataset import (
     _check_retrieval_from_traces,
     _collect_tool_responses_by_run,
     _datastore_unchanged_since_experiment,
-    _experiment_latest_run_time,
     _example_content_diff,
+    _experiment_latest_run_time,
     _experiment_scores,
     _extract_rubric,
     _git_is_clean,
@@ -1871,13 +1871,21 @@ def test_check_retrieval_retirement_candidate(caplog):
     import logging
 
     eid = str(uuid4())
-    stopgaps = [_make_stopgap("ORS 90.425 personal property", ["landlord must give a written notice"])]
+    stopgaps = [
+        _make_stopgap(
+            "ORS 90.425 personal property", ["landlord must give a written notice"]
+        )
+    ]
     runs_by_id = {
-        str(uuid4()): _make_run_entry(eid, ["...landlord must give a written notice to the tenant..."])
+        str(uuid4()): _make_run_entry(
+            eid, ["...landlord must give a written notice to the tenant..."]
+        )
     }
     facts_by_example = {eid: ["Question pertains to ORS 90.425"]}
     with caplog.at_level(logging.INFO):
-        _check_retrieval_from_traces(stopgaps, runs_by_id, facts_by_example, logging.getLogger("test_retrieval"))
+        _check_retrieval_from_traces(
+            stopgaps, runs_by_id, facts_by_example, logging.getLogger("test_retrieval")
+        )
     assert any("retirement candidate" in r.message for r in caplog.records)
 
 
@@ -1886,11 +1894,21 @@ def test_check_retrieval_never_retrieved(caplog):
     import logging
 
     eid = str(uuid4())
-    stopgaps = [_make_stopgap("ORS 90.425 personal property", ["landlord must give a written notice"])]
-    runs_by_id = {str(uuid4()): _make_run_entry(eid, ["completely unrelated retrieved text about rent"])}
+    stopgaps = [
+        _make_stopgap(
+            "ORS 90.425 personal property", ["landlord must give a written notice"]
+        )
+    ]
+    runs_by_id = {
+        str(uuid4()): _make_run_entry(
+            eid, ["completely unrelated retrieved text about rent"]
+        )
+    }
     facts_by_example = {eid: ["Question pertains to ORS 90.425"]}
     with caplog.at_level(logging.INFO):
-        _check_retrieval_from_traces(stopgaps, runs_by_id, facts_by_example, logging.getLogger("test_retrieval"))
+        _check_retrieval_from_traces(
+            stopgaps, runs_by_id, facts_by_example, logging.getLogger("test_retrieval")
+        )
     assert any("never retrieved" in r.message for r in caplog.records)
 
 
@@ -1899,15 +1917,23 @@ def test_check_retrieval_partially_retrieved(caplog):
     import logging
 
     eid = str(uuid4())
-    stopgaps = [_make_stopgap("ORS 90.425 personal property", ["landlord must give a written notice"])]
+    stopgaps = [
+        _make_stopgap(
+            "ORS 90.425 personal property", ["landlord must give a written notice"]
+        )
+    ]
     # Two repetitions of the same scenario; one retrieves the target, one does not.
     runs_by_id = {
-        str(uuid4()): _make_run_entry(eid, ["...landlord must give a written notice..."]),
+        str(uuid4()): _make_run_entry(
+            eid, ["...landlord must give a written notice..."]
+        ),
         str(uuid4()): _make_run_entry(eid, ["unrelated text about security deposits"]),
     }
     facts_by_example = {eid: ["Question pertains to ORS 90.425"]}
     with caplog.at_level(logging.INFO):
-        _check_retrieval_from_traces(stopgaps, runs_by_id, facts_by_example, logging.getLogger("test_retrieval"))
+        _check_retrieval_from_traces(
+            stopgaps, runs_by_id, facts_by_example, logging.getLogger("test_retrieval")
+        )
     assert any("partially retrieved" in r.message for r in caplog.records)
     assert any("1/2" in r.message for r in caplog.records)
 
@@ -1917,7 +1943,11 @@ def test_check_retrieval_counts_each_repetition_once(caplog):
     import logging
 
     eid = str(uuid4())
-    stopgaps = [_make_stopgap("ORS 90.425 personal property", ["landlord must give a written notice"])]
+    stopgaps = [
+        _make_stopgap(
+            "ORS 90.425 personal property", ["landlord must give a written notice"]
+        )
+    ]
     # A single repetition made two RAG calls; the target appears in only one.
     runs_by_id = {
         str(uuid4()): _make_run_entry(
@@ -1927,7 +1957,9 @@ def test_check_retrieval_counts_each_repetition_once(caplog):
     }
     facts_by_example = {eid: ["Question pertains to ORS 90.425"]}
     with caplog.at_level(logging.INFO):
-        _check_retrieval_from_traces(stopgaps, runs_by_id, facts_by_example, logging.getLogger("test_retrieval"))
+        _check_retrieval_from_traces(
+            stopgaps, runs_by_id, facts_by_example, logging.getLogger("test_retrieval")
+        )
     # One repetition, one hit — not 1/2 across the two tool calls.
     assert any("retirement candidate" in r.message for r in caplog.records)
     assert any("1/1" in r.message for r in caplog.records)
@@ -1939,9 +1971,15 @@ def test_check_retrieval_filters_to_relevant_examples(caplog):
 
     relevant_eid = str(uuid4())
     irrelevant_eid = str(uuid4())
-    stopgaps = [_make_stopgap("ORS 90.425 personal property", ["landlord must give a written notice"])]
+    stopgaps = [
+        _make_stopgap(
+            "ORS 90.425 personal property", ["landlord must give a written notice"]
+        )
+    ]
     runs_by_id = {
-        str(uuid4()): _make_run_entry(relevant_eid, ["...landlord must give a written notice..."]),
+        str(uuid4()): _make_run_entry(
+            relevant_eid, ["...landlord must give a written notice..."]
+        ),
         str(uuid4()): _make_run_entry(irrelevant_eid, ["unrelated text"]),
     }
     facts_by_example = {
@@ -1949,7 +1987,9 @@ def test_check_retrieval_filters_to_relevant_examples(caplog):
         irrelevant_eid: ["Question pertains to ORS 90.394"],
     }
     with caplog.at_level(logging.INFO):
-        _check_retrieval_from_traces(stopgaps, runs_by_id, facts_by_example, logging.getLogger("test_retrieval"))
+        _check_retrieval_from_traces(
+            stopgaps, runs_by_id, facts_by_example, logging.getLogger("test_retrieval")
+        )
     # The irrelevant repetition missed, but it's excluded — only the relevant one counts.
     assert any("retirement candidate" in r.message for r in caplog.records)
     assert any("1/1" in r.message for r in caplog.records)
@@ -1960,11 +2000,17 @@ def test_check_retrieval_no_relevant_scenarios(caplog):
     import logging
 
     eid = str(uuid4())
-    stopgaps = [_make_stopgap("ORS 90.425 personal property", ["landlord must give a written notice"])]
+    stopgaps = [
+        _make_stopgap(
+            "ORS 90.425 personal property", ["landlord must give a written notice"]
+        )
+    ]
     runs_by_id = {str(uuid4()): _make_run_entry(eid, ["some retrieved text"])}
     facts_by_example = {eid: ["Question pertains to ORS 90.394"]}
     with caplog.at_level(logging.INFO):
-        _check_retrieval_from_traces(stopgaps, runs_by_id, facts_by_example, logging.getLogger("test_retrieval"))
+        _check_retrieval_from_traces(
+            stopgaps, runs_by_id, facts_by_example, logging.getLogger("test_retrieval")
+        )
     assert any("no relevant scenarios" in r.message for r in caplog.records)
 
 
@@ -1973,12 +2019,22 @@ def test_check_retrieval_normalizes_whitespace(caplog):
     import logging
 
     eid = str(uuid4())
-    stopgaps = [_make_stopgap("ORS 90.425 personal property", ["landlord must give a written notice"])]
+    stopgaps = [
+        _make_stopgap(
+            "ORS 90.425 personal property", ["landlord must give a written notice"]
+        )
+    ]
     # Corpus text has a line break in the middle of the target phrase.
-    runs_by_id = {str(uuid4()): _make_run_entry(eid, ["...landlord must give a written\nnotice to the tenant..."])}
+    runs_by_id = {
+        str(uuid4()): _make_run_entry(
+            eid, ["...landlord must give a written\nnotice to the tenant..."]
+        )
+    }
     facts_by_example = {eid: ["Question pertains to ORS 90.425"]}
     with caplog.at_level(logging.INFO):
-        _check_retrieval_from_traces(stopgaps, runs_by_id, facts_by_example, logging.getLogger("test_retrieval"))
+        _check_retrieval_from_traces(
+            stopgaps, runs_by_id, facts_by_example, logging.getLogger("test_retrieval")
+        )
     assert any("retirement candidate" in r.message for r in caplog.records)
 
 
@@ -1988,7 +2044,9 @@ def test_check_retrieval_empty_runs_does_not_raise(caplog):
 
     stopgaps = [_make_stopgap("ORS 90.425 personal property", ["some target"])]
     with caplog.at_level(logging.INFO):
-        _check_retrieval_from_traces(stopgaps, {}, {}, logging.getLogger("test_retrieval"))
+        _check_retrieval_from_traces(
+            stopgaps, {}, {}, logging.getLogger("test_retrieval")
+        )
     # No relevant repetitions exist, so the STOPGAP is reported as having no coverage.
     assert any("no relevant scenarios" in r.message for r in caplog.records)
 
