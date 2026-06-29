@@ -26,6 +26,7 @@ Usage examples:
 import argparse
 import difflib
 import json
+import logging
 import math
 import re
 import statistics
@@ -61,6 +62,7 @@ EVALUATE_DIR = Path(__file__).parent
 DEFAULT_SCHEMA = EVALUATE_DIR / "langsmith_example_schema.json"
 DEFAULT_DATASET_NAME = "tenant-legal-qa-scenarios"
 DEFAULT_JSONL = EVALUATE_DIR / "dataset-tenant-legal-qa-examples.jsonl"
+_SYSTEM_PROMPT_PATH = EVALUATE_DIR.parent / "tenantfirstaid" / "system_prompt.md"
 
 # LangSmith's default trace retention; queries reaching further back return
 # nothing older than this because expired traces are already purged.
@@ -866,6 +868,290 @@ def cmd_experiment_stats(args: argparse.Namespace) -> None:
 # ── run subcommands ────────────────────────────────────────────────────────────
 
 
+def _parse_stopgaps(prompt_path: Path) -> list[dict[str, Any]]:
+    """Parse STOPGAP entries from a system prompt markdown file.
+
+    Returns a list of dicts with:
+      label   — human-readable label (markdown links stripped)
+      targets — verbatim quoted phrases to substring-match in retrieved text
+    """
+    lines = prompt_path.read_text().splitlines()
+    stopgaps: list[dict[str, Any]] = []
+    i = 0
+    while i < len(lines):
+        m = re.match(r"^- \*\*STOPGAP — (.+?)\.\*\*(.*)", lines[i])
+        if m:
+            label = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", m.group(1))
+            targets: list[str] = re.findall(r'"([^"]+)"', m.group(2))
+            j = i + 1
+            while j < len(lines) and lines[j].startswith("  "):
+                targets.extend(re.findall(r'"([^"]+)"', lines[j]))
+                j += 1
+            stopgaps.append({"label": label, "targets": targets})
+            i = j
+        else:
+            i += 1
+    return stopgaps
+
+
+_CORPUS_DIR = EVALUATE_DIR.parent / "scripts" / "documents"
+_MIN_SEGMENT_LEN = 10  # ignore fragments shorter than this when checking elided quotes
+
+
+def _check_stopgaps_against_corpus(
+    stopgaps: list[dict[str, Any]],
+    corpus_dir: Path,
+    log: logging.Logger,
+) -> None:
+    """Warn if any STOPGAP target phrase (or segment) is absent from the local corpus.
+
+    Targets may contain '...' to elide text; each non-empty segment around the
+    ellipsis is checked independently, since the surrounding clauses may not be
+    adjacent in the source file.  Segments shorter than _MIN_SEGMENT_LEN chars
+    are skipped to avoid false positives from punctuation fragments.
+
+    This is a sanity check, not a hard failure — a mismatch means the STOPGAP
+    may have been transcribed incorrectly or the corpus has since been updated.
+    """
+    corpus_files = sorted(corpus_dir.rglob("*.txt"))
+    if not corpus_files:
+        log.warning("No corpus .txt files found under %s — skipping corpus check", corpus_dir)
+        return
+
+    # Collapse all whitespace runs to a single space so multi-line statutory text
+    # matches single-line STOPGAP quotes that span paragraph line-breaks.
+    raw = "\n".join(f.read_text() for f in corpus_files)
+    corpus_text = re.sub(r"\s+", " ", raw).lower()
+    log.info("Corpus check: loaded %d file(s) from %s", len(corpus_files), corpus_dir)
+
+    any_miss = False
+    for sg in stopgaps:
+        for target in sg["targets"]:
+            segments = [s.strip() for s in target.split("...")]
+            for seg in segments:
+                if len(seg) < _MIN_SEGMENT_LEN:
+                    continue
+                if seg.lower() not in corpus_text:
+                    log.warning(
+                        "STOPGAP corpus mismatch — segment not found verbatim in local "
+                        "corpus.\n"
+                        "  The retrieval probe will also report a false miss for this "
+                        "target.\n"
+                        "  Fix: update the STOPGAP quote to match the corpus exactly, or "
+                        "shorten the target to a verbatim phrase.\n"
+                        "  STOPGAP : %s\n"
+                        "  segment : %r",
+                        sg["label"],
+                        seg[:120],
+                    )
+                    any_miss = True
+
+    if not any_miss:
+        log.info("Corpus check passed — all STOPGAP target segments found verbatim in corpus")
+
+
+def _collect_tool_queries(client: Any, experiment: str) -> list[str]:
+    """Return all unique RAG query strings issued as tool calls in an experiment."""
+    p = _read_project(client, experiment)
+    queries: set[str] = set()
+    for run in client.list_runs(project_id=p.id, run_type="tool"):
+        q = (run.inputs or {}).get("query")
+        if q:
+            queries.add(q)
+    return sorted(queries)
+
+
+def _collect_tool_responses_by_run(
+    client: Any, experiment: str
+) -> dict[str, dict[str, Any]]:
+    """Return RAG tool response texts grouped by repetition (root run).
+
+    Each dataset example is run multiple times (``--num-repetitions``); every
+    repetition is a distinct root run sharing the example's
+    ``reference_example_id``. Grouping by root run keeps each repetition as an
+    independent retrieval sample, while ``example_id`` carries the scenario link
+    used for per-STOPGAP filtering downstream.
+
+    Returns a mapping of root run ID to
+    ``{"example_id": str, "responses": [str, ...]}``.
+    """
+    p = _read_project(client, experiment)
+    run_to_example: dict[str, str] = {
+        str(run.id): str(run.reference_example_id)
+        for run in client.list_runs(project_id=p.id, execution_order=1)
+        if run.reference_example_id
+    }
+    runs: dict[str, dict[str, Any]] = {}
+    for run in client.list_runs(project_id=p.id, run_type="tool"):
+        root_id = str(run.trace_id)
+        example_id = run_to_example.get(root_id)
+        if not example_id:
+            continue
+        outputs = run.outputs or {}
+        text = outputs.get("output") or outputs.get("content") or ""
+        if isinstance(text, str) and text:
+            entry = runs.setdefault(
+                root_id, {"example_id": example_id, "responses": []}
+            )
+            entry["responses"].append(text)
+    return runs
+
+
+def _check_retrieval_from_traces(
+    stopgaps: list[dict[str, Any]],
+    runs_by_id: dict[str, dict[str, Any]],
+    facts_by_example: dict[str, list[str]],
+    log: logging.Logger,
+) -> bool:
+    """Log per-STOPGAP retrieval hit rates over repetitions, filtered to scenarios
+    covering each statute.
+
+    The sampling unit is the repetition (root run): a repetition counts as a hit
+    if any of its tool responses contains the STOPGAP's verbatim target text. For
+    each STOPGAP, the ORS number is extracted from its label and the denominator
+    is restricted to repetitions of examples whose facts mention that statute.
+    This is the L1/L2 layer check: did the right text land in retrieved passages
+    during this experiment, for the runs that were supposed to retrieve it?
+
+    Returns True if any STOPGAP had no relevant repetitions in the trace (a
+    coverage gap), since the live re-query can still probe such a STOPGAP even
+    when the datastore is unchanged.
+    """
+    n_examples = len({r["example_id"] for r in runs_by_id.values()})
+    log.info(
+        "L1/L2 trace check — %d repetition(s) across %d example(s):",
+        len(runs_by_id),
+        n_examples,
+    )
+    coverage_gap = False
+    for sg in stopgaps:
+        ors_match = re.search(r"\b(\d+\.\d+)", sg["label"])
+        ors_num = ors_match.group(1) if ors_match else None
+
+        if ors_num:
+            relevant_eids = {
+                eid
+                for eid, facts in facts_by_example.items()
+                if any(ors_num in fact for fact in facts)
+            }
+        else:
+            relevant_eids = {r["example_id"] for r in runs_by_id.values()}
+
+        relevant_runs = [
+            r for r in runs_by_id.values() if r["example_id"] in relevant_eids
+        ]
+        if not relevant_runs:
+            log.info("  [%s] no relevant scenarios found in experiment", sg["label"])
+            coverage_gap = True
+            continue
+
+        targets_lower = [t.lower() for t in sg["targets"]]
+        hits = 0
+        for r in relevant_runs:
+            norm = [re.sub(r"\s+", " ", resp).lower() for resp in r["responses"]]
+            if any(t in n for n in norm for t in targets_lower):
+                hits += 1
+        total_relevant = len(relevant_runs)
+
+        if hits == total_relevant:
+            status = "retirement candidate"
+        elif hits == 0:
+            status = "never retrieved"
+        else:
+            status = "partially retrieved"
+
+        log.info(
+            "  [%s] retrieved in %d/%d relevant repetition(s) — %s",
+            sg["label"],
+            hits,
+            total_relevant,
+            status,
+        )
+
+    return coverage_gap
+
+
+def _experiment_latest_run_time(client: Any, experiment: str) -> datetime | None:
+    """Return the latest root-run start time for an experiment, or None."""
+    p = _read_project(client, experiment)
+    times = [
+        run.start_time
+        for run in client.list_runs(project_id=p.id, execution_order=1)
+        if run.start_time
+    ]
+    return max(times) if times else None
+
+
+def _datastore_last_update_time() -> datetime | None:
+    """Return the laws datastore's last data-update time, or None if unavailable.
+
+    Reads ``DataStore.billing_estimation`` from the Discovery Engine API, which
+    records when the structured/unstructured data was last updated (i.e. the last
+    reindex). Returns None on any failure so callers fall open.
+    """
+    try:
+        from google.cloud import discoveryengine_v1beta as discoveryengine
+
+        from tenantfirstaid.constants import SINGLETON, DatastoreKey
+        from tenantfirstaid.google_auth import (
+            discoveryengine_client_options,
+            load_gcp_credentials,
+        )
+
+        credentials = load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
+        location = SINGLETON.GOOGLE_CLOUD_LOCATION
+        client = discoveryengine.DataStoreServiceClient(
+            credentials=credentials,
+            client_options=discoveryengine_client_options(location),
+        )
+        datastore = SINGLETON.VERTEX_AI_DATASTORES[DatastoreKey.LAWS]
+        name = (
+            f"projects/{SINGLETON.GOOGLE_CLOUD_PROJECT}"
+            f"/locations/{location}"
+            f"/collections/default_collection"
+            f"/dataStores/{datastore}"
+        )
+        est = client.get_data_store(name=name).billing_estimation
+        times = [
+            t
+            for t in (
+                est.unstructured_data_update_time,
+                est.structured_data_update_time,
+            )
+            if t
+        ]
+        return max(times) if times else None
+    except Exception:
+        return None
+
+
+def _as_utc(dt: datetime) -> datetime:
+    """Normalize a datetime to timezone-aware UTC for safe comparison."""
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _datastore_unchanged_since_experiment(
+    client: Any, experiment: str, log: logging.Logger
+) -> bool:
+    """Return True if the laws datastore has not been reindexed since the experiment ran.
+
+    Compares the datastore's last data-update time against the experiment's latest
+    root-run start time. Returns False when either timestamp is unavailable, so the
+    caller falls open and runs the live re-query rather than skipping it on a guess.
+    """
+    exp_time = _experiment_latest_run_time(client, experiment)
+    ds_time = _datastore_last_update_time()
+    if exp_time is None or ds_time is None:
+        log.info(
+            "Could not determine datastore vs. experiment timing; running the live "
+            "re-query to be safe."
+        )
+        return False
+    return _as_utc(ds_time) <= _as_utc(exp_time)
+
+
 def cmd_run_list(args: argparse.Namespace) -> None:
     client = make_client()
     p = _read_project(client, args.experiment)
@@ -1150,6 +1436,122 @@ def cmd_prompt_pull(args: argparse.Namespace) -> None:
 
     local.write_text(rubric_text)
     print(f"Pulled '{args.name}' → {local}")
+
+
+def cmd_runs_stopgap_check(args: argparse.Namespace) -> None:
+    """Check whether each system-prompt STOPGAP's verbatim text is retrievable.
+
+    Two use cases:
+      Retirement signal  — pass an experiment name; queries are pulled from its
+                           tool runs (the real queries the agent issued).
+      Regression check   — omit experiment, pass --query flags; useful after a
+                           corpus reindex or datastore update.
+
+    A STOPGAP is a retirement candidate when its hit rate reaches N/N at
+    production params. Confirm by running a comparative eval without it.
+    """
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
+    log = logging.getLogger(__name__)
+
+    from scripts.vertex_ai_search import search as vertex_search  # deferred: needs env
+    from tenantfirstaid.location import UsaState
+
+    prompt_path: Path = args.prompt
+    stopgaps = _parse_stopgaps(prompt_path)
+
+    if not stopgaps:
+        print(f"No STOPGAPs found in {prompt_path}.", file=sys.stderr)
+        sys.exit(1)
+
+    log.info("Found %d STOPGAP(s) in %s", len(stopgaps), prompt_path.name)
+    for sg in stopgaps:
+        log.info("  %s  [%d target phrase(s)]", sg["label"], len(sg["targets"]))
+        for t in sg["targets"]:
+            snippet = t[:80] + ("..." if len(t) > 80 else "")
+            log.info("    %r", snippet)
+
+    _check_stopgaps_against_corpus(stopgaps, _CORPUS_DIR, log)
+
+    if args.experiment:
+        client = make_client()
+        queries = _collect_tool_queries(client, args.experiment)
+        log.info(
+            "Collected %d unique tool queries from %s", len(queries), args.experiment
+        )
+        runs_by_id = _collect_tool_responses_by_run(client, args.experiment)
+        coverage_gap = False
+        if runs_by_id:
+            example_ids = {r["example_id"] for r in runs_by_id.values()}
+            facts_by_example: dict[str, list[str]] = {
+                str(ex.id): list((ex.outputs or {}).get("facts") or [])
+                for ex in client.list_examples(example_ids=list(example_ids))
+            }
+            coverage_gap = _check_retrieval_from_traces(
+                stopgaps, runs_by_id, facts_by_example, log
+            )
+        # The live re-query only adds information when the datastore has changed
+        # since the experiment (e.g. a reindex), or when the trace check left a
+        # coverage gap it can probe directly. Otherwise it would just reproduce
+        # the trace at the cost of live Vertex AI calls, so short-circuit.
+        if (
+            not args.force_requery
+            and not coverage_gap
+            and _datastore_unchanged_since_experiment(client, args.experiment, log)
+        ):
+            log.info(
+                "Datastore unchanged since %s ran and the trace check covered every "
+                "STOPGAP; skipping the live Vertex AI re-query (it would reproduce the "
+                "trace). Reindex, omit the experiment and pass --query, or pass "
+                "--force-requery to run it anyway.",
+                args.experiment,
+            )
+            return
+    else:
+        queries = list(args.query or [])
+
+    if not queries:
+        print(
+            "No queries to probe. Pass an experiment name or one or more --query flags.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    max_results: int = args.max_results
+    max_segments: int = args.max_segments
+    state = UsaState("or")
+
+    print(f"\nRetrieval params: {max_results} docs x {max_segments} segments\n")
+
+    for sg in stopgaps:
+        targets_lower = [t.lower() for t in sg["targets"]]
+        hits = 0
+        rows: list[tuple[str, str]] = []
+
+        for q in queries:
+            res = vertex_search(
+                q,
+                state=state,
+                max_results=max_results,
+                max_extractive_answer_count=1,
+                max_extractive_segment_count=max_segments,
+            )
+            hit = False
+            for result in res.results:
+                struct = result.document.derived_struct_data or {}
+                for seg in struct.get("extractive_segments", []):
+                    content = (seg.get("content") or "").lower()
+                    if any(t in content for t in targets_lower):
+                        hit = True
+                        break
+                if hit:
+                    break
+            hits += hit
+            rows.append(("HIT " if hit else "miss", q[:72]))
+
+        print(f"=== {sg['label']} ===")
+        for status, q in rows:
+            print(f"  [{status}] {q}")
+        print(f"  -> STOPGAP text retrieved on {hits}/{len(queries)} queries\n")
 
 
 # ── argument parser ────────────────────────────────────────────────────────────
@@ -1621,6 +2023,71 @@ def build_parser() -> argparse.ArgumentParser:
         help="Include tool call arguments, tool responses, and LLM output at each node.",
     )
     p.set_defaults(func=cmd_run_trace)
+
+    p = runs_sub.add_parser(
+        "stopgap-check",
+        help=(
+            "Check whether each system-prompt STOPGAP's verbatim text is retrievable "
+            "at production params."
+        ),
+        description=(
+            "Parses STOPGAP entries from system_prompt.md, logs each one found at INFO "
+            "level, then probes Vertex AI Search to report hit rate per STOPGAP.\n\n"
+            "Two use cases:\n"
+            "  Retirement signal  — pass an experiment name; queries come from its tool "
+            "runs.\n"
+            "                       A STOPGAP whose hit rate reaches N/N is a retirement "
+            "candidate.\n"
+            "  Regression check   — omit experiment, pass --query flags; verify specific "
+            "queries\n"
+            "                       still hit after a corpus reindex or datastore update."
+        ),
+    )
+    p.add_argument(
+        "experiment",
+        nargs="?",
+        metavar="name-or-uuid",
+        help=(
+            "LangSmith experiment to pull production queries from. "
+            "Omit to use --query instead."
+        ),
+    )
+    p.add_argument(
+        "--query",
+        action="append",
+        metavar="text",
+        help="Ad-hoc query to probe (repeatable). Used when no experiment is given.",
+    )
+    p.add_argument(
+        "--prompt",
+        type=Path,
+        default=_SYSTEM_PROMPT_PATH,
+        metavar="path",
+        help="Path to system_prompt.md (default: %(default)s).",
+    )
+    p.add_argument(
+        "--max-results",
+        type=int,
+        default=3,
+        metavar="N",
+        help="Documents per query (default: %(default)s — matches production).",
+    )
+    p.add_argument(
+        "--max-segments",
+        type=int,
+        default=3,
+        metavar="N",
+        help="Extractive segments per document (default: %(default)s — matches production).",
+    )
+    p.add_argument(
+        "--force-requery",
+        action="store_true",
+        help=(
+            "Run the live Vertex AI re-query even when the datastore is unchanged "
+            "since the experiment ran (by default it is skipped as redundant)."
+        ),
+    )
+    p.set_defaults(func=cmd_runs_stopgap_check)
 
     # ── prompt ───────────────────────────────────────────────────────────────
     pr_parser = nouns.add_parser(
