@@ -1,6 +1,7 @@
 """Tests for evaluate/langsmith_dataset.py."""
 
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
@@ -10,6 +11,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from evaluate.langsmith_dataset import (
+    RETENTION_DAYS,
     _apply_dataset_schemas,
     _example_content_diff,
     _experiment_scores,
@@ -17,10 +19,14 @@ from evaluate.langsmith_dataset import (
     _git_is_clean,
     _load_dataset_schemas,
     _load_examples,
+    _message_text,
     _read_jsonl,
+    _render_transcript,
+    _scan_pii,
     _scenario_id,
     _tabulate,
     _Validate,
+    _warn_pii,
     build_parser,
     cmd_dataset_create,
     cmd_dataset_delete,
@@ -36,6 +42,7 @@ from evaluate.langsmith_dataset import (
     cmd_example_show,
     cmd_example_update,
     cmd_experiment_compare,
+    cmd_experiment_markdown,
     cmd_experiment_show,
     cmd_experiment_stats,
     cmd_run_exemplars,
@@ -1717,3 +1724,290 @@ def test_cmd_run_trace_verbose_recurses_into_child_runs(capsys):
     assert "parent-chain" in out
     assert "child-tool" in out
     assert "child input" in out
+
+
+# ── _message_text ──────────────────────────────────────────────────────────────
+
+
+def test_message_text_plain_string():
+    assert _message_text("hello") == "hello"
+
+
+def test_message_text_joins_text_blocks():
+    content = [{"type": "text", "text": "one"}, {"type": "text", "text": "two"}]
+    assert _message_text(content) == "one\ntwo"
+
+
+def test_message_text_drops_non_text_blocks():
+    # Reasoning signatures and other structured payloads carry no "text" type.
+    content = [
+        {"type": "reasoning", "signature": "abc"},
+        {"type": "text", "text": "kept"},
+    ]
+    assert _message_text(content) == "kept"
+
+
+def test_message_text_non_string_non_list_returns_empty():
+    assert _message_text(None) == ""
+    assert _message_text({"type": "text", "text": "x"}) == ""
+
+
+# ── _render_transcript ─────────────────────────────────────────────────────────
+
+
+def test_render_transcript_bolds_roles():
+    messages = [
+        {"role": "human", "content": "hi"},
+        {"role": "ai", "content": "hello"},
+    ]
+    out = _render_transcript(messages)
+    assert "> **User:** hi" in out
+    assert "> **Assistant:** hello" in out
+
+
+def test_render_transcript_drops_tool_and_system_messages():
+    messages = [
+        {"role": "human", "content": "q"},
+        {"role": "tool", "content": "RAG retrieval dump"},
+        {"role": "system", "content": "you are a bot"},
+        {"role": "ai", "content": "a"},
+    ]
+    out = _render_transcript(messages)
+    assert "RAG retrieval dump" not in out
+    assert "you are a bot" not in out
+    assert "**User:** q" in out
+    assert "**Assistant:** a" in out
+
+
+def test_render_transcript_reads_type_key():
+    # LangChain-serialised messages use "type" rather than "role".
+    messages = [{"type": "human", "content": "hi"}]
+    assert "> **User:** hi" in _render_transcript(messages)
+
+
+def test_render_transcript_skips_empty_content():
+    messages = [
+        {"role": "human", "content": ""},
+        {"role": "ai", "content": "only this"},
+    ]
+    out = _render_transcript(messages)
+    assert "only this" in out
+    assert "**User:**" not in out
+
+
+def test_render_transcript_quotes_every_line():
+    messages = [{"role": "ai", "content": "line1\nline2"}]
+    out = _render_transcript(messages)
+    assert "> **Assistant:** line1" in out
+    assert "> line2" in out
+
+
+def test_render_transcript_empty_messages():
+    assert _render_transcript([]) == ""
+    assert _render_transcript(None) == ""
+
+
+# ── cmd_experiment_markdown ────────────────────────────────────────────────────
+
+
+def _make_md_run(messages, city=None, state="or", start_time=None):
+    r = MagicMock()
+    r.id = uuid4()
+    r.inputs = {"city": city, "state": state, "messages": messages}
+    r.start_time = start_time or datetime(2026, 6, 20, tzinfo=timezone.utc)
+    return r
+
+
+def _md_args(file, *, days=RETENTION_DAYS, force=False, dry_run=False):
+    return MagicMock(
+        experiment="tenantfirstaid-prod",
+        file=file,
+        days=days,
+        force=force,
+        dry_run=dry_run,
+    )
+
+
+def _md_client(runs):
+    client = MagicMock()
+    client.read_project.return_value = _make_project("tenantfirstaid-prod", "proj-1")
+    client.list_runs.return_value = runs
+    return client
+
+
+def test_cmd_experiment_markdown_writes_transcript(tmp_path):
+    out = tmp_path / "traces.md"
+    runs = [
+        _make_md_run(
+            [{"role": "human", "content": "Can I be evicted?"}],
+            city="portland",
+            state="or",
+        )
+    ]
+    with patch("evaluate.langsmith_dataset.make_client", return_value=_md_client(runs)):
+        cmd_experiment_markdown(_md_args(out))
+
+    text = out.read_text()
+    assert "# Traces from `tenantfirstaid-prod`" in text
+    assert "## Example 1" in text
+    assert "- **city:** `portland`" in text
+    assert "- **state:** `or`" in text
+    assert "> **User:** Can I be evicted?" in text
+
+
+def test_cmd_experiment_markdown_drops_tool_messages(tmp_path):
+    out = tmp_path / "traces.md"
+    runs = [
+        _make_md_run(
+            [
+                {"role": "human", "content": "q"},
+                {"role": "tool", "content": "internal RAG payload"},
+                {"role": "ai", "content": "a"},
+            ]
+        )
+    ]
+    with patch("evaluate.langsmith_dataset.make_client", return_value=_md_client(runs)):
+        cmd_experiment_markdown(_md_args(out))
+
+    assert "internal RAG payload" not in out.read_text()
+
+
+def test_cmd_experiment_markdown_dry_run_does_not_write(tmp_path, capsys):
+    out = tmp_path / "traces.md"
+    runs = [_make_md_run([{"role": "human", "content": "q"}])]
+    with patch("evaluate.langsmith_dataset.make_client", return_value=_md_client(runs)):
+        cmd_experiment_markdown(_md_args(out, dry_run=True))
+
+    assert not out.exists()
+    assert "Would write 1 examples" in capsys.readouterr().out
+
+
+def test_cmd_experiment_markdown_respects_days(tmp_path):
+    out = tmp_path / "traces.md"
+    client = _md_client([_make_md_run([{"role": "human", "content": "q"}])])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_experiment_markdown(_md_args(out, days=3))
+
+    start_time = client.list_runs.call_args.kwargs["start_time"]
+    expected = datetime.now(timezone.utc) - timedelta(days=3)
+    assert abs((expected - start_time).total_seconds()) < 60
+    assert "Window: last 3 days" in out.read_text()
+
+
+def test_cmd_experiment_markdown_clamps_and_warns(tmp_path, capsys):
+    out = tmp_path / "traces.md"
+    client = _md_client([_make_md_run([{"role": "human", "content": "q"}])])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=client):
+        cmd_experiment_markdown(_md_args(out, days=30))
+
+    err = capsys.readouterr().err
+    assert "exceeds" in err
+    assert f"clamping to {RETENTION_DAYS}" in err
+
+    start_time = client.list_runs.call_args.kwargs["start_time"]
+    expected = datetime.now(timezone.utc) - timedelta(days=RETENTION_DAYS)
+    assert abs((expected - start_time).total_seconds()) < 60
+    assert f"Window: last {RETENTION_DAYS} days" in out.read_text()
+
+
+def test_cmd_experiment_markdown_aborts_on_dirty_file(tmp_path, capsys):
+    out = tmp_path / "traces.md"
+    out.write_text("existing")
+    with patch("evaluate.langsmith_dataset._git_is_clean", return_value=False):
+        with pytest.raises(SystemExit):
+            cmd_experiment_markdown(_md_args(out))
+
+    assert "uncommitted changes" in capsys.readouterr().err
+    assert out.read_text() == "existing"
+
+
+def test_cmd_experiment_markdown_force_overwrites_dirty_file(tmp_path):
+    out = tmp_path / "traces.md"
+    out.write_text("existing")
+    runs = [_make_md_run([{"role": "human", "content": "fresh"}])]
+    with (
+        patch("evaluate.langsmith_dataset._git_is_clean", return_value=False),
+        patch("evaluate.langsmith_dataset.make_client", return_value=_md_client(runs)),
+    ):
+        cmd_experiment_markdown(_md_args(out, force=True))
+
+    assert "fresh" in out.read_text()
+
+
+# ── _scan_pii / _warn_pii ──────────────────────────────────────────────────────
+
+
+def test_scan_pii_detects_common_categories():
+    text = (
+        "Reach me at jane.doe@example.com or 503-555-0142. "
+        "SSN 123-45-6789, I live at 4220 SE Belmont Street."
+    )
+    findings = _scan_pii(text)
+    assert findings["email"] == ["jane.doe@example.com"]
+    assert findings["ssn"] == ["123-45-6789"]
+    assert "phone" in findings
+    assert "street_address" in findings
+
+
+def test_scan_pii_clean_text_returns_empty():
+    assert _scan_pii("Under ORS 90.427 a landlord must give notice.") == {}
+
+
+def test_scan_pii_dedupes_matches():
+    text = "a@b.com then again a@b.com"
+    assert _scan_pii(text)["email"] == ["a@b.com"]
+
+
+def test_scan_pii_picks_up_new_registry_entries():
+    # New checks are added by extending the registry; _scan_pii should use them.
+    import re as _re
+
+    from evaluate import langsmith_dataset as mod
+
+    with patch.dict(
+        mod._PII_PATTERNS, {"zip5": _re.compile(r"\b\d{5}\b")}, clear=False
+    ):
+        assert _scan_pii("Portland 97214")["zip5"] == ["97214"]
+
+
+def test_warn_pii_silent_when_no_findings(capsys):
+    _warn_pii({}, Path("out.md"))
+    assert capsys.readouterr().err == ""
+
+
+def test_warn_pii_summarizes_findings(capsys):
+    _warn_pii({"email": ["a@b.com", "c@d.com"]}, Path("out.md"))
+    err = capsys.readouterr().err
+    assert "out.md may contain PII" in err
+    assert "email: 2 unique" in err
+
+
+def test_warn_pii_truncates_long_match_lists(capsys):
+    emails = [f"user{i}@example.com" for i in range(8)]
+    _warn_pii({"email": emails}, Path("out.md"))
+    err = capsys.readouterr().err
+    assert "(+3 more)" in err
+
+
+def test_cmd_experiment_markdown_warns_on_pii(tmp_path, capsys):
+    out = tmp_path / "traces.md"
+    runs = [
+        _make_md_run([{"role": "human", "content": "Email me at tenant@example.com"}])
+    ]
+    with patch("evaluate.langsmith_dataset.make_client", return_value=_md_client(runs)):
+        cmd_experiment_markdown(_md_args(out))
+
+    err = capsys.readouterr().err
+    assert "may contain PII" in err
+    assert "tenant@example.com" in err
+    # Warn-only: the file is still written.
+    assert out.exists()
+
+
+def test_cmd_experiment_markdown_no_pii_warning_when_clean(tmp_path, capsys):
+    out = tmp_path / "traces.md"
+    runs = [_make_md_run([{"role": "human", "content": "Can I be evicted?"}])]
+    with patch("evaluate.langsmith_dataset.make_client", return_value=_md_client(runs)):
+        cmd_experiment_markdown(_md_args(out))
+
+    assert "may contain PII" not in capsys.readouterr().err

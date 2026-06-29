@@ -13,6 +13,7 @@ Usage examples:
     experiment list my-dataset
     experiment show <name-or-uuid>
     experiment stats <name-or-uuid>
+    experiment markdown <name-or-uuid> ./traces.md
     runs exemplars <name-or-uuid> <scenario-id> --evaluator "legal correctness"
     runs show <run-id>
     runs trace <run-id>
@@ -32,6 +33,7 @@ import subprocess
 import sys
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Literal
 
@@ -59,6 +61,10 @@ EVALUATE_DIR = Path(__file__).parent
 DEFAULT_SCHEMA = EVALUATE_DIR / "langsmith_example_schema.json"
 DEFAULT_DATASET_NAME = "tenant-legal-qa-scenarios"
 DEFAULT_JSONL = EVALUATE_DIR / "dataset-tenant-legal-qa-examples.jsonl"
+
+# LangSmith's default trace retention; queries reaching further back return
+# nothing older than this because expired traces are already purged.
+RETENTION_DAYS = 14
 
 
 @dataclass(frozen=True)
@@ -530,6 +536,178 @@ def cmd_example_update(args: argparse.Namespace) -> None:
 
 
 # ── experiment subcommands ─────────────────────────────────────────────────────
+
+
+def _message_text(content: Any) -> str:
+    """Extract human-readable text from a chat message 'content' field.
+
+    Content may be a plain string or a list of content blocks.  Only text
+    blocks are kept, so reasoning signatures and other structured payloads are
+    dropped.
+    """
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, str):
+                parts.append(block)
+            elif isinstance(block, dict) and block.get("type") == "text":
+                if block.get("text"):
+                    parts.append(block["text"])
+        return "\n".join(parts)
+    return ""
+
+
+_TRANSCRIPT_ROLES = {"human": "User", "ai": "Assistant"}
+
+
+def _render_transcript(messages: Any) -> str:
+    """Render a chat message list as a blockquoted User/Assistant transcript.
+
+    Internal tool (RAG retrieval) and system messages are dropped so only the
+    human/assistant conversation remains.  Each turn is a markdown blockquote
+    with a bold role label; turns are separated by a blank quote line.
+    """
+    blocks = []
+    for m in messages or []:
+        label = _TRANSCRIPT_ROLES.get(m.get("role") or m.get("type"))
+        if label is None:
+            continue
+        text = _message_text(m.get("content")).strip()
+        if not text:
+            continue
+        body = f"**{label}:** {text}"
+        blocks.append("\n".join("> " + line for line in body.splitlines()))
+    return "\n>\n".join(blocks)
+
+
+# Registry of PII checks for exported transcripts. Each entry maps a category
+# name to a compiled pattern; add a new check by appending one line here and
+# _scan_pii picks it up automatically. Matching is intentionally broad — this
+# is a warn-only safety net, not a redactor, so false positives are acceptable.
+_PII_PATTERNS: dict[str, re.Pattern] = {
+    "email": re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),
+    "phone": re.compile(r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}\b"),
+    "ssn": re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),
+    "street_address": re.compile(
+        r"\b\d{1,6}\s+(?:[A-Za-z]+\s){0,3}"
+        r"(?:Street|St|Avenue|Ave|Boulevard|Blvd|Road|Rd|Drive|Dr|Lane|Ln|"
+        r"Court|Ct|Way|Place|Pl|Terrace|Ter|Circle|Cir)\b",
+        re.IGNORECASE,
+    ),
+    "po_box": re.compile(r"\bP\.?\s?O\.?\s?Box\s+\d+\b", re.IGNORECASE),
+    "credit_card": re.compile(r"\b(?:\d[ -]?){13,16}\b"),
+    "ip_address": re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b"),
+}
+
+
+def _scan_pii(text: str) -> dict[str, list[str]]:
+    """Return {category: sorted unique matches} for every PII pattern that hits.
+
+    Categories with no matches are omitted. Extend _PII_PATTERNS to add checks.
+    """
+    findings: dict[str, list[str]] = {}
+    for label, pattern in _PII_PATTERNS.items():
+        matches = sorted(
+            {m if isinstance(m, str) else m[0] for m in pattern.findall(text)}
+        )
+        if matches:
+            findings[label] = matches
+    return findings
+
+
+def _warn_pii(findings: dict[str, list[str]], path: Path) -> None:
+    """Print a stderr summary of detected PII. Warn-only; never raises or blocks."""
+    if not findings:
+        return
+    total = sum(len(v) for v in findings.values())
+    print(
+        f"warning: {path.name} may contain PII ({total} potential match(es)); "
+        "review before sharing or committing:",
+        file=sys.stderr,
+    )
+    for label, matches in findings.items():
+        preview = ", ".join(matches[:5])
+        more = f" (+{len(matches) - 5} more)" if len(matches) > 5 else ""
+        print(f"  {label}: {len(matches)} unique — {preview}{more}", file=sys.stderr)
+
+
+def cmd_experiment_markdown(args: argparse.Namespace) -> None:
+    """Export an experiment/project's root-run conversations to a markdown file.
+
+    Reads every root run (execution_order=1) of the named project, the same way
+    'experiment results' does, and renders each run's input messages as a
+    human-readable User/Assistant transcript with its city/state.
+    """
+    local: Path = args.file
+
+    if local.exists() and not args.force and not _git_is_clean(local):
+        print(
+            f"error: {local.name} has uncommitted changes. Commit first or pass --force.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    # Bound the query to the requested window. Reaching past the retention
+    # ceiling can't surface older traces, so clamp and warn rather than imply
+    # the extra days returned anything.
+    days = args.days
+    if days > RETENTION_DAYS:
+        print(
+            f"warning: --days {days} exceeds the {RETENTION_DAYS}-day LangSmith "
+            f"retention window; clamping to {RETENTION_DAYS}.",
+            file=sys.stderr,
+        )
+        days = RETENTION_DAYS
+    start_time = datetime.now(timezone.utc) - timedelta(days=days)
+
+    client = make_client()
+    p = _read_project(client, args.experiment)
+    runs = sorted(
+        client.list_runs(project_id=p.id, execution_order=1, start_time=start_time),
+        key=lambda r: r.start_time or datetime.min,
+    )
+
+    lines = [
+        f"# Traces from `{p.name}`",
+        "",
+        f"Project ID: `{p.id}`  ",
+        f"Window: last {days} days (since {start_time.isoformat()})  ",
+        f"Total examples: {len(runs)}",
+        "",
+        "---",
+        "",
+    ]
+    for i, run in enumerate(runs, 1):
+        inputs = run.inputs or {}
+        lines += [
+            f"## Example {i}",
+            "",
+            f"- **city:** `{inputs.get('city')}`",
+            f"- **state:** `{inputs.get('state')}`",
+            f"- **run id:** `{run.id}`",
+            f"- **time:** {run.start_time.isoformat() if run.start_time else '?'}",
+            "",
+            "**script:**",
+            "",
+            _render_transcript(inputs.get("messages")),
+            "",
+            "---",
+            "",
+        ]
+
+    document = "\n".join(lines)
+    # Warn-only PII scan: these are real production conversations, so flag
+    # likely PII before the file is shared or committed, but never block.
+    _warn_pii(_scan_pii(document), local)
+
+    if args.dry_run:
+        print(f"Would write {len(runs)} examples from '{p.name}' to {local}.")
+        return
+
+    local.write_text(document)
+    print(f"Wrote {len(runs)} examples from '{p.name}' to {local}.")
 
 
 def cmd_experiment_list(args: argparse.Namespace) -> None:
@@ -1311,6 +1489,50 @@ def build_parser() -> argparse.ArgumentParser:
         "experiment", metavar="name-or-uuid", help="LangSmith experiment name or UUID."
     )
     p.set_defaults(func=cmd_experiment_results)
+
+    p = ex_sub.add_parser(
+        "markdown",
+        help="Export root-run conversations to a human-readable markdown file.",
+        description=(
+            "Render every root run of an experiment or tracing project as a "
+            "human-readable User/Assistant transcript, with each run's city and "
+            "state. Internal tool (RAG retrieval) and system messages are dropped. "
+            "Useful for reviewing production traces before turning them into "
+            "evaluation examples."
+        ),
+    )
+    p.add_argument(
+        "experiment",
+        metavar="name-or-uuid",
+        help="LangSmith experiment or tracing project name or UUID.",
+    )
+    p.add_argument(
+        "file", type=Path, metavar="file.md", help="Local markdown file to write."
+    )
+    p.add_argument(
+        "--days",
+        type=int,
+        default=14,
+        metavar="N",
+        help=(
+            "Only include runs from the last N days (default: 14, the LangSmith "
+            "default retention window). Shrink for a more recent slice; values "
+            "above 14 are clamped since older traces are already purged."
+        ),
+    )
+    p.add_argument(
+        "--force",
+        "-f",
+        action="store_true",
+        help="Overwrite local file even if it has uncommitted changes.",
+    )
+    p.add_argument(
+        "--dry-run",
+        "-n",
+        action="store_true",
+        help="Show what would be written without writing the file.",
+    )
+    p.set_defaults(func=cmd_experiment_markdown)
 
     p = ex_sub.add_parser(
         "stats",
