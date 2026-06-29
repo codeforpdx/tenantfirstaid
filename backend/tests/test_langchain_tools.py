@@ -319,15 +319,15 @@ def test_make_rag_tool_custom_filter_builder(mock_rag_class):
         query="test query",
         state=UsaState("or"),
         city=None,
-        max_documents=5,
-        max_extractive_answer_count=1,
+        max_documents=3,
         max_extractive_segment_count=3,
     )
     mock_rag_class.assert_called_once_with(
         data_store_id="fake-id",
         name="test_tool",
         filter="custom-filter",
-        max_documents=5,
+        max_documents=3,
+        max_extractive_segment_count=3,
     )
 
 
