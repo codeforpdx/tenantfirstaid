@@ -26,7 +26,8 @@ from tenantfirstaid.langchain_tools import (
     get_letter_template,
     repair_mojibake,
     retrieve_city_state_laws,
-    retrieve_oregon_law_help,
+    retrieve_oregon_law_help_housing,
+    retrieve_oregon_law_help_family,
 )
 from tenantfirstaid.location import OregonCity, UsaState
 
@@ -262,20 +263,42 @@ def test_retrieve_city_state_laws_empty_results(mock_rag_class):
 
 
 @patch("tenantfirstaid.langchain_tools.RagBuilder")
-def test_retrieve_oregon_law_help_uses_correct_datastore(mock_rag_class):
-    """Test that retrieve_oregon_law_help uses the oregon_law_help datastore without filtering."""
+def test_retrieve_oregon_law_help_housing_uses_correct_datastore(mock_rag_class):
+    """Test that retrieve_oregon_law_help_housing uses the oregon_law_help_housing datastore without filtering."""
     mock_rag_class.return_value.search.return_value = "Some legal guidance"
 
     with patch.dict(
         "tenantfirstaid.langchain_tools.SINGLETON.VERTEX_AI_DATASTORES",
-        {DatastoreKey.OREGON_LAW_HELP: "fake-olh-datastore-id"},
+        {DatastoreKey.OREGON_LAW_HELP_HOUSING: "fake-olh-datastore-id"},
     ):
-        _func = getattr(retrieve_oregon_law_help, "func")
+        _func = getattr(retrieve_oregon_law_help_housing, "func")
         result = _func(query="eviction notice")
 
     mock_rag_class.assert_called_once_with(
         data_store_id="fake-olh-datastore-id",
-        name="retrieve_oregon_law_help",
+        name="retrieve_oregon_law_help_housing",
+        filter=None,
+        max_documents=3,
+    )
+    assert result == "Some legal guidance"
+
+
+# Test that retrieve_oregon_law_help_family uses the oregon_law_help_family datastore without filtering.
+@patch("tenantfirstaid.langchain_tools.RagBuilder")
+def test_retrieve_oregon_law_help_family_uses_correct_datastore(mock_rag_class):
+    """Test that retrieve_oregon_law_help_family uses the oregon_law_help_family datastore without filtering."""
+    mock_rag_class.return_value.search.return_value = "Some legal guidance"
+
+    with patch.dict(
+        "tenantfirstaid.langchain_tools.SINGLETON.VERTEX_AI_DATASTORES",
+        {DatastoreKey.OREGON_LAW_HELP_FAMILY: "fake-olh-family-datastore-id"},
+    ):
+        _func = getattr(retrieve_oregon_law_help_family, "func")
+        result = _func(query="child custody")
+
+    mock_rag_class.assert_called_once_with(
+        data_store_id="fake-olh-family-datastore-id",
+        name="retrieve_oregon_law_help_family",
         filter=None,
         max_documents=3,
     )
@@ -292,6 +315,24 @@ def test_get_active_rag_tools_filters_by_configured_datastores():
         active = get_active_rag_tools()
     assert len(active) == 1
     assert active[0].name == "retrieve_city_state_laws"
+
+
+def test_get_active_rag_tools_returns_all_configured_datastores():
+    """Only tools whose datastore key is present in env are returned."""
+    with patch.dict(
+        "tenantfirstaid.langchain_tools.SINGLETON.VERTEX_AI_DATASTORES",
+        {
+            DatastoreKey.LAWS: "fake-laws-id",
+            DatastoreKey.OREGON_LAW_HELP_HOUSING: "fake-olh-id",
+            DatastoreKey.OREGON_LAW_HELP_FAMILY: "fake-olh-family-id",
+        },
+        clear=True,
+    ):
+        active = get_active_rag_tools()
+    names = {t.name for t in active}
+    assert "retrieve_city_state_laws" in names
+    assert "retrieve_oregon_law_help_housing" in names
+    assert "retrieve_oregon_law_help_family" in names
 
 
 @patch("tenantfirstaid.langchain_tools.RagBuilder")
