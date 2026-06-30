@@ -27,8 +27,11 @@ const REFERRALS = [
     locations: "All of Oregon",
     contact: (
       <>
+        T &amp; Th 9am–5pm
+        <br />
         503-389-5919
         <br />
+        Email:{" "}
         <a
           href="mailto:info@clear-clinic.org"
           className="text-blue-600 underline"
@@ -36,6 +39,7 @@ const REFERRALS = [
           info@clear-clinic.org
         </a>
         <br />
+        Services:{" "}
         <a
           href="https://clear-clinic.org/services"
           target="_blank"
@@ -44,7 +48,6 @@ const REFERRALS = [
         >
           https://clear-clinic.org/services
         </a>
-        <br />T &amp; Th 9am–5pm
       </>
     ),
   },
@@ -68,16 +71,17 @@ const REFERRALS = [
     locations: "Portland only",
     contact: (
       <>
+        M, W &amp; F 9–11am, 1–4pm
+        <br />
+        503-823-1303
+        <br />
+        Email:{" "}
         <a
           href="mailto:RentalServices@portlandoregon.gov"
           className="text-blue-600 underline"
         >
           RentalServices@portlandoregon.gov
         </a>
-        <br />
-        503-823-1303
-        <br />
-        M, W &amp; F 9–11am, 1–4pm
         <br />
         Online booking:{" "}
         <a
