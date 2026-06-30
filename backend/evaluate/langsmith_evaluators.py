@@ -21,6 +21,7 @@ from openevals.types import SimpleEvaluator
 # NOTE: can (should?) use different models for chatbot LLM & evaluator
 EVALUATOR_MODEL_NAME: Final = "gemini-3-flash-preview"
 
+
 # Use vertexai=True so the evaluator uses service account credentials rather
 # than a Gemini API key. init_chat_model routes gemini-3-flash-preview to
 # us-central1 by default, which returns 404 — constructing the judge directly
@@ -37,6 +38,7 @@ def _evaluator_judge() -> ChatGoogleGenerativeAI:
     return ChatGoogleGenerativeAI(
         model=EVALUATOR_MODEL_NAME, vertexai=True, location="global"
     )
+
 
 EVALUATORS_DIR: Final = Path(__file__).parent / "evaluators"
 

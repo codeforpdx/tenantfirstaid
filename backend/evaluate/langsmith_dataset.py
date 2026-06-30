@@ -906,7 +906,9 @@ def _target_segments(target: str) -> list[str]:
     than _MIN_SEGMENT_LEN chars are dropped to avoid false matches on punctuation
     fragments.  Returned segments preserve case; match case-insensitively.
     """
-    return [s.strip() for s in target.split("...") if len(s.strip()) >= _MIN_SEGMENT_LEN]
+    return [
+        s.strip() for s in target.split("...") if len(s.strip()) >= _MIN_SEGMENT_LEN
+    ]
 
 
 def _target_in_text(target: str, text: str) -> bool:
