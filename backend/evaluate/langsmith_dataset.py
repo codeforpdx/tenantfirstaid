@@ -36,7 +36,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, NamedTuple
 
 import jsonschema
 from langchain_core.prompts import (
@@ -921,6 +921,15 @@ def _target_in_text(target: str, text: str) -> bool:
     return bool(segments) and all(seg.lower() in lowered for seg in segments)
 
 
+def _any_target_hit(targets: list[str], chunks: list[str]) -> bool:
+    """True if any STOPGAP target appears in any chunk.
+
+    Chunks should already be whitespace-normalized. Shared by the trace check
+    and the live re-query so the two probes match retrieved text identically.
+    """
+    return any(_target_in_text(t, c) for c in chunks for t in targets)
+
+
 def _check_stopgaps_against_corpus(
     stopgaps: list[dict[str, Any]],
     corpus_dir: Path,
@@ -974,39 +983,50 @@ def _check_stopgaps_against_corpus(
         )
 
 
-def _collect_tool_queries(client: Any, experiment: str) -> list[str]:
-    """Return all unique RAG query strings issued as tool calls in an experiment."""
-    p = _read_project(client, experiment)
-    queries: set[str] = set()
-    for run in client.list_runs(project_id=p.id, run_type="tool"):
-        q = (run.inputs or {}).get("query")
-        if q:
-            queries.add(q)
-    return sorted(queries)
+class _ExperimentTraces(NamedTuple):
+    """Everything the STOPGAP check needs from one experiment's runs.
+
+    queries          — unique RAG query strings issued as tool calls.
+    runs_by_id       — root run ID → ``{"example_id": str, "responses": [str, ...]}``.
+    latest_run_time  — latest root-run start time, or None.
+    """
+
+    queries: list[str]
+    runs_by_id: dict[str, dict[str, Any]]
+    latest_run_time: datetime | None
 
 
-def _collect_tool_responses_by_run(
-    client: Any, experiment: str
-) -> dict[str, dict[str, Any]]:
-    """Return RAG tool response texts grouped by repetition (root run).
+def _collect_experiment_traces(client: Any, experiment: str) -> _ExperimentTraces:
+    """Collect an experiment's tool queries, RAG responses, and latest run time.
+
+    Consolidates what were three separate scans of the same experiment — each
+    re-reading the project and re-paginating the run set — into one project read,
+    one root-run pass, and one tool-run pass.
 
     Each dataset example is run multiple times (``--num-repetitions``); every
     repetition is a distinct root run sharing the example's
     ``reference_example_id``. Grouping by root run keeps each repetition as an
     independent retrieval sample, while ``example_id`` carries the scenario link
     used for per-STOPGAP filtering downstream.
-
-    Returns a mapping of root run ID to
-    ``{"example_id": str, "responses": [str, ...]}``.
     """
     p = _read_project(client, experiment)
-    run_to_example: dict[str, str] = {
-        str(run.id): str(run.reference_example_id)
-        for run in client.list_runs(project_id=p.id, execution_order=1)
-        if run.reference_example_id
-    }
-    runs: dict[str, dict[str, Any]] = {}
+
+    run_to_example: dict[str, str] = {}
+    latest_run_time: datetime | None = None
+    for run in client.list_runs(project_id=p.id, execution_order=1):
+        if run.reference_example_id:
+            run_to_example[str(run.id)] = str(run.reference_example_id)
+        if run.start_time and (
+            latest_run_time is None or run.start_time > latest_run_time
+        ):
+            latest_run_time = run.start_time
+
+    queries: set[str] = set()
+    runs_by_id: dict[str, dict[str, Any]] = {}
     for run in client.list_runs(project_id=p.id, run_type="tool"):
+        q = (run.inputs or {}).get("query")
+        if q:
+            queries.add(q)
         root_id = str(run.trace_id)
         example_id = run_to_example.get(root_id)
         if not example_id:
@@ -1014,11 +1034,12 @@ def _collect_tool_responses_by_run(
         outputs = run.outputs or {}
         text = outputs.get("output") or outputs.get("content") or ""
         if isinstance(text, str) and text:
-            entry = runs.setdefault(
+            entry = runs_by_id.setdefault(
                 root_id, {"example_id": example_id, "responses": []}
             )
             entry["responses"].append(text)
-    return runs
+
+    return _ExperimentTraces(sorted(queries), runs_by_id, latest_run_time)
 
 
 def _check_retrieval_from_traces(
@@ -1072,7 +1093,7 @@ def _check_retrieval_from_traces(
         hits = 0
         for r in relevant_runs:
             norm = [re.sub(r"\s+", " ", resp) for resp in r["responses"]]
-            if any(_target_in_text(t, n) for n in norm for t in sg["targets"]):
+            if _any_target_hit(sg["targets"], norm):
                 hits += 1
         total_relevant = len(relevant_runs)
 
@@ -1092,17 +1113,6 @@ def _check_retrieval_from_traces(
         )
 
     return coverage_gap
-
-
-def _experiment_latest_run_time(client: Any, experiment: str) -> datetime | None:
-    """Return the latest root-run start time for an experiment, or None."""
-    p = _read_project(client, experiment)
-    times = [
-        run.start_time
-        for run in client.list_runs(project_id=p.id, execution_order=1)
-        if run.start_time
-    ]
-    return max(times) if times else None
 
 
 def _datastore_last_update_time() -> datetime | None:
@@ -1156,15 +1166,15 @@ def _as_utc(dt: datetime) -> datetime:
 
 
 def _datastore_unchanged_since_experiment(
-    client: Any, experiment: str, log: logging.Logger
+    exp_time: datetime | None, log: logging.Logger
 ) -> bool:
     """Return True if the laws datastore has not been reindexed since the experiment ran.
 
     Compares the datastore's last data-update time against the experiment's latest
-    root-run start time. Returns False when either timestamp is unavailable, so the
-    caller falls open and runs the live re-query rather than skipping it on a guess.
+    root-run start time (passed in by the caller). Returns False when either
+    timestamp is unavailable, so the caller falls open and runs the live re-query
+    rather than skipping it on a guess.
     """
-    exp_time = _experiment_latest_run_time(client, experiment)
     ds_time = _datastore_last_update_time()
     if exp_time is None or ds_time is None:
         log.info(
@@ -1497,11 +1507,12 @@ def cmd_runs_stopgap_check(args: argparse.Namespace) -> None:
 
     if args.experiment:
         client = make_client()
-        queries = _collect_tool_queries(client, args.experiment)
+        traces = _collect_experiment_traces(client, args.experiment)
+        queries = traces.queries
+        runs_by_id = traces.runs_by_id
         log.info(
             "Collected %d unique tool queries from %s", len(queries), args.experiment
         )
-        runs_by_id = _collect_tool_responses_by_run(client, args.experiment)
         coverage_gap = False
         if runs_by_id:
             example_ids = {r["example_id"] for r in runs_by_id.values()}
@@ -1519,7 +1530,7 @@ def cmd_runs_stopgap_check(args: argparse.Namespace) -> None:
         if (
             not args.force_requery
             and not coverage_gap
-            and _datastore_unchanged_since_experiment(client, args.experiment, log)
+            and _datastore_unchanged_since_experiment(traces.latest_run_time, log)
         ):
             log.info(
                 "Datastore unchanged since %s ran and the trace check covered every "
@@ -1545,28 +1556,33 @@ def cmd_runs_stopgap_check(args: argparse.Namespace) -> None:
 
     print(f"\nRetrieval params: {max_results} docs x {max_segments} segments\n")
 
+    # Query Vertex once per unique query and cache the normalized segment texts.
+    # The retrieved segments depend only on the query (and the fixed params), not
+    # on the STOPGAP, so probing each STOPGAP separately would re-issue identical
+    # paid searches — N STOPGAPs would multiply the call count N-fold.
+    segments_by_query: dict[str, list[str]] = {}
+    for q in queries:
+        res = vertex_search(
+            q,
+            state=state,
+            max_results=max_results,
+            max_extractive_answer_count=1,
+            max_extractive_segment_count=max_segments,
+        )
+        segments_by_query[q] = [
+            re.sub(r"\s+", " ", seg.get("content") or "")
+            for result in res.results
+            for seg in (result.document.derived_struct_data or {}).get(
+                "extractive_segments", []
+            )
+        ]
+
     for sg in stopgaps:
         hits = 0
         rows: list[tuple[str, str]] = []
 
         for q in queries:
-            res = vertex_search(
-                q,
-                state=state,
-                max_results=max_results,
-                max_extractive_answer_count=1,
-                max_extractive_segment_count=max_segments,
-            )
-            hit = False
-            for result in res.results:
-                struct = result.document.derived_struct_data or {}
-                for seg in struct.get("extractive_segments", []):
-                    content = re.sub(r"\s+", " ", seg.get("content") or "")
-                    if any(_target_in_text(t, content) for t in sg["targets"]):
-                        hit = True
-                        break
-                if hit:
-                    break
+            hit = _any_target_hit(sg["targets"], segments_by_query[q])
             hits += hit
             rows.append(("HIT " if hit else "miss", q[:72]))
 

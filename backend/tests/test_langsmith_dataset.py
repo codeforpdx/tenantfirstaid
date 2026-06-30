@@ -15,10 +15,9 @@ from evaluate.langsmith_dataset import (
     _apply_dataset_schemas,
     _as_utc,
     _check_retrieval_from_traces,
-    _collect_tool_responses_by_run,
+    _collect_experiment_traces,
     _datastore_unchanged_since_experiment,
     _example_content_diff,
-    _experiment_latest_run_time,
     _experiment_scores,
     _extract_rubric,
     _git_is_clean,
@@ -1731,19 +1730,21 @@ def test_cmd_run_trace_verbose_recurses_into_child_runs(capsys):
     assert "child input" in out
 
 
-# ── _collect_tool_responses_by_run ────────────────────────────────────────────
+# ── _collect_experiment_traces ────────────────────────────────────────────────
 
 
 def _make_root_run(run_id, example_id):
     run = MagicMock()
     run.id = run_id
     run.reference_example_id = example_id
+    run.start_time = None
     return run
 
 
-def _make_tool_run(trace_id, output_text):
+def _make_tool_run(trace_id, output_text, query="q"):
     run = MagicMock()
     run.trace_id = trace_id
+    run.inputs = {"query": query}
     run.outputs = {"output": output_text}
     return run
 
@@ -1758,7 +1759,7 @@ def test_collect_tool_responses_groups_by_run():
         [_make_root_run(root_id, example_id)],
         [_make_tool_run(root_id, "ORS 90.425 text here")],
     ]
-    result = _collect_tool_responses_by_run(client, "exp-name")
+    result = _collect_experiment_traces(client, "exp-name").runs_by_id
     assert str(root_id) in result
     assert result[str(root_id)]["example_id"] == str(example_id)
     assert result[str(root_id)]["responses"] == ["ORS 90.425 text here"]
@@ -1777,7 +1778,7 @@ def test_collect_tool_responses_multiple_calls_same_run():
             _make_tool_run(root_id, "second response"),
         ],
     ]
-    result = _collect_tool_responses_by_run(client, "exp-name")
+    result = _collect_experiment_traces(client, "exp-name").runs_by_id
     assert len(result[str(root_id)]["responses"]) == 2
 
 
@@ -1798,7 +1799,7 @@ def test_collect_tool_responses_separates_repetitions_of_same_example():
             _make_tool_run(root_id_b, "rep B response"),
         ],
     ]
-    result = _collect_tool_responses_by_run(client, "exp-name")
+    result = _collect_experiment_traces(client, "exp-name").runs_by_id
     assert len(result) == 2
     assert result[str(root_id_a)]["example_id"] == str(example_id)
     assert result[str(root_id_b)]["example_id"] == str(example_id)
@@ -1818,7 +1819,7 @@ def test_collect_tool_responses_skips_unmatched_trace_id():
             _make_tool_run(orphan_id, "unmatched response"),
         ],
     ]
-    result = _collect_tool_responses_by_run(client, "exp-name")
+    result = _collect_experiment_traces(client, "exp-name").runs_by_id
     assert len(result) == 1
     assert result[str(root_id)]["responses"] == ["matched response"]
 
@@ -1835,7 +1836,7 @@ def test_collect_tool_responses_skips_empty_output():
         [_make_root_run(root_id, example_id)],
         [empty_run],
     ]
-    result = _collect_tool_responses_by_run(client, "exp-name")
+    result = _collect_experiment_traces(client, "exp-name").runs_by_id
     assert result == {}
 
 
@@ -1851,8 +1852,28 @@ def test_collect_tool_responses_accepts_content_key():
         [_make_root_run(root_id, example_id)],
         [run],
     ]
-    result = _collect_tool_responses_by_run(client, "exp-name")
+    result = _collect_experiment_traces(client, "exp-name").runs_by_id
     assert result[str(root_id)]["responses"] == ["ORS 90.325 content"]
+
+
+def test_collect_experiment_traces_collects_unique_sorted_queries():
+    """Tool-call query inputs are collected, deduplicated, and sorted."""
+    root_id = uuid4()
+    example_id = uuid4()
+    client = MagicMock()
+    client.read_project.return_value = MagicMock(id=uuid4())
+    client.list_runs.side_effect = [
+        [_make_root_run(root_id, example_id)],
+        [
+            _make_tool_run(root_id, "r1", query="beta query"),
+            _make_tool_run(root_id, "r2", query="alpha query"),
+            _make_tool_run(root_id, "r3", query="beta query"),
+        ],
+    ]
+    assert _collect_experiment_traces(client, "exp-name").queries == [
+        "alpha query",
+        "beta query",
+    ]
 
 
 # ── _check_retrieval_from_traces ───────────────────────────────────────────────
@@ -2098,24 +2119,25 @@ def test_as_utc_aware_converted():
     assert _as_utc(dt) == datetime(2026, 6, 1, 19, 0, 0, tzinfo=timezone.utc)
 
 
-def test_experiment_latest_run_time_returns_max():
-    """Returns the latest start_time across an experiment's root runs."""
+def test_collect_experiment_traces_latest_run_time_returns_max():
+    """latest_run_time is the max start_time across an experiment's root runs."""
     from datetime import datetime
 
     client = MagicMock()
     client.read_project.return_value = MagicMock(id=uuid4())
-    r1 = MagicMock(start_time=datetime(2026, 6, 1, 10, 0, 0))
-    r2 = MagicMock(start_time=datetime(2026, 6, 1, 11, 0, 0))
-    client.list_runs.return_value = [r1, r2]
-    assert _experiment_latest_run_time(client, "exp") == datetime(2026, 6, 1, 11, 0, 0)
+    r1 = MagicMock(start_time=datetime(2026, 6, 1, 10, 0, 0), reference_example_id=None)
+    r2 = MagicMock(start_time=datetime(2026, 6, 1, 11, 0, 0), reference_example_id=None)
+    client.list_runs.side_effect = [[r1, r2], []]  # root-run pass, then tool-run pass
+    traces = _collect_experiment_traces(client, "exp")
+    assert traces.latest_run_time == datetime(2026, 6, 1, 11, 0, 0)
 
 
-def test_experiment_latest_run_time_none_when_no_runs():
-    """Returns None when there are no root runs with start times."""
+def test_collect_experiment_traces_latest_run_time_none_when_no_runs():
+    """latest_run_time is None when there are no root runs with start times."""
     client = MagicMock()
     client.read_project.return_value = MagicMock(id=uuid4())
-    client.list_runs.return_value = []
-    assert _experiment_latest_run_time(client, "exp") is None
+    client.list_runs.side_effect = [[], []]  # root-run pass, then tool-run pass
+    assert _collect_experiment_traces(client, "exp").latest_run_time is None
 
 
 def test_datastore_unchanged_true_when_ds_older_than_experiment():
@@ -2123,19 +2145,14 @@ def test_datastore_unchanged_true_when_ds_older_than_experiment():
     import logging
     from datetime import datetime
 
-    client = MagicMock()
-    with (
-        patch(
-            "evaluate.langsmith_dataset._experiment_latest_run_time",
-            return_value=datetime(2026, 6, 10, 12, 0, 0),
-        ),
-        patch(
-            "evaluate.langsmith_dataset._datastore_last_update_time",
-            return_value=datetime(2026, 6, 1, 12, 0, 0),
-        ),
+    with patch(
+        "evaluate.langsmith_dataset._datastore_last_update_time",
+        return_value=datetime(2026, 6, 1, 12, 0, 0),
     ):
         assert (
-            _datastore_unchanged_since_experiment(client, "exp", logging.getLogger("t"))
+            _datastore_unchanged_since_experiment(
+                datetime(2026, 6, 10, 12, 0, 0), logging.getLogger("t")
+            )
             is True
         )
 
@@ -2145,19 +2162,14 @@ def test_datastore_unchanged_false_when_reindexed_after_experiment():
     import logging
     from datetime import datetime
 
-    client = MagicMock()
-    with (
-        patch(
-            "evaluate.langsmith_dataset._experiment_latest_run_time",
-            return_value=datetime(2026, 6, 1, 12, 0, 0),
-        ),
-        patch(
-            "evaluate.langsmith_dataset._datastore_last_update_time",
-            return_value=datetime(2026, 6, 10, 12, 0, 0),
-        ),
+    with patch(
+        "evaluate.langsmith_dataset._datastore_last_update_time",
+        return_value=datetime(2026, 6, 10, 12, 0, 0),
     ):
         assert (
-            _datastore_unchanged_since_experiment(client, "exp", logging.getLogger("t"))
+            _datastore_unchanged_since_experiment(
+                datetime(2026, 6, 1, 12, 0, 0), logging.getLogger("t")
+            )
             is False
         )
 
@@ -2166,20 +2178,12 @@ def test_datastore_unchanged_false_when_timing_unavailable():
     """Falls open (False) when either timestamp can't be determined."""
     import logging
 
-    client = MagicMock()
-    with (
-        patch(
-            "evaluate.langsmith_dataset._experiment_latest_run_time",
-            return_value=None,
-        ),
-        patch(
-            "evaluate.langsmith_dataset._datastore_last_update_time",
-            return_value=None,
-        ),
+    with patch(
+        "evaluate.langsmith_dataset._datastore_last_update_time",
+        return_value=None,
     ):
         assert (
-            _datastore_unchanged_since_experiment(client, "exp", logging.getLogger("t"))
-            is False
+            _datastore_unchanged_since_experiment(None, logging.getLogger("t")) is False
         )
 
 

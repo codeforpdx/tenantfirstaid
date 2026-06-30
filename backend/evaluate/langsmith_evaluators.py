@@ -104,37 +104,32 @@ def load_rubric(name: str) -> str:
 # get the evaluator; @cache makes each one a singleton.
 
 
+def _make_judge(rubric: str, feedback_key: str) -> SimpleEvaluator:
+    """Build an LLM-as-judge evaluator from a rubric file and feedback key."""
+    return create_llm_as_judge(
+        judge=_evaluator_judge(),
+        prompt=load_rubric(rubric),
+        feedback_key=feedback_key,
+        continuous=True,
+    )
+
+
 # Evaluator: Citation Accuracy (LLM-as-Judge).
 @cache
 def citation_accuracy_evaluator() -> SimpleEvaluator:
-    return create_llm_as_judge(
-        judge=_evaluator_judge(),
-        prompt=load_rubric("citation_accuracy"),
-        feedback_key="citation accuracy",
-        continuous=True,
-    )
+    return _make_judge("citation_accuracy", "citation accuracy")
 
 
 # Evaluator: Legal Correctness (LLM-as-Judge).
 @cache
 def legal_correctness_evaluator() -> SimpleEvaluator:
-    return create_llm_as_judge(
-        judge=_evaluator_judge(),
-        prompt=load_rubric("legal_correctness"),
-        feedback_key="legal correctness",
-        continuous=True,
-    )
+    return _make_judge("legal_correctness", "legal correctness")
 
 
 # Evaluator: Tone & Professionalism (LLM-as-Judge).
 @cache
 def tone_evaluator() -> SimpleEvaluator:
-    return create_llm_as_judge(
-        judge=_evaluator_judge(),
-        prompt=load_rubric("tone"),
-        feedback_key="appropriate tone",
-        continuous=True,
-    )
+    return _make_judge("tone", "appropriate tone")
 
 
 # Evaluator: Citation Format (Heuristic).
