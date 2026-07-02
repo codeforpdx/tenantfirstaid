@@ -7,16 +7,19 @@ import ExportMessagesButton from "./ExportMessagesButton";
 import InitializationForm from "./InitializationForm";
 import MessageAvatar from "./MessageAvatar";
 import FeedbackModal from "./FeedbackModal";
-import { useLocation } from "react-router-dom";
 import clsx from "clsx";
 
+type MessageWindowMode = "chat" | "letter";
+
 interface Props {
+  mode: MessageWindowMode;
   messages: ChatMessage[];
   addMessage: (
     args: Location,
   ) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   isOngoing: boolean;
+  clearMessages: () => void;
 }
 
 /**
@@ -24,27 +27,28 @@ interface Props {
  * Shows the initialization form when no messages exist.
  */
 export default function MessageWindow({
+  mode,
   messages,
   addMessage,
   setMessages,
   isOngoing,
+  clearMessages,
 }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [openFeedback, setOpenFeedback] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
-  const loc = useLocation();
 
   // Hides the initial user prompt and AI letter response on the letter page
   // (index 0 = user prompt, index 1 = AI letter generation).
   const LETTER_PAGE_HIDDEN_MESSAGES = 2;
-  const displayedMessages = loc.pathname.startsWith("/letter")
+  const displayedMessages = mode === "letter"
     ? messages.slice(LETTER_PAGE_HIDDEN_MESSAGES)
     : messages;
 
   const handleClearSession = () => {
-    window.location.reload();
+    clearMessages();
   };
 
   useEffect(() => {
@@ -144,12 +148,12 @@ export default function MessageWindow({
               </button>
             </div>
           </>
-        ) : (
+        ) : mode === "chat" ? (
           <InitializationForm
             addMessage={addMessage}
             setMessages={setMessages}
           />
-        )}
+        ) : null}
       </div>
     </>
   );

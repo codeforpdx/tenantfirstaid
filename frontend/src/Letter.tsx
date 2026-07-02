@@ -28,6 +28,7 @@ import FrequentInquiries from "./pages/Chat/components/FrequentInquiries";
 import MobilePanel from "./shared/components/MobilePanel";
 import clsx from "clsx";
 import { buildLocationPrefix } from "./shared/utils/buildLocationPrefix";
+import { reloadPage } from "./shared/utils/reloadPage";
 
 /**
  * Routes /letter requests by classifying the leading segment: an out-of-state
@@ -81,12 +82,12 @@ interface LetterViewProps {
 }
 
 function LetterView({ jurisdiction, org }: LetterViewProps) {
-  const { addMessage, messages, setMessages } = useMessages();
+  const { addMessage, messages, setMessages, clearMessages } = useMessages(`letter_messages:${jurisdiction.key},${org ?? ""}`);
   const isOngoing = messages.length > 0;
   const { letterContent } = useLetterContent(messages);
   const [startStreaming, setStartStreaming] = useState(false);
   const streamLocationRef = useRef<Location | null>(null);
-  const [isGenerating, setIsGenerating] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(letterContent === "");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasInitialized = useRef(false);
@@ -107,24 +108,33 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
   // Adds the initial user message once and triggers streaming.
   useEffect(() => {
     if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
+    if (letterContent !== "") {
+      setIsGenerating(false);
+      return;
+    }
+
     const loc = toLocation(jurisdiction);
     const output = buildLetterUserMessage(org, loc);
-    hasInitialized.current = true;
-    const userMessageId = Date.now().toString();
-    const content = [
-      buildLocationPrefix(loc.city, loc.state),
-      issueDescription,
-      output.userMessage,
-    ]
-      .join(" ")
-      .trim();
-    setMessages((prev) => [
-      ...prev,
-      new HumanMessage({ content, id: userMessageId }),
-    ]);
+
+    if (messages.length === 0) {
+      const userMessageId = Date.now().toString();
+      const content = [
+        buildLocationPrefix(loc.city, loc.state),
+        issueDescription,
+        output.userMessage,
+      ]
+        .join(" ")
+        .trim();
+      setMessages((prev) => [
+        ...prev,
+        new HumanMessage({ content, id: userMessageId }),
+      ]);
+    }
     streamLocationRef.current = output.selectedLocation;
     setStartStreaming(true);
-  }, [jurisdiction, org, setMessages, issueDescription]);
+  }, [jurisdiction, org, setMessages, issueDescription, letterContent, messages.length]);
 
   useEffect(() => {
     if (startStreaming === false || streamLocationRef.current === null) return;
@@ -181,6 +191,11 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
     dialogRef.current?.showModal();
   }, []);
 
+  function handleClearMessages() {
+    clearMessages();
+    reloadPage();
+  }
+
   return (
     <>
       <LetterGenerationDialog ref={dialogRef} />
@@ -201,10 +216,12 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
                 </div>
               ) : (
                 <MessageWindow
+                  mode="letter"
                   messages={messages}
                   addMessage={addMessage}
                   setMessages={setMessages}
                   isOngoing={isOngoing}
+                  clearMessages={handleClearMessages}
                 />
               )}
             </div>

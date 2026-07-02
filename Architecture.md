@@ -275,19 +275,11 @@ const serializedMsg = messages.map((msg) => ({
 }));
 ```
 
-**Session Data Structure:**
+`deserializeAiMessage` strips the JSONL streaming chunks stored in AI message content back to plain text before sending to the backend.
 
-```typescript
-interface TenantSessionData {
-  city: string; // User's city (e.g., "portland", "eugene", "null")
-  state: string; // User's state (default: "or")
-  messages: Array<{
-    // Complete conversation history
-    role: "human" | "ai";
-    content: string;
-  }>;
-}
-```
+**Client-Side Message Persistence:**
+
+`useMessages` accepts an optional `storageKey`. When it exists, it loads state from `sessionStorage` on mount and syncs every state change back to it. 
 
 **Multi-Turn Implementation Details:**
 
@@ -432,7 +424,7 @@ frontend/
 │   │   └── HousingContext.tsx      # Housing context for chat/letter generation
 │   ├── hooks/                      # Custom React hooks
 │   │   ├── useIsMobile.tsx         # Checking mobile state
-│   │   ├── useMessages.tsx         # Message handling logic
+│   │   ├── useMessages.tsx         # Message handling + persistence logic
 │   │   ├── useHousingContext.tsx   # Custom hook for housing context
 │   │   └── useLetterContent.tsx    # State management for letter generation
 │   ├── types/                      # Auto-generated TypeScript types (gitignored) — do not edit manually, re-run `make generate-types` or `npm run generate-types`
@@ -483,7 +475,8 @@ frontend/
 │   │       ├── buildLocationPrefix.ts # Helper function for location prefix
 │   │       ├── scrolling.ts        # Helper function for window scrolling
 │   │       ├── dompurify.ts        # Helper function for sanitizing text
-│   │       └── formatLocation.ts   # Formats OregonCity/UsaState into a display string (e.g. "Portland, OR")
+│   │       ├── formatLocation.ts   # Formats OregonCity/UsaState into a display string (e.g. "Portland, OR")
+│   │       └── reloadPage.ts       # Wrapper around window.location.reload()
 │   └── tests/                     # Testing suite
 │   │   ├── components/            # Component testing
 │   │   │   ├── About.test.tsx     # About component testing
