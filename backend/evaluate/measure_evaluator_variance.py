@@ -40,7 +40,9 @@ from tenantfirstaid.constants import LANGSMITH_API_KEY
 # How many progress lines to emit during the thread-pool run.
 _PROGRESS_INTERVALS = 20
 
-# All available evaluators, keyed by their feedback_key.
+# All available evaluators, keyed by their feedback_key. The values are factory
+# functions (not evaluators); call one to construct its evaluator on demand. This
+# keeps importing this module free of the judge's network side effect.
 _ALL_EVALUATORS = {
     "legal correctness": legal_correctness_evaluator,
     "appropriate tone": tone_evaluator,
@@ -149,9 +151,9 @@ def measure_evaluator_variance(
             raise ValueError(
                 f"Unknown evaluator(s): {unknown}. Available: {list(_ALL_EVALUATORS)}"
             )
-        evaluators = {name: _ALL_EVALUATORS[name] for name in evaluator_names}
+        selected_names = list(evaluator_names)
     else:
-        evaluators = _ALL_EVALUATORS
+        selected_names = list(_ALL_EVALUATORS)
 
     client = Client(api_key=LANGSMITH_API_KEY)
 
@@ -186,6 +188,11 @@ def measure_evaluator_variance(
         if not runs_by_example:
             print(f"No runs found for scenario_id(s) {scenario_ids_filter}.")
             return
+
+    # Construct the evaluators only now that we know there is work to do — each
+    # factory builds an LLM judge with a live network client, so we avoid that
+    # cost (and its failure modes) on the no-runs and no-matching-scenario paths.
+    evaluators = {name: _ALL_EVALUATORS[name]() for name in selected_names}
 
     total_runs = sum(
         min(len(r), runs_per_scenario) if runs_per_scenario else len(r)
