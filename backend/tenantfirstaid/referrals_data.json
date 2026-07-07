@@ -1,0 +1,77 @@
+[
+  {
+    "id": "laso",
+    "organization": "LASO",
+    "service_types": ["legal_representation"],
+    "provider_types": ["attorney"],
+    "geographic_scope": { "state": "or", "cities": [] },
+    "eligibility": [],
+    "case_stages": ["in_court"],
+    "hours": [],
+    "phone": "888-585-9638",
+    "email": "evictiondefense@oregonlawcenter.org",
+    "website": null,
+    "notes": "Eviction Defense Project line. Tenants whose landlord has taken them to eviction court can call or email to seek legal help. Leave a message on the intake line or in the email with your name, date of birth, and eviction case number."
+  },
+  {
+    "id": "clear-clinic",
+    "organization": "CLEAR Clinic",
+    "service_types": ["answer_questions"],
+    "provider_types": ["attorney", "licensed_paralegal"],
+    "geographic_scope": { "state": "or", "cities": [] },
+    "eligibility": [],
+    "case_stages": ["before_court", "in_court"],
+    "hours": [
+      { "days": ["tuesday", "thursday"], "start": "09:00", "end": "17:00" }
+    ],
+    "phone": "503-389-5919",
+    "email": "info@clear-clinic.org",
+    "website": "https://clear-clinic.org/services",
+    "notes": null
+  },
+  {
+    "id": "commons-law-center",
+    "organization": "Commons Law Center",
+    "service_types": ["legal_representation"],
+    "provider_types": ["attorney"],
+    "geographic_scope": { "state": "or", "cities": ["portland"] },
+    "eligibility": ["Must already have a court date"],
+    "case_stages": ["in_court"],
+    "hours": [
+      {
+        "days": ["monday", "tuesday", "thursday"],
+        "start": "08:00",
+        "end": "12:00"
+      }
+    ],
+    "phone": null,
+    "email": null,
+    "website": null,
+    "notes": "No appointment needed. Meet at the Multnomah County Courthouse."
+  },
+  {
+    "id": "phb-renters-services",
+    "organization": "PHB Renter's Services Help Desk",
+    "service_types": ["answer_questions"],
+    "provider_types": ["non_attorney"],
+    "geographic_scope": { "state": "or", "cities": ["portland"] },
+    "eligibility": [],
+    "case_stages": ["before_court", "in_court"],
+    "hours": [
+      {
+        "days": ["monday", "wednesday", "friday"],
+        "start": "09:00",
+        "end": "11:00"
+      },
+      {
+        "days": ["monday", "wednesday", "friday"],
+        "start": "13:00",
+        "end": "16:00"
+      }
+    ],
+    "phone": "503-823-1303",
+    "email": "RentalServices@portlandoregon.gov",
+    "website": "https://www.portland.gov/phb/rental-services/helpdesk",
+    "notes": null
+  }
+]
