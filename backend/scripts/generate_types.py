@@ -9,6 +9,7 @@ from pydantic import RootModel
 from pydantic.json_schema import models_json_schema
 
 from tenantfirstaid.location import Location
+from tenantfirstaid.referrals import Referral as ReferralType
 from tenantfirstaid.schema import ResponseChunk as ResponseChunkType
 
 
@@ -19,10 +20,15 @@ class ResponseChunk(RootModel[ResponseChunkType]):
     """
 
 
+class ReferralList(RootModel[list[ReferralType]]):
+    """List of legal-aid referral records returned by GET /api/referrals."""
+
+
 _, schema = models_json_schema(
     [
         (Location, "serialization"),
         (ResponseChunk, "serialization"),
+        (ReferralList, "serialization"),
     ],
     title="TenantFirstAid Models",
 )

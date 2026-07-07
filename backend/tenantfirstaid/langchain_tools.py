@@ -2,6 +2,7 @@
 This module defines Tools for an Agent to call
 """
 
+import json
 import logging
 from typing import Callable, Optional, Type, cast
 
@@ -27,6 +28,7 @@ from .constants import (
 )
 from .google_auth import load_gcp_credentials
 from .location import OregonCity, UsaState
+from .referrals import REFERRALS
 
 logger = logging.getLogger(__name__)
 
@@ -197,6 +199,21 @@ def generate_letter(letter: str) -> str:
     writer = get_stream_writer()
     writer({"type": "letter", "content": letter})
     return "Letter generated successfully."
+
+
+@tool
+def get_legal_aid_referrals() -> str:
+    """Retrieve the catalog of Oregon legal-aid and tenant-services referral organizations.
+
+    Call this when a tenant asks for a lawyer, legal aid, or somewhere to get
+    help beyond this chat. Use the returned fields (service_types,
+    provider_types, geographic_scope, case_stages, hours) to recommend the
+    organization(s) that best match the tenant's situation and location.
+
+    Returns:
+        A JSON array of referral records.
+    """
+    return json.dumps([r.model_dump(mode="json") for r in REFERRALS])
 
 
 class QueryOnlyInputSchema(BaseModel):
