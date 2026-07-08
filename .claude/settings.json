@@ -10,7 +10,14 @@
       "WebFetch(domain:docs.digitalocean.com)",
       "WebFetch(domain:docs.github.com)",
       "WebFetch(domain:docs.docker.com)",
-      "WebFetch(domain:docs.astral.sh)"
+      "WebFetch(domain:docs.astral.sh)",
+      "Bash(container exec *)",
+      "Bash(container list*)",
+      "Bash(container logs*)",
+      "WebFetch(domain:mise.en.dev)",
+      "WebFetch(domain:mise-versions.jdx.dev)",
+      "WebFetch(domain:nodejs.org)",
+      "WebFetch(domain:mise.jdx.dev)"
     ]
   },
   "enabledPlugins": {

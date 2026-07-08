@@ -87,7 +87,7 @@ backend/
 │   ├── simple_langchain_demo.py        # LangChain proof-of-concept
 │   ├── vertex_ai_list_datastores.py    # Utility to get Google Vertex AI Datastore IDs
 │   ├── convert_csv_to_jsonl.py         # Data conversion utilities
-│   ├── generate_types.py               # Generates a JSON Schema for Pydantic models exported to the frontend; piped through json-schema-to-typescript to produce frontend/src/types/models.ts (run via `make generate-types` or `npm run generate-types`)
+│   ├── generate_types.py               # Generates a JSON Schema for Pydantic models exported to the frontend; piped through json-schema-to-typescript to produce frontend/src/types/models.ts (run via `mise run generate-types` or `npm run generate-types`)
 │   ├── generate_conversation/          # Source data for synthetic conversation generation
 │   └── documents/                      # Source legal documents
 │       └── or/                         # Oregon state laws
@@ -109,7 +109,7 @@ backend/
 ├── tests/                              # Test suite
 ├── langgraph.json                      # LangGraph deployment manifest (for langgraph dev and LangSmith Cloud)
 ├── pyproject.toml                      # Python dependencies and config
-└── Makefile                            # Development commands
+└── mise.toml                           # Dev tasks (mise run <task>) — checks + RAG ingestion pipeline
 ```
 
 ### RAG (Retrieval-Augmented Generation)
@@ -174,15 +174,15 @@ graph LR
 1. **Document Collection**: Legal documents are stored as pure-ASCII text files organized by jurisdiction and year:
    - State laws: `documents/or/<year>/*.txt` (e.g. `documents/or/2025/ORS090.txt`)
    - City codes: `documents/or/<city>/<year>/*.txt` (e.g. `documents/or/portland/2025/PCC30-01.txt`)
-   - All `.txt` files must be pure ASCII — see `.claude/CLAUDE.md` for the enforcement rule. `make enforce-ascii` walks the tree and rewrites known offenders; `make generate-metadata` runs the same pass and rejects files it cannot fix.
+   - All `.txt` files must be pure ASCII — see `.claude/CLAUDE.md` for the enforcement rule. `mise run enforce-ascii` walks the tree and rewrites known offenders; `mise run generate-metadata` runs the same pass and rejects files it cannot fix.
 
-2. **Metadata Generation**: `backend/scripts/generate_metadata_jsonl.py` walks the document tree, infers jurisdiction from the directory structure, and writes `metadata.jsonl` mapping each file to its GCS URI. Run via `make generate-metadata` (requires `GCS_BUCKET_NAME` in the environment). Selective runs (`LOC_OPTIONS="--portland"`) overwrite the file with entries for that scope only.
+2. **Metadata Generation**: `backend/scripts/generate_metadata_jsonl.py` walks the document tree, infers jurisdiction from the directory structure, and writes `metadata.jsonl` mapping each file to its GCS URI. Run via `mise run generate-metadata --bucket <bucket>`. Selective runs (append scope flags after `--`, e.g. `mise run generate-metadata --bucket <bucket> -- --portland`) overwrite the file with entries for that scope only.
 
-3. **Bucket Creation and Upload**: `backend/scripts/upload_to_gcs.py` creates a new GCS bucket (fails if it already exists, so each ingestion has a clean dedicated bucket) and uploads every file referenced by `metadata.jsonl` plus `metadata.jsonl` itself, flat at the bucket root. Run via `make upload-to-gcs GCS_BUCKET_NAME=<bucket>`; pass `LOCATION=<region>` to override the default `US` multi-region, or `UPLOAD_OPTIONS=--dry-run` to preview without calling GCS.
+3. **Bucket Creation and Upload**: `backend/scripts/upload_to_gcs.py` creates a new GCS bucket (fails if it already exists, so each ingestion has a clean dedicated bucket) and uploads every file referenced by `metadata.jsonl` plus `metadata.jsonl` itself, flat at the bucket root. Run via `mise run upload-to-gcs --bucket <bucket>`; pass `--location <region>` to override the default `US` multi-region, or `-- --dry-run` to preview without calling GCS.
 
-4. **Datastore Creation**: `backend/scripts/create_datastore_gcs.py` creates a new Vertex AI Search datastore pointing at the bucket and triggers an import from `metadata.jsonl`, which attaches city/state metadata to each document for jurisdiction-filtered retrieval. Run via `make create-datastore-gcs GCS_BUCKET_NAME=<bucket> DATASTORE_ID=<id>`; pass `DATASTORE_OPTIONS=--no-wait` to skip polling. The script prints the datastore ID on completion (reuse it as `DATASTORE_ID` for step 5).
+4. **Datastore Creation**: `backend/scripts/create_datastore_gcs.py` creates a new Vertex AI Search datastore pointing at the bucket and triggers an import from `metadata.jsonl`, which attaches city/state metadata to each document for jurisdiction-filtered retrieval. Run via `mise run create-datastore-gcs --bucket <bucket> --datastore-id <id>`; pass `-- --no-wait` to skip polling. The script prints the datastore ID on completion (reuse it as `DATASTORE_ID` for step 5).
 
-5. **App Creation**: `backend/scripts/create_app_gcs.py` creates a Vertex AI Search app and links it to the datastore created in step 4. Run via `make create-app-gcs DATASTORE_ID=<id> APP_ID=<app-id>`. The app is for browsing/previewing the datastore in the GCP console; the backend's LangChain `VertexAISearchRetriever` queries the datastore directly and does not depend on this app. After the app is created, set `VERTEX_AI_DATASTORE_LAWS` in `.env` to the datastore ID.
+5. **App Creation**: `backend/scripts/create_app_gcs.py` creates a Vertex AI Search app and links it to the datastore created in step 4. Run via `mise run create-app-gcs --datastore-id <id> --app-id <app-id>`. The app is for browsing/previewing the datastore in the GCP console; the backend's LangChain `VertexAISearchRetriever` queries the datastore directly and does not depend on this app. After the app is created, set `VERTEX_AI_DATASTORE_LAWS` in `.env` to the datastore ID.
 
 #### Query Pipeline
 
@@ -435,7 +435,7 @@ frontend/
 │   │   ├── useMessages.tsx         # Message handling logic
 │   │   ├── useHousingContext.tsx   # Custom hook for housing context
 │   │   └── useLetterContent.tsx    # State management for letter generation
-│   ├── types/                      # Auto-generated TypeScript types (gitignored) — do not edit manually, re-run `make generate-types` or `npm run generate-types`
+│   ├── types/                      # Auto-generated TypeScript types (gitignored) — do not edit manually, re-run `mise run generate-types` or `npm run generate-types`
 │   │   └── models.ts                  # All exported types: ResponseChunk, Location, OregonCity, UsaState, chunk interfaces
 │   ├── layouts/                    # Layouts
 │   │   └── PageLayout.tsx          # Layout for pages

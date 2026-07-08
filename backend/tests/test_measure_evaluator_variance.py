@@ -15,7 +15,7 @@ from evaluate.measure_evaluator_variance import (
 from evaluate.results_display import ScenarioResult
 
 
-# The module under test prints CLI progress to stdout. `make test` runs pytest
+# The module under test prints CLI progress to stdout. `mise run test` runs pytest
 # with `-s`, which disables pytest's own capture, so redirect stdout ourselves
 # to keep the test output clean.
 @pytest.fixture(autouse=True)

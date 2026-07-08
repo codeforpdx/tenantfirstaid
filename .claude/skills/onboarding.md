@@ -9,13 +9,12 @@ Help a new contributor get the repo set up and running locally for the first tim
 - Join the [Code PDX Contributor team](https://www.codepdx.org/volunteer) (step 2: Connect on Discord & Request Access). You'll receive a GitHub invitation email — accept it.
 - Enable [commit signing](https://docs.github.com/authentication/managing-commit-signature-verification) in your GitHub account settings (SSH and GPG keys). GPG is typical.
 
-### uv (Python package manager)
+### mise (dev toolchain manager)
 
-Used by the backend for dependencies and running tools.
+[mise](https://mise.jdx.dev/) provisions and pins the repo's toolchain — `uv` (backend Python), `node` (frontend), and, on macOS, the [apple/container](https://github.com/apple/container) engine — so you don't install them individually.
 
 ```sh
-# Install uv: https://docs.astral.sh/uv/getting-started/installation/
-curl -LsSf https://astral.sh/uv/install.sh | sh
+# Install mise: https://mise.jdx.dev/installing-mise.html
 ```
 
 ### Google Cloud application default credentials
@@ -40,60 +39,95 @@ Sign up for a free [LangSmith](https://smith.langchain.com/) account and generat
 
 ## Starting the app
 
-### Option A: Docker (simpler)
-
-Requires Docker Desktop or Docker Engine.
+First set up the backend env file (both options below read it):
 
 ```sh
-# 1. Copy the root-level compose env file
-cp .env.example .env
-
-# 2. Set GCP_CREDENTIALS_FILE to your credentials JSON path
-#    (this bind-mounts the file into the container — it is NOT the app env var)
-#    Edit .env and set:
-#    GCP_CREDENTIALS_FILE=/home/you/.config/gcloud/application_default_credentials.json
-
-# 3. Copy and fill in the backend env file
 cp backend/.env.example backend/.env
-#    Set LANGSMITH_API_KEY in backend/.env
-
-# 4. Start both services
-docker compose up --build
+# Set GOOGLE_APPLICATION_CREDENTIALS (the creds path from above) and LANGSMITH_API_KEY.
 ```
 
-- Backend runs on http://localhost:5001
-- Frontend runs on http://localhost:5173
+### Option A: Containers (fastest, cross-engine)
 
-Override build targets (e.g. to run CI checks in Docker):
+Runs the whole stack in containers — no host Python/Node needed. Uses apple/container on macOS, Docker elsewhere.
 
 ```sh
-RUNTIME_TARGET=ci FRONTEND_TARGET=ci docker compose up --build
+mise trust && mise install   # provision the container engine (apple/container on macOS)
+mise run container start      # macOS only; on Linux make sure Docker is running
+mise run dev --container      # builds + runs both services, then prints the URL to open
 ```
 
-Stop:
+Open the printed URL — `http://localhost:5173` on Docker, or a `http://192.168.64.x:5173` address on apple/container (which has no localhost port-publishing, so you browse the container's IP directly). Ctrl-C stops the stack.
+
+### Option B: Host (best for active development — live reload, editor tooling)
 
 ```sh
-docker compose down
-```
-
-### Option B: Native (uv + npm)
-
-```sh
-# Backend
-cd backend
-cp .env.example .env
-# Fill in GOOGLE_APPLICATION_CREDENTIALS and LANGSMITH_API_KEY in .env
-uv sync
-uv run python -m tenantfirstaid.app
-
-# Frontend (new terminal)
-cd frontend
-npm install
-npm run generate-types
-npm run dev
+mise trust && mise run setup  # provision toolchains, install deps, generate types
+mise run dev                  # start backend + frontend on the host
 ```
 
 Open http://localhost:5173 and start chatting.
+
+### Also available: docker-compose
+
+`docker-compose.yml` is the canonical Docker multi-service definition. Unlike the tasks above it reads the **root** `.env` and bind-mounts the creds file via `GCP_CREDENTIALS_FILE`:
+
+```sh
+cp .env.example .env          # set GCP_CREDENTIALS_FILE to your creds JSON path
+cp backend/.env.example backend/.env   # set LANGSMITH_API_KEY
+docker compose up --build     # backend :5001, frontend :5173
+# override targets to run CI checks in Docker: RUNTIME_TARGET=ci FRONTEND_TARGET=ci docker compose up --build
+```
+
+---
+
+## Running checks
+
+Checks are driven by [mise](https://mise.jdx.dev), configured as a monorepo: the root
+`mise.toml` ties together `backend/mise.toml` (uv toolchain) and `frontend/mise.toml`
+(node toolchain). One-time setup provisions the pinned tools (uv, node 24, and — on
+macOS — apple/container):
+
+```sh
+# Install mise: https://mise.jdx.dev/installing-mise.html
+# The setup task provisions both toolchains, installs deps, and generates types.
+# (Tools install per project config, so a bare root `mise install` would miss the
+# frontend's node — the task runs `mise -C backend/frontend install` for you.)
+mise trust && mise run setup
+```
+
+Then run the checks on the host (the fast, default path):
+
+```sh
+mise run check              # everything (backend + frontend)
+mise run //backend:check    # backend only: clean, sync, fmt, lint, typecheck, test
+mise run //backend:test     # a single backend check
+mise run //frontend:check   # frontend only
+```
+
+From inside a project directory the bare name works too (`cd backend && mise run test`).
+
+### Running a check in a container instead
+
+Every check takes an opt-in `--container` flag that runs that same check inside the
+Dockerfile `ci` stage instead of on the host. It auto-detects an engine; `--engine`
+forces one (`docker`, `container` for apple/container, or `podman`):
+
+```sh
+mise run //backend:test --container                     # auto-detected engine
+mise run //backend:check --container --engine container # whole suite via apple/container
+mise run //frontend:check --container --engine docker   # frontend suite via Docker
+```
+
+The container lane verifies formatting rather than rewriting it (mutate on the host,
+verify in the container), so `fmt`/`check --container` run `ruff format --check`.
+
+**Claude Code users:** this project enables the Claude Code sandbox (for network-egress
+confinement). The sandbox blocks two things: container engines (Docker and apple/container
+both return `Operation not permitted`, and no committed project setting can lift that —
+sandbox exclusions are honored only from your personal `~/.claude/settings.json`), and
+mise's own tool provisioning / `mise trust` (writes under `~/.local/{share,state}/mise`).
+So do the one-time `mise run setup` yourself, then let Claude run the host-lane checks
+(`mise run //backend:check`, etc.); run any `--container` checks yourself or leave them to CI.
 
 ---
 
