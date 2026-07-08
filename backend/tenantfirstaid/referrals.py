@@ -6,7 +6,6 @@ get_legal_aid_referrals tool. Backed by referrals_data.json and validated at
 import time.
 """
 
-from curses import raw
 import json
 from enum import StrEnum
 from pathlib import Path
@@ -82,10 +81,16 @@ class Referral(BaseModel):
 _REFERRALS_DATA_PATH: Final = Path(__file__).parent / "referrals_data.json"
 
 
+def _validate_referrals(referrals: list[Referral]) -> None:
+    ids = [r.id for r in referrals]
+    if len(ids) != len(set(ids)):
+        raise ValueError("Referral IDs must be unique.")
+
 def _load_referrals() -> list[Referral]:
     raw = json.loads(_REFERRALS_DATA_PATH.read_text())
-    return [Referral.model_validate(entry) for entry in raw]
-    
+    referrals = [Referral.model_validate(entry) for entry in raw]
+    _validate_referrals(referrals)
+    return referrals
 
 
 REFERRALS: Final[list[Referral]] = _load_referrals()

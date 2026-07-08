@@ -9,7 +9,28 @@ import pytest
 from tenantfirstaid.app import app as flask_app
 from tenantfirstaid.constants import OREGON_LAW_CENTER_PHONE_NUMBER
 from tenantfirstaid.langchain_tools import get_legal_aid_referrals
-from tenantfirstaid.referrals import REFERRALS, REFERRALS_BY_ID, Referral
+from tenantfirstaid.referrals import (
+    REFERRALS,
+    REFERRALS_BY_ID,
+    Referral,
+    _validate_referrals,
+)
+
+
+EXPECTED_REFERRAL_FIELDS = {
+    "id",
+    "organization",
+    "service_types",
+    "provider_types",
+    "geographic_scope",
+    "eligibility",
+    "case_stages",
+    "hours",
+    "phone",
+    "email",
+    "website",
+    "notes",
+}
 
 
 @pytest.fixture
@@ -31,6 +52,11 @@ class TestReferralsCatalog:
     def test_referrals_by_id_matches_referrals(self):
         assert set(REFERRALS_BY_ID) == {r.id for r in REFERRALS}
 
+    def test_duplicate_ids_fail_validation(self):
+        duplicate = REFERRALS[1].model_copy(update={"id": REFERRALS[0].id})
+        with pytest.raises(ValueError, match="Referral IDs must be unique"):
+            _validate_referrals([REFERRALS[0], duplicate])
+
     def test_laso_phone_matches_system_prompt_phone(self):
         """The system prompt's OREGON_LAW_CENTER_PHONE_NUMBER must be sourced
         from the same referral record shown on the Referrals page, so the two
@@ -49,6 +75,11 @@ class TestReferralsEndpoint:
         assert len(data) == len(REFERRALS)
         assert {r["id"] for r in data} == {r.id for r in REFERRALS}
 
+    def test_get_referrals_includes_every_expected_top_level_field(self, client):
+        resp = client.get("/api/referrals")
+        data = resp.get_json()
+        assert all(set(referral) == EXPECTED_REFERRAL_FIELDS for referral in data)
+
     def test_referral_shape(self, client):
         resp = client.get("/api/referrals")
         data = resp.get_json()
@@ -64,3 +95,8 @@ class TestGetLegalAidReferralsTool:
         parsed = json.loads(result)
         assert len(parsed) == len(REFERRALS)
         assert {r["id"] for r in parsed} == {r.id for r in REFERRALS}
+
+    def test_returns_json_matching_referrals_endpoint(self, client):
+        endpoint_data = client.get("/api/referrals").get_json()
+        tool_data = json.loads(get_legal_aid_referrals.invoke({}))
+        assert tool_data == endpoint_data
