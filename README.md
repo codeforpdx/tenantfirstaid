@@ -85,7 +85,7 @@ Live at https://tenantfirstaid.com/
      ```
      or
      ```sh
-     % make fmt
+     % mise run fmt
      ```
   1. _lint_ Python code with `ruff`
      ```sh
@@ -93,7 +93,7 @@ Live at https://tenantfirstaid.com/
      ```
      or
      ```sh
-     % make lint
+     % mise run lint
      ```
   1. _typecheck_ Python code with `ty`
 
@@ -104,7 +104,7 @@ Live at https://tenantfirstaid.com/
      or
 
      ```sh
-     % make typecheck
+     % mise run typecheck
      ```
 
      _typecheck_ with other Python typecheckers which are not protected in [PR Checks](.github/workflows/pr-check.yml) - useful for completeness & a 2nd opinion
@@ -115,7 +115,7 @@ Live at https://tenantfirstaid.com/
         ```
         or
         ```sh
-        % make typecheck-mypy
+        % mise run typecheck --checker mypy
         ```
      1. _typecheck_ Python code with `pyrefly`
         ```sh
@@ -123,7 +123,7 @@ Live at https://tenantfirstaid.com/
         ```
         or
         ```sh
-        % make typecheck-pyrefly
+        % mise run typecheck --checker pyrefly
         ```
 
   1. _test_ Python code with `pytest`
@@ -132,14 +132,14 @@ Live at https://tenantfirstaid.com/
      ```
      or
      ```sh
-     % make test
+     % mise run test
      ```
 
 - or run the above checks in one-shot
   ```sh
-  % make --keep-going check
+  % mise run check
   ```
-  `--keep-going` will continue to run checks, even if previous `make` rule fail. Omit if you want to stop after the first `make` rule fails.
+  `check` runs `lint`, `typecheck`, and `test` concurrently (after `fmt`), so all three report even if one fails — you see every failure in a single run rather than stopping at the first.
 
 | 💡 Using Claude Code? Type `/frontend` in the Claude Code UI for frontend workflow reference. |
 |---|

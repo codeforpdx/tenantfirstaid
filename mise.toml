@@ -32,11 +32,14 @@ container = { version = "latest", os = ["macos"] }
 # apple/container is macOS-only, so this is a no-op elsewhere — the binary check
 # below fails fast on Linux/WSL2, where contributors use Docker and manage its
 # daemon themselves. `restart` stops then starts (tolerating an already-stopped
-# service); `status` is what the //:_container-run helper probes before building.
+# service); `status` is what the //:_container-run helper probes before building;
+# `rebuild-builder` recreates the BuildKit builder VM when its context transfer
+# corrupts (see the case body below).
 #   mise run container start
 #   mise run container restart
 #   mise run container stop
 #   mise run container status
+#   mise run container rebuild-builder
 [tasks.container]
 description = "Manage the apple/container service (macOS): start | restart | stop | status | rebuild-builder."
 usage = '''
@@ -322,8 +325,15 @@ fimg=tenantfirstaid-frontend:local
 engine=$(mise run //:_resolve-engine --engine "${usage_engine:-auto}")
 
 # Where the app's GCP credentials file lives on the host (from backend/.env). We mount
-# both .env and the creds file read-only at the same paths the app expects.
+# both .env and the creds file read-only at the same paths the app expects, so the
+# GOOGLE_APPLICATION_CREDENTIALS value the app reads from .env resolves inside the
+# container too. The path must be absolute or `~/...`: the container engine is not a
+# shell, so it can't expand `~`/`$HOME`/relative paths — we expand a leading `~` here.
 creds=$(sed -n 's/^GOOGLE_APPLICATION_CREDENTIALS=//p' backend/.env 2>/dev/null | tr -d '"' | head -1)
+case "$creds" in
+  "~")   creds="$HOME" ;;
+  "~/"*) creds="$HOME/${creds#\~/}" ;;
+esac
 
 cleanup() {
   echo ""; echo ">> stopping dev stack..."
@@ -351,6 +361,7 @@ if [ "$engine" = container ]; then
     -e VITE_API_PROXY_TARGET="http://$bip:$bport" "$fimg" >/dev/null
   fip=""
   for _ in $(seq 1 30); do fip=$(container_ip tf-dev-frontend); [ -n "$fip" ] && break; sleep 1; done
+  [ -z "$fip" ] && { echo "could not determine frontend container IP" >&2; exit 1; }
   echo ""; echo ">> dev stack up (apple/container):"
   echo "     backend   http://$bip:$bport"
   echo "     frontend  http://$fip:$fport   <- open this in your browser"
