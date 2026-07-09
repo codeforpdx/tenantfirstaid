@@ -160,13 +160,14 @@ if [ -n "${usage_container:-}" ]; then
     --env-file "$PWD/.env" \
     --cmd 'uv run ruff check --select I && uv run ruff format --check && uv run ruff check && uv run ty check && uv run pytest -q'
 fi
-# Host lane. clean -> sync -> fmt must be ordered (fmt mutates the tree the verify
-# steps read). lint/typecheck/test are read-only and independent, so run them
-# concurrently; -o keep-order groups each task's output in order so it doesn't garble.
-# The `:::` separators are required: without them mise would treat `typecheck test`
-# as positional args to `lint` (which declares a variadic passthrough arg).
+# Host lane. clean -> fmt must be ordered (fmt mutates the tree the verify steps
+# read). fmt/lint/typecheck/test all `depends` on sync, so it runs (once, gated by
+# its source hash) before any of them without an explicit step here. lint/typecheck/
+# test are read-only and independent, so run them concurrently; -o keep-order groups
+# each task's output in order so it doesn't garble. The `:::` separators are required:
+# without them mise would treat `typecheck test` as positional args to `lint` (which
+# declares a variadic passthrough arg).
 mise run clean
-mise run sync
 mise run fmt
 mise run -o keep-order lint ::: typecheck ::: test
 '''

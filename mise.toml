@@ -372,7 +372,7 @@ echo ">> following logs (Ctrl-C to stop)..."
 
 [tasks.check]
 description = "Run all host checks (backend + frontend)."
-run = [
-  "mise run //backend:check",
-  "mise run //frontend:check",
-]
+# The two suites share no toolchain or outputs, so let mise run them concurrently as
+# plain dependencies (it runs `depends` in parallel by default) rather than shelling
+# out to a nested `mise run`. Output grouping follows the global `task_output` setting.
+depends = ["//backend:check", "//frontend:check"]
