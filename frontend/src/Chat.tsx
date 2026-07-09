@@ -3,7 +3,7 @@ import useMessages from "./hooks/useMessages";
 import useSyncJurisdiction from "./hooks/useSyncJurisdiction";
 import { useLetterContent } from "./hooks/useLetterContent";
 import ChatDisclaimer from "./pages/Chat/components/ChatDisclaimer";
-import FrequentInquiries from "./pages/Chat/components/FrequentInquiries";
+import FrequentInquiries from "./shared/components/FrequentInquiries";
 import MessageContainer from "./shared/components/MessageContainer";
 import FeaturesPanel from "./shared/components/FeaturesPanel";
 import MobilePanel from "./shared/components/MobilePanel";
