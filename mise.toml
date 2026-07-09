@@ -270,19 +270,44 @@ else
 fi
 '''
 
-[tasks.setup]
-description = "One-time dev setup: provision toolchains, install deps, and generate types."
+# One-time dev setup, factored so the two independent toolchain lanes provision
+# concurrently. The dependency graph enforces the required ordering that a flat script
+# would express serially: _setup-trust runs once (deduped) before both lanes, the
+# backend and frontend lanes then run in parallel, and setup's own body (generate-types)
+# runs only after both complete. On a fresh clone this roughly halves setup wall time.
+[tasks._setup-trust]
+description = "(internal) Trust every config in the tree so the per-project installs can run."
+hide = true
+run = "mise trust --all"
+
+[tasks._setup-backend]
+description = "(internal) Provision the backend toolchain and sync its .venv."
+hide = true
+depends = ["_setup-trust"]
+# Tools install per project config — a root `mise install` won't reach the nested
+# backend config — so provision it here (no-op once installed), then sync the .venv.
 run = '''
 set -eu
-# Trust every config in the tree so the per-project installs below can run.
-mise trust --all
-# Tools install per project config — a root `mise install` won't reach the nested
-# backend/frontend configs — so provision each (no-op once installed).
 mise -C backend install
-mise -C frontend install
-# Dependencies: backend .venv, then frontend node_modules.
 mise run //backend:sync
+'''
+
+[tasks._setup-frontend]
+description = "(internal) Provision the frontend toolchain and install node_modules."
+hide = true
+depends = ["_setup-trust"]
+run = '''
+set -eu
+mise -C frontend install
 mise run //frontend:install
+'''
+
+[tasks.setup]
+description = "One-time dev setup: provision toolchains, install deps, and generate types."
+depends = ["_setup-backend", "_setup-frontend"]
+run = '''
+set -eu
+# Both toolchains and their deps are provisioned in parallel by the _setup-* deps above.
 # Generate the shared TypeScript types. This step straddles both toolchains (uv reads
 # the backend Pydantic models; node's json2ts emits the .ts) and no single project
 # scope has both, so run it in the frontend scope with the backend's mise-managed uv
