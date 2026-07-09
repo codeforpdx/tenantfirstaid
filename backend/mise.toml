@@ -20,6 +20,12 @@ UV_PYTHON = "3.13"
 
 [tasks.sync]
 description = "Sync deps into .venv."
+# Mirrors the old Makefile's `uv.lock: pyproject.toml` prerequisite: fmt/lint/
+# typecheck/test all `depends` on this, and mise reruns it only when pyproject.toml
+# has changed since the last successful sync (auto outputs track a source hash), so
+# a standalone `mise run test` after a dependency bump can't run against a stale .venv.
+sources = ["pyproject.toml"]
+outputs = { auto = true }
 run = "uv sync"
 
 [tasks.serve]
@@ -35,6 +41,7 @@ rm -rf dist build *.egg-info
 
 [tasks.fmt]
 description = "Sort imports and format. host: MUTATES; --container: verify-only; --container --write: reformat host tree via the container."
+depends = ["sync"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
@@ -69,6 +76,7 @@ uv run ruff format
 
 [tasks.lint]
 description = "Lint with ruff."
+depends = ["sync"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
@@ -90,6 +98,7 @@ uv run ruff check ${usage_options:-}
 # choices-flag to its default, so the checker is validated by hand in the body.
 [tasks.typecheck]
 description = "Type-check. --checker ty (default, fast) | mypy | pyrefly."
+depends = ["sync"]
 usage = '''
 flag "--checker <checker>" help="Type checker: ty (default) | mypy | pyrefly. mypy/pyrefly are secondary checkers for a second opinion." default="ty"
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
@@ -116,6 +125,7 @@ eval "$cmd"
 
 [tasks.test]
 description = "Run pytest."
+depends = ["sync"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"

@@ -66,6 +66,100 @@ case "$usage_action" in
 esac
 '''
 
+# --- Shared engine resolver ----------------------------------------------------
+# Prints the container engine to use (honoring an explicit --engine, else auto),
+# or exits 1 with guidance if none can be brought up. Both //:_container-run and the
+# `dev` task shell out to this so the selection policy lives in exactly one place.
+# All progress/diagnostics go to stderr — `mise run` also sends its command echo
+# there — so `$(mise run //:_resolve-engine)` captures only the engine name.
+#
+# The apple/container chain is: `mise install` provisions the CLI -> `container system
+# start` brings up its service -> the daemon is reachable. This task can satisfy the
+# second link (it starts a present-but-stopped service) but not the first: it will not
+# run `mise install` for you (too heavy a side effect, and blocked under the Claude
+# sandbox), so a missing binary is reported with the command to run.
+[tasks._resolve-engine]
+description = "(internal) Print the reachable container engine to use."
+hide = true
+usage = '''
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+'''
+run = '''
+set -eu
+# Pure reachability probe (no side effects): is this engine's daemon actually up
+# (not just its binary on PATH)?
+engine_up() {
+  case "$1" in
+    container) command -v container >/dev/null 2>&1 && container system status >/dev/null 2>&1 ;;
+    docker|podman) command -v "$1" >/dev/null 2>&1 && "$1" info >/dev/null 2>&1 ;;
+    *) return 1 ;;
+  esac
+}
+# Ensure apple/container's chain: binary present (from `mise install`) and service up
+# (started here if it is down). Returns non-zero if the binary is missing or the
+# service will not come up. Chatter is kept on stderr to protect the captured stdout.
+ensure_container() {
+  command -v container >/dev/null 2>&1 || return 1
+  container system status >/dev/null 2>&1 && return 0
+  echo ">> apple/container service is down; starting it..." >&2
+  container system start 1>&2 || return 1
+  # The service accepts connections a beat after `start` returns; poll briefly.
+  i=0
+  while [ "$i" -lt 15 ]; do
+    container system status >/dev/null 2>&1 && return 0
+    i=$((i + 1)); sleep 1
+  done
+  return 1
+}
+
+engine="${usage_engine:-auto}"
+
+# Explicit request: ensure that engine's full chain, then report it (or fail with
+# targeted guidance). Unlike auto mode this starts a stopped container service, since
+# the caller asked for that engine specifically.
+if [ "$engine" != "auto" ] && [ -n "$engine" ]; then
+  case "$engine" in
+    container)
+      ensure_container || {
+        if command -v container >/dev/null 2>&1; then
+          echo "apple/container is installed but its service will not start (needs macOS 15+/Apple silicon; try 'mise run container restart')." >&2
+        elif [ "$(uname -s)" = Darwin ]; then
+          # auto_install should have provisioned it already; if we are here it did not
+          # (e.g. provisioning is blocked, as under the Claude sandbox).
+          echo "apple/container is not installed. Provision it with 'mise install' (or 'mise run setup'), then retry." >&2
+        else
+          echo "apple/container is macOS-only; on this OS use --engine docker (or podman)." >&2
+        fi
+        exit 1
+      } ;;
+    docker|podman)
+      engine_up "$engine" || { echo "$engine is not reachable: install it and start its daemon." >&2; exit 1; } ;;
+    *)
+      echo "Unknown engine '$engine' (expected docker|container|podman)." >&2; exit 1 ;;
+  esac
+  echo "$engine"; exit 0
+fi
+
+# Auto: use whatever is already up (macOS prefers apple/container, else Docker), so a
+# stopped engine does not shadow a live one and we never spin up a VM when another
+# engine is already running.
+case "$(uname -s)" in
+  Darwin) candidates="container docker podman" ;;
+  *)      candidates="docker podman" ;;
+esac
+for c in $candidates; do
+  engine_up "$c" && { echo "$c"; exit 0; }
+done
+# Nothing is up. As a last resort, bring up the preferred apple/container service if
+# it is installed (a no-op returning non-zero on Linux, where the binary is absent).
+ensure_container && { echo container; exit 0; }
+echo "No running container engine found. Start one and retry:" >&2
+echo "  - apple/container:  mise run container start   (needs 'mise install' first)" >&2
+echo "  - Docker:           open -a Docker   (or start the daemon)" >&2
+echo "Or pass --engine <docker|container|podman> explicitly." >&2
+exit 1
+'''
+
 # --- Shared container helper ---------------------------------------------------
 # Builds a Dockerfile target and runs a command in it, engine-agnostic. Project
 # tasks call it as `mise run //:_container-run --image ... --context ...`; it is not
@@ -90,34 +184,8 @@ flag "--rebuild" help="Force a rebuild even when the cached image's deps are unc
 '''
 run = '''
 set -eu
-# Is a given engine's daemon actually reachable (not just its binary on PATH)?
-engine_reachable() {
-  case "$1" in
-    container) command -v container >/dev/null 2>&1 && container system status >/dev/null 2>&1 ;;
-    docker|podman) command -v "$1" >/dev/null 2>&1 && "$1" info >/dev/null 2>&1 ;;
-    *) return 1 ;;
-  esac
-}
-engine="${usage_engine:-auto}"
-if [ "$engine" = "auto" ] || [ -z "$engine" ]; then
-  # On macOS prefer apple/container (this project's default on Mac); elsewhere Docker.
-  # Skip any engine whose daemon is down so a stopped Docker doesn't shadow a live one.
-  case "$(uname -s)" in
-    Darwin) candidates="container docker podman" ;;
-    *)      candidates="docker podman" ;;
-  esac
-  engine=""
-  for c in $candidates; do
-    engine_reachable "$c" && { engine="$c"; break; }
-  done
-  [ -z "$engine" ] && {
-    echo "No running container engine found. Start one and retry:" >&2
-    echo "  - apple/container:  mise run container start   (or: container system start)" >&2
-    echo "  - Docker:           open -a Docker   (or start the daemon)" >&2
-    echo "Or pass --engine <docker|container|podman> explicitly." >&2
-    exit 1
-  }
-fi
+# Resolve the engine (auto-detect or honor --engine); exits 1 with guidance if none.
+engine=$(mise run //:_resolve-engine --engine "${usage_engine:-auto}")
 : "${usage_image:?_container-run requires --image}"
 : "${usage_context:?_container-run requires --context}"
 image="$usage_image"
@@ -250,20 +318,8 @@ bport=5001; fport=5173
 bimg=tenantfirstaid-backend:runtime
 fimg=tenantfirstaid-frontend:local
 
-# Resolve the engine (same policy as //:_container-run: macOS prefers apple/container).
-engine="${usage_engine:-auto}"
-if [ "$engine" = auto ] || [ -z "$engine" ]; then
-  case "$(uname -s)" in Darwin) cands="container docker podman";; *) cands="docker podman";; esac
-  engine=""
-  for c in $cands; do
-    if [ "$c" = container ]; then
-      command -v container >/dev/null 2>&1 && container system status >/dev/null 2>&1 && { engine=container; break; }
-    else
-      command -v "$c" >/dev/null 2>&1 && "$c" info >/dev/null 2>&1 && { engine="$c"; break; }
-    fi
-  done
-  [ -z "$engine" ] && { echo "No running container engine found." >&2; exit 1; }
-fi
+# Resolve the engine via the shared resolver (same policy as //:_container-run).
+engine=$(mise run //:_resolve-engine --engine "${usage_engine:-auto}")
 
 # Where the app's GCP credentials file lives on the host (from backend/.env). We mount
 # both .env and the creds file read-only at the same paths the app expects.

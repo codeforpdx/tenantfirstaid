@@ -15,9 +15,9 @@ from evaluate.measure_evaluator_variance import (
 from evaluate.results_display import ScenarioResult
 
 
-# The module under test prints CLI progress to stdout. `mise run test` runs pytest
-# with `-s`, which disables pytest's own capture, so redirect stdout ourselves
-# to keep the test output clean.
+# The module under test prints CLI progress to stdout. Redirect stdout ourselves
+# so the output stays clean regardless of pytest's capture settings (e.g. when run
+# with `-s`, which disables pytest's own capture).
 @pytest.fixture(autouse=True)
 def _silence_stdout():
     import contextlib
