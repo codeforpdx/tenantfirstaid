@@ -24,6 +24,8 @@ def city_or_state_input_sanitizer(location: Optional[str], max_len: int = 9) -> 
 
 
 class OregonCity(StrEnum):
+    """Oregon cities with jurisdiction-specific housing codes in the corpus."""
+
     PORTLAND = "portland"
     EUGENE = "eugene"
 

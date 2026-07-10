@@ -1,3 +1,8 @@
+"""User feedback handling: render the chat transcript to PDF and email it.
+
+Backs the ``POST /api/feedback`` endpoint — see :func:`send_feedback`.
+"""
+
 import os
 from io import BytesIO
 from typing import Optional, Tuple

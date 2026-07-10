@@ -51,6 +51,14 @@ def _classify_blocks(
 
 
 class ChatView(View):
+    """Flask view backing ``POST /api/query``.
+
+    Reads the message history and ``city``/``state`` from the request body, drives
+    :class:`~tenantfirstaid.langchain_chat_manager.LangChainChatManager`, and
+    streams the classified :data:`~tenantfirstaid.schema.ResponseChunk` objects
+    back as newline-delimited JSON, closing with an ``EndOfStreamChunk``.
+    """
+
     def __init__(self) -> None:
         self.chat_manager = LangChainChatManager()
 

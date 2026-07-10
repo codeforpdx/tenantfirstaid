@@ -67,9 +67,18 @@ def _strtobool(val: Optional[str]) -> bool:
 
 
 class _GoogEnvAndPolicy:
-    """Validate and set Google Cloud variables from OS environment"""
+    """Validated Google Cloud configuration, read once from the environment.
 
-    # Note: these are Class variables, not instance variables.
+    A single instance, :data:`SINGLETON`, is built at import time and holds every
+    setting the LLM and RAG retrieval need. Required values are read from the
+    environment (raising if unset or empty); the model-tuning knobs are fixed in
+    code for reproducible legal output. The attributes below are the individual
+    pseudo-constants exposed as ``SINGLETON.<NAME>``.
+    """
+
+    # Note: these are instance attributes stored in __slots__ (assigned in
+    # __init__). The bare annotations below carry their types and docs for the
+    # API reference without creating class-level values (which __slots__ forbids).
     __slots__ = (
         "MODEL_NAME",
         "VERTEX_AI_DATASTORES",
@@ -83,6 +92,29 @@ class _GoogEnvAndPolicy:
         "MAX_TOKENS",
         "THINKING_BUDGET",
     )
+
+    MODEL_NAME: str
+    """Gemini model identifier (env ``MODEL_NAME``, required)."""
+    VERTEX_AI_DATASTORES: dict[str, str]
+    """Datastore name -> id, parsed from every ``VERTEX_AI_DATASTORE_*`` var; ``laws`` is required."""
+    GOOGLE_CLOUD_PROJECT: str
+    """GCP project ID (env ``GOOGLE_CLOUD_PROJECT``, required)."""
+    GOOGLE_CLOUD_LOCATION: str
+    """Vertex AI compute region for the LLM (env ``GOOGLE_CLOUD_LOCATION``, required)."""
+    GOOGLE_APPLICATION_CREDENTIALS: str
+    """GCP credentials: a file path or inline JSON (env ``GOOGLE_APPLICATION_CREDENTIALS``, required)."""
+    SHOW_MODEL_THINKING: bool
+    """Whether to stream model reasoning as ``ReasoningChunk``s (env ``SHOW_MODEL_THINKING``, default false)."""
+    SAFETY_SETTINGS: dict
+    """Gemini harm-category thresholds; all set to OFF so statutory discussion is not blocked."""
+    MODEL_TEMPERATURE: float
+    """Sampling temperature, fixed low (0.1) for consistent legal citation output."""
+    TOP_P: float
+    """Nucleus-sampling top-p, fixed low (0.1) alongside the temperature."""
+    MAX_TOKENS: int
+    """Maximum output tokens per response."""
+    THINKING_BUDGET: int
+    """Gemini thinking-token budget; ``-1`` lets the model size it dynamically."""
 
     def __init__(self) -> None:
         """

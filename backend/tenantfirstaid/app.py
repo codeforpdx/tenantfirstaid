@@ -1,3 +1,9 @@
+"""Flask application entry point: builds the app, CORS, rate limiting, mail, and routes.
+
+Registers :class:`~tenantfirstaid.chat.ChatView` at ``/api/query`` and the feedback
+route at ``/api/feedback``. Run locally with ``mise run serve``.
+"""
+
 import os
 
 from flask import Flask

@@ -1,6 +1,9 @@
 
 [project]
-name = "tenant-first-aid"
+# Distribution name matches the importable module (tenantfirstaid) so tooling that
+# derives the import name from the dist name works — notably `great-docs lint`, which
+# (unlike `great-docs build`) ignores the `module:` override in great-docs.yml.
+name = "tenantfirstaid"
 version = "0.5.0"
 requires-python = ">=3.12,<3.14" # langchain_core triggers a Pydantic V1 warning, https://github.com/langchain-ai/langchain/issues/34441
 dependencies = [

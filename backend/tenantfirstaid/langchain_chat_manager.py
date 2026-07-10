@@ -26,8 +26,15 @@ from .location import OregonCity, UsaState
 
 
 class LangChainChatManager:
-    """
-    Manages simultaneous chat interactions using LangChain agent architecture.
+    """Per-session wrapper around the shared agent graph, with streaming.
+
+    On first use it builds a location-aware agent via
+    :func:`~tenantfirstaid.graph.create_graph`, baking the user's city/state into
+    the system prompt. ``generate_streaming_response`` then streams the agent in
+    ``["updates", "custom"]`` mode, yielding raw LangChain content blocks that
+    :class:`~tenantfirstaid.chat.ChatView` classifies into typed response chunks.
+    A reset connection is retried up to twice, but never after output has begun,
+    so the client never receives duplicated content.
     """
 
     logger: logging.Logger
