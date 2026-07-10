@@ -61,6 +61,8 @@ dev = [
     "types-jsonschema>=4.26.0.20260202",
     "langgraph-cli[inmem]>=0.4.15",
     "hypothesis>=6.151.9",
+    # Docs generator for the `docs` task; needs Quarto (installed in the Dockerfile ci stage).
+    "great-docs>=0.14.1",
 ]
 
 [tool.ruff.lint]

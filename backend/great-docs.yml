@@ -1,0 +1,177 @@
+# Great Docs Configuration
+# See https://posit-dev.github.io/great-docs/user-guide/configuration.html
+
+# Module Name (optional)
+# ----------------------
+# Set this if your importable module name differs from the project name.
+# Example: project 'py-yaml12' with module name 'yaml12'
+module: tenantfirstaid
+
+# Docstring Parser
+# ----------------
+# The docstring format used in your package (numpy, google, or sphinx)
+parser: google
+
+# Dynamic Introspection
+# ---------------------
+# Use runtime introspection for more accurate documentation (default: true)
+# Set to false if your package has cyclic alias issues (e.g., PyO3/Rust bindings)
+dynamic: true
+
+# API Discovery Settings
+# ----------------------
+# Exclude items from auto-documentation
+# exclude:
+#   - InternalClass
+#   - helper_function
+
+# Logo & Favicon
+# ---------------
+# Point to a single logo file (replaces the text title in the navbar):
+# logo: assets/logo.svg
+#
+# For light/dark variants:
+# logo:
+#   light: assets/logo-light.svg
+#   dark: assets/logo-dark.svg
+#
+# To show the text title alongside the logo, add: show_title: true
+
+# Funding / Copyright Holder
+# --------------------------
+# Credit the organization that funds or holds copyright for this package.
+# Displays in sidebar and footer. Homepage and ROR provide links.
+# funding:
+#   name: "Posit Software, PBC"
+#   roles:
+#     - Copyright holder
+#     - funder
+#   homepage: https://posit.co
+#   ror: https://ror.org/03wc8by49
+
+# API Reference Structure
+# -----------------------
+# Customize the sections below to organize your API documentation.
+# - Reorder items within a section to change their display order
+# - Move items between sections or create new sections
+# - Use 'members: false' to exclude methods from documentation
+# - Add 'desc:' to sections for descriptions
+
+reference:
+  - title: Classes
+    desc: Main classes provided by the package
+    contents:
+      - app.ChatView  # 1 method(s)
+      - chat.ChatView  # 1 method(s)
+      - chat.EndOfStreamChunk
+      - chat.LangChainChatManager  # 2 method(s)
+      - chat.LetterChunk
+      - chat.ReasoningChunk
+      - chat.TextChunk
+      - graph.TFAAgentStateSchema
+      - langchain_chat_manager.LangChainChatManager  # 2 method(s)
+      - langchain_tools.CityStateLawsInputSchema
+      - langchain_tools.GenerateLetterInputSchema
+      - langchain_tools.QueryOnlyInputSchema
+      - langchain_tools.RagBuilder  # 1 method(s)
+      - location.Location
+      - location.TFAAgentStateSchema
+      - schema.EndOfStreamChunk
+      - schema.LetterChunk
+      - schema.ReasoningChunk
+      - schema.TextChunk
+
+  - title: Dataclasses
+    desc: Dataclass definitions
+    contents:
+      - graph.TFAContext
+
+  - title: Enumerations
+    desc: Enumeration types
+    contents:
+      - chat.OregonCity
+      - chat.UsaState
+      - graph.OregonCity
+      - graph.UsaState
+      - langchain_chat_manager.OregonCity
+      - langchain_chat_manager.UsaState
+      - langchain_tools.DatastoreKey
+      - langchain_tools.OregonCity
+      - langchain_tools.UsaState
+      - location.OregonCity
+      - location.UsaState
+
+  - title: Functions
+    desc: Utility functions
+    contents:
+      - app.configure_logging
+      - app.feedback_route
+      - app.send_feedback
+      - feedback.convert_html_to_pdf
+      - feedback.send_feedback
+      - google_auth.discoveryengine_client_options
+      - google_auth.load_gcp_credentials
+      - graph.create_graph
+      - graph.generate_letter
+      - graph.get_active_rag_tools
+      - graph.get_letter_template
+      - graph.load_gcp_credentials
+      - graph.prepare_system_prompt
+      - langchain_chat_manager.create_graph
+      - langchain_chat_manager.prepare_system_prompt
+      - langchain_tools.filter_builder
+      - langchain_tools.generate_letter
+      - langchain_tools.get_active_rag_tools
+      - langchain_tools.get_letter_template
+      - langchain_tools.load_gcp_credentials
+      - langchain_tools.repair_mojibake
+      - location.city_or_state_input_sanitizer
+
+  - title: Constants
+    desc: Module-level constants and data
+    contents:
+      - app.ALLOWED_ORIGINS
+      - app.limiter
+      - app.mail
+      - chat.ResponseChunk
+      - feedback.MAX_ATTACHMENT_SIZE
+      - graph.DEFAULT_INSTRUCTIONS
+      - graph.SINGLETON
+      - graph.tools
+      - langchain_tools.LETTER_TEMPLATE
+      - langchain_tools.RAG_TOOL_REGISTRY
+      - langchain_tools.SINGLETON
+      - langchain_tools.logger
+      - langchain_tools.retrieve_city_state_laws
+      - langchain_tools.retrieve_oregon_law_help
+      - schema.ResponseChunk
+
+# Site URL
+# --------
+# Canonical address of the deployed documentation site.
+# Required for subdirectory deployments, skills page install commands,
+# .well-known/ discovery, and sitemaps.
+# site_url: "https://your-org.github.io/your-package/"
+
+# Site Settings
+# -------------
+# site:
+#   theme: flatly              # Quarto theme (default: flatly)
+#   toc: true                  # Show table of contents (default: true)
+#   toc-depth: 2               # TOC heading depth (default: 2)
+#   toc-title: On this page    # TOC title (default: "On this page")
+
+# Jupyter Kernel
+# --------------
+# Jupyter kernel to use for executing code cells in .qmd files.
+# This is set at the project level so it applies to all pages, including
+# auto-generated API reference pages. Can be overridden in individual .qmd
+# file frontmatter if needed for special cases.
+jupyter: python3
+
+# CLI Documentation
+# -----------------
+# cli:
+#   enabled: true              # Enable CLI documentation
+#   module: my_package.cli     # Module containing Click commands
+#   name: cli                  # Name of the Click command object

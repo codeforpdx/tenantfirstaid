@@ -217,6 +217,34 @@ cd ../frontend
 npm run generate-types
 '''
 
+[tasks.docs]
+description = "Build the API docs site with great-docs (into great-docs/_site). Needs Quarto: on the host install it yourself; --container uses the Dockerfile ci image, which ships Quarto."
+depends = ["sync"]
+usage = '''
+flag "--container" help="Build in the Dockerfile ci image (which has Quarto) instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+flag "--rebuild" help="With --container: force a rebuild of the ci image (otherwise reused while deps are unchanged)."
+arg "<options>" var=#true required=#false help="Extra great-docs args, e.g. --no-refresh."
+'''
+run = '''
+set -eu
+if [ -n "${usage_container:-}" ]; then
+  # Bind-mount this directory into the ci image and run its great-docs as the current
+  # user, so the generated great-docs/ site is written back to the host owned by you.
+  # Use the image's great-docs binary directly (on PATH via /app/.venv/bin), not
+  # `uv run`, which would try to re-sync the root-owned /app/.venv. Quarto lives on the
+  # system PATH inside the image. The image is reused across runs while pyproject.toml/
+  # uv.lock are unchanged; --rebuild forces a fresh build.
+  exec mise run //:_container-run \
+    --image tenantfirstaid-backend:ci --context backend --engine "${usage_engine:-auto}" \
+    --bind-src "$PWD" --bind-dst /src --as-user \
+    --cache-key-files "backend/pyproject.toml backend/uv.lock" \
+    ${usage_rebuild:+--rebuild} \
+    --cmd "great-docs build ${usage_options:-}"
+fi
+uv run great-docs build ${usage_options:-}
+'''
+
 # --- Corpus / RAG ingestion pipeline -------------------------------------------
 # Operational commands that build and publish the Vertex AI Search corpus. Ordered
 # as they run: enforce-ascii -> generate-metadata -> upload-to-gcs ->

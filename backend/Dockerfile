@@ -66,6 +66,22 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/app/.venv/bin:$PATH"
 
+# Quarto is the rendering engine behind `great-docs build` (see the `docs` mise task).
+# It ships as an arch-specific .deb; pick the matching one via dpkg's architecture and
+# let apt resolve the deb's own dependencies. Pinned for reproducibility — bump in step
+# with the host toolchain.
+ARG QUARTO_VERSION=1.9.38
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends curl ca-certificates && \
+    arch="$(dpkg --print-architecture)" && \
+    curl -fsSL -o /tmp/quarto.deb \
+      "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-${arch}.deb" && \
+    apt-get install -y --no-install-recommends /tmp/quarto.deb && \
+    rm -f /tmp/quarto.deb && \
+    quarto --version
+
 COPY --from=deps-dev /app/.venv /app/.venv
 COPY . .
 
