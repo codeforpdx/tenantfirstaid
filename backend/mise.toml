@@ -65,10 +65,15 @@ if [ -n "${usage_container:-}" ]; then
       ${usage_rebuild:+--rebuild} \
       --cmd 'export RUFF_CACHE_DIR=/tmp/ruff-cache; ruff check --select I --fix . && ruff format .'
   fi
-  # No --write: no writable mount, so verify instead of rewriting (mutate on the host).
+  # No --write: verify (read-only). Bind the repo ROOT (so the container has the real
+  # .git) and run from /src/backend, so ruff honors .gitignore (excluding any generated
+  # dirs). Bare ruff from the image PATH (not `uv run`, which would use the host's macOS
+  # /src/backend/.venv); the live mount shows edits without a rebuild.
   exec mise run //:_container-run \
     --image tenantfirstaid-backend:ci --context backend --engine "${usage_engine:-auto}" \
-    --cmd 'uv run ruff check --select I && uv run ruff format --check'
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "backend/pyproject.toml backend/uv.lock" \
+    --cmd 'cd /src/backend && export RUFF_CACHE_DIR=/tmp/ruff-cache && ruff check --select I && ruff format --check'
 fi
 uv run ruff check --select I --fix
 uv run ruff format
@@ -85,9 +90,14 @@ arg "<options>" var=#true required=#false help="Extra ruff args (was LINT_OPTION
 run = '''
 set -eu
 if [ -n "${usage_container:-}" ]; then
+  # Bind the repo ROOT (so the container has the real .git) and run from /src/backend;
+  # ruff then honors .gitignore natively. Bare ruff from the image PATH; the live mount
+  # means edits are seen without a rebuild.
   exec mise run //:_container-run \
     --image tenantfirstaid-backend:ci --context backend --engine "${usage_engine:-auto}" \
-    --cmd "uv run ruff check ${usage_options:-}"
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "backend/pyproject.toml backend/uv.lock" \
+    --cmd "cd /src/backend && export RUFF_CACHE_DIR=/tmp/ruff-cache && ruff check ${usage_options:-}"
 fi
 uv run ruff check ${usage_options:-}
 '''
@@ -108,17 +118,33 @@ arg "<options>" var=#true required=#false help="Extra checker args (was TYPECHEC
 run = '''
 set -eu
 opts="${usage_options:-}"
-mypy_args="--python-executable .venv/bin/python3 --pretty --check-untyped-defs"
+# In the container the repo is bind-mounted (project at /src/backend), but the toolchain
+# venv is the image's /app/.venv (the host's /src/backend/.venv holds macOS binaries).
+# Pin uv to that venv and use absolute interpreter paths so the checks see your edits
+# without an image rebuild. `--no-sync` avoids touching the root-owned venv. No PYTHONPATH:
+# ty/mypy analyze the /src/backend project directly (CWD); PYTHONPATH would override their
+# default source-root detection (which includes tests/, home of the gcs_helpers helper).
+if [ -n "${usage_container:-}" ]; then
+  venv="/app/.venv"; pre="UV_PROJECT_ENVIRONMENT=$venv"; nosync="--no-sync"
+else
+  venv=".venv"; pre=""; nosync=""
+fi
+mypy_args="--python-executable $venv/bin/python3 --pretty --check-untyped-defs"
 case "${usage_checker:-ty}" in
-  ty)      cmd="uv run ty check $opts" ;;
-  mypy)    cmd="uv run mypy -p tenantfirstaid $mypy_args $opts && uv run mypy -p evaluate $mypy_args $opts && uv run mypy -p scripts $mypy_args $opts" ;;
-  pyrefly) cmd="uv run pyrefly check --python-interpreter-path .venv/bin/python3 $opts" ;;
+  ty)      cmd="$pre uv run $nosync ty check $opts" ;;
+  mypy)    cmd="$pre uv run $nosync mypy -p tenantfirstaid $mypy_args $opts && $pre uv run $nosync mypy -p evaluate $mypy_args $opts && $pre uv run $nosync mypy -p scripts $mypy_args $opts" ;;
+  pyrefly) cmd="$pre uv run $nosync pyrefly check --python-interpreter-path $venv/bin/python3 $opts" ;;
   *) echo "Unknown --checker '${usage_checker}' (expected ty|mypy|pyrefly)." >&2; exit 2 ;;
 esac
 if [ -n "${usage_container:-}" ]; then
+  # Bind the repo ROOT (real .git) and run from /src/backend so the checker honors
+  # .gitignore. uv is pinned to the image venv (/app/.venv), not the host's macOS
+  # /src/backend/.venv.
   exec mise run //:_container-run \
     --image tenantfirstaid-backend:ci --context backend --engine "${usage_engine:-auto}" \
-    --cmd "$cmd"
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "backend/pyproject.toml backend/uv.lock" \
+    --cmd "cd /src/backend && $cmd"
 fi
 eval "$cmd"
 '''
@@ -134,12 +160,15 @@ arg "<options>" var=#true required=#false help="Extra pytest args, e.g. --cov (w
 run = '''
 set -eu
 if [ -n "${usage_container:-}" ]; then
-  # Mount the host .env read-only so the app singleton finds MODEL_NAME/GOOGLE_* (the
-  # image excludes .env; without this, importing the app raises at collection time).
+  # Bind the repo ROOT (real .git) and run from /src/backend. Pin uv to the image venv
+  # (/app/.venv, not the host's macOS /src/backend/.venv) and put /src/backend on the
+  # import path so pytest collects your live edits without a rebuild. The app singleton
+  # reads /src/backend/.env, present via the bind mount.
   exec mise run //:_container-run \
     --image tenantfirstaid-backend:ci --context backend --engine "${usage_engine:-auto}" \
-    --env-file "$PWD/.env" \
-    --cmd "uv run pytest -q ${usage_options:-}"
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "backend/pyproject.toml backend/uv.lock" \
+    --cmd "cd /src/backend && UV_PROJECT_ENVIRONMENT=/app/.venv PYTHONPATH=/src/backend uv run --no-sync pytest -q ${usage_options:-}"
 fi
 uv run pytest -v ${usage_options:-}
 '''
@@ -153,12 +182,14 @@ flag "--engine <engine>" help="Container engine: auto|docker|container|podman." 
 run = '''
 set -eu
 if [ -n "${usage_container:-}" ]; then
-  # One build, one container: run the whole suite (fmt is verify-only in-container).
-  # Mount the host .env read-only so the pytest step can import the app singleton.
+  # One build, one container over the repo-root bind (fmt is verify-only here). Running
+  # from /src/backend with the real .git means ruff/ty honor .gitignore; ty/pytest use
+  # uv pinned to /app/.venv, and pytest imports from /src/backend.
   exec mise run //:_container-run \
     --image tenantfirstaid-backend:ci --context backend --engine "${usage_engine:-auto}" \
-    --env-file "$PWD/.env" \
-    --cmd 'uv run ruff check --select I && uv run ruff format --check && uv run ruff check && uv run ty check && uv run pytest -q'
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "backend/pyproject.toml backend/uv.lock" \
+    --cmd 'cd /src/backend && export RUFF_CACHE_DIR=/tmp/ruff-cache && ruff check --select I && ruff format --check && ruff check && UV_PROJECT_ENVIRONMENT=/app/.venv uv run --no-sync ty check && UV_PROJECT_ENVIRONMENT=/app/.venv PYTHONPATH=/src/backend uv run --no-sync pytest -q'
 fi
 # Host lane. clean -> fmt must be ordered (fmt mutates the tree the verify steps
 # read). fmt/lint/typecheck/test all `depends` on sync, so it runs (once, gated by
