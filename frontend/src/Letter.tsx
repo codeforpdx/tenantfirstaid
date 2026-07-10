@@ -24,7 +24,7 @@ import MessageContainer from "./shared/components/MessageContainer";
 import useHousingContext from "./hooks/useHousingContext";
 import type { Location } from "./types/models";
 import FeaturesPanel from "./shared/components/FeaturesPanel";
-import FrequentInquiries from "./pages/Chat/components/FrequentInquiries";
+import FrequentInquiries from "./shared/components/FrequentInquiries";
 import MobilePanel from "./shared/components/MobilePanel";
 import clsx from "clsx";
 import { buildLocationPrefix } from "./shared/utils/buildLocationPrefix";
@@ -91,11 +91,8 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasInitialized = useRef(false);
   const LOADING_DISPLAY_DELAY_MS = 1000;
-  const {
-    issueDescription,
-    handleHousingLocation,
-    handleCityChange,
-  } = useHousingContext();
+  const { issueDescription, handleHousingLocation, handleCityChange } =
+    useHousingContext();
 
   // Keep the URL the source of truth for follow-up messages and the navbar
   // location picker on this page.
