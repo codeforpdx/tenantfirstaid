@@ -19,18 +19,15 @@ vector retrieval over the Oregon housing-law corpus; Gemini writes the answer.
 
 ## Agent tools
 
-The agent has access to three tools, and the LLM decides which to call based on
-the user's query and location:
+The agent has three tools, and the LLM decides which to call based on the user's
+query and location. One retrieves law; the other two draft a tenant letter.
 
-1. [`retrieve_city_state_laws`](../reference/langchain_tools.retrieve_city_state_laws.qmd)
-   — searches documents filtered by state and, when supplied, city. City-scoped
-   queries also include state-level ("null") documents so the agent sees both
-   layers of law in one retrieval.
-2. [`get_letter_template`](../reference/langchain_tools.get_letter_template.qmd)
-   — returns a pre-formatted letter template for the model to fill in.
-3. [`generate_letter`](../reference/langchain_tools.generate_letter.qmd)
-   — emits the completed letter as a custom stream chunk so the frontend can
-   render it in a separate letter panel rather than inline chat text.
+### Retrieval
+
+[`retrieve_city_state_laws`](../reference/langchain_tools.retrieve_city_state_laws.qmd)
+searches documents filtered by state and, when supplied, city. City-scoped
+queries also include state-level ("null") documents so the agent sees both layers
+of law in one retrieval.
 
 Retrieval quality lives in
 [`RagBuilder`](../reference/langchain_tools.RagBuilder.qmd), which configures the
@@ -38,6 +35,17 @@ Retrieval quality lives in
 spell correction, retry with backoff) and repairs mojibake in returned passages.
 The jurisdiction filter is built by
 [`filter_builder`](../reference/langchain_tools.filter_builder.qmd).
+
+### Letter drafting
+
+Two tools let the agent produce a formatted tenant letter instead of inline chat
+prose:
+
+- [`get_letter_template`](../reference/langchain_tools.get_letter_template.qmd)
+  returns a pre-formatted letter template for the model to fill in.
+- [`generate_letter`](../reference/langchain_tools.generate_letter.qmd) emits the
+  completed letter as a custom stream chunk so the frontend can render it in a
+  separate letter panel rather than inline chat text.
 
 ## Agent entry points
 

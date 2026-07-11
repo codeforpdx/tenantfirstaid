@@ -1,3 +1,10 @@
+"""Backend configuration: LLM settings, datastores, templates, and environment parsing.
+
+Provides a singleton configuration object (:data:`SINGLETON`) that loads and
+validates all runtime settings from the environment (or .env file) at import time,
+ensuring the app fails fast if required values are missing.
+"""
+
 import logging
 import os
 from collections.abc import Mapping
@@ -12,14 +19,18 @@ from .logger import temporary_formatted_handler
 
 logger = logging.getLogger(__name__)
 
-_DATASTORE_PREFIX = "VERTEX_AI_DATASTORE_"
+_DATASTORE_PREFIX: Final = "VERTEX_AI_DATASTORE_"
+"""Environment variable prefix for Vertex AI Search datastore IDs."""
 
 
 class DatastoreKey(StrEnum):
     """Datastore keys — must match the suffix of the corresponding VERTEX_AI_DATASTORE_<NAME> env var (lowercased)."""
 
     LAWS = auto()
+    """Datastore containing Oregon housing code and related statutes, regulations, and guidance."""
+
     OREGON_LAW_HELP = auto()
+    """Datastore containing Oregon Law Center housing law guidance and resources for tenants and advocates."""
 
 
 def _parse_datastores(env: Mapping[str, str]) -> dict[str, str]:
@@ -27,6 +38,15 @@ def _parse_datastores(env: Mapping[str, str]) -> dict[str, str]:
 
     Each variable named ``VERTEX_AI_DATASTORE_<NAME>`` becomes an entry keyed by
     ``<NAME>`` lowercased. The value may be a bare datastore ID or a full resource URI.
+
+    Args:
+        env: Environment variable mapping to parse.
+
+    Returns:
+        Dictionary mapping lowercase datastore names to datastore IDs.
+
+    Raises:
+        ValueError: If a datastore variable has no name or is empty.
     """
     result = {}
     for key, value in env.items():
@@ -50,8 +70,16 @@ def _strtobool(val: Optional[str]) -> bool:
     """Convert a string representation of truth to true (1) or false (0).
 
     True values are 'y', 'yes', 't', 'true', 'on', and '1';
-    False values are 'n', 'no', 'f', 'false', 'off', and '0'.  Also None.
-    Raises ValueError if 'val' is anything else.
+    False values are 'n', 'no', 'f', 'false', 'off', and '0', or None.
+
+    Args:
+        val: String value to parse as boolean, or None.
+
+    Returns:
+        True if val is a true value, False if val is a false value or None.
+
+    Raises:
+        ValueError: If val is not a recognized truth value.
     """
 
     if val is None:
@@ -117,11 +145,14 @@ class _GoogEnvAndPolicy:
     """Gemini thinking-token budget; ``-1`` lets the model size it dynamically."""
 
     def __init__(self) -> None:
-        """
-        Initialization steps
-        1. override environment if .env provided (otherwise variables, aka secrets, should already be set)
-        2. explicitly set each slotted attribute
-        3. check that the slotted attributes are not None
+        """Initialize validated Google Cloud configuration from environment.
+
+        Loads .env file if present, then reads and validates all required environment
+        variables (MODEL_NAME, project, location, credentials, datastores). Sets
+        hard-coded tuning parameters (temperature, top_p, safety settings).
+
+        Raises:
+            ValueError: If any required environment variable is missing, empty, or invalid.
         """
         # Read .env at object creation time.
         path_to_env = Path(__file__).parent.parent / ".env"
@@ -190,35 +221,40 @@ class _GoogEnvAndPolicy:
         self.THINKING_BUDGET: Final = GEMINI_THINKING_BUDGET_DYNAMIC
 
 
-# Sentinel value for the Gemini API's thinking_budget parameter: -1 means
-# the model sets the budget dynamically based on query complexity.
 GEMINI_THINKING_BUDGET_DYNAMIC: Final = -1
+"""Sentinel value to let Gemini set the thinking budget dynamically based on query complexity."""
 
-# Default Vertex AI Search (Discovery Engine) multi-region for the GCS ingestion
-# scripts. Distinct from GOOGLE_CLOUD_LOCATION, which is the compute region for
-# the LLM. Typical values: global, us, eu.
 DEFAULT_VERTEX_AI_SEARCH_LOCATION: Final = "us"
+"""Default multi-region location for Vertex AI Search datastores (distinct from LLM compute region)."""
 
-# Module singleton
-# TODO: rename to VERTEX_CONFIG?
-# Use the project log format for the "no .env" warning emitted during __init__,
-# even though entrypoints have not yet called configure_logging().
 with temporary_formatted_handler(logger):
     SINGLETON: Final = _GoogEnvAndPolicy()
+    """Module singleton: validated Google Cloud configuration loaded at import time."""
 
 LANGSMITH_API_KEY: Final = os.getenv("LANGSMITH_API_KEY")
+"""Optional LangSmith API key for tracing (env ``LANGSMITH_API_KEY``)."""
 
 OREGON_LAW_CENTER_PHONE_NUMBER: Final = "888-585-9638"
+"""Oregon Law Center phone number provided in chatbot responses."""
+
 RESPONSE_WORD_LIMIT: Final = 350
+"""Target word limit for model responses."""
 
 _SYSTEM_PROMPT_PATH: Final = Path(__file__).parent / "system_prompt.md"
+"""File path to the system prompt template."""
 
 
 def _load_system_prompt() -> str:
     """Load the system prompt from the external markdown file.
 
-    The file uses {RESPONSE_WORD_LIMIT} and {OREGON_LAW_CENTER_PHONE_NUMBER}
-    placeholders which are substituted at load time.
+    Reads system_prompt.md and substitutes placeholders for RESPONSE_WORD_LIMIT
+    and OREGON_LAW_CENTER_PHONE_NUMBER.
+
+    Returns:
+        System prompt string with placeholders substituted.
+
+    Raises:
+        FileNotFoundError: If the system prompt file cannot be read.
     """
     template = _SYSTEM_PROMPT_PATH.read_text()
     return template.format(
@@ -228,6 +264,10 @@ def _load_system_prompt() -> str:
 
 
 DEFAULT_INSTRUCTIONS: Final = _load_system_prompt()
+"""Default system prompt with placeholders substituted for word limit and law center phone number."""
 
 _LETTER_TEMPLATE_PATH: Final = Path(__file__).parent / "letter_template.md"
+"""File path to the letter template."""
+
 LETTER_TEMPLATE: Final = _LETTER_TEMPLATE_PATH.read_text()
+"""Letter template markdown with placeholder fields for the agent to fill in."""

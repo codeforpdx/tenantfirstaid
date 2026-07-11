@@ -38,14 +38,19 @@ class LangChainChatManager:
     """
 
     logger: logging.Logger
+    """Logger instance for debugging agent operations."""
     agent: Optional[CompiledStateGraph] = None
+    """Lazily-initialized compiled LangGraph agent."""
 
     def __init__(self) -> None:
-        """Initialize the LangChain chat manager."""
+        """Initialize the LangChain chat manager.
+
+        Sets up logger and initializes agent/system_prompt to None, which are
+        lazily initialized on first streaming response.
+        """
 
         self.logger = logging.getLogger(__name__)
 
-        # Defer agent instantiation until 'generate_stream_response'.
         self.agent = None
         self.system_prompt: Optional[SystemMessage] = None
 
@@ -55,11 +60,12 @@ class LangChainChatManager:
         """Create an agent instance configured for the user's location.
 
         Args:
-            city: User's city (e.g., "portland", None)
-            state: User's state (e.g., "or")
+            city: User's [city](`~location.OregonCity`) (optional, e.g., "portland").
+            state: User's [state](`~location.UsaState`) (e.g., "or").
+            thread_id: Optional thread ID for multi-turn conversation persistence.
 
         Returns:
-            AgentExecutor configured with tools and system prompt
+            Compiled LangGraph agent configured with tools and location-aware system prompt.
         """
 
         self.system_prompt = prepare_system_prompt(city, state)
@@ -68,7 +74,6 @@ class LangChainChatManager:
             system_prompt=self.system_prompt,
         )
 
-    # TODO
     def generate_response(
         self,
         messages: list[AnyMessage],
@@ -76,13 +81,29 @@ class LangChainChatManager:
         state: UsaState,
         thread_id: Optional[str],
     ):
+        """Not yet implemented: non-streaming response generation.
+
+        This placeholder exists for future support of non-streaming chat responses.
+        Currently, the chat API only supports streaming via generate_streaming_response.
+
+        Args:
+            messages: Chat message history.
+            city: User's [city](`~location.OregonCity`).
+            state: User's [state](`~location.UsaState`).
+            thread_id: Optional thread ID for conversation persistence.
+
+        Raises:
+            NotImplementedError: Always.
+        """
         if self.agent is None:
             self.agent = self.__create_agent_for_session(city, state, thread_id)
 
         raise NotImplementedError
 
-    _MAX_STREAM_RETRIES = 2
-    _RETRY_DELAY_SECONDS = 2.0
+    _MAX_STREAM_RETRIES: int = 2
+    """Maximum retry attempts for streaming on transient connection errors."""
+    _RETRY_DELAY_SECONDS: float = 2.0
+    """Delay in seconds between stream retry attempts."""
 
     def generate_streaming_response(
         self,
@@ -97,11 +118,12 @@ class LangChainChatManager:
             messages: List of message dictionaries with 'role' and 'content' keys
                       where role is one of 'human', 'user', 'ai', 'assistant',
                       'function', 'tool', 'system', or 'developer'.
-            city: User's city
-            state: User's state
+            city: User's [city](`~location.OregonCity`).
+            state: User's [state](`~location.UsaState`).
+            thread_id: Optional thread ID for conversation persistence.
 
         Yields:
-            Response chunks as they are generated
+            Response chunks as they are generated.
         """
 
         if self.agent is None:
@@ -144,6 +166,25 @@ class LangChainChatManager:
         state: UsaState,
         config: RunnableConfig,
     ) -> Generator[ContentBlock, Any, None]:
+        """Stream agent output for a single attempt without retry logic.
+
+        Processes the agent stream in ``["updates", "custom"]`` mode and yields
+        parsed content blocks, converting tool outputs to appropriate response types.
+        Internal helper used by generate_streaming_response to handle single-attempt
+        streaming with retries handled at the higher level.
+
+        Args:
+            messages: Chat message history.
+            city: User's [city](`~location.OregonCity`).
+            state: User's [state](`~location.UsaState`).
+            config: LangGraph runtime configuration (e.g., thread_id).
+
+        Yields:
+            Parsed content blocks (text, reasoning, tool calls, etc.).
+
+        Raises:
+            Connection errors (not caught; retry logic is in the caller).
+        """
         assert self.agent is not None
         # Stream the agent response.
         for mode, chunk in self.agent.stream(

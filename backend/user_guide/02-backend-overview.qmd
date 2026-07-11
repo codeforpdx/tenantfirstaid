@@ -77,11 +77,8 @@ The primary chat route is served by
 ## Configuration
 
 All environment configuration is read once, at import time, through
-`constants.py`. The most important variables are `MODEL_NAME`,
-`GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`,
-and the `VERTEX_AI_DATASTORE_*` corpus IDs. See
-[Configuration & Logging](06-configuration.qmd) for the full list and how loading
-and logging are set up.
+`constants.py`. See [Configuration & Logging](06-configuration.qmd) for the full
+list of variables and how loading and logging are set up.
 
 ## Where to go next
 

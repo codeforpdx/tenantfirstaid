@@ -13,9 +13,18 @@ from xhtml2pdf import pisa
 from xhtml2pdf.context import pisaContext
 
 MAX_ATTACHMENT_SIZE: int = 2 * 1024 * 1024
+"""Maximum size in bytes for PDF attachments (2 MB)."""
 
 
 def convert_html_to_pdf(html_content: str) -> Optional[bytes]:
+    """Convert HTML content to a PDF byte string.
+
+    Args:
+        html_content: HTML markup to convert.
+
+    Returns:
+        PDF content as bytes, or None if conversion failed.
+    """
     pdf_buffer = BytesIO()
 
     pisa_status = pisa.CreatePDF(html_content, dest=pdf_buffer)
@@ -26,6 +35,16 @@ def convert_html_to_pdf(html_content: str) -> Optional[bytes]:
 
 
 def send_feedback() -> Tuple[str, int]:
+    """Handle user feedback submission and email it with optional transcript PDF.
+
+    Reads feedback form data from the request (feedback text, optional transcript HTML,
+    optional name/subject for homepage feedback, and optional CC list). Converts the
+    transcript to PDF if provided, validates file size, and sends an email.
+
+    Returns:
+        Tuple of (status_message, HTTP_status_code): (message, status_code). Returns
+        200 on success, 413 for oversized attachments, or 500 on conversion/send errors.
+    """
     feedback = request.form.get("feedback")
     file = request.files.get("transcript")
 

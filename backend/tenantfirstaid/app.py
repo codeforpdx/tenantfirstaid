@@ -5,6 +5,7 @@ route at ``/api/feedback``. Run locally with ``mise run serve``.
 """
 
 import os
+from typing import Tuple
 
 from flask import Flask
 from flask_cors import CORS
@@ -22,19 +23,19 @@ configure_logging()
 
 app = Flask(__name__)
 
-
 limiter = Limiter(
     get_remote_address,
     app=app,
     storage_uri="memory://",
 )
-# Configure CORS with strict origin validation
+"""Rate limiter middleware for the Flask app."""
+
 ALLOWED_ORIGINS = [
     "https://tenantfirstaid.com",
     "https://www.tenantfirstaid.com",
 ]
+"""CORS allowed origins for production. Expanded with localhost during development."""
 
-# Add localhost origins for development
 if os.getenv("ENV", "dev") == "dev":
     ALLOWED_ORIGINS.extend(
         [
@@ -47,7 +48,6 @@ if os.getenv("ENV", "dev") == "dev":
 
 CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
 
-# Configure Flask Mail
 app.config["MAIL_SERVER"] = os.getenv("MAIL_SERVER")
 app.config["MAIL_PORT"] = os.getenv("MAIL_PORT")
 app.config["MAIL_USE_TLS"] = True
@@ -56,13 +56,22 @@ app.config["MAIL_PASSWORD"] = os.getenv("APP_PASSWORD")
 app.config["MAIL_DEFAULT_SENDER"] = os.getenv("SENDER_EMAIL")
 
 mail = Mail(app)
+"""Flask-Mail extension for sending user feedback emails."""
 
 
 app.add_url_rule("/api/query", view_func=ChatView.as_view("chat"), methods=["POST"])
 
 
 @limiter.limit("3 per minute")
-def feedback_route():
+def feedback_route() -> Tuple[str, int]:
+    """Handle POST /api/feedback requests with rate limiting.
+
+    Delegates to send_feedback() for processing. Rate limited to 3 requests per
+    minute to prevent abuse.
+
+    Returns:
+        Tuple of (status_message, HTTP_status_code) from send_feedback().
+    """
     return send_feedback()
 
 

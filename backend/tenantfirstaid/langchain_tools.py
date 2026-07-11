@@ -37,9 +37,13 @@ def repair_mojibake(text: str) -> str:
     Vertex AI may return corpus text with mojibake (e.g. â€™ instead of ')
     if the source document's UTF-8 encoding was misread as Latin-1 at index
     time. This reverses that by re-encoding as Latin-1 and decoding as UTF-8.
+    Logs a warning if the repair itself appears to corrupt the text.
 
-    Logs a warning if the repair itself appears to corrupt the text (i.e. the
-    round-trip fails or introduces replacement characters).
+    Args:
+        text: Text potentially containing UTF-8-as-Latin-1 mojibake.
+
+    Returns:
+        Repaired text, or original text if repair failed or was unnecessary.
     """
     try:
         repaired = text.encode("latin-1").decode("utf-8")
@@ -67,13 +71,17 @@ def repair_mojibake(text: str) -> str:
 
 
 class RagBuilder:
-    """
-    Helper class to construct a Rag tool from VertexAISearchRetriever
-    The helper class handles creds, project, location, datastore, etc.
+    """Helper class to construct a RAG retrieval tool from Vertex AI Search.
+
+    Manages GCP credentials, project/location/datastore configuration, and query
+    parameters for the VertexAISearchRetriever. Handles UTF-8 mojibake repair on
+    retrieved passages.
     """
 
     __credentials: Credentials | service_account.Credentials
+    """GCP credentials loaded from SINGLETON."""
     rag: VertexAISearchRetriever
+    """Configured Vertex AI Search retriever."""
 
     def __init__(
         self,
@@ -82,14 +90,21 @@ class RagBuilder:
         filter: Optional[str] = None,
         max_documents: int = 3,
         *,
-        # Retained as an ad-hoc escape hatch: _make_rag_tool never sets
-        # get_extractive_answers=True, so these two knobs are effectively
-        # dormant in production. Flip get_extractive_answers=True in a
-        # one-off RagBuilder call to experiment with answer-mode retrieval.
         get_extractive_answers: bool = False,
         max_extractive_answer_count: int = 1,
         max_extractive_segment_count: int = 3,
     ) -> None:
+        """Initialize the RAG builder with a datastore and retrieval parameters.
+
+        Args:
+            data_store_id: Vertex AI Search datastore ID.
+            name: Tool name for logging (default ``tfa-retriever``).
+            filter: Vertex AI Search filter string for document metadata.
+            max_documents: Maximum documents to retrieve (default 3).
+            get_extractive_answers: Prefer extractive answers over segments (default False).
+            max_extractive_answer_count: Max extractive answers per document.
+            max_extractive_segment_count: Max extractive segments per document.
+        """
         if SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is None:
             raise ValueError("GOOGLE_APPLICATION_CREDENTIALS is not set")
 
@@ -137,6 +152,17 @@ class RagBuilder:
         ),
     )
     def search(self, query: str) -> str:
+        """Execute a RAG search with automatic retry on transient errors.
+
+        Queries the Vertex AI Search retriever with mojibake repair applied to each
+        retrieved passage. Retries up to 3 times on read errors or service unavailability.
+
+        Args:
+            query: Legal search query.
+
+        Returns:
+            Newline-joined concatenation of retrieved document passages.
+        """
         docs = self.rag.invoke(
             input=query,
         )
@@ -149,6 +175,13 @@ def filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
 
     City-scoped queries include both city-specific and state-level ("null") documents
     so the agent sees both layers of law in a single retrieval.
+
+    Args:
+        state: User's [state](`~location.UsaState`).
+        city: User's [city](`~location.OregonCity`), optional.
+
+    Returns:
+        Vertex AI Search filter string for document metadata.
     """
     if city is None:
         city_filter = 'city: ANY("null")'
@@ -162,10 +195,11 @@ def filter_builder(state: UsaState, city: Optional[OregonCity] = None) -> str:
 
 @tool
 def get_letter_template() -> str:
-    """Retrieve the letter template when the user asks to draft or generate a letter.
+    """Retrieve the letter template for drafting or generating a letter.
 
-    Fill in placeholders with any details the user has provided, leave the rest intact.
-    After filling in the template, call generate_letter with the completed letter.
+    Fill in placeholders with any details the user has provided, leaving the rest
+    intact. After filling in the template, call generate_letter with the completed
+    letter.
 
     Returns:
         A formatted letter template with placeholder fields.
@@ -174,7 +208,13 @@ def get_letter_template() -> str:
 
 
 class GenerateLetterInputSchema(BaseModel):
+    """Input schema for the generate_letter tool.
+
+    Accepts the completed letter content to display in the letter panel.
+    """
+
     letter: str
+    """The complete letter content."""
 
 
 @tool(args_schema=GenerateLetterInputSchema)
@@ -200,7 +240,13 @@ def generate_letter(letter: str) -> str:
 
 
 class QueryOnlyInputSchema(BaseModel):
+    """Input schema for RAG retrieval without location filtering.
+
+    Used by datastores that don't require location context (e.g., OregonLawHelp).
+    """
+
     query: str
+    """Legal search query."""
     max_documents: int = Field(
         default=3,
         ge=1,
@@ -210,9 +256,17 @@ class QueryOnlyInputSchema(BaseModel):
                        the question spans multiple topics or an initial retrieval
                        missed the relevant passage.""",
     )
+    """Maximum documents to retrieve."""
 
 
 class CityStateLawsInputSchema(BaseModel):
+    """Input schema for city/state-aware RAG retrieval.
+
+    Accepts a legal query and location (state and optional city), with tunable
+    retrieval parameters. The agent uses this to retrieve Oregon housing law
+    with optional city-specific overrides.
+    """
+
     query: str = Field(
         description="""A precise legal search query for the specific legal issue.
                        Rephrase the user's question using relevant legal terms and
@@ -231,24 +285,22 @@ class CityStateLawsInputSchema(BaseModel):
                        (e.g. 'landlord required to pay interest' not just 'landlord
                        obligation security deposit')."""
     )
+    """Precise legal search query."""
     state: UsaState
+    """User's state."""
     city: Optional[OregonCity] = None
+    """User's city, optional."""
     max_documents: int = Field(
-        # A truncation analysis over the extractive-segments-dfe32555 experiment
-        # (36 real agent queries) found every meaningful statute that production
-        # retrieved at md=5 was also present at doc-rank <=3 — ranks 4-5 were
-        # always redundant duplicates. Defaulting to 3 cuts the retrieval payload
-        # ~40% with zero observed truncation. (Reducing segments below 3, by
-        # contrast, did truncate ~14% of queries, so that knob is left at 3.)
         default=3,
         ge=1,
-        le=8,  # Total number of documents in the laws datastore.
+        le=8,
         description="""Number of passages to retrieve (1–8). Use a smaller value
                        (3–5) for focused questions with a clear statutory target.
                        Use a larger value (6–8) when the question spans multiple
                        statutes, involves city overrides, or an initial retrieval
                        missed the relevant passage.""",
     )
+    """Maximum documents to retrieve."""
     max_extractive_segment_count: int = Field(
         default=3,
         ge=1,
@@ -260,13 +312,20 @@ class CityStateLawsInputSchema(BaseModel):
                        the right ORS section was found but the specific subsection
                        you need sits adjacent to what was returned.""",
     )
+    """Extractive segments per document."""
 
 
 def _default_filter_from_city_state(**kwargs: object) -> str:
-    """Adapter that extracts state/city from tool kwargs and calls filter_builder.
+    """Extract state/city from tool kwargs and build a Vertex AI Search filter string.
 
     All other kwargs (query, max_documents, etc.) are intentionally ignored;
     custom filter_builders may use them if needed.
+
+    Args:
+        **kwargs: Tool kwargs containing at minimum `state` ([`UsaState`](`~location.UsaState`)) and optionally `city` ([`OregonCity`](`~location.OregonCity`)).
+
+    Returns:
+        Vertex AI Search filter string for document metadata.
     """
     return filter_builder(
         state=cast(UsaState, kwargs["state"]),
@@ -282,7 +341,18 @@ def _make_rag_tool(
     args_schema: Type[BaseModel],
     filter_builder: Optional[Callable[..., str]] = None,
 ) -> BaseTool:
-    """Factory that creates a RAG retrieval tool bound to a specific datastore."""
+    """Factory that creates a RAG retrieval tool for a specific Vertex AI datastore.
+
+    Args:
+        datastore_key: Enum key to look up the datastore ID in SINGLETON.
+        tool_name: Name of the tool (shown to the model).
+        description: Tool description for the model.
+        args_schema: Pydantic model defining tool parameters and validation.
+        filter_builder: Optional function to build filter strings from kwargs.
+
+    Returns:
+        A LangChain BaseTool wrapping the RAG query logic.
+    """
 
     @tool(
         tool_name,
@@ -324,6 +394,8 @@ retrieve_city_state_laws: BaseTool = _make_rag_tool(
     args_schema=CityStateLawsInputSchema,
     filter_builder=_default_filter_from_city_state,
 )
+"""RAG retrieval tool for the Laws datastore, with state/city filtering and extractive segment support.
+   This is the primary RAG tool used in production for housing law queries."""
 
 # Defined here for testability; inactive until added to RAG_TOOL_REGISTRY and
 # VERTEX_AI_DATASTORE_OREGON_LAW_HELP is configured.
@@ -337,16 +409,26 @@ retrieve_oregon_law_help: BaseTool = _make_rag_tool(
     ),
     args_schema=QueryOnlyInputSchema,
 )
+"""RAG retrieval tool for the OregonLawHelp datastore, with query-only input schema.
+   This is an optional RAG tool that can be added to the agent when VERTEX_AI_DATASTORE_OREGON_LAW_HELP is configured. It provides plain-language guidance from OregonLawHelp.org alongside the statutory retrieval from retrieve_city_state_laws."""
 
-# Registry of (datastore_key, tool) pairs. Multiple tools may share the same
-# datastore key; each tool is included only when its datastore is configured.
 RAG_TOOL_REGISTRY: list[tuple[DatastoreKey, BaseTool]] = [
     (DatastoreKey.LAWS, retrieve_city_state_laws),
     # Uncomment when VERTEX_AI_DATASTORE_OREGON_LAW_HELP is configured and needed for new tooling.
     # (DatastoreKey.OREGON_LAW_HELP, retrieve_oregon_law_help),
 ]
+"""Registry of (datastore_key, tool) pairs. Multiple tools may share the same
+   datastore key; each tool is included only when its datastore is configured.
+"""
 
 
 def get_active_rag_tools() -> list[BaseTool]:
-    """Return tools whose backing datastore is present in the environment."""
+    """Return RAG retrieval tools whose datastores are configured.
+
+    Filters :data:`RAG_TOOL_REGISTRY` to include only tools whose datastore IDs
+    are present in the environment, allowing optional datastores to be omitted.
+
+    Returns:
+        List of active RAG tools to be added to the agent.
+    """
     return [t for key, t in RAG_TOOL_REGISTRY if key in SINGLETON.VERTEX_AI_DATASTORES]

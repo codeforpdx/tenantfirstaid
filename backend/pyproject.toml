@@ -27,6 +27,9 @@ dependencies = [
   "httpcore>=1.0",
 ]
 
+[project.urls]
+Repository = "https://github.com/codeforpdx/tenantfirstaid"
+
 [project.scripts]
 langsmith-dataset = "evaluate.langsmith_dataset:main"
 run-langsmith-evaluation = "evaluate.run_langsmith_evaluation:main"

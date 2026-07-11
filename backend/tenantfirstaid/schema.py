@@ -37,5 +37,5 @@ class EndOfStreamChunk(BaseModel):
     type: Literal["end_of_stream"] = "end_of_stream"
 
 
-#: Discriminated union of every chunk type, distinguished by the ``type`` field.
 ResponseChunk = TextChunk | ReasoningChunk | LetterChunk | EndOfStreamChunk
+"""Discriminated union of every chunk type, distinguished by the ``type`` field."""
