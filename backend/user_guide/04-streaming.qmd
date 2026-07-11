@@ -1,0 +1,86 @@
+---
+title: "Streaming Responses"
+guide-section: "Architecture"
+---
+
+# Streaming Responses
+
+The backend streams responses in real time so the user sees an answer form as it
+is generated, rather than waiting for the full completion.
+
+::: {#fig-streaming}
+```{mermaid}
+sequenceDiagram
+    participant UI as React Frontend
+    participant API as Flask API
+    participant Gemini
+    participant RAG as Vertex AI RAG
+
+    UI->>API: POST /api/query with user message
+    API->>API: Add user message to session
+    API->>Gemini: Generate with stream=True + history
+    Gemini->>RAG: Tool call: retrieve documents
+    RAG-->>Gemini: Return legal passages
+
+    loop Streaming response
+        Gemini-->>API: Yield text / reasoning chunk
+        API-->>UI: Stream chunk over the response body
+        UI->>UI: Update message content incrementally
+    end
+
+    API->>API: Concatenate full response & update session
+```
+
+Chunks stream from Gemini through Flask to the browser as they are generated.
+:::
+
+## Response chunk types
+
+Each line the backend writes to the response body is one serialized
+[`ResponseChunk`](../reference/schema.ResponseChunk.qmd) — a discriminated union
+distinguished by its `type` field:
+
+- [`TextChunk`](../reference/schema.TextChunk.qmd) — a fragment of the answer text.
+- [`ReasoningChunk`](../reference/schema.ReasoningChunk.qmd) — a model "thought",
+  surfaced only when `SHOW_MODEL_THINKING` is enabled.
+- [`LetterChunk`](../reference/schema.LetterChunk.qmd) — completed letter content
+  emitted by the `generate_letter` tool, rendered in the letter panel rather than
+  inline.
+- [`EndOfStreamChunk`](../reference/schema.EndOfStreamChunk.qmd) — signals clean
+  completion; it triggers the frontend's `onDone` callback and is not appended to
+  the message content.
+
+::: {.callout-important}
+These Pydantic models are the source of truth for the frontend's TypeScript
+types — `mise run generate-types` regenerates `frontend/src/types/models.ts` from
+them, so the chunk contract stays in sync on both sides. Change a chunk here and
+you must regenerate before the frontend build will type-check.
+:::
+
+## Backend mechanics
+
+[`ChatView`](../reference/chat.ChatView.qmd) drives the stream. It calls
+[`LangChainChatManager.generate_streaming_response`](../reference/langchain_chat_manager.LangChainChatManager.qmd),
+which streams the agent in `["updates", "custom"]` mode: model text and reasoning
+arrive as `updates`, while tool-emitted content (the letter) arrives as `custom`
+chunks. Raw LangChain content blocks are classified into the typed chunks above,
+each serialized as one newline-delimited JSON object. The manager retries a reset
+connection up to twice, but never after any output has been yielded, to avoid
+sending the client duplicate content.
+
+::: {.callout-note}
+The response uses `text/plain` because the client reads raw bytes off the stream
+rather than parsing a media type.
+:::
+
+## Frontend consumption
+
+The frontend reads the stream with the native `ReadableStream` API via
+`response.body.getReader()`. Text chunks are appended incrementally; letter
+chunks are extracted into the letter panel; the `end_of_stream` chunk ends the
+read. See the frontend documentation for `streamHelper.ts`.
+
+## Where to go next
+
+- [Conversation Management](05-conversation-management.qmd) — how history persists
+  across turns.

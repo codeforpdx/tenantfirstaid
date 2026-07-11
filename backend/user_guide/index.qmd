@@ -1,0 +1,61 @@
+---
+title: "Backend Guide"
+---
+
+# Tenant First Aid — Backend Guide
+
+Tenant First Aid is a chatbot that provides legal information about housing and
+eviction in Oregon. This guide covers the **Flask backend**: how the LangChain
+agent is wired to Vertex AI RAG and Google Gemini, how requests stream back to
+the browser, and how the legal-document corpus is built and published.
+
+For symbol-level detail — classes, functions, and their signatures — follow the
+links into the [API reference](../reference/index.qmd). For the React frontend
+and for deployment, see [Architecture.md](https://github.com/codeforpdx/tenantfirstaid/blob/main/Architecture.md)
+and [Deployment.md](https://github.com/codeforpdx/tenantfirstaid/blob/main/Deployment.md).
+
+## Start where you fit
+
+The chapters are short and topic-scoped. Rather than reading front to back, pick
+the path for what you are here to do.
+
+### New here, or want the big picture
+
+Read the [System Overview](01-system-overview.qmd) and stop. It gives you the
+components, the request lifecycle, and how the pieces connect — enough to hold a
+conversation about the system without touching the code.
+
+### Backend contributor
+
+You are changing Python — the agent, the tools, the streaming, or the API.
+
+1. [System Overview](01-system-overview.qmd) — the shape of the system
+2. [Backend Overview](02-backend-overview.qmd) — package layout, endpoints, stack
+3. [RAG & Document Retrieval](03-rag-and-retrieval.qmd) — agent, tools, entry points
+4. [Streaming Responses](04-streaming.qmd) — how chunks reach the browser
+5. [Conversation Management](05-conversation-management.qmd) — multi-turn state
+6. [Configuration & Logging](06-configuration.qmd) — env vars and log setup
+
+### Operator building or refreshing the corpus
+
+You are running the Vertex AI Search ingestion pipeline, not editing application
+code.
+
+1. [Corpus Ingestion](07-corpus-ingestion.qmd) — how documents become a datastore
+2. [Command Reference](08-command-reference.qmd) — every `mise run` task, in order
+
+## Chapters at a glance
+
+**Architecture**
+
+- [System Overview](01-system-overview.qmd)
+- [Backend Overview](02-backend-overview.qmd)
+- [RAG & Document Retrieval](03-rag-and-retrieval.qmd)
+- [Streaming Responses](04-streaming.qmd)
+- [Conversation Management](05-conversation-management.qmd)
+
+**Operations**
+
+- [Configuration & Logging](06-configuration.qmd)
+- [Corpus Ingestion](07-corpus-ingestion.qmd)
+- [Command Reference](08-command-reference.qmd)

@@ -1,0 +1,102 @@
+---
+title: "Command Reference"
+guide-section: "Operations"
+---
+
+# Command Reference
+
+All backend tasks run through [mise](https://mise.jdx.dev). From inside
+`backend/`, invoke a task by bare name (`mise run test`); from the repo root,
+address it as `mise run //backend:test`. Run `mise tasks` to list them.
+
+Every check runs on the host by default. Pass `--container` to run the same check
+inside the Dockerfile `ci` stage, and `--engine <auto|docker|container|podman>`
+to choose the runtime. Ad-hoc tool flags pass through after `--`
+(e.g. `mise run test -- --cov`).
+
+## Development tasks
+
+| Task              | What it does                                                            |
+| ----------------: | :------------------------------- |
+| `sync`            | Sync dependencies into `.venv` (reruns only when `pyproject.toml` changed). |
+| `serve`           | Run the Flask backend locally (`python -m tenantfirstaid.app`).        |
+| `fmt`             | Sort imports and format with ruff. On the host this **mutates**; `--container` verifies only, `--container --write` reformats the host tree via the container. |
+| `lint`            | Lint with ruff.                                                        |
+| `typecheck`       | Type-check. `--checker ty` (default, fast), `mypy`, or `pyrefly`.      |
+| `test`            | Run pytest.                                                            |
+| `check`           | Full suite: clean, sync, fmt, lint, typecheck, test.                   |
+| `clean`           | Remove `__pycache__` and build artifacts.                             |
+| `install`         | Install this package into the environment.                            |
+| `generate-types`  | Regenerate the frontend's TypeScript types from the Pydantic models.  |
+| `docs`            | Build this documentation site with great-docs (needs Quarto; `--container` provides it). |
+| `docs-serve`      | Serve the already-built `great-docs/_site` locally (pure static files, no rebuild). |
+
+: Development tasks {#tbl-dev-tasks}
+
+::: {.callout-note title="Task notes"}
+- **`typecheck`** uses `--checker`, not `--tool` — the latter collides with
+  the `run --tool` option built into mise. `ty` is the fast default; `mypy` and
+  `pyrefly` are available for a second opinion.
+- **`check`** runs `lint`, `typecheck`, and `test` concurrently after an ordered
+  `clean` → `fmt`, since formatting mutates the tree the verify steps read.
+- **`docs`** builds into `great-docs/_site`. On the host, install Quarto
+  yourself; `--container` uses the `ci` image, which ships Quarto.
+- **`docs-serve`** just serves whatever `docs` last produced; run `docs`
+  (or `docs --container`) again first if you've edited a `.qmd` file.
+:::
+
+## Docs quality tasks
+
+Read-only great-docs checks over the live working tree — they catch missing
+docstrings, broken links, and spelling/grammar issues before they land. Every
+task takes `--container` (runs in the Dockerfile `docs` image, which ships
+Quarto and harper-cli) and `--engine <auto|docker|container|podman>`; on the
+host, install Quarto and harper-cli yourself.
+
+| Task                | What it checks                                                          |
+| -------------------:| :------------------------------------------------------------------ |
+| `docs-lint`         | Missing docstrings, broken xrefs, style, via `great-docs lint`.        |
+| `docs-check-links`  | Broken links in docs and source (`-- --docs-only` to skip source). Makes HTTP requests. |
+| `docs-proofread`    | Spelling/grammar via `great-docs proofread` (needs harper-cli; use `--container`). Reads `.great-docs-dictionary` for project/domain terms. |
+| `docs-check`        | Runs all three above in parallel.                                      |
+
+: Docs quality tasks {#tbl-docs-tasks}
+
+::: {.callout-note title="Task notes"}
+- **`docs-check --container`** builds the docs image once up front, then runs
+  the three checks in it concurrently — letting them race a first build
+  corrupts the `apple/container` builder, so the image is warmed
+  sequentially before the parallel run.
+- All checks run `PYTHONPATH=/src` in `--container` mode, so they introspect
+  the bind-mounted source tree (your uncommitted edits), not the copy baked
+  into the image — only dependency changes need a `--rebuild`.
+:::
+
+## Corpus ingestion tasks
+
+These build and publish the Vertex AI Search corpus, in the order shown. The
+narrative is in [Corpus Ingestion](07-corpus-ingestion.qmd). Required inputs
+(bucket / datastore / app IDs) are task flags; ad-hoc script flags pass through
+after `--`.
+
+| Task                   | Required flags                     | Purpose                                                        |
+| ---------------------: | ------------------- | :----------------------------- |
+| `enforce-ascii`        | —                                  | Validate/rewrite the documents tree to pure ASCII. `-- --check` validates only. |
+| `generate-metadata`    | `--bucket <bucket>`                | Regenerate `metadata.jsonl`. Scope flags pass through (e.g. `-- --portland`). |
+| `upload-to-gcs`        | `--bucket <bucket>`                | Create a GCS bucket and upload the corpus. `--location` overrides the default US multi-region; `-- --dry-run` previews. |
+| `create-datastore-gcs` | `--bucket <bucket> --datastore-id <id>` | Create a Vertex AI Search datastore and import from the bucket. `-- --no-wait` skips polling. |
+| `create-app-gcs`       | `--datastore-id <id> --app-id <id>` | Create a Vertex AI Search app linked to the datastore. `-- --dry-run` previews. |
+
+: Corpus ingestion tasks {#tbl-corpus-tasks}
+
+### Example: a full ingestion run
+
+```{.bash filename="Full ingestion run (from backend/)"}
+# From backend/
+mise run enforce-ascii
+mise run generate-metadata     --bucket tfa-corpus-2025
+mise run upload-to-gcs         --bucket tfa-corpus-2025
+mise run create-datastore-gcs  --bucket tfa-corpus-2025 --datastore-id tfa-laws-2025
+mise run create-app-gcs        --datastore-id tfa-laws-2025 --app-id tfa-laws-app
+# Then set VERTEX_AI_DATASTORE_LAWS=tfa-laws-2025 in backend/.env
+```

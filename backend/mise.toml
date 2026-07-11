@@ -236,13 +236,138 @@ if [ -n "${usage_container:-}" ]; then
   # system PATH inside the image. The image is reused across runs while pyproject.toml/
   # uv.lock are unchanged; --rebuild forces a fresh build.
   exec mise run //:_container-run \
-    --image tenantfirstaid-backend:ci --context backend --engine "${usage_engine:-auto}" \
+    --image tenantfirstaid-backend:docs --target docs --context backend --engine "${usage_engine:-auto}" \
     --bind-src "$PWD" --bind-dst /src --as-user \
     --cache-key-files "backend/pyproject.toml backend/uv.lock" \
     ${usage_rebuild:+--rebuild} \
-    --cmd "great-docs build ${usage_options:-}"
+    --cmd "PYTHONPATH=/src great-docs build ${usage_options:-}"
 fi
 uv run great-docs build ${usage_options:-}
+'''
+
+[tasks.docs-serve]
+description = "Serve the already-built docs site (great-docs/_site) locally on the host. Build it first with `docs` (or `docs --container`)."
+depends = ["sync"]
+usage = '''
+flag "--port <port>" help="Port for the local preview server." default="3000"
+arg "<options>" var=#true required=#false help="Extra great-docs preview args."
+'''
+run = '''
+set -eu
+# Serving is pure static files — no Quarto, no rebuild — so this runs on the host over
+# whatever `docs` last produced. `--site-dir` bypasses project detection and serves the
+# built output as-is; great-docs binds all interfaces and opens your browser.
+if [ ! -f great-docs/_site/index.html ]; then
+  echo "No built site at great-docs/_site — run 'mise run docs' (or 'mise run docs --container') first." >&2
+  exit 1
+fi
+uv run great-docs preview --site-dir great-docs/_site --port "${usage_port:-3000}" ${usage_options:-}
+'''
+
+# --- Docs quality & maintenance ------------------------------------------------
+# Read-only great-docs checks over the live working tree. Each mirrors the `docs`
+# task's container plumbing: --container runs in the Dockerfile docs image (which ships
+# Quarto and harper-cli), --engine selects the runtime, --rebuild forces an image
+# rebuild. The tree is bind-mounted live (as the current user) so the checks see your
+# uncommitted edits, and ad-hoc great-docs flags pass through after `--`.
+#
+# PYTHONPATH=/src makes great-docs introspect the bind-mounted source rather than the
+# copy baked into the image at build time, so editing a docstring does NOT require an
+# image rebuild — only dependency changes (pyproject.toml/uv.lock) do.
+#
+# `docs-check` runs all three in parallel.
+[tasks.docs-lint]
+description = "Lint documentation quality with great-docs (missing docstrings, broken xrefs, style)."
+depends = ["sync"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+flag "--rebuild" help="With --container: force a rebuild of the ci image."
+arg "<options>" var=#true required=#false help="Extra great-docs lint args, e.g. --check docstrings."
+'''
+run = '''
+set -eu
+if [ -n "${usage_container:-}" ]; then
+  exec mise run //:_container-run \
+    --image tenantfirstaid-backend:docs --target docs --context backend --engine "${usage_engine:-auto}" \
+    --bind-src "$PWD" --bind-dst /src --as-user \
+    --cache-key-files "backend/pyproject.toml backend/uv.lock" \
+    ${usage_rebuild:+--rebuild} \
+    --cmd "PYTHONPATH=/src great-docs lint ${usage_options:-}"
+fi
+uv run great-docs lint ${usage_options:-}
+'''
+
+[tasks.docs-check-links]
+description = "Check docs and source for broken links with great-docs (makes HTTP requests)."
+depends = ["sync"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+flag "--rebuild" help="With --container: force a rebuild of the ci image."
+arg "<options>" var=#true required=#false help="Extra great-docs check-links args, e.g. --docs-only."
+'''
+run = '''
+set -eu
+if [ -n "${usage_container:-}" ]; then
+  exec mise run //:_container-run \
+    --image tenantfirstaid-backend:docs --target docs --context backend --engine "${usage_engine:-auto}" \
+    --bind-src "$PWD" --bind-dst /src --as-user \
+    --cache-key-files "backend/pyproject.toml backend/uv.lock" \
+    ${usage_rebuild:+--rebuild} \
+    --cmd "PYTHONPATH=/src great-docs check-links ${usage_options:-}"
+fi
+uv run great-docs check-links ${usage_options:-}
+'''
+
+[tasks.docs-proofread]
+description = "Spell/grammar-check docs with great-docs (needs harper-cli; use --container)."
+depends = ["sync"]
+usage = '''
+flag "--container" help="Run in the Dockerfile docs image (which ships harper-cli)."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+flag "--rebuild" help="With --container: force a rebuild of the docs image."
+arg "<options>" var=#true required=#false help="Extra great-docs proofread args, e.g. --spelling-only or file paths."
+'''
+run = '''
+set -eu
+# great-docs does not auto-load .great-docs-dictionary (despite its own hint); pass it
+# explicitly so project/domain terms (datastore, ORS, LangChain, ...) aren't flagged.
+dict=""
+[ -f .great-docs-dictionary ] && dict="--dictionary-file .great-docs-dictionary"
+if [ -n "${usage_container:-}" ]; then
+  exec mise run //:_container-run \
+    --image tenantfirstaid-backend:docs --target docs --context backend --engine "${usage_engine:-auto}" \
+    --bind-src "$PWD" --bind-dst /src --as-user \
+    --cache-key-files "backend/pyproject.toml backend/uv.lock" \
+    ${usage_rebuild:+--rebuild} \
+    --cmd "PYTHONPATH=/src great-docs proofread $dict ${usage_options:-}"
+fi
+uv run great-docs proofread $dict ${usage_options:-}
+'''
+
+[tasks.docs-check]
+description = "Run all docs quality checks in parallel: lint, check-links, proofread. Add --container to run each in the Dockerfile docs image."
+usage = '''
+flag "--container" help="Run each check in the Dockerfile docs image."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+'''
+run = '''
+set -eu
+c=""
+# With --container, build the docs image once up front: the three checks below run
+# concurrently, and letting them race a first-time build corrupts the apple/container
+# builder (see .claude memory). Once cached, parallel `container run`s are fine.
+if [ -n "${usage_container:-}" ]; then
+  c="--container --engine ${usage_engine:-auto}"
+  # `|| true`: this only needs the image-build side effect; the check's own pass/fail
+  # is reported for real by the parallel run below.
+  mise run docs-check-links $c -- --docs-only >/dev/null 2>&1 || true
+fi
+# Independent read-only checks — run them concurrently. `:::` separates the parallel
+# task invocations (same pattern as the `check` task); -o keep-order groups each
+# task's output so the parallel logs don't interleave.
+mise run -o keep-order docs-lint $c ::: docs-check-links $c ::: docs-proofread $c
 '''
 
 # --- Corpus / RAG ingestion pipeline -------------------------------------------

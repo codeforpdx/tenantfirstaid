@@ -1,0 +1,89 @@
+---
+title: "Backend Overview"
+guide-section: "Architecture"
+---
+
+# Backend Overview
+
+The backend is a Flask application that serves as the API layer for the chatbot.
+It manages conversations and hands them to a LangChain agent, which orchestrates
+Google Gemini and Vertex AI RAG to produce grounded, jurisdiction-aware answers.
+
+## Technology stack
+
+- **Flask 3.1** — web framework for the API endpoints.
+- **Python 3.12+** — application language (3.13 in the container image).
+- **Gunicorn** — WSGI HTTP server in production.
+- **LangChain 1.1+** — agent orchestration.
+- **ChatGoogleGenerativeAI** (langchain-google-genai 4.0+) — the Gemini binding.
+- **Vertex AI Search** — document retrieval backing the RAG tools.
+
+## Package layout
+
+```{.default filename="backend/tenantfirstaid/"}
+├── app.py                     # Flask app setup and route registration
+├── chat.py                    # ChatView — the streaming /api/query endpoint
+├── schema.py                  # Pydantic response-chunk types (shared with frontend)
+├── constants.py               # Env-var singleton, system prompt, letter template
+├── location.py                # City/state enums, normalization, agent state schema
+├── graph.py                   # Shared LLM + tools + graph factory (create_graph)
+├── langchain_chat_manager.py  # Per-session agent wrapper with streaming
+├── langchain_tools.py         # RAG retriever and letter tools
+├── google_auth.py             # GCP credential loading (file path or inline JSON)
+├── logger.py                  # Centralized logging setup
+├── feedback.py                # Feedback email + PDF transcript
+├── system_prompt.md           # System prompt (editable without Python knowledge)
+└── letter_template.md         # Letter template (editable without Python knowledge)
+```
+
+::: {.callout-note}
+Two sibling trees round out the backend: `evaluate/` (LangSmith evaluation
+tooling) and `scripts/` (corpus ingestion and utilities). See
+[Corpus Ingestion](07-corpus-ingestion.qmd) for the latter.
+:::
+
+## API endpoints
+
+| Endpoint             | Method | Description                                         |
+| -------------------: | ------ | :------------------ |
+| `/api/init`          | POST   | Initialize a new chat session with location         |
+| `/api/query`         | POST   | Send a user message and stream the AI response      |
+| `/api/history`       | GET    | Retrieve conversation history                       |
+| `/api/clear-session` | POST   | Clear the current session                           |
+| `/api/citation`      | GET    | Retrieve a specific legal citation                  |
+| `/api/feedback`      | POST   | Send user feedback with the transcript as a PDF     |
+
+: Backend API endpoints {#tbl-endpoints}
+
+::: {#fig-endpoint-flow}
+```{mermaid}
+graph TD
+    Init["POST /api/init"] --> Session["Create session<br/>with location"]
+    Query["POST /api/query"] --> Chat["Process with<br/>ChatView"]
+    Chat --> Gemini["Generate response<br/>with RAG"]
+    History["GET /api/history"] --> SessionGet["Retrieve messages"]
+    Clear["POST /api/clear-session"] --> SessionClear["Clear session"]
+    Citation["GET /api/citation"] --> LegalCite["Return citation"]
+```
+
+How each endpoint is routed through the backend.
+:::
+
+The primary chat route is served by
+[`ChatView`](../reference/chat.ChatView.qmd), which streams typed response chunks
+(see [Streaming Responses](04-streaming.qmd)). Feedback is handled by
+[`send_feedback`](../reference/feedback.send_feedback.qmd).
+
+## Configuration
+
+All environment configuration is read once, at import time, through
+`constants.py`. The most important variables are `MODEL_NAME`,
+`GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`,
+and the `VERTEX_AI_DATASTORE_*` corpus IDs. See
+[Configuration & Logging](06-configuration.qmd) for the full list and how loading
+and logging are set up.
+
+## Where to go next
+
+- [RAG & Document Retrieval](03-rag-and-retrieval.qmd) — how the agent retrieves law.
+- [Command Reference](08-command-reference.qmd) — running and checking the backend.

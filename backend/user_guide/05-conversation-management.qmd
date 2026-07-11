@@ -1,0 +1,61 @@
+---
+title: "Conversation Management"
+guide-section: "Architecture"
+---
+
+# Conversation Management
+
+Tenant First Aid keeps context across turns by carrying the full message history
+into each follow-up query, including the model's prior reasoning. This chapter
+describes where that history lives and how location context is threaded through.
+
+## Who holds the history
+
+The conversation history is held **client-side** and sent with every request.
+Each `POST /api/query` carries the complete `messages` array, the `city`, and the
+`state`. [`ChatView`](../reference/chat.ChatView.qmd) reads them from the request
+body and forwards them to the chat manager.
+
+::: {.callout-note}
+The backend does not currently persist per-session history server-side: the graph
+is built with an optional checkpointer keyed by `thread_id`, but the web path
+passes `thread_id=None`, so multi-turn context comes entirely from the
+client-supplied message list.
+:::
+
+The frontend uses the LangChain `HumanMessage` / `AIMessage` types directly so the
+message shape matches the backend, then serializes each to
+`{ role, content, id }` on the wire.
+
+## Location context
+
+City and state are normalized to enums by
+[`OregonCity`](../reference/location.OregonCity.qmd) and
+[`UsaState`](../reference/location.UsaState.qmd) (both via `from_maybe_str`, which
+tolerates missing or unknown input). Raw strings are validated by
+[`city_or_state_input_sanitizer`](../reference/location.city_or_state_input_sanitizer.qmd).
+The agent's state is typed by
+[`TFAAgentStateSchema`](../reference/location.TFAAgentStateSchema.qmd), where
+`state` is required and `city` is optional.
+
+On the web path, location is baked into the system prompt at session start by
+[`prepare_system_prompt`](../reference/graph.prepare_system_prompt.qmd) — the
+prompt tells the model where the user is, so retrieval and advice stay
+jurisdiction-appropriate. On the LangGraph deployment path, the same location
+context is injected at runtime by middleware from the agent state instead.
+
+## Turn flow
+
+1. The frontend sends the full message history plus `city`/`state`.
+2. The chat manager builds (once) a per-session agent with the location-aware
+   system prompt.
+3. The agent runs with the supplied messages; retrieved passages and tool
+   messages are appended to the running context so later turns can reference
+   them.
+4. The streamed response is rendered and appended to the client-side history,
+   ready to be sent back on the next turn.
+
+## Where to go next
+
+- [Configuration & Logging](06-configuration.qmd) — env vars behind the model and
+  retrieval, and how logging is set up.
