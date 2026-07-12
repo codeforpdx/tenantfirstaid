@@ -25,8 +25,11 @@ def fire_query(client, n):
         for _ in range(n):
             resp = client.post(
                 "/api/query",
-                json={"messages": [{"role": "human", "content": "hi"}],
-                      "city": None, "state": "or"},
+                json={
+                    "messages": [{"role": "human", "content": "hi"}],
+                    "city": None,
+                    "state": "or",
+                },
             )
             # Drain the streaming body so the request fully completes.
             resp.get_data()
@@ -37,8 +40,11 @@ def fire_query(client, n):
 def fire_feedback(client, n):
     """Send n POSTs to /api/feedback with a mocked email sender."""
     codes = []
-    with patch("tenantfirstaid.feedback.EmailMessage"), patch.dict(
-        "os.environ", {"SENDER_EMAIL": "s@t.com", "RECIPIENT_EMAIL": "r@t.com"}
+    with (
+        patch("tenantfirstaid.feedback.EmailMessage"),
+        patch.dict(
+            "os.environ", {"SENDER_EMAIL": "s@t.com", "RECIPIENT_EMAIL": "r@t.com"}
+        ),
     ):
         for _ in range(n):
             resp = client.post(
@@ -60,11 +66,15 @@ def run_trial(trial_no, burst=20):
 
     print(f"\n===== TRIAL {trial_no} =====")
     print(f"/api/query    x{burst:<3} -> {dict(query_codes)}")
-    print(f"  429s on /api/query: {query_codes.get(429, 0)}  "
-          f"(0 == UNPROTECTED, bug reproduced)")
+    print(
+        f"  429s on /api/query: {query_codes.get(429, 0)}  "
+        f"(0 == UNPROTECTED, bug reproduced)"
+    )
     print(f"/api/feedback x5   -> {dict(feedback_codes)}")
-    print(f"  429s on /api/feedback: {feedback_codes.get(429, 0)}  "
-          f"(>0 == limiter works here)")
+    print(
+        f"  429s on /api/feedback: {feedback_codes.get(429, 0)}  "
+        f"(>0 == limiter works here)"
+    )
 
     bug_present = query_codes.get(429, 0) == 0 and feedback_codes.get(429, 0) > 0
     print(f"  RESULT: bug {'REPRODUCED' if bug_present else 'NOT reproduced'}")
