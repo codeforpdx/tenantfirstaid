@@ -83,7 +83,7 @@ One graph factory, two entry points: the web app and the LangGraph deployment.
 - **LangGraph dev / Cloud** — `langgraph.json` points at the module-level `graph`
   factory in `graph.py`. Studio middleware injects an editable system prompt at
   runtime, enabling `langgraph dev` for local testing and LangSmith Cloud for
-  browser-based evaluation. See `evaluate/EVALUATION.md`.
+  browser-based evaluation. See the [Evaluation Guide](../evaluation-guide/index.qmd).
 
 ## Query pipeline
 

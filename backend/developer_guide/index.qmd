@@ -1,8 +1,8 @@
 ---
-title: "Backend Guide"
+title: "Developer Guide"
 ---
 
-# Tenant First Aid — Backend Guide
+# Tenant First Aid — Developer Guide
 
 Tenant First Aid is a chatbot that provides legal information about housing and
 eviction in Oregon. This guide covers the **Flask backend**: how the LangChain
@@ -34,15 +34,15 @@ You are changing Python — the agent, the tools, the streaming, or the API.
 3. [RAG & Document Retrieval](03-rag-and-retrieval.qmd) — agent, tools, entry points
 4. [Streaming Responses](04-streaming.qmd) — how chunks reach the browser
 5. [Conversation Management](05-conversation-management.qmd) — multi-turn state
-6. [Configuration & Logging](06-configuration.qmd) — env vars and log setup
 
-### Operator building or refreshing the corpus
+### Operations contributor
 
-You are running the Vertex AI Search ingestion pipeline, not editing application
-code.
+You are managing the corpus, running ingestion pipelines, or configuring the
+deployment.
 
-1. [Corpus Ingestion](07-corpus-ingestion.qmd) — how documents become a datastore
-2. [Command Reference](08-command-reference.qmd) — every `mise run` task, in order
+1. [Configuration & Logging](06-configuration.qmd) — env vars and log setup
+2. [Corpus Ingestion](07-corpus-ingestion.qmd) — how documents become a datastore
+3. [Command Reference](08-command-reference.qmd) — every `mise run` task, in order
 
 ## Chapters at a glance
 

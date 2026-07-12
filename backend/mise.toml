@@ -309,15 +309,25 @@ arg "<options>" var=#true required=#false help="Extra great-docs check-links arg
 '''
 run = '''
 set -eu
+# Waive two classes of great-docs link-checker false positive; remove each when the
+# corresponding upstream bug is fixed.
+#   1. Source-view links: great-docs' monorepo renderer drops the backend/ prefix (emits
+#      blob/<ref>/tenantfirstaid/... instead of blob/<ref>/backend/tenantfirstaid/...), so
+#      all ~37 generated source links 404. This targets only that broken shape — a fixed
+#      link (blob/<ref>/backend/tenantfirstaid/...) won't match, so the waiver self-expires
+#      and those links get checked again.
+#   2. &quot;-mangled URLs: the URL extractor captures the trailing &quot; HTML entity into
+#      https://(www.)tenantfirstaid.com&quot and 404s it; the bare URLs check out fine.
+ignore="-i github.com/codeforpdx/tenantfirstaid/blob/[^/]+/tenantfirstaid/ -i tenantfirstaid\\.com&quot"
 if [ -n "${usage_container:-}" ]; then
   exec mise run //:_container-run \
     --image tenantfirstaid-backend:docs --target docs --context backend --engine "${usage_engine:-auto}" \
     --bind-src "$PWD" --bind-dst /src --as-user \
     --cache-key-files "backend/pyproject.toml backend/uv.lock" \
     ${usage_rebuild:+--rebuild} \
-    --cmd "PYTHONPATH=/src great-docs check-links ${usage_options:-}"
+    --cmd "PYTHONPATH=/src great-docs check-links $ignore ${usage_options:-}"
 fi
-uv run great-docs check-links ${usage_options:-}
+uv run great-docs check-links $ignore ${usage_options:-}
 '''
 
 [tasks.docs-proofread]
@@ -335,15 +345,31 @@ set -eu
 # explicitly so project/domain terms (datastore, ORS, LangChain, ...) aren't flagged.
 dict=""
 [ -f .great-docs-dictionary ] && dict="--dictionary-file .great-docs-dictionary"
+# Suppress harper rules that are pure false-positive noise on this technical content:
+# MissingDeterminer/MissingPreposition insist on an article before product names
+# ("in Studio", "use Cloud Studio"); UseEllipsisCharacter rewrites "..." placeholders
+# in inline code; ExpandStandardInputAndOutput flags "stderr"; QuantifierNumeralConflict
+# and MissingTo/ProgressiveNeedsBe fire on numeric labels and intentional "weak example"
+# strings. SpellCheck, ToTwoToo, and ItsContraction stay on (they catch real errors).
+ignore="--ignore=MissingDeterminer,MissingPreposition,UseEllipsisCharacter,ExpandStandardInputAndOutput,QuantifierNumeralConflict,MissingTo,ProgressiveNeedsBe"
+# great-docs proofread auto-discovers only user_guide/; this project's narrative docs
+# live in developer_guide/ and evaluation_guide/ (both declared as custom great-docs
+# sections), so enumerate their .qmd files explicitly when the caller passed no paths.
+# The paths must be absolute: great-docs does `path.relative_to(project_root)`, which
+# fails on a relative path (project_root is /src in the container, $PWD on the host).
 if [ -n "${usage_container:-}" ]; then
+  targets="${usage_options:-}"
+  [ -z "$targets" ] && targets=$(find developer_guide evaluation_guide -name '*.qmd' | sort | sed 's#^#/src/#' | tr '\n' ' ')
   exec mise run //:_container-run \
     --image tenantfirstaid-backend:docs --target docs --context backend --engine "${usage_engine:-auto}" \
     --bind-src "$PWD" --bind-dst /src --as-user \
     --cache-key-files "backend/pyproject.toml backend/uv.lock" \
     ${usage_rebuild:+--rebuild} \
-    --cmd "PYTHONPATH=/src great-docs proofread $dict ${usage_options:-}"
+    --cmd "PYTHONPATH=/src great-docs proofread $dict $ignore $targets"
 fi
-uv run great-docs proofread $dict ${usage_options:-}
+targets="${usage_options:-}"
+[ -z "$targets" ] && targets=$(find "$PWD/developer_guide" "$PWD/evaluation_guide" -name '*.qmd' | sort | tr '\n' ' ')
+uv run great-docs proofread $dict $ignore $targets
 '''
 
 [tasks.docs-check]

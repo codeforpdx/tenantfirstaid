@@ -1,0 +1,183 @@
+---
+title: "Bound Evaluators"
+---
+
+# Bound evaluators — running experiments from the LangSmith UI
+
+::: {.callout-note}
+**Audience:** legal and content contributors. Requires a LangSmith Plus-tier seat
+and a working Cloud deployment. Lets non-developers iterate on the system prompt or
+test examples without a local Python setup.
+:::
+
+> **Sources:** [Automatically run evaluators on experiments](https://docs.langchain.com/langsmith/bind-evaluator-to-dataset)
+> — LangSmith docs · [Reusable evaluators and evaluator templates](https://www.langchain.com/blog/reusable-langsmith-evaluator-templates)
+> — LangChain blog
+
+Instead of running the evaluation from the CLI, you can bind an LLM-as-judge
+evaluator directly to the dataset in LangSmith and run experiments from the browser
+against your Cloud deployment.
+
+## How it works
+
+::: {#fig-bound-eval}
+```{mermaid}
+sequenceDiagram
+    participant UI as LangSmith UI
+    participant DS as Dataset<br/>(tenant-legal-qa-scenarios)
+    participant Deploy as Cloud deployment<br/>(LangGraph)
+    participant Judge as Bound evaluator<br/>(LLM-as-judge)
+
+    UI->>DS: start experiment
+    DS->>Deploy: send each test question
+    Deploy->>DS: chatbot response
+    DS->>Judge: inputs + outputs + reference outputs
+    Judge->>DS: score (0.0 – 1.0)
+    UI->>UI: display results in Experiments tab
+```
+
+A UI-launched experiment: the dataset drives the deployment, and the bound
+evaluator scores each response.
+:::
+
+## Prerequisites
+
+- A LangSmith **Plus-tier** seat (bound evaluators are not available on the free
+  tier).
+- The dataset `tenant-legal-qa-scenarios` already pushed to LangSmith (see
+  [Dataset Management](../backend-contributor/dataset-management.qmd)).
+- A working Cloud deployment of the agent (see
+  [Cloud Studio](cloud-studio.qmd)).
+
+## Setting up a bound evaluator (example: Legal Correctness)
+
+LangSmith maintains a workspace-level **Evaluators** library (left sidebar →
+**Evaluators**) where evaluators live independently of any single dataset. You
+configure an evaluator once, then attach it to one or more datasets.
+
+**First time:** create the evaluator in the library.
+
+1. Go to **LangSmith → Evaluators → + New Evaluator**.
+2. Choose **LLM-as-Judge**.
+
+**Subsequent datasets:** attach the existing evaluator.
+
+1. Go to **LangSmith → Datasets → `tenant-legal-qa-scenarios` → Evaluators tab**.
+2. Click **+ Add Evaluator** and select the evaluator from the list. Skip the steps
+   below.
+
+If creating for the first time, continue:
+
+### Prompt
+
+Choose **Create your own prompt** and paste the contents of
+`evaluators/legal_correctness.md` wrapped in the boilerplate from
+`langsmith_evaluators.py:load_rubric`. Three placeholder variables — `{inputs}`,
+`{outputs}`, `{reference_outputs}` — are populated automatically by LangSmith from
+the dataset example and the deployment's response.
+
+**Prompt commits.** Every time you save or edit the prompt, LangSmith creates a new
+commit with a unique hash, giving you a version history you can browse and revert.
+
+### Model configuration
+
+Select the model the judge will use. To match the offline evaluator, use:
+
+| Setting | Value | Notes |
+|---|---|---|
+| **Provider** | `Cloud providers: Google Vertex AI` | Routes judge calls through Vertex AI using the workspace provider secret. |
+| **API Key Name** | `GOOGLE_VERTEX_AI_WEB_CREDENTIALS` | The provider secret defined in **Settings → Workspace → Integrations → Provider secrets**. Same service account credential as `GOOGLE_APPLICATION_CREDENTIALS`, registered under the name LangSmith expects for Vertex AI. |
+| **Model** | `gemini-2.5-flash` | Matches `EVALUATOR_MODEL_NAME` in `langsmith_evaluators.py`. |
+| **Temperature** | `0.0` | Lower temperature = more deterministic scoring. The offline `openevals` evaluator defaults to `0.0`. |
+
+### Feedback configuration
+
+Feedback configuration defines the scoring rubric the judge outputs. Scores are
+attached as feedback to each run in the experiment.
+
+| Setting | Value | Notes |
+|---|---|---|
+| **Feedback key** | `legal correctness` | The name shown in experiment results. Use the same key as the offline evaluator so scores are comparable across UI and CLI experiments. |
+| **Description** | `Is the legal information accurate under Oregon tenant law?` | Optional but helpful for collaborators. |
+| **Feedback type** | **Continuous** | Numerical score within a range. The other options are **Boolean** and **Categorical**. |
+| **Range** | `0.0` – `1.0` | Matches the three-level scale of the offline evaluator (0.0 / 0.5 / 1.0). |
+
+LangSmith adds the feedback configuration as structured output instructions to the
+judge prompt behind the scenes, so the model knows what format to return.
+
+### Save
+
+Click **Save**. The evaluator is now bound to the dataset and will automatically run
+on any new experiment created against this dataset — whether started from the UI or
+the SDK.
+
+### Adding the tone evaluator
+
+Repeat the steps above using the rubric from `evaluators/tone.md`, feedback key
+`appropriate tone`, and the same prompt template structure.
+
+## Running an experiment from the UI
+
+1. Go to the dataset's **Experiments** tab.
+2. Click **+ New Experiment**.
+3. Select your **Cloud deployment** as the target.
+4. Run. LangSmith sends each dataset example to the deployment, collects responses,
+   and scores them with the bound evaluator automatically.
+
+Results appear in the same Experiments view used by the offline CLI, with the same
+feedback keys, so scores are directly comparable.
+
+::: {.callout-warning}
+The UI runs each example exactly once. The `--num-repetitions` option (useful for
+measuring scoring variance across runs) is only available through the CLI:
+
+```bash
+uv run run-langsmith-evaluation --num-repetitions 3
+```
+:::
+
+### How the deployment accepts dataset inputs
+
+The dataset stores examples as `query/state/city`, but the underlying agent expects
+a `messages` list. The deployment graph has an adapter node that converts `query` to
+a `HumanMessage` before the agent runs, so dataset examples are sent directly to the
+deployment without any transformation on the LangSmith side. The deployment's input
+schema (`_DeploymentInput` in `graph.py`) declares `query` and `state` as required
+and `city` as optional, matching the dataset format.
+
+## Keeping bound evaluators in sync with the codebase
+
+There is no SDK or API to update a bound evaluator prompt programmatically —
+management is UI-only. When you edit a rubric in `evaluators/`, update the bound
+evaluator prompt in the LangSmith Evaluators library (left sidebar → **Evaluators**
+→ select the evaluator → edit prompt). Because the evaluator is shared across all
+attached datasets, one edit propagates everywhere.
+
+If a lawyer edits the rubric wording in the LangSmith Playground, pull the changes
+back to the local files. First find the prompt name:
+
+```bash
+uv run langsmith-dataset prompt list
+```
+
+Then dry-run to review the diff:
+
+```bash
+uv run langsmith-dataset prompt pull tfa-legal-correctness evaluators/legal_correctness.md --dry-run
+```
+
+Then write and commit:
+
+```bash
+uv run langsmith-dataset prompt pull tfa-legal-correctness evaluators/legal_correctness.md
+git add evaluate/evaluators/legal_correctness.md
+git commit -m "update legal correctness rubric from Prompt Hub"
+```
+
+This only works if the prompt uses `<Rubric>…</Rubric>` tags around the rubric text.
+
+## Cost
+
+Bound evaluators use your GCP service account
+(`GOOGLE_VERTEX_AI_WEB_CREDENTIALS`) to call the judge model on Vertex AI. Judge
+model calls are billed to your Google Cloud account, not your LangSmith plan.

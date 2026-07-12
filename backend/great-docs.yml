@@ -30,7 +30,7 @@ cross_references:
 dynamic: false
 
 source:
-  enabled: false        # Enable/disable source links (default: true)
+  enabled: false       # Enable/disable source links (default: true)
   branch: main         # Git branch/tag to link to (default: auto-detect)
   path: backend/tenantfirstaid    # Custom source path for monorepos (default: auto-detect)
   placement: usage     # Where to place the link: "usage" (default) or "title"
@@ -48,6 +48,68 @@ skill:
   decision_table: []     # Rows: [{need: "...", use: "..."}]
   extra_body: null       # Path to extra Markdown to append (auto-generated only)
   skills: []             # Multi-skill mode: [{name: "...", file: "..."}]
+
+# Custom guide sections
+# ---------------------
+# Both narrative guides are declared here as custom page groups so their navbar
+# labels are explicit. (The auto-discovered user_guide/ slot would hard-code the
+# label "User Guide"; declaring the guide here lets it be titled "Developer Guide".)
+# Each guide gets a navbar link and an auto-built sidebar. Within a guide,
+# sidebar_groups sets section order and membership explicitly — custom-section
+# subdirectories otherwise sort alphabetically once their numeric prefixes are
+# stripped. Section contents are matched by stripped page path.
+sections:
+  - title: Developer Guide
+    dir: developer_guide
+    index: true
+    sidebar_groups:
+      - section: Architecture
+        contents:
+          - system-overview.qmd
+          - backend-overview.qmd
+          - rag-and-retrieval.qmd
+          - streaming.qmd
+          - conversation-management.qmd
+      - section: Operations
+        contents:
+          - configuration.qmd
+          - corpus-ingestion.qmd
+          - command-reference.qmd
+  - title: Evaluation Guide
+    dir: evaluation_guide
+    index: true
+    navbar_after: Developer Guide
+    sidebar_groups:
+      - section: Getting Started
+        contents:
+          - getting-started/overview.qmd
+          - getting-started/definitions.qmd
+          - getting-started/data-flow.qmd
+      - section: Legal / Content Contributor (browser)
+        contents:
+          - legal-contributor/cloud-studio.qmd
+          - legal-contributor/examples-in-browser.qmd
+          - legal-contributor/bound-evaluators.qmd
+      - section: Frontend / Content Contributor (local)
+        contents:
+          - content-contributor/local-studio.qmd
+          - content-contributor/contributing-examples.qmd
+      - section: Shared — Editing & Results
+        contents:
+          - editing-and-results/system-prompt.qmd
+          - editing-and-results/evaluator-rubrics.qmd
+          - editing-and-results/viewing-results.qmd
+      - section: Backend Contributor
+        contents:
+          - backend-contributor/setup-and-environment.qmd
+          - backend-contributor/dataset-management.qmd
+          - backend-contributor/running-evaluations.qmd
+          - backend-contributor/understanding-scores.qmd
+          - backend-contributor/workflows.qmd
+          - backend-contributor/troubleshooting.qmd
+      - section: Roadmap
+        contents:
+          - roadmap/roadmap.qmd
 
 # API Discovery Settings
 # ----------------------
@@ -88,7 +150,7 @@ skill:
 # - Use 'members: false' to exclude methods from documentation
 # - Add 'desc:' to sections for descriptions
 
-# Sections are grouped and ordered to mirror the backend user guide chapters, so a
+# Sections are grouped and ordered to mirror the Developer Guide chapters, so a
 # reader can move from a guide chapter to the symbols it describes. Great Docs
 # sections are flat (no nesting), so the two-level "Chapter · Topic" structure is
 # expressed through section names that share a chapter prefix and cluster in the
@@ -99,10 +161,12 @@ skill:
 # OregonCity, LangChainChatManager, create_graph); those duplicates are omitted so
 # the reference lists each symbol a single time.
 reference:
-  title: API Reference
+  # Titled "Reference" (not "API Reference") so the navbar item matches the anchor
+  # great-docs uses to place the guide links ahead of it; see the sections config.
+  title: Reference
   desc: >
-    Public symbols grouped to follow the backend user guide chapters. Each symbol
-    is documented once, at its defining module.
+    Public symbols grouped to follow the Developer Guide chapters. Each symbol is
+    documented once, at its defining module.
   sections:
     # Guide ch. 2 — Backend Overview.
     - title: "Backend · Endpoints"
@@ -235,6 +299,15 @@ include_in_header:
         width: 100%;
         max-width: 100% !important;
         height: auto;
+      }
+
+      /* Improve sidebar section header wrapping by reducing font size and enabling
+         word breaks. Section headers like "LEGAL / CONTENT CONTRIBUTOR (BROWSER)"
+         were breaking awkwardly mid-word; these tweaks allow smarter line breaks. */
+      a.sidebar-item-text.sidebar-link.text-start > span {
+        font-size: 0.95em !important;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
       }
     </style>
 

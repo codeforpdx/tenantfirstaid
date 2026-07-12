@@ -1,0 +1,34 @@
+---
+title: "Cloud Studio"
+---
+
+# Testing the agent via LangSmith Cloud
+
+::: {.callout-note}
+**Audience:** legal and content contributors with a LangSmith Plus-tier seat. No
+local setup or terminal required. Contributors without a Plus-tier seat should use
+[Local Studio](../content-contributor/local-studio.qmd) instead.
+:::
+
+Studio lets you chat with the full agent — tools, RAG retrieval, and all — in an
+interactive UI. In the browser, no local setup is needed:
+
+1. Go to **LangSmith → Deployments → your deployment → Studio**.
+2. Chat with the agent as a tenant would, and inspect its tool calls and retrieved
+   passages.
+
+The agent is deployed from the `langgraph.json` manifest in `backend/`, and
+environment variables are configured in the deployment settings (a backend
+contributor sets these up — see
+[Setup & Environment Variables](../backend-contributor/setup-and-environment.qmd)).
+
+Cloud deployment also unlocks:
+
+- **Bound evaluators** — LLM-as-judge evaluators configured in the UI that auto-run
+  on new experiments. See [Bound Evaluators](bound-evaluators.qmd).
+- **Experiment comparison** — side-by-side scoring across prompt or code changes.
+  See [Viewing & Comparing Results](../editing-and-results/viewing-results.qmd).
+
+To change the chatbot's behavior while you chat, use the Configuration panel to
+edit the system prompt live — see
+[Editing the System Prompt](../editing-and-results/system-prompt.qmd).

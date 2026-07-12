@@ -1,0 +1,22 @@
+---
+title: "Roadmap"
+---
+
+# Roadmap
+
+- [x] Demonstrate basic evaluation flow (CLI-only) on single-turn examples.
+- [x] Use LangSmith web UI to view experimental results.
+- [x] Capture more info in LangSmith experimental results to enable debugging (aka
+  LLM psycho-analysis).
+- [x] Externalize system prompt to editable markdown file.
+- [x] Externalize evaluator rubrics to editable markdown files.
+- [x] LangGraph entry point for `langgraph dev` and Cloud deployment.
+- [x] Configurable system prompt in LangGraph Studio (no redeploy needed to iterate).
+- [ ] Enable additional evaluators (e.g. citation correctness).
+- [ ] Enable LangSmith web UI to edit examples.
+  - [ ] Update facts in existing examples to enable additional/better evaluators
+    (e.g. citation correctness).
+- [x] Enable LangSmith web UI to edit evaluators via bound evaluators.
+- [x] Enable LangSmith web UI to launch experiments via Cloud deployment.
+- [ ] Demonstrate evaluation of multi-turn examples.
+- [ ] A/B testing of system prompt variants.

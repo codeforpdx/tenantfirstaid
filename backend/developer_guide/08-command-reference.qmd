@@ -45,6 +45,12 @@ to choose the runtime. Ad-hoc tool flags pass through after `--`
   (or `docs --container`) again first if you've edited a `.qmd` file.
 :::
 
+`check` is the command you'll run most. Here it is end to end — the ordered
+`clean` → `fmt`, then `lint`, `typecheck`, and `test` running concurrently, down
+to the final `pytest` summary:
+
+{{< termshow file="demos/check" >}}
+
 ## Docs quality tasks
 
 Read-only great-docs checks over the live working tree — they catch missing

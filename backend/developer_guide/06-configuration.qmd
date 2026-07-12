@@ -42,7 +42,7 @@ RAG tools when present. The value may be a bare datastore ID or a full
 ### Optional and fixed settings
 
 - `SHOW_MODEL_THINKING` (default `false`) — surface model reasoning as
-  `ReasoningChunk`s. Intended for staging only.
+  `ReasoningChunk` objects. Intended for staging only.
 - Model tuning is currently fixed in code for reproducible legal output:
   temperature `0.1`, top-p `0.1`, max tokens `65535`, and a dynamic thinking
   budget.

@@ -65,7 +65,7 @@ which streams the agent in `["updates", "custom"]` mode: model text and reasonin
 arrive as `updates`, while tool-emitted content (the letter) arrives as `custom`
 chunks. Raw LangChain content blocks are classified into the typed chunks above,
 each serialized as one newline-delimited JSON object. The manager retries a reset
-connection up to twice, but never after any output has been yielded, to avoid
+connection at most twice, but never after any output has been yielded, to avoid
 sending the client duplicate content.
 
 ::: {.callout-note}
