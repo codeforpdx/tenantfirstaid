@@ -146,7 +146,7 @@ Live at https://tenantfirstaid.com/
   % mise run docs
   % mise run docs-serve
   ```
-  `docs-lint`, `docs-check-links`, and `docs-proofread` (or `docs-check` for all three) catch missing docstrings, broken links, and spelling/grammar issues; see the [Command Reference](backend/user_guide/08-command-reference.qmd) chapter.
+  `docs-lint`, `docs-check-links`, and `docs-proofread` (or `docs-check` for all three) catch missing docstrings, broken links, and spelling/grammar issues; see the [Command Reference](backend/developer_guide/08-command-reference.qmd) chapter.
 
 | 💡 Using Claude Code? Type `/backend` in the Claude Code UI for backend workflow reference (including docs). |
 |---|

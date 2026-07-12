@@ -71,8 +71,8 @@ mise run docs-proofread --container  # spelling/grammar (needs harper-cli)
 mise run docs-check --container      # all three above, in parallel
 ```
 
-Source lives in `backend/user_guide/*.qmd`; built output goes to
-`backend/great-docs/_site` (gitignored). See the [Command Reference](../../backend/user_guide/08-command-reference.qmd)
+Source lives in `backend/developer_guide/*.qmd`; built output goes to
+`backend/great-docs/_site` (gitignored). See the [Command Reference](../../backend/developer_guide/08-command-reference.qmd)
 chapter for the full task table.
 
 ## Docker

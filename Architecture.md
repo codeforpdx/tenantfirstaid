@@ -49,7 +49,7 @@ graph TB
 
 The backend documentation now lives in the **Backend Guide**, built with
 [Great Docs](https://posit-dev.github.io/great-docs/). The narrative source is in
-[backend/user_guide/](backend/user_guide/), and the symbol-level API reference
+[backend/developer_guide/](backend/developer_guide/), and the symbol-level API reference
 (classes, functions, and signatures) is generated from the code's docstrings into
 the same site. Build both with `mise run docs` from `backend/`, then open
 `backend/great-docs/_site/index.html`.
