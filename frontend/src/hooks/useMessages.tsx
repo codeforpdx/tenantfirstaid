@@ -1,8 +1,25 @@
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Location } from "../types/models";
 import type { ChatMessage, UiMessage } from "../shared/types/messages";
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
 
+
+type StoredMessage = { type: "human" | "ai"; content: string; id: string };
+
+function loadFromStorage(key: string): ChatMessage[] {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return [];
+    const stored: StoredMessage[] = JSON.parse(raw);
+    return stored.map((msg) => 
+      msg.type === "human" ? new HumanMessage({ content: msg.content, id: msg.id }) 
+      : new AIMessage({ content: msg.content, id: msg.id })
+    )
+  } catch {
+    return [];
+  }
+}
 /**
  * Converts a stored AI message (JSONL chunks) back to plain text for backend
  * history.
@@ -45,8 +62,43 @@ async function addNewMessage(
  * Hook for managing chat messages and sending queries to the backend.
  * Provides message state, a setter, and a mutation for posting new messages.
  */
-export default function useMessages() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export default function useMessages(storageKey?: string) {
+  const [messages, setMessages] = useState<ChatMessage[]>(() =>
+    storageKey ? loadFromStorage(storageKey) : []
+  );
+  // Refs to track storage key changes and prevent overwriting messages during extra setups/re-renders.
+  const loadedStorageKeyRef = useRef(storageKey);
+  const isChangingStorageKeyRef = useRef(false);
+
+  useEffect(() => {
+    if (loadedStorageKeyRef.current === storageKey) return;
+    loadedStorageKeyRef.current = storageKey;
+    isChangingStorageKeyRef.current = true;
+    setMessages(storageKey ? loadFromStorage(storageKey) : []);
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (isChangingStorageKeyRef.current) {
+      isChangingStorageKeyRef.current = false;
+      return;
+    }
+    if (!storageKey) return;
+    const toStore: StoredMessage[] = messages
+    .filter(
+      (msg): msg is Exclude<ChatMessage, UiMessage> => 
+        msg.type !== "ui" && msg.text.trim() !== ""
+    )
+    .map((msg) => ({
+      type: msg instanceof HumanMessage ? "human" : "ai",
+      content: typeof msg.content === "string" ? msg.content : msg.text,
+      id: msg.id ?? "",
+    }));
+    if (toStore.length === 0) {
+      sessionStorage.removeItem(storageKey);
+      return;
+    } 
+    sessionStorage.setItem(storageKey, JSON.stringify(toStore));
+  }, [messages, storageKey])
 
   const addMessage = useMutation({
     mutationFn: async ({ city, state }: Location) => {
@@ -59,9 +111,17 @@ export default function useMessages() {
     },
   });
 
+  function clearMessages() {
+    if (storageKey) {
+      sessionStorage.removeItem(storageKey);
+    }
+    setMessages([]);
+  }
+
   return {
     messages,
     setMessages,
     addMessage: addMessage.mutateAsync,
+    clearMessages,
   };
 }

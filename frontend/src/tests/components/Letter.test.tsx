@@ -16,7 +16,7 @@ import {
 } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
-import { HumanMessage } from "@langchain/core/messages";
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import type { ChatMessage } from "../../shared/types/messages";
 
 beforeAll(() => {
@@ -38,11 +38,19 @@ vi.mock("../../hooks/useMessages", () => ({
 }));
 
 vi.mock("../../hooks/useLetterContent", () => ({
-  useLetterContent: () => ({ letterContent: "" }),
+  useLetterContent: vi.fn(),
 }));
 
 vi.mock("../../pages/Chat/components/MessageWindow", () => ({
-  default: () => <div data-testid="message-window" />,
+  default: ({ clearMessages }: { clearMessages: () => void }) => (
+    <div data-testid="message-window">
+      <button onClick={clearMessages}>Clear Letter</button>
+    </div>
+  ),
+}));
+
+vi.mock("../../shared/utils/reloadPage", () => ({
+  reloadPage: vi.fn(),
 }));
 
 vi.mock("../../LetterGenerationDialog", () => ({
@@ -56,10 +64,14 @@ vi.mock("../../LetterGenerationDialog", () => ({
 
 import * as streamHelper from "../../pages/Chat/utils/streamHelper";
 import useMessages from "../../hooks/useMessages";
+import { useLetterContent } from "../../hooks/useLetterContent";
+import { reloadPage } from "../../shared/utils/reloadPage";
 import HousingContextProvider from "../../contexts/HousingContext";
 
 let mockStreamText: ReturnType<typeof vi.fn>;
 let mockUseMessages: ReturnType<typeof vi.fn>;
+let mockUseLetterContent: ReturnType<typeof vi.fn>;
+let mockReloadPage: ReturnType<typeof vi.fn>;
 
 const renderLetter = async (initialEntry = "/letter/or/portland?org=org") => {
   const { default: Letter } = await import("../../Letter");
@@ -81,14 +93,18 @@ describe("Letter component - effect orchestration", () => {
   beforeEach(() => {
     mockStreamText = vi.mocked(streamHelper.streamText);
     mockUseMessages = vi.mocked(useMessages);
+    mockUseLetterContent = vi.mocked(useLetterContent);
+    mockReloadPage = vi.mocked(reloadPage);
 
     mockStreamText.mockClear();
     mockStreamText.mockResolvedValue(undefined);
+    mockUseLetterContent.mockReturnValue({ letterContent: "" });
 
     mockUseMessages.mockReturnValue({
       addMessage: vi.fn(),
       messages: [],
       setMessages: vi.fn(),
+      clearMessages: vi.fn(),
     });
   });
 
@@ -148,6 +164,94 @@ describe("Letter component - effect orchestration", () => {
     await waitFor(() => {
       expect(screen.queryByText("Generating Letter...")).not.toBeNull();
     });
+  });
+
+  it("restores a completed letter without generating it again", async () => {
+    const mockSetMessages = vi.fn();
+    mockUseMessages.mockReturnValue({
+      addMessage: vi.fn(),
+      messages: [
+        new HumanMessage({ content: "Generate my letter", id: "1" }),
+        new AIMessage({
+          content: '{"type":"letter","content":"Dear Landlord,"}\n',
+          id: "2",
+        }),
+      ],
+      setMessages: mockSetMessages,
+      clearMessages: vi.fn(),
+    });
+    mockUseLetterContent.mockReturnValue({
+      letterContent: "Dear Landlord,",
+    });
+
+    await renderLetter();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("message-window")).not.toBeNull();
+    });
+
+    expect(screen.queryByText("Generating Letter...")).toBeNull();
+    expect(mockSetMessages).not.toHaveBeenCalled();
+    expect(mockStreamText).not.toHaveBeenCalled();
+  });
+
+  it("retries an incomplete restored session without duplicating the prompt", async () => {
+    const mockSetMessages = vi.fn();
+    const restoredPrompt = new HumanMessage({
+      content: "Generate my letter",
+      id: "1",
+    });
+    mockUseMessages.mockReturnValue({
+      addMessage: vi.fn(),
+      messages: [restoredPrompt],
+      setMessages: mockSetMessages,
+      clearMessages: vi.fn(),
+    });
+
+    await renderLetter();
+
+    await waitFor(() => {
+      expect(mockStreamText).toHaveBeenCalled();
+    });
+
+    const duplicatedPrompt = mockSetMessages.mock.calls.some((call) => {
+      const update = call[0];
+      if (typeof update !== "function") return false;
+      const updatedMessages = update([restoredPrompt]) as ChatMessage[];
+      return updatedMessages.filter((message) => message.type === "human")
+        .length > 1;
+    });
+    expect(duplicatedPrompt).toBe(false);
+  });
+
+  it("clears the letter before reloading the page", async () => {
+    const callOrder: string[] = [];
+    const mockClearMessages = vi.fn(() => {
+      callOrder.push("clear");
+    });
+    mockReloadPage.mockImplementation(() => {
+      callOrder.push("reload");
+    });
+    mockUseMessages.mockReturnValue({
+      addMessage: vi.fn(),
+      messages: [
+        new HumanMessage({ content: "Generate my letter", id: "1" }),
+        new AIMessage({
+          content: '{"type":"letter","content":"Dear Landlord,"}\n',
+          id: "2",
+        }),
+      ],
+      setMessages: vi.fn(),
+      clearMessages: mockClearMessages,
+    });
+    mockUseLetterContent.mockReturnValue({
+      letterContent: "Dear Landlord,",
+    });
+
+    await renderLetter();
+    fireEvent.click(screen.getByText("Clear Letter"));
+
+    expect(callOrder).toEqual(["clear", "reload"]);
   });
 
   it("dialog closes when close button clicked", async () => {
