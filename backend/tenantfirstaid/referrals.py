@@ -86,6 +86,7 @@ def _validate_referrals(referrals: list[Referral]) -> None:
     if len(ids) != len(set(ids)):
         raise ValueError("Referral IDs must be unique.")
 
+
 def _load_referrals() -> list[Referral]:
     raw = json.loads(_REFERRALS_DATA_PATH.read_text())
     referrals = [Referral.model_validate(entry) for entry in raw]
