@@ -22,9 +22,10 @@ UV_PYTHON = "3.13"
 description = "Sync deps into .venv."
 # Mirrors the old Makefile's `uv.lock: pyproject.toml` prerequisite: fmt/lint/
 # typecheck/test all `depends` on this, and mise reruns it only when pyproject.toml
-# has changed since the last successful sync (auto outputs track a source hash), so
-# a standalone `mise run test` after a dependency bump can't run against a stale .venv.
-sources = ["pyproject.toml"]
+# or uv.lock has changed since the last successful sync (auto outputs track a source
+# hash), so a standalone `mise run test` after a dependency bump (or a teammate's
+# lockfile update) can't run against a stale .venv.
+sources = ["pyproject.toml", "uv.lock"]
 outputs = { auto = true }
 run = "uv sync"
 
@@ -168,9 +169,9 @@ if [ -n "${usage_container:-}" ]; then
     --image tenantfirstaid-backend:ci --context backend --engine "${usage_engine:-auto}" \
     --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
     --cache-key-files "backend/pyproject.toml backend/uv.lock" \
-    --cmd "cd /src/backend && UV_PROJECT_ENVIRONMENT=/app/.venv PYTHONPATH=/src/backend uv run --no-sync pytest -q ${usage_options:-}"
+    --cmd "cd /src/backend && UV_PROJECT_ENVIRONMENT=/app/.venv PYTHONPATH=/src/backend uv run --no-sync pytest --verbose ${usage_options:-}"
 fi
-uv run pytest -v ${usage_options:-}
+uv run pytest --verbose ${usage_options:-}
 '''
 
 [tasks.check]
@@ -189,18 +190,20 @@ if [ -n "${usage_container:-}" ]; then
     --image tenantfirstaid-backend:ci --context backend --engine "${usage_engine:-auto}" \
     --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
     --cache-key-files "backend/pyproject.toml backend/uv.lock" \
-    --cmd 'cd /src/backend && export RUFF_CACHE_DIR=/tmp/ruff-cache && ruff check --select I && ruff format --check && ruff check && UV_PROJECT_ENVIRONMENT=/app/.venv uv run --no-sync ty check && UV_PROJECT_ENVIRONMENT=/app/.venv PYTHONPATH=/src/backend uv run --no-sync pytest -q'
+    --cmd 'cd /src/backend && export RUFF_CACHE_DIR=/tmp/ruff-cache && ruff check --select I && ruff format --check && ruff check && UV_PROJECT_ENVIRONMENT=/app/.venv uv run --no-sync ty check && UV_PROJECT_ENVIRONMENT=/app/.venv PYTHONPATH=/src/backend uv run --no-sync pytest --verbose'
 fi
 # Host lane. clean -> fmt must be ordered (fmt mutates the tree the verify steps
 # read). fmt/lint/typecheck/test all `depends` on sync, so it runs (once, gated by
 # its source hash) before any of them without an explicit step here. lint/typecheck/
-# test are read-only and independent, so run them concurrently; -o keep-order groups
-# each task's output in order so it doesn't garble. The `:::` separators are required:
-# without them mise would treat `typecheck test` as positional args to `lint` (which
-# declares a variadic passthrough arg).
+# test are read-only and independent, so run them concurrently; --output keep-order
+# groups each task's output in order so it doesn't garble, and --continue-on-error
+# ensures a failure in one (e.g. lint, which finishes first) doesn't kill the others
+# before they report. The `:::` separators are required: without them mise would treat
+# `typecheck test` as positional args to `lint` (which declares a variadic passthrough
+# arg).
 mise run clean
 mise run fmt
-mise run -o keep-order lint ::: typecheck ::: test
+mise run --continue-on-error --output keep-order lint ::: typecheck ::: test
 '''
 
 [tasks.install]

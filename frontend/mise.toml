@@ -7,6 +7,8 @@ node = "24"
 
 [tasks.install]
 description = "Install npm dependencies."
+sources = ["package.json", "package-lock.json"]
+outputs = { auto = true }
 run = "npm install"
 
 [tasks.dev]
@@ -15,6 +17,7 @@ run = "npm run dev"
 
 [tasks.check]
 description = "Frontend: generate-types, typecheck, lint, test."
+depends = ["install"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
