@@ -52,7 +52,14 @@ app.config["MAIL_DEFAULT_SENDER"] = os.getenv("SENDER_EMAIL")
 mail = Mail(app)
 
 
-app.add_url_rule("/api/query", view_func=ChatView.as_view("chat"), methods=["POST"])
+# Rate limit the costly /api/query endpoint: each call fans out to Vertex AI RAG
+# plus a Gemini completion, so unthrottled traffic is a direct cost and
+# availability risk. The budget is tunable without a redeploy via QUERY_RATE_LIMIT
+# and defaults to a value that allows a normal back-and-forth chat but blocks
+# scripted abuse.
+QUERY_RATE_LIMIT = os.getenv("QUERY_RATE_LIMIT", "10 per minute")
+chat_view = limiter.limit(QUERY_RATE_LIMIT)(ChatView.as_view("chat"))
+app.add_url_rule("/api/query", view_func=chat_view, methods=["POST"])
 
 
 @limiter.limit("3 per minute")
