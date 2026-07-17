@@ -3,7 +3,7 @@
 Companion to scripts.upload_to_gcs. Creates an unstructured, search-only
 datastore configured for GCS ingestion and triggers an import from
 gs://<bucket>/metadata.jsonl. Polls until the import finishes unless
---no-wait is passed. Run via `make create-datastore-gcs`.
+--no-wait is passed. Run via `mise run create-datastore-gcs`.
 """
 
 import argparse
@@ -277,7 +277,7 @@ def main() -> None:
     print(
         f"\nDone. Your datastore ID is: {datastore_id}\n"
         f"View it in the GCP console: {console_url}\n"
-        f"Next: run make create-app-gcs DATASTORE_ID={datastore_id} APP_ID=<id> to create and attach a Search app."
+        f"Next: run mise run create-app-gcs --datastore-id {datastore_id} --app-id <id> to create and attach a Search app."
     )
 
 

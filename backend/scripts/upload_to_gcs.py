@@ -1,7 +1,7 @@
 """Create a fresh GCS bucket and upload law documents + metadata.jsonl.
 
 Refuses to reuse an existing bucket so each RAG ingestion has a clean,
-dedicated bucket. Run via `make upload-to-gcs`.
+dedicated bucket. Run via `mise run upload-to-gcs`.
 """
 
 import argparse
@@ -98,7 +98,7 @@ def plan_upload(
     if not metadata_path.exists():
         raise UploadError(
             f"metadata.jsonl not found at {metadata_path}. "
-            f"Run `make generate-metadata GCS_BUCKET_NAME={bucket}` first."
+            f"Run `mise run generate-metadata --bucket {bucket}` first."
         )
 
     expected_names: set[str] = set()

@@ -2,7 +2,7 @@
 
 Vertex AI RAG ingestion has produced mojibake when UTF-8 is present, so every
 .txt under backend/scripts/documents/ must be pure ASCII before upload. Run
-via `make enforce-ascii` (pass `ASCII_OPTIONS=--check` for CI validation).
+via `mise run enforce-ascii` (pass `-- --check` for CI validation).
 """
 
 import argparse

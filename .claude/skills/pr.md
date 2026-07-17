@@ -12,7 +12,7 @@ Use the PR template (`.github/pull_request_template.md`). For frontend, backend,
 
 - Add tests when needed
 - Update documentation
-- Run `make lint` and `make fmt`
+- Run `mise run lint` and `mise run fmt`
 - Full test suite passes
 
 ## PR reviews
@@ -21,7 +21,7 @@ Use `/review` for code review by default. Use `/ultrareview` only if the user ex
 
 Project-specific things to flag that ultrareview may not know without context:
 
-- Style: `ruff format` + sorted imports + `make typecheck` passing
+- Style: `ruff format` + sorted imports + `mise run typecheck` passing
 - Env vars consistent across GitHub Actions, `.env.example`, tests, and docs — no orphaned secrets
 - Third-party GitHub Actions pinned to commit SHAs (see below)
 
