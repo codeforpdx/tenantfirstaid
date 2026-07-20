@@ -1,0 +1,77 @@
+---
+title: "Configuration & Logging"
+guide-section: "Operations"
+---
+
+# Configuration & Logging
+
+## Environment loading
+
+All environment configuration is read **once, at import time**, in
+`constants.py`. It loads `backend/.env` from an absolute path so the result does
+not depend on the current working directory, then builds a module-level singleton
+(`SINGLETON`). If `.env` is absent, the module logs a warning and falls back to
+the ambient environment — the normal case in deployment, where secrets come from
+systemd rather than a file.
+
+### Required variables
+
+| Variable                         | Purpose                                            |
+| -------------------------------: | :---------------------- |
+| `MODEL_NAME`                     | Gemini model identifier                            |
+| `GOOGLE_CLOUD_PROJECT`           | GCP project ID                                     |
+| `GOOGLE_CLOUD_LOCATION`          | Vertex AI compute region for the LLM               |
+| `GOOGLE_APPLICATION_CREDENTIALS` | GCP credentials — a file path **or** inline JSON   |
+| `VERTEX_AI_DATASTORE_LAWS`       | Datastore ID for the housing-law corpus (required) |
+
+: Required environment variables {#tbl-required-env}
+
+Credentials are resolved by
+[`load_gcp_credentials`](../reference/google_auth.load_gcp_credentials.qmd), which
+accepts either a path to a credentials file or the JSON content itself (for
+environments like LangSmith Cloud, where secrets are injected as env-var values).
+
+### Datastores
+
+Any variable named `VERTEX_AI_DATASTORE_<NAME>` is collected into a
+name→id mapping, keyed by `<NAME>` lowercased. `VERTEX_AI_DATASTORE_LAWS` is
+required; others (e.g. `VERTEX_AI_DATASTORE_OREGON_LAW_HELP`) enable additional
+RAG tools when present. The value may be a bare datastore ID or a full
+`projects/.../dataStores/<id>` resource URI — the latter is reduced to its ID.
+
+### Optional and fixed settings
+
+- `SHOW_MODEL_THINKING` (default `false`) — surface model reasoning as
+  `ReasoningChunk` objects. Intended for staging only.
+- Model tuning is currently fixed in code for reproducible legal output:
+  temperature `0.1`, top-p `0.1`, max tokens `65535`, and a dynamic thinking
+  budget.
+
+::: {.callout-warning}
+Safety filters are turned off so statutory discussion (eviction, harassment,
+habitability) is not blocked, and `SHOW_MODEL_THINKING` exposes raw model
+reasoning. Keep `SHOW_MODEL_THINKING` off in production and treat the disabled
+safety filters as a deliberate, staging-aware trade-off.
+:::
+
+See [Deployment.md](https://github.com/codeforpdx/tenantfirstaid/blob/main/Deployment.md)
+for how these values are managed in production.
+
+## Logging
+
+Logging is centralized in `logger.py`. Entrypoints (`app.py`, the evaluation
+runner) call `configure_logging()` once to install a single stderr handler with a
+shared format. The level defaults to `DEBUG` when `ENV=dev` and `INFO` otherwise.
+
+The formatter colorizes `WARNING`/`ERROR`/`CRITICAL` level names only when stderr
+is a TTY, so log files and CI captures stay free of ANSI escapes.
+`configure_logging()` is idempotent — repeated imports under pytest or Gunicorn
+workers do not double-install handlers. For the narrow case where `constants.py`
+must emit a formatted warning during import (before any entrypoint has run),
+`temporary_formatted_handler()` attaches the project formatter to a single logger
+for the duration of a `with` block.
+
+## Where to go next
+
+- [Corpus Ingestion](07-corpus-ingestion.qmd) — build the datastore these
+  variables point at.

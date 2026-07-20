@@ -1,0 +1,84 @@
+---
+title: "System Overview"
+guide-section: "Architecture"
+---
+
+# System Overview
+
+Tenant First Aid provides legal information about housing and eviction in Oregon.
+It uses a Retrieval-Augmented Generation (RAG) architecture so that answers are
+grounded in the actual text of Oregon housing law rather than the model's prior.
+LangChain abstracts the model and agent orchestration.
+
+The application is a Flask-based Python backend serving a React frontend,
+deployed on Digital Ocean.
+
+::: {#fig-system-architecture}
+```{mermaid}
+graph TB
+    subgraph "Client"
+        Frontend[React Frontend<br/>Vite + TypeScript]
+    end
+
+    subgraph "Backend Services"
+        API[Flask API Server<br/>Python]
+    end
+
+    subgraph "AI/ML Services"
+        subgraph "LangChain"
+            Gemini[Google Gemini 2.5 Pro<br/>LLM]
+            RAG[Vertex AI RAG<br/>Document Retrieval]
+            Corpus[RAG Corpus<br/>Oregon Housing Law]
+        end
+    end
+
+    subgraph "Infrastructure"
+        Nginx[Nginx<br/>Reverse Proxy]
+        DO[Digital Ocean<br/>Ubuntu 24.04 LTS]
+        Systemd[Systemd Service<br/>Process Management]
+    end
+
+    Frontend --> API
+    API --> Gemini
+    Gemini --> RAG
+    RAG --> Corpus
+    Nginx --> API
+    DO --> Nginx
+    Systemd --> API
+
+    style Frontend fill:#61dafb
+    style API fill:#0d47a1
+    style Gemini fill:#4285f4
+    style RAG fill:#4285f4
+```
+
+High-level system architecture — client, backend, AI/ML services, and infrastructure.
+:::
+
+## Key components
+
+- **Frontend** — React 19 + TypeScript + Vite + Tailwind CSS.
+- **Backend** — Flask API with LangChain agent orchestration.
+- **LLM** — Google Gemini 2.5 Pro via Vertex AI.
+- **Retrieval** — Vertex AI RAG (Vertex AI Search) with metadata filtering for
+  jurisdiction-specific responses.
+- **Infrastructure** — Digital Ocean Droplet (Ubuntu 24.04) behind an Nginx
+  reverse proxy, managed by systemd.
+
+## Request lifecycle
+
+1. The user asks a question in the React frontend.
+2. The question is sent to the Flask API (`POST /api/query`).
+3. Flask hands the message and location context to the LangChain agent.
+4. The agent decides to call the RAG retrieval tool.
+5. Vertex AI RAG searches the document corpus, filtered by the user's city/state.
+6. Retrieved passages are returned to Gemini as context.
+7. Gemini generates a response that cites the relevant statutes.
+8. The response streams back to the frontend chunk by chunk.
+9. The frontend renders the answer in real time.
+
+## Where to go next
+
+- To orient in the code, read [Backend Overview](02-backend-overview.qmd).
+- To understand how retrieval actually works, jump to
+  [RAG & Document Retrieval](03-rag-and-retrieval.qmd).

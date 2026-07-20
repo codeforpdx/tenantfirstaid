@@ -1,0 +1,96 @@
+---
+title: "Corpus Ingestion"
+guide-section: "Operations"
+---
+
+# Corpus Ingestion
+
+The RAG system answers from a searchable knowledge base built out of Oregon
+housing-law documents. This chapter explains how those documents become a Vertex
+AI Search datastore. For the exact command invocations, see the
+[Command Reference](08-command-reference.qmd).
+
+::: {#fig-ingestion-pipeline}
+```{mermaid}
+graph TD
+    subgraph "Document sources"
+        ORS[Oregon Revised<br/>Statutes]
+        Portland[Portland City<br/>Codes]
+        Eugene[Eugene City<br/>Codes]
+    end
+
+    subgraph "Pipeline"
+        ASCII[enforce-ascii]
+        Meta[generate-metadata]
+        Upload[upload-to-gcs]
+        Store[create-datastore-gcs]
+        App[create-app-gcs]
+    end
+
+    subgraph "Storage"
+        Bucket[GCS Bucket]
+        Datastore[Vertex AI Search<br/>Datastore]
+    end
+
+    ORS --> ASCII
+    Portland --> ASCII
+    Eugene --> ASCII
+    ASCII --> Meta
+    Meta --> Upload
+    Upload --> Bucket
+    Bucket --> Store
+    Store --> Datastore
+    Datastore --> App
+```
+
+The corpus ingestion pipeline, from source documents to a queryable datastore.
+:::
+
+## Source documents
+
+Legal documents are stored as **pure-ASCII** text files under
+`backend/scripts/documents/`, organized by jurisdiction and year:
+
+- State laws — `documents/or/<year>/*.txt` (e.g. `documents/or/2025/ORS090.txt`).
+- City codes — `documents/or/<city>/<year>/*.txt`
+  (e.g. `documents/or/portland/2025/PCC30-01.txt`).
+
+::: {.callout-note}
+The ASCII requirement is enforced by the pipeline; see the corpus-dataset
+contributor rules for the rationale.
+:::
+
+## Pipeline stages
+
+The five stages run in order. Each is a `mise run` task (full flags in the
+[Command Reference](08-command-reference.qmd)).
+
+1. **Enforce ASCII** (`enforce-ascii`) — walks the documents tree and rewrites
+   known non-ASCII offenders, rejecting anything it cannot fix. Run with
+   `-- --check` to validate without mutating.
+2. **Generate metadata** (`generate-metadata`) — infers jurisdiction from the
+   directory structure and writes `metadata.jsonl`, mapping each file to its GCS
+   URI and its city/state attributes. Scope flags (e.g. `-- --portland`) rewrite
+   the file for that scope only.
+3. **Upload to GCS** (`upload-to-gcs`) — creates a fresh bucket (it fails if the
+   bucket already exists, so each ingestion gets a clean dedicated bucket) and
+   uploads every file referenced by `metadata.jsonl`, plus `metadata.jsonl`
+   itself, flat at the bucket root.
+4. **Create datastore** (`create-datastore-gcs`) — creates a Vertex AI Search
+   datastore pointing at the bucket and triggers an import from `metadata.jsonl`,
+   which attaches the city/state metadata used for jurisdiction-filtered
+   retrieval. The script prints the datastore ID on completion.
+5. **Create app** (`create-app-gcs`) — creates a Vertex AI Search app linked to
+   the datastore, for browsing/previewing it in the GCP console. The backend's
+   `VertexAISearchRetriever` queries the datastore directly and does not depend on
+   this app.
+
+::: {.callout-tip}
+After the datastore is created, set `VERTEX_AI_DATASTORE_LAWS` in `.env` to its
+ID so the backend retrieves against the new corpus (see
+[Configuration & Logging](06-configuration.qmd)).
+:::
+
+## Where to go next
+
+- [Command Reference](08-command-reference.qmd) — every task and its flags.

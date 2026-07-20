@@ -1,5 +1,8 @@
-"""
-Module for Flask Chat View
+"""HTTP request handling for chat streaming.
+
+Provides :class:`ChatView`, a Flask view that backs the ``POST /api/query`` endpoint.
+Processes incoming chat messages and user location, drives the LangChain agent,
+and streams the response as newline-delimited JSON chunks.
 """
 
 from typing import Any, Dict, Generator, List
@@ -22,7 +25,7 @@ from .schema import (
 def _classify_blocks(
     stream: Generator[ContentBlock, Any, None],
 ) -> Generator[ResponseChunk, Any, None]:
-    """Convert raw LangChain content blocks into typed ResponseChunk objects."""
+    """Convert raw LangChain content blocks into typed [`ResponseChunk`](`~schema.ResponseChunk`) objects."""
     for content_block in stream:
         match content_block["type"]:
             case "reasoning":
@@ -51,30 +54,63 @@ def _classify_blocks(
 
 
 class ChatView(View):
+    """Flask view backing ``POST /api/query``.
+
+    Reads the message history and ``city``/``state`` from the request body, drives
+    :class:`~tenantfirstaid.langchain_chat_manager.LangChainChatManager`, and
+    streams the classified :data:`~tenantfirstaid.schema.ResponseChunk` objects
+    back as newline-delimited JSON, closing with an ``EndOfStreamChunk``.
+    """
+
     def __init__(self) -> None:
+        """Initialize the ChatView with a LangChainChatManager instance."""
         self.chat_manager = LangChainChatManager()
 
-    def dispatch_request(self, *args, **kwargs) -> Response:
-        """
-        Handle client POST request
-        Expects JSON body with:
-        - messages: List of message dicts from the frontend ({"role": ..., "content": ..., "id": ...})
-        - city: Optional city name
-        - state: State abbreviation
+    def dispatch_request(self, *args: Any, **kwargs: Any) -> Response:
+        """Handle client POST request.
+
+        Reads the JSON body containing chat messages and user location,
+        drives the LangChainChatManager to process them, and streams the
+        response as newline-delimited JSON chunks.
+
+        Args:
+            *args: Positional arguments from Flask routing (unused).
+            **kwargs: Keyword arguments from Flask routing (unused).
+
+        Returns:
+            Response: Flask response streaming newline-delimited JSON chunks.
+
+        Raises:
+            KeyError: If required fields (messages, state) are missing from request body.
+
+        Note:
+            Expected JSON body uses [`OregonCity`](`~location.OregonCity`) and [`UsaState`](`~location.UsaState`) for location context.
         """
 
         data: Dict[str, Any] = request.json
+        """Extracts messages, city, and state from the request JSON.
+        Uses [`OregonCity.from_maybe_str`](`~location.OregonCity.from_maybe_str`) and [`UsaState.from_maybe_str`](`~location.UsaState.from_maybe_str`) to convert the city and state strings into their respective enum types.
+        """
 
         messages: List[AnyMessage | Dict[str, Any]] = data["messages"]
+        """List of messages from the frontend, each message is either an AnyMessage or a dictionary with keys "role", "content", and "id".
+        This list is passed to the LangChainChatManager to generate a response.
+        """
         city: OregonCity | None = OregonCity.from_maybe_str(data["city"])
+        """User's [`city`](`~location.OregonCity`), if in Oregon and recognized by the backend. None if not recognized or not provided."""
         state: UsaState = UsaState.from_maybe_str(data["state"])
+        """User's [`state`](`~location.UsaState`), if recognized by the backend. Defaults to [`UsaState.OTHER`](`~location.UsaState`) if not recognized or not provided."""
 
         # Create a stable & unique thread ID based on client IP and endpoint
         # TODO: consider using randomly-generated token stored client-side in
         #       a secure-cookie
         tid: str | None = None
+        """Thread ID for the chat session, generated based on client IP and endpoint.
+        This ID is used to maintain context across multiple messages in the same chat session.
+        """
 
         def generate() -> Generator[str, Any, None]:
+            """Generator function that streams the response chunks as newline-delimited JSON."""
             response_stream: Generator[ContentBlock, Any, None] = (
                 self.chat_manager.generate_streaming_response(
                     messages=messages,

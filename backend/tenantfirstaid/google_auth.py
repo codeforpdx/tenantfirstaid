@@ -17,7 +17,15 @@ def discoveryengine_client_options(location: str) -> ClientOptions | None:
 
     Returns None for the "global" location so the client uses its default
     endpoint. All other locations use a regional endpoint.
-    See: https://cloud.google.com/generative-ai-app-builder/docs/locations#specify_a_multi-region_for_your_data_store
+
+    Args:
+        location: GCP location ("global" or a region name).
+
+    Returns:
+        ClientOptions for the regional endpoint, or None for "global".
+
+    See:
+        https://cloud.google.com/generative-ai-app-builder/docs/locations#specify_a_multi-region_for_your_data_store
     """
     if location == "global":
         return None
@@ -25,7 +33,17 @@ def discoveryengine_client_options(location: str) -> ClientOptions | None:
 
 
 def _parse_inline_json(raw: str) -> dict:
-    """Parse inline JSON, with a helpful error message on failure."""
+    """Parse inline JSON, with a helpful error message on failure.
+
+    Args:
+        raw: JSON string to parse.
+
+    Returns:
+        Parsed JSON as a dictionary.
+
+    Raises:
+        ValueError: If the string is not valid JSON.
+    """
     try:
         return json.loads(raw)
     except json.JSONDecodeError as e:
@@ -49,6 +67,15 @@ def load_gcp_credentials(
     Accepts either a path to a credentials file (the traditional approach)
     or the JSON content itself (for environments like LangSmith Cloud where
     secrets are injected as env var values, not files).
+
+    Args:
+        raw: File path to credentials JSON or the JSON string itself.
+
+    Returns:
+        Credentials or ServiceAccountCredentials object.
+
+    Raises:
+        ValueError: If credentials cannot be parsed or type is unsupported.
     """
     # Try as a file path first. Guard against OSError for strings that are
     # too long or otherwise invalid as paths (e.g. inline JSON blobs).

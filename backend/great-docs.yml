@@ -1,0 +1,327 @@
+# Great Docs Configuration
+# See https://posit-dev.github.io/great-docs/user-guide/configuration.html
+
+# Module Name (optional)
+# ----------------------
+# Set this if your importable module name differs from the project name.
+# Example: project 'py-yaml12' with module name 'yaml12'
+module: tenantfirstaid
+
+# Docstring Parser
+# ----------------
+# The docstring format used in your package (numpy, google, or sphinx)
+parser: google
+cross_references:
+  enabled: true
+
+
+# Dynamic Introspection
+# ---------------------
+# Use runtime introspection for more accurate documentation (default: true)
+# Set to false if your package has cyclic alias issues (e.g., PyO3/Rust bindings)
+#
+# Kept false: this is a pure-Python package, so static analysis (griffe parsing the
+# source) documents it fully without importing it — which also means the build needs
+# no GCP credentials. With dynamic introspection on, great-docs resolves each item as
+# `tenantfirstaid:<submodule>.<name>` and getattrs the submodule off the top-level
+# package; because __init__.py is empty, `tenantfirstaid.chat` isn't an attribute until
+# imported, so chat.ChatView failed dynamic resolution and fell back to static with a
+# warning. Static-only avoids that entirely.
+dynamic: false
+
+source:
+  enabled: false       # Enable/disable source links (default: true)
+  branch: main         # Git branch/tag to link to (default: auto-detect)
+  path: backend/tenantfirstaid    # Custom source path for monorepos (default: auto-detect)
+  placement: usage     # Where to place the link: "usage" (default) or "title"
+
+changelog:
+  enabled: true        # Enable/disable changelog (default: true)
+  max_releases: 5      # Max releases to include (default: 50)
+
+skill:
+  enabled: true          # Set to false to disable skill.md entirely
+  file: null             # Path to a SKILL.md (overrides curated and generated)
+  well_known: true       # Serve at /.well-known/ discovery endpoints
+  gotchas: []            # Gotcha strings (for auto-generated skill only)
+  best_practices: []     # Best-practice strings (for auto-generated skill only)
+  decision_table: []     # Rows: [{need: "...", use: "..."}]
+  extra_body: null       # Path to extra Markdown to append (auto-generated only)
+  skills: []             # Multi-skill mode: [{name: "...", file: "..."}]
+
+# Custom guide sections
+# ---------------------
+# Both narrative guides are declared here as custom page groups so their navbar
+# labels are explicit. (The auto-discovered user_guide/ slot would hard-code the
+# label "User Guide"; declaring the guide here lets it be titled "Developer Guide".)
+# Each guide gets a navbar link and an auto-built sidebar. Within a guide,
+# sidebar_groups sets section order and membership explicitly — custom-section
+# subdirectories otherwise sort alphabetically once their numeric prefixes are
+# stripped. Section contents are matched by stripped page path.
+sections:
+  - title: Developer Guide
+    dir: developer_guide
+    index: true
+    sidebar_groups:
+      - section: Architecture
+        contents:
+          - system-overview.qmd
+          - backend-overview.qmd
+          - rag-and-retrieval.qmd
+          - streaming.qmd
+          - conversation-management.qmd
+      - section: Operations
+        contents:
+          - configuration.qmd
+          - corpus-ingestion.qmd
+          - command-reference.qmd
+  - title: Evaluation Guide
+    dir: evaluation_guide
+    index: true
+    navbar_after: Developer Guide
+    sidebar_groups:
+      - section: Getting Started
+        contents:
+          - getting-started/overview.qmd
+          - getting-started/definitions.qmd
+          - getting-started/data-flow.qmd
+      - section: Legal / Content Contributor (browser)
+        contents:
+          - legal-contributor/cloud-studio.qmd
+          - legal-contributor/examples-in-browser.qmd
+          - legal-contributor/bound-evaluators.qmd
+      - section: Frontend / Content Contributor (local)
+        contents:
+          - content-contributor/local-studio.qmd
+          - content-contributor/contributing-examples.qmd
+      - section: Shared — Editing & Results
+        contents:
+          - editing-and-results/system-prompt.qmd
+          - editing-and-results/evaluator-rubrics.qmd
+          - editing-and-results/viewing-results.qmd
+      - section: Backend Contributor
+        contents:
+          - backend-contributor/setup-and-environment.qmd
+          - backend-contributor/dataset-management.qmd
+          - backend-contributor/running-evaluations.qmd
+          - backend-contributor/understanding-scores.qmd
+          - backend-contributor/workflows.qmd
+          - backend-contributor/troubleshooting.qmd
+      - section: Roadmap
+        contents:
+          - roadmap/roadmap.qmd
+
+# API Discovery Settings
+# ----------------------
+# Exclude items from auto-documentation
+# exclude:
+#   - InternalClass
+#   - helper_function
+
+# Logo & Favicon
+# ---------------
+# Point to a single logo file (replaces the text title in the navbar):
+# logo: assets/logo.svg
+#
+# For light/dark variants:
+# logo:
+#   light: assets/logo-light.svg
+#   dark: assets/logo-dark.svg
+#
+# To show the text title alongside the logo, add: show_title: true
+
+# Funding / Copyright Holder
+# --------------------------
+# Credit the organization that funds or holds copyright for this package.
+# Displays in sidebar and footer. Homepage and ROR provide links.
+# funding:
+#   name: "Posit Software, PBC"
+#   roles:
+#     - Copyright holder
+#     - funder
+#   homepage: https://posit.co
+#   ror: https://ror.org/03wc8by49
+
+# API Reference Structure
+# -----------------------
+# Customize the sections below to organize your API documentation.
+# - Reorder items within a section to change their display order
+# - Move items between sections or create new sections
+# - Use 'members: false' to exclude methods from documentation
+# - Add 'desc:' to sections for descriptions
+
+# Sections are grouped and ordered to mirror the Developer Guide chapters, so a
+# reader can move from a guide chapter to the symbols it describes. Great Docs
+# sections are flat (no nesting), so the two-level "Chapter · Topic" structure is
+# expressed through section names that share a chapter prefix and cluster in the
+# on-this-page outline.
+#
+# Each symbol is documented once, at its defining ("canonical") module. Several
+# modules re-import these names for convenience (e.g. chat and graph re-export
+# OregonCity, LangChainChatManager, create_graph); those duplicates are omitted so
+# the reference lists each symbol a single time.
+reference:
+  # Titled "Reference" (not "API Reference") so the navbar item matches the anchor
+  # great-docs uses to place the guide links ahead of it; see the sections config.
+  title: Reference
+  desc: >
+    Public symbols grouped to follow the Developer Guide chapters. Each symbol is
+    documented once, at its defining module.
+  sections:
+    # Guide ch. 2 — Backend Overview.
+    - title: "Backend · Endpoints"
+      desc: Flask entry points and the feedback pipeline.
+      contents:
+        - chat.ChatView  # 1 method(s)
+        - app.feedback_route
+        - feedback.send_feedback
+        - feedback.convert_html_to_pdf
+        - app.ALLOWED_ORIGINS
+        - app.limiter
+        - app.mail
+        - feedback.MAX_ATTACHMENT_SIZE
+
+    # Guide ch. 3 — RAG & Document Retrieval.
+    - title: "RAG · Retrieval"
+      desc: The retrieval tool and the Vertex AI Search machinery behind it.
+      contents:
+        - langchain_tools.retrieve_city_state_laws
+        - langchain_tools.retrieve_oregon_law_help
+        - langchain_tools.get_active_rag_tools
+        - langchain_tools.RAG_TOOL_REGISTRY
+        - langchain_tools.RagBuilder
+        - langchain_tools.filter_builder
+        - name: langchain_tools.CityStateLawsInputSchema
+          include_inherited: true
+        - name: langchain_tools.QueryOnlyInputSchema
+          include_inherited: true
+        - langchain_tools.repair_mojibake
+
+    - title: "RAG · Letter drafting"
+      desc: Tools and template for emitting a formatted tenant letter.
+      contents:
+        - langchain_tools.generate_letter
+        - langchain_tools.get_letter_template
+        - name: langchain_tools.GenerateLetterInputSchema
+          include_inherited: true
+        - constants.LETTER_TEMPLATE
+
+    - title: "RAG · Agent entry points"
+      desc: The shared graph factory and its two consumers.
+      contents:
+        - langchain_chat_manager.LangChainChatManager  # 2 method(s)
+        - graph.create_graph
+        - graph.prepare_system_prompt
+        - graph.TFAContext
+        - graph.tools
+
+    # Guide ch. 4 — Streaming Responses.
+    - title: "Streaming · Response chunks"
+      desc: The typed chunk contract shared with the frontend.
+      contents:
+        - schema.ResponseChunk
+        - name: schema.TextChunk
+          include_inherited: true
+        - name: schema.ReasoningChunk
+          include_inherited: true
+        - name: schema.LetterChunk
+          include_inherited: true
+        - name: schema.EndOfStreamChunk
+          include_inherited: true
+
+    # Guide ch. 5 — Conversation Management.
+    - title: "Conversation · Multi-turn state"
+      desc: The agent state schema carried across turns.
+      contents:
+        - name: location.TFAAgentStateSchema
+          include_inherited: true
+
+    - title: "Conversation · Location context"
+      desc: Jurisdiction values and input normalization.
+      contents:
+        - location.Location
+        - location.OregonCity
+        - location.UsaState
+        - location.city_or_state_input_sanitizer
+
+    # Guide ch. 6 — Configuration & Logging.
+    - title: "Config · Environment"
+      desc: The import-time settings singleton and credential loading.
+      contents:
+        - constants.SINGLETON
+        - constants._GoogEnvAndPolicy  # type of SINGLETON; documents each config field
+        - constants.DatastoreKey
+        - constants.DEFAULT_INSTRUCTIONS
+        - google_auth.load_gcp_credentials
+        - google_auth.discoveryengine_client_options
+
+    - title: "Config · Logging"
+      desc: Centralized logging setup.
+      contents:
+        - logger.configure_logging
+
+# Site URL
+# --------
+# Canonical address of the deployed documentation site.
+# Required for subdirectory deployments, skills page install commands,
+# .well-known/ discovery, and sitemaps.
+# site_url: "https://your-org.github.io/your-package/"
+
+# Site Settings
+# -------------
+# site:
+#   theme: flatly              # Quarto theme (default: flatly)
+#   toc: true                  # Show table of contents (default: true)
+#   toc-depth: 2               # TOC heading depth (default: 2)
+#   toc-title: On this page    # TOC title (default: "On this page")
+
+# Custom head content
+# --------------------
+# great-docs frames every mermaid diagram in a full-width, centered box but leaves
+# the SVG at its intrinsic size, so small diagrams sit marooned in whitespace.
+# Quarto's native `fig-width` option cannot fix this: a captioned mermaid diagram is
+# wrapped in a Quarto crossref "float", and those extra DOM layers push the cell's
+# `data-fig-width` out of reach of the mermaid runtime's fixed 4-ancestor lookup, so
+# the option is silently ignored. Scaling the rendered SVG to fill its container is
+# the reliable fix. `max-width` needs `!important` to beat mermaid's inline cap.
+include_in_header:
+  - |
+    <style>
+      /* great-docs styles the mermaid cell-output-display as a centered flex row, so
+         its immediate wrapper div (the flex item) shrink-wraps to the diagram's
+         intrinsic width and gets centered — the SVG then has no room to grow. Force
+         that wrapper, then the SVG, to span the full column. `max-width` needs
+         `!important` to beat mermaid's inline cap. */
+      .cell-output-display:has(.mermaid-js) > div {
+        width: 100%;
+      }
+      .cell-output-display svg.mermaid-js {
+        width: 100%;
+        max-width: 100% !important;
+        height: auto;
+      }
+
+      /* Improve sidebar section header wrapping by reducing font size and enabling
+         word breaks. Section headers like "LEGAL / CONTENT CONTRIBUTOR (BROWSER)"
+         were breaking awkwardly mid-word; these tweaks allow smarter line breaks. */
+      a.sidebar-item-text.sidebar-link.text-start > span {
+        font-size: 0.95em !important;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+    </style>
+
+# Jupyter Kernel
+# --------------
+# Jupyter kernel to use for executing code cells in .qmd files.
+# This is set at the project level so it applies to all pages, including
+# auto-generated API reference pages. Can be overridden in individual .qmd
+# file frontmatter if needed for special cases.
+jupyter: python3
+
+# CLI Documentation
+# -----------------
+# cli:
+#   enabled: true              # Enable CLI documentation
+#   module: my_package.cli     # Module containing Click commands
+#   name: cli                  # Name of the Click command object

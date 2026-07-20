@@ -1,0 +1,74 @@
+---
+title: "Evaluation Guide"
+---
+
+# Automated Evaluation with LangSmith
+
+This guide covers how to run automated quality tests on the Tenant First Aid
+chatbot with LangSmith — dataset management, evaluation runs, and interpreting the
+scores.
+
+::: {.callout-tip}
+Using Claude Code? Type `/evaluation` in the Claude Code UI for guided
+evaluation-workflow assistance.
+:::
+
+Start with [Overview](getting-started/overview.qmd) and
+[Definitions](getting-started/definitions.qmd) — they're short and shared by
+all audiences. Then follow the path for your role.
+
+## Legal / Content Contributor (Browser)
+
+No terminal needed. Requires a LangSmith Plus-tier seat and access to the Cloud
+deployment.
+
+1. [Testing with Cloud Studio](legal-contributor/cloud-studio.qmd) — chat
+   with the agent and iterate on the system prompt in your browser.
+2. [Editing the System Prompt](editing-and-results/system-prompt.qmd) —
+   change the chatbot's tone, rules, and legal guardrails.
+3. [Editing Evaluator Rubrics](editing-and-results/evaluator-rubrics.qmd) —
+   change what counts as a good answer.
+4. [Adding or Editing Examples in the Browser](legal-contributor/examples-in-browser.qmd)
+   — add test questions and reference answers in LangSmith.
+5. [Running Experiments from the UI](legal-contributor/bound-evaluators.qmd)
+   — start a scoring run without writing code.
+6. [Viewing & Comparing Results](editing-and-results/viewing-results.qmd) —
+   read the scores and the judge's rationale.
+
+## Frontend / Content Contributor (Local)
+
+You're comfortable with a terminal and a text editor but don't need to touch
+Python or LangChain internals.
+
+1. [Local Studio with `langgraph dev`](content-contributor/local-studio.qmd)
+   — spin up the full agent locally without a LangSmith account.
+2. [Editing the System Prompt](editing-and-results/system-prompt.qmd) — edit
+   `system_prompt.md` directly and see it take effect immediately.
+3. [Editing Evaluator Rubrics](editing-and-results/evaluator-rubrics.qmd) —
+   edit `evaluators/*.md` in your code editor.
+4. [Contributing Test Examples](content-contributor/contributing-examples.qmd)
+   — add prompt-attack scenarios or edge cases without Python knowledge.
+5. [Viewing & Comparing Results](editing-and-results/viewing-results.qmd) —
+   read the scores in LangSmith.
+
+## Backend Contributor
+
+You'll use the full dataset CLI and run evaluations programmatically.
+
+1. [Setup & Environment Variables](backend-contributor/setup-and-environment.qmd)
+   — configure your local environment.
+2. [Dataset Management (CLI)](backend-contributor/dataset-management.qmd) —
+   push, pull, validate, diff.
+3. [Running Evaluations (CLI)](backend-contributor/running-evaluations.qmd) —
+   execute the full test suite.
+4. [Understanding Scores](backend-contributor/understanding-scores.qmd) —
+   calibrate evaluators and interpret results.
+5. [Typical Workflows](backend-contributor/workflows.qmd) — common patterns
+   and step-by-step guides.
+6. [Troubleshooting](backend-contributor/troubleshooting.qmd) — fix things
+   when they break.
+
+## Related documentation
+
+- [Developer Guide](../developer-guide/index.qmd) — code organization and system design.
+- [Roadmap](roadmap/roadmap.qmd) — what's done and what's planned.

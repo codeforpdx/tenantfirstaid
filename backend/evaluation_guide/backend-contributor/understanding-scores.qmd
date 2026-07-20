@@ -1,0 +1,196 @@
+---
+title: "Understanding Scores"
+---
+
+# Understanding scores
+
+::: {.callout-note}
+**Audience:** primarily backend contributors calibrating evaluators. Legal
+contributors can read score rationales directly in the LangSmith UI without needing
+this chapter.
+:::
+
+Each example gets a score between 0.0 and 1.0 for each active evaluator. The overall
+pass rate is the average across all examples.
+
+## Legal Correctness
+
+Is the legal information accurate under Oregon tenant law?
+
+| Score | Meaning |
+|-------|---------|
+| 1.0 | Legally accurate |
+| 0.5 | Partially correct or missing important nuance |
+| 0.0 | Legally wrong or misleading |
+
+## Tone
+
+Is the response appropriately professional, accessible, and empathetic?
+
+| Score | Meaning |
+|-------|---------|
+| 1.0 | Gets the tone right |
+| 0.5 | Too formal, too casual, or inconsistent |
+| 0.0 | Dismissive, condescending, or inappropriate |
+
+**Patterns that fail tone evaluation:**
+
+- Opening with "As a legal expert…" (implies the chatbot is giving legal advice,
+  which it isn't).
+- Dense legal jargon without plain-language explanation.
+- Dismissive or condescending phrasing.
+
+## Evaluators under construction 🚧
+
+These evaluators exist in the code but are disabled pending calibration: citation
+accuracy, citation format, completeness, tool usage, performance.
+
+## Diagnosing score variance
+
+### Two noise sources
+
+Every score you see in an experiment reflects two independent sources of randomness:
+
+- **Agent variance** — the chatbot gives a slightly different response each time to
+  the same question (LLM temperature > 0). Running the same example ten times will
+  produce ten different outputs, and some will score higher or lower than others.
+- **Evaluator variance** — the LLM judge assigns a slightly different score each time
+  it reads the same output. Even a fixed response, shown to the judge five times, may
+  get 1.0 twice and 0.5 three times.
+
+Total observed variance decomposes as:
+
+```
+σ²_total = σ²_agent + σ²_evaluator
+```
+
+This matters because the two sources call for different fixes: agent variance
+requires more repetitions per example; evaluator variance requires a better judge or
+a tighter rubric.
+
+### Measuring evaluator variance
+
+`measure_evaluator_variance.py` isolates evaluator variance by re-scoring the same
+fixed agent outputs multiple times. No new agent calls are made, so this is cheap
+(~10–20× cheaper per sample than a full evaluation run).
+
+```bash
+# Re-score all runs from an experiment 5 times each (default).
+uv run measure-evaluator-variance \
+  --experiment <experiment-name> \
+  --evaluator "legal correctness"
+
+# Use more repeats for a tighter estimate; limit to 3 runs per scenario to keep it fast.
+uv run measure-evaluator-variance \
+  --experiment <experiment-name> \
+  --evaluator "legal correctness" \
+  -k 7 \
+  --runs-per-scenario 3
+```
+
+Available evaluator names match the `feedback_key` values: `"legal correctness"` and
+`"appropriate tone"`. Omit `--evaluator` to run all of them.
+
+### Example: interpreting the output
+
+Running the script against a 10-repetition experiment (50 total runs across 5
+scenarios) with `-k 5` produced:
+
+```
+=== Per-Scenario Consistency ===
+
+Evaluator: legal correctness
+  Scenario    mean       σ    0.0    0.5    1.0
+  --------  ------  ------  -------------------
+  S0          0.77    0.25      0     23     27
+  S1          0.87    0.24      1     10     35
+  S2          0.48    0.26      8     36      6
+  S3          0.93    0.17      0      7     43
+  S4          0.66    0.23      0     34     16
+
+=== Evaluator Variance Summary ===
+(σ is computed per individual run across k re-evaluations of fixed output)
+  legal correctness:
+    mean σ = 0.108  (max = 0.400)
+```
+
+The consistency table aggregates all scores across the k re-evaluations. The
+evaluator summary gives the key number: **σ_evaluator = 0.108**.
+
+To decompose variance per scenario, use σ²_agent = σ²_total − σ²_evaluator:
+
+| Scenario | σ_total | σ_evaluator | σ_agent | Evaluator share |
+|---|---|---|---|---|
+| S0 | 0.25 | 0.108 | 0.22 | 19% |
+| S1 | 0.24 | 0.108 | 0.21 | 20% |
+| S2 | 0.26 | 0.108 | 0.24 | 17% |
+| S3 | 0.17 | 0.108 | 0.13 | 40% |
+| S4 | 0.23 | 0.108 | 0.20 | 22% |
+
+**What this tells you:**
+
+- The agent is the dominant noise source (~75–80% of variance for most scenarios). S3
+  is the exception — the chatbot is highly consistent there, so the judge itself
+  accounts for 40% of variance.
+- A `max = 0.400` evaluator σ is a red flag: at least one fixed output received 0.0
+  and 1.0 on different judge calls. This points to rubric ambiguity on borderline
+  responses. In this data S2 (notice-giving scenario) was the likely culprit — the
+  lowest mean (0.48) and most 0.5 scores indicate the judge is uncertain.
+
+### Decision rules
+
+| Observation | Diagnosis | Fix |
+|---|---|---|
+| σ_evaluator << σ_total (evaluator share < 15%) | Variance is mostly agent-side | Increase `--num-repetitions` in evaluation runs |
+| σ_evaluator ≈ σ_total (evaluator share > 40%) | Judge stochasticity dominates | Use a stronger judge model; tighten the rubric for borderline cases |
+| max σ >> mean σ | Some outputs are genuinely borderline | Review judge rationale; add rubric guidance for that failure mode |
+| One scenario has much lower σ than the rest | That scenario is well-defined | Good: use it to calibrate expected score ranges |
+
+### Drilling into a specific scenario
+
+Once you identify a noisy scenario, use `--scenario` to focus on it:
+
+```bash
+uv run measure-evaluator-variance \
+  --experiment <experiment-name> \
+  --evaluator "legal correctness" \
+  --scenario 2
+```
+
+Multiple scenario IDs are accepted: `--scenario 2 4`.
+
+### Improving the rubric for borderline cases
+
+If max σ is high (> 0.3) for a scenario, the most likely cause is rubric ambiguity on
+borderline responses — the judge is uncertain what the 0.5 vs 1.0 threshold means for
+that type of question.
+
+Steps:
+
+1. Run `--scenario <id> -k 7` to collect enough data to see the pattern.
+2. Look at the score distribution: lots of 0.5 scores with some 0.0 and 1.0 suggests
+   the judge is genuinely unsure. Many swings between 0.0 and 1.0 on the same output
+   suggests the rubric doesn't distinguish those cases.
+3. Edit `evaluate/evaluators/legal_correctness.md` — add a concrete example of the
+   borderline case and specify which tier it should fall in.
+4. Re-run the script against the same experiment to confirm σ drops.
+
+The rubric lives in a plain markdown file — no code change needed. See
+[Editing evaluator rubrics](../editing-and-results/evaluator-rubrics.qmd) for
+the file locations.
+
+### Sample size guidance
+
+With σ_agent ≈ 0.20 (typical for this dataset), the 95% confidence interval on a
+scenario mean is approximately:
+
+| Repetitions per scenario | 95% CI width |
+|---|---|
+| 10 | ± 0.12 |
+| 25 | ± 0.08 |
+| 35 | ± 0.07 |
+| 50 | ± 0.06 |
+
+**To detect a 0.10-point improvement with 80% power** at this σ_agent, you need ~32
+repetitions per scenario. Ten repetitions (the default) is sufficient for spotting
+large regressions but too noisy to confirm incremental gains.

@@ -1,0 +1,145 @@
+---
+title: "Dataset Management (CLI)"
+---
+
+# Dataset management (CLI)
+
+::: {.callout-note}
+**Audience:** backend contributors. Commands below assume you are in the `backend/`
+directory. To add or edit examples without a terminal, see
+[Adding Examples in the Browser](../legal-contributor/examples-in-browser.qmd);
+to add them locally without Python, see
+[Contributing Test Examples](../content-contributor/contributing-examples.qmd).
+:::
+
+All dataset operations go through `langsmith_dataset.py`.
+
+## Initial push (first-time or after local edits)
+
+```bash
+uv run langsmith-dataset dataset push \
+  dataset-tenant-legal-qa-examples.jsonl \
+  tenant-legal-qa-scenarios
+```
+
+Creates the dataset in LangSmith if it doesn't exist, then uploads all examples.
+
+## Pull after editing in the browser
+
+```bash
+uv run langsmith-dataset dataset pull \
+  tenant-legal-qa-scenarios \
+  dataset-tenant-legal-qa-examples.jsonl
+```
+
+Overwrites the local file with whatever is currently in LangSmith. Commit the result.
+
+## Validate the local file
+
+```bash
+uv run langsmith-dataset dataset validate \
+  dataset-tenant-legal-qa-examples.jsonl
+```
+
+Checks every line against the schema before pushing, catching formatting mistakes
+early.
+
+## Check for content drift between local and remote
+
+```bash
+# Show which examples differ between the local file and LangSmith.
+uv run langsmith-dataset dataset diff \
+  dataset-tenant-legal-qa-examples.jsonl \
+  tenant-legal-qa-scenarios
+```
+
+Reports three categories:
+
+| Symbol | Meaning |
+|--------|---------|
+| `<` | example exists only on the left (would be lost on a pull, missing on a push) |
+| `>` | example exists only on the right |
+| `~` | same `scenario_id` on both sides but content differs — shows a field-level unified diff |
+
+Example output:
+
+```
+< scenario_id=5
+~ scenario_id=12  [content differs]
+  --- left/outputs
+  +++ right/outputs
+  @@ -3,7 +3,7 @@
+       "facts": [
+  -      "ORS 90.365 allows rent reduction after 7 days notice",
+  +      "ORS 90.365 allows rent reduction after 7 days written notice",
+         "Landlord must repair within reasonable time"
+       ],
+> scenario_id=18
+```
+
+`dataset diff` is the right first step before pushing or pulling — it tells you
+exactly what would change. Content changes (`~`) require a human decision: use
+`example update` to push a local fix to LangSmith, or `dataset pull` followed by
+`git diff` to review before accepting a remote edit.
+
+## Assigning `scenario_id` to UI-created examples
+
+Examples created through the LangSmith browser UI will not have a `scenario_id` in
+their metadata. The tooling uses `scenario_id` as the stable key for diff, merge, and
+push operations, so new examples must be assigned one before they can be committed.
+
+1. **Pull** the dataset to get the current state, including any UI-created examples:
+
+   ```bash
+   uv run langsmith-dataset dataset pull \
+     tenant-legal-qa-scenarios \
+     dataset-tenant-legal-qa-examples.jsonl
+   ```
+
+2. **Identify** the new examples in the JSONL file — they will have
+   `"metadata": null` or a metadata object without a `scenario_id` field.
+
+3. **Assign a `scenario_id`** to each new example. Pick the next available integer
+   (one higher than the current maximum). Also fill in the other required metadata
+   fields (`city`, `state`, `tags`, `dataset_split`) to match the schema. For example:
+
+   ```json
+   {
+     "metadata": { "scenario_id": 42, "city": null, "state": "OR",
+                   "tags": ["city-None", "state-OR"], "dataset_split": ["train"] },
+     "inputs": { "query": "...", "city": null, "state": "OR" },
+     "outputs": { "facts": [...], "reference_conversation": [...] }
+   }
+   ```
+
+4. **Validate** the file:
+
+   ```bash
+   uv run langsmith-dataset dataset validate \
+     dataset-tenant-legal-qa-examples.jsonl
+   ```
+
+5. **Push** to write the assigned IDs back to LangSmith:
+
+   ```bash
+   uv run langsmith-dataset dataset push \
+     dataset-tenant-legal-qa-examples.jsonl \
+     tenant-legal-qa-scenarios
+   ```
+
+6. **Commit** the updated JSONL file.
+
+## Fine-grained example operations
+
+```bash
+# List all examples (shows scenario_id, tags, and the first 80 characters of the question).
+uv run langsmith-dataset example list tenant-legal-qa-scenarios
+
+# Append new examples from a JSONL file without touching existing ones.
+uv run langsmith-dataset example append \
+  tenant-legal-qa-scenarios new-examples.jsonl
+
+# Remove an example by its scenario_id.
+uv run langsmith-dataset example remove \
+  tenant-legal-qa-scenarios 42
+```

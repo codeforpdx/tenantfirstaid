@@ -1,0 +1,72 @@
+---
+title: "Evaluator Rubrics"
+---
+
+# Editing evaluator rubrics
+
+LLM-as-judge evaluators (legal correctness, tone, citation accuracy) use scoring
+rubrics stored as markdown files in `evaluators/`:
+
+```
+evaluators/
+  legal_correctness.md
+  tone.md
+  citation_accuracy.md
+```
+
+Each file describes what a good answer looks like and the scoring guidelines
+(1.0 / 0.5 / 0.0). The Python code in `langsmith_evaluators.py` loads these files and
+wraps them in the structural boilerplate the AI judge needs.
+
+To refine how the judge scores responses, edit the rubric file and commit. You can
+also experiment with rubric wording in the LangSmith UI by binding an LLM-as-judge
+evaluator to your dataset — when you find wording you like, copy it back into the
+`.md` file and commit so everyone shares the same criteria (see
+[Bound Evaluators](../legal-contributor/bound-evaluators.qmd)).
+
+## Testing rubric changes without re-running the agent
+
+After editing a rubric, use `measure_evaluator_variance.py` to re-score an existing
+experiment's outputs with the new rubric — no new agent calls needed. Pass
+`--show-delta` to see how the updated rubric changed scores compared to what was
+originally recorded in the experiment. Evaluator calls run concurrently; use
+`--max-workers` to control parallelism (default: 10).
+
+```bash
+# Re-score all runs and show per-scenario deltas vs. stored scores.
+uv run measure-evaluator-variance \
+  --experiment <experiment-name> \
+  --evaluator "legal correctness" \
+  --show-delta \
+  -k 5
+
+# Focus on a specific scenario; increase workers for a large experiment.
+uv run measure-evaluator-variance \
+  --experiment <experiment-name> \
+  --evaluator "legal correctness" \
+  --scenario 2 \
+  --show-delta \
+  --max-workers 20 \
+  -k 5
+```
+
+With `--show-delta`, the mean and σ columns in the Per-Scenario Consistency table
+show the new value with the change from the stored score in parentheses:
+
+```
+=== Per-Scenario Consistency ===
+
+Evaluator: legal correctness
+  Scenario        mean           σ    0.0    0.5    1.0
+  --------  ----------  ----------  -----  -----  -----
+  S0        0.95(+0.23)  0.05(-0.13)    0      2      8
+  S1        0.80(+0.30)  0.12(-0.23)    1      1      8
+  S2        0.45(+0.05)  0.24(-0.02)    3      5      2
+```
+
+A positive delta on mean means the rubric change raised scores for that scenario; a
+negative delta on σ means scoring became more consistent. Use `-k 1` for a quick
+sanity check and `-k 5` or higher to confirm that evaluator σ has genuinely dropped.
+
+Heuristic evaluators (citation format, tool usage, performance) are Python code in
+`langsmith_evaluators.py` and require a developer to modify.
