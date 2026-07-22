@@ -1,6 +1,6 @@
 PYTHON := uv
 PIP := $(PYTHON) pip
-.PHONY: all install test clean check generate-types generate-metadata enforce-ascii upload-to-gcs create-datastore-gcs create-app-gcs
+.PHONY: all install test clean check generate-types generate-frontend-assets generate-metadata enforce-ascii upload-to-gcs create-datastore-gcs create-app-gcs
 
 all: check
 
@@ -42,6 +42,9 @@ test: uv.lock
 
 generate-types: uv.lock
 	cd ../frontend && npm run generate-types
+
+generate-frontend-assets: uv.lock
+	cd ../frontend && npm run generate-frontend-assets
 
 # Pass the GCS bucket name via: make generate-metadata GCS_BUCKET_NAME=my-bucket
 # Selective runs (e.g. LOC_OPTIONS="--portland") overwrite metadata.jsonl with

@@ -31,6 +31,9 @@ dist/
 # Auto-generated frontend types (run `make generate-types` to regenerate)
 frontend/src/types/
 
+# Auto-generated frontend data (run `make generate-frontend-assets` to regenerate)
+frontend/src/generated/
+
 # Coverage reports
 .coverage
 htmlcov/

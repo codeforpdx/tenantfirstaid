@@ -178,8 +178,8 @@ with temporary_formatted_handler(logger):
 LANGSMITH_API_KEY: Final = os.getenv("LANGSMITH_API_KEY")
 
 # Sourced from the "laso" entry in referrals_data.json — the single source of
-# truth shared with the /api/referrals endpoint and the Referrals page, so the
-# phone number can't drift between the system prompt and the referral catalog.
+# truth shared with the agent and the Referrals page, so the phone number can't
+# drift between the system prompt and the referral catalog.
 _laso_phone = REFERRALS_BY_ID["laso"].phone
 if _laso_phone is None:
     raise ValueError("referrals_data.json 'laso' entry has no phone number")
