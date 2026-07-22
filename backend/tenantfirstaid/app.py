@@ -10,7 +10,6 @@ from flask_mailman import Mail
 from .chat import ChatView
 from .feedback import send_feedback
 from .logger import configure_logging
-from .referrals_view import get_referrals
 
 # Configure logging after .chat (→ constants → .env load) so ENV from .env is honored.
 configure_logging()
@@ -66,13 +65,6 @@ app.add_url_rule(
     endpoint="feedback",
     view_func=feedback_route,
     methods=["POST"],
-)
-
-app.add_url_rule(
-    "/api/referrals",
-    endpoint="referrals",
-    view_func=get_referrals,
-    methods=["GET"],
 )
 
 if __name__ == "__main__":

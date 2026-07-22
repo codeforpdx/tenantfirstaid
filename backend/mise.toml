@@ -217,6 +217,20 @@ cd ../frontend
 npm run generate-types
 '''
 
+[tasks.generate-referrals]
+description = "Regenerate the frontend's bundled referral catalog from the backend referrals data."
+run = '''
+cd ../frontend
+npm run generate-referrals
+'''
+
+[tasks.generate-frontend-assets]
+description = "Regenerate all frontend build-time assets (types + referral catalog)."
+run = '''
+cd ../frontend
+npm run generate-frontend-assets
+'''
+
 # --- Corpus / RAG ingestion pipeline -------------------------------------------
 # Operational commands that build and publish the Vertex AI Search corpus. Ordered
 # as they run: enforce-ascii -> generate-metadata -> upload-to-gcs ->

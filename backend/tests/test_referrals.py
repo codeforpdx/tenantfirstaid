@@ -1,12 +1,9 @@
-"""Tests for the referral catalog: validation, phone-number sourcing, the
-GET /api/referrals endpoint, and the agent's get_legal_aid_referrals tool.
-"""
+"""Tests for the referral catalog and the agent's referral tool."""
 
 import json
 
 import pytest
 
-from tenantfirstaid.app import app as flask_app
 from tenantfirstaid.constants import OREGON_LAW_CENTER_PHONE_NUMBER
 from tenantfirstaid.langchain_tools import get_legal_aid_referrals
 from tenantfirstaid.referrals import (
@@ -15,29 +12,6 @@ from tenantfirstaid.referrals import (
     Referral,
     _validate_referrals,
 )
-
-
-EXPECTED_REFERRAL_FIELDS = {
-    "id",
-    "organization",
-    "service_types",
-    "provider_types",
-    "geographic_scope",
-    "eligibility",
-    "case_stages",
-    "hours",
-    "phone",
-    "email",
-    "website",
-    "notes",
-}
-
-
-@pytest.fixture
-def client():
-    flask_app.testing = True
-    with flask_app.test_client() as c:
-        yield c
 
 
 class TestReferralsCatalog:
@@ -64,39 +38,14 @@ class TestReferralsCatalog:
         assert REFERRALS_BY_ID["laso"].phone == OREGON_LAW_CENTER_PHONE_NUMBER
 
 
-class TestReferralsEndpoint:
-    def test_get_referrals_returns_200(self, client):
-        resp = client.get("/api/referrals")
-        assert resp.status_code == 200
-
-    def test_get_referrals_returns_all_records(self, client):
-        resp = client.get("/api/referrals")
-        data = resp.get_json()
-        assert len(data) == len(REFERRALS)
-        assert {r["id"] for r in data} == {r.id for r in REFERRALS}
-
-    def test_get_referrals_includes_every_expected_top_level_field(self, client):
-        resp = client.get("/api/referrals")
-        data = resp.get_json()
-        assert all(set(referral) == EXPECTED_REFERRAL_FIELDS for referral in data)
-
-    def test_referral_shape(self, client):
-        resp = client.get("/api/referrals")
-        data = resp.get_json()
-        laso = next(r for r in data if r["id"] == "laso")
-        assert laso["organization"] == "LASO"
-        assert laso["phone"] == "888-585-9638"
-        assert laso["geographic_scope"] == {"state": "or", "cities": []}
-
-
 class TestGetLegalAidReferralsTool:
-    def test_returns_json_matching_catalog(self):
+    def test_returns_all_catalog_records(self):
         result = get_legal_aid_referrals.invoke({})
         parsed = json.loads(result)
         assert len(parsed) == len(REFERRALS)
         assert {r["id"] for r in parsed} == {r.id for r in REFERRALS}
 
-    def test_returns_json_matching_referrals_endpoint(self, client):
-        endpoint_data = client.get("/api/referrals").get_json()
+    def test_returns_json_matching_catalog(self):
         tool_data = json.loads(get_legal_aid_referrals.invoke({}))
-        assert tool_data == endpoint_data
+        catalog_data = [referral.model_dump(mode="json") for referral in REFERRALS]
+        assert tool_data == catalog_data

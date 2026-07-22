@@ -1,9 +1,8 @@
 """Structured legal-aid referral catalog.
 
-Single source of truth for the referrals shown on the frontend Referrals page
-(served via GET /api/referrals) and looked up by the agent's
-get_legal_aid_referrals tool. Backed by referrals_data.json and validated at
-import time.
+Single source of truth for the referrals bundled into the frontend Referrals
+page and looked up by the agent's get_legal_aid_referrals tool. Backed by
+referrals_data.json and validated at import time.
 """
 
 import json

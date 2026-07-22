@@ -62,7 +62,7 @@ Live at https://tenantfirstaid.com/
 1. Open a new terminal / tab
 1. `cd ../frontend`
 1. `npm install`
-1. `npm run generate-types`
+1. `npm run generate-frontend-assets`
 1. `npm run dev`
 1. Go to http://localhost:5173
 1. Start chatting
@@ -151,12 +151,12 @@ Live at https://tenantfirstaid.com/
    % cd frontend
    ```
 
-1. generate TypeScript types from backend models (required before type-checking or building)
+1. generate frontend types and referral data from the backend (required before type-checking, testing, or building)
    ```sh
-   % npm run generate-types
+   % npm run generate-frontend-assets
    ```
 
-   This writes `src/types/models.ts` from the backend Pydantic models (gitignored). Non-generated frontend types are stored in `src/shared/types/` and are checked into source control.
+   This writes `src/types/models.ts` from the backend Pydantic models and `src/generated/referrals.ts` from the validated referral catalog. Both outputs are gitignored. Non-generated frontend types are stored in `src/shared/types/` and are checked into source control.
 
 - run individual checks
 

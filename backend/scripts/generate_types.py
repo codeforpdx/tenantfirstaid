@@ -21,7 +21,7 @@ class ResponseChunk(RootModel[ResponseChunkType]):
 
 
 class ReferralList(RootModel[list[ReferralType]]):
-    """List of legal-aid referral records returned by GET /api/referrals."""
+    """List of legal-aid referral records shared with the frontend."""
 
 
 _, schema = models_json_schema(
