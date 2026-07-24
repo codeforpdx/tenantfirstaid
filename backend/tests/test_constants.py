@@ -136,11 +136,8 @@ class TestGoogEnvAndPolicy:
         assert warnings, "expected a warning when .env is missing"
         msg = warnings[-1].getMessage()
         assert "No .env file found" in msg
-        # The resolved path is absolute and ends at the package's sibling .env.
-        # Assert the suffix only, not the parent directory name, so the test holds
-        # regardless of where the app is installed (e.g. backend/ on the host vs
-        # /app in the ci container image).
-        assert re.search(r"/\.env, proceeding\b", msg)
+        # The resolved path is absolute and points at backend/.env.
+        assert re.search(r"/backend/\.env, proceeding\b", msg)
 
     def test_missing_laws_datastore_raises(
         self, no_env_file, silence_missing_env_warning

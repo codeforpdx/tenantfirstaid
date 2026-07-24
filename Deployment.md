@@ -81,7 +81,7 @@ Once immutable, an artifact **must never be mutated in-place**. The risk is that
 
 ```mermaid
 flowchart TD
-    A["Create new corpus version<br/>(mise run upload-to-gcs → create-datastore-gcs)"] --> B["Point staging to new corpus<br/>(update VERTEX_AI_DATASTORE_LAWS in staging env)"]
+    A["Create new corpus version<br/>(make upload-to-gcs → create-datastore-gcs)"] --> B["Point staging to new corpus<br/>(update VERTEX_AI_DATASTORE_LAWS in staging env)"]
     B --> C["Deploy to staging and validate<br/>(smoke-test the chatbot)"]
     C --> D{"Validation passed?"}
     D -->|No| E["Debug / iterate on corpus<br/>(new corpus is still mutable)"]
@@ -97,7 +97,7 @@ flowchart TD
 **Rules:**
 - A corpus is **mutable** until it is first deployed to any live environment.
 - Once deployed, it is **immutable** — never add, remove, or reindex documents in that corpus.
-- To update the knowledge base, always create a **new corpus** (a fresh datastore) via the RAG ingestion pipeline (`mise run upload-to-gcs` → `mise run create-datastore-gcs`; see [corpus-dataset](.claude/skills/corpus-dataset.md)).
+- To update the knowledge base, always create a **new corpus** (a fresh datastore) via the RAG ingestion pipeline (`make upload-to-gcs` → `make create-datastore-gcs`; see [corpus-dataset](.claude/skills/corpus-dataset.md)).
 - The old corpus must be **retained** for at least one sprint (or until the next successful deployment) to support rollback and bug reproduction.
 - A corpus may be **deleted** only after: (1) it is no longer referenced by any environment, and (2) no open bugs require reproducing behavior against it.
 
@@ -454,7 +454,7 @@ Verify the corpus ID in the env file matches an existing corpus in [GCP Vertex A
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | `NOT_FOUND` on datastore ID | Corpus deleted or wrong ID | Update `VERTEX_AI_DATASTORE_LAWS` in GitHub environment settings and redeploy |
-| Empty retrieval results | Corpus not indexed / wrong metadata filters | Re-ingest documents via the RAG ingestion pipeline (`mise run upload-to-gcs` → `mise run create-datastore-gcs`); follow [External artifact lifecycle](#external-artifact-lifecycle) |
+| Empty retrieval results | Corpus not indexed / wrong metadata filters | Re-ingest documents via the RAG ingestion pipeline (`make upload-to-gcs` → `make create-datastore-gcs`); follow [External artifact lifecycle](#external-artifact-lifecycle) |
 | Auth errors on RAG calls | Same as Gemini auth issues | See Gemini runbook above |
 
 **Resolve**: update `VERTEX_AI_DATASTORE_LAWS` to a valid corpus ID and trigger a redeploy.

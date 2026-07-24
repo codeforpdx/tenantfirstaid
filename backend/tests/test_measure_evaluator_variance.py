@@ -15,9 +15,9 @@ from evaluate.measure_evaluator_variance import (
 from evaluate.results_display import ScenarioResult
 
 
-# The module under test prints CLI progress to stdout. Redirect stdout ourselves
-# so the output stays clean regardless of pytest's capture settings (e.g. when run
-# with `-s`, which disables pytest's own capture).
+# The module under test prints CLI progress to stdout. `make test` runs pytest
+# with `-s`, which disables pytest's own capture, so redirect stdout ourselves
+# to keep the test output clean.
 @pytest.fixture(autouse=True)
 def _silence_stdout():
     import contextlib
@@ -184,7 +184,7 @@ def test_measure_evaluator_variance_calls_evaluator_k_times(fake_pairs):
         ),
         patch(
             "evaluate.measure_evaluator_variance._ALL_EVALUATORS",
-            {"legal correctness": lambda: mock_evaluator},
+            {"legal correctness": mock_evaluator},
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch("evaluate.measure_evaluator_variance.print_consistency_stats"),
@@ -213,7 +213,7 @@ def test_measure_evaluator_variance_scenario_filter(fake_pairs):
         ),
         patch(
             "evaluate.measure_evaluator_variance._ALL_EVALUATORS",
-            {"legal correctness": lambda: mock_evaluator},
+            {"legal correctness": mock_evaluator},
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch("evaluate.measure_evaluator_variance.print_consistency_stats"),
@@ -235,7 +235,7 @@ def test_measure_evaluator_variance_runs_per_scenario_limit(fake_pairs):
         ),
         patch(
             "evaluate.measure_evaluator_variance._ALL_EVALUATORS",
-            {"legal correctness": lambda: mock_evaluator},
+            {"legal correctness": mock_evaluator},
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch("evaluate.measure_evaluator_variance.print_consistency_stats"),
@@ -289,7 +289,7 @@ def test_measure_evaluator_variance_results_collected_from_threads(fake_pairs):
         ),
         patch(
             "evaluate.measure_evaluator_variance._ALL_EVALUATORS",
-            {"legal correctness": lambda: original_evaluator},
+            {"legal correctness": original_evaluator},
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch(
@@ -325,7 +325,7 @@ def test_measure_evaluator_variance_thread_error_does_not_abort(fake_pairs):
         ),
         patch(
             "evaluate.measure_evaluator_variance._ALL_EVALUATORS",
-            {"legal correctness": lambda: flaky_evaluator},
+            {"legal correctness": flaky_evaluator},
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch("evaluate.measure_evaluator_variance.print_consistency_stats"),
@@ -348,7 +348,7 @@ def test_measure_evaluator_variance_calls_write_variance_entry(fake_pairs):
         ),
         patch(
             "evaluate.measure_evaluator_variance._ALL_EVALUATORS",
-            {"legal correctness": lambda: mock_evaluator},
+            {"legal correctness": mock_evaluator},
         ),
         patch("evaluate.measure_evaluator_variance.Client"),
         patch("evaluate.measure_evaluator_variance.print_consistency_stats"),

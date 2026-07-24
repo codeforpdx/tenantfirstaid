@@ -150,10 +150,10 @@ def run_evaluation(
         #         Callable[..., Union[Dict[Any, Any], EvaluationResult, EvaluationResults]]
         Any
     ] = [
-        # citation_accuracy_evaluator(),
-        legal_correctness_evaluator(),
+        # citation_accuracy_evaluator,
+        legal_correctness_evaluator,
         # completeness_evaluator,
-        tone_evaluator(),
+        tone_evaluator,
         # citation_format_evaluator,
         # tool_usage_evaluator,
         # performance_evaluator,

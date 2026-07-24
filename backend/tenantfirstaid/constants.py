@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from langchain_google_genai import HarmBlockThreshold, HarmCategory
 
 from .logger import temporary_formatted_handler
+from .referrals import REFERRALS_BY_ID
 
 logger = logging.getLogger(__name__)
 
@@ -176,7 +177,13 @@ with temporary_formatted_handler(logger):
 
 LANGSMITH_API_KEY: Final = os.getenv("LANGSMITH_API_KEY")
 
-OREGON_LAW_CENTER_PHONE_NUMBER: Final = "888-585-9638"
+# Sourced from the "laso" entry in referrals_data.json — the single source of
+# truth shared with the agent and the Referrals page, so the phone number can't
+# drift between the system prompt and the referral catalog.
+_laso_phone = REFERRALS_BY_ID["laso"].phone
+if _laso_phone is None:
+    raise ValueError("referrals_data.json 'laso' entry has no phone number")
+OREGON_LAW_CENTER_PHONE_NUMBER: Final[str] = _laso_phone
 RESPONSE_WORD_LIMIT: Final = 350
 
 _SYSTEM_PROMPT_PATH: Final = Path(__file__).parent / "system_prompt.md"

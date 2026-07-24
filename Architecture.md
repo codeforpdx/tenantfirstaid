@@ -88,6 +88,7 @@ backend/
 │   ├── vertex_ai_list_datastores.py    # Utility to get Google Vertex AI Datastore IDs
 │   ├── convert_csv_to_jsonl.py         # Data conversion utilities
 │   ├── generate_types.py               # Generates a JSON Schema for Pydantic models exported to the frontend; piped through json-schema-to-typescript to produce frontend/src/types/models.ts (run via `mise run generate-types` or `npm run generate-types`)
+│   ├── generate_referrals.py           # Generates the validated referral catalog bundled into the static frontend
 │   ├── generate_conversation/          # Source data for synthetic conversation generation
 │   └── documents/                      # Source legal documents
 │       └── or/                         # Oregon state laws
@@ -435,7 +436,9 @@ frontend/
 │   │   ├── useMessages.tsx         # Message handling logic
 │   │   ├── useHousingContext.tsx   # Custom hook for housing context
 │   │   └── useLetterContent.tsx    # State management for letter generation
-│   ├── types/                      # Auto-generated TypeScript types (gitignored) — do not edit manually, re-run `mise run generate-types` or `npm run generate-types`
+│   ├── generated/                  # Auto-generated frontend data (gitignored)
+│   │   └── referrals.ts            # Validated referral catalog bundled by Vite
+│   ├── types/                      # Auto-generated TypeScript types (gitignored) — do not edit manually, re-run `mise run generate-frontend-assets` or `npm run generate-frontend-assets`
 │   │   └── models.ts                  # All exported types: ResponseChunk, Location, OregonCity, UsaState, chunk interfaces
 │   ├── layouts/                    # Layouts
 │   │   └── PageLayout.tsx          # Layout for pages

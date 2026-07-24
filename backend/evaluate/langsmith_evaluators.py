@@ -9,7 +9,6 @@ without touching Python code.
 """
 
 import re
-from functools import cache
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, Final
@@ -21,24 +20,13 @@ from openevals.types import SimpleEvaluator
 # NOTE: can (should?) use different models for chatbot LLM & evaluator
 EVALUATOR_MODEL_NAME: Final = "gemini-3-flash-preview"
 
-
 # Use vertexai=True so the evaluator uses service account credentials rather
 # than a Gemini API key. init_chat_model routes gemini-3-flash-preview to
 # us-central1 by default, which returns 404 — constructing the judge directly
 # avoids that routing issue.
-@cache
-def _evaluator_judge() -> ChatGoogleGenerativeAI:
-    """Construct the LLM-as-judge lazily (cached singleton).
-
-    Building ChatGoogleGenerativeAI opens an httpx client, so doing it at module
-    scope gives every importer of this module a network side effect — which also
-    breaks test collection under proxies that need extra httpx extras. Deferring
-    construction to first use keeps importing this module side-effect-free.
-    """
-    return ChatGoogleGenerativeAI(
-        model=EVALUATOR_MODEL_NAME, vertexai=True, location="global"
-    )
-
+_EVALUATOR_JUDGE: Final = ChatGoogleGenerativeAI(
+    model=EVALUATOR_MODEL_NAME, vertexai=True, location="global"
+)
 
 EVALUATORS_DIR: Final = Path(__file__).parent / "evaluators"
 
@@ -100,38 +88,29 @@ def load_rubric(name: str) -> str:
 # but Gemini's protobuf layer requires enum values to be strings, not floats,
 # and raises a ParseError at runtime.
 
-# These LLM-as-judge evaluators are exposed as cached factory functions rather
-# than module-level objects so that importing this module never constructs the
-# judge (and thus never opens a network client). Callers invoke the factory to
-# get the evaluator; @cache makes each one a singleton.
-
-
-def _make_judge(rubric: str, feedback_key: str) -> SimpleEvaluator:
-    """Build an LLM-as-judge evaluator from a rubric file and feedback key."""
-    return create_llm_as_judge(
-        judge=_evaluator_judge(),
-        prompt=load_rubric(rubric),
-        feedback_key=feedback_key,
-        continuous=True,
-    )
-
-
 # Evaluator: Citation Accuracy (LLM-as-Judge).
-@cache
-def citation_accuracy_evaluator() -> SimpleEvaluator:
-    return _make_judge("citation_accuracy", "citation accuracy")
-
+citation_accuracy_evaluator: SimpleEvaluator = create_llm_as_judge(
+    judge=_EVALUATOR_JUDGE,
+    prompt=load_rubric("citation_accuracy"),
+    feedback_key="citation accuracy",
+    continuous=True,
+)
 
 # Evaluator: Legal Correctness (LLM-as-Judge).
-@cache
-def legal_correctness_evaluator() -> SimpleEvaluator:
-    return _make_judge("legal_correctness", "legal correctness")
-
+legal_correctness_evaluator: SimpleEvaluator = create_llm_as_judge(
+    judge=_EVALUATOR_JUDGE,
+    prompt=load_rubric("legal_correctness"),
+    feedback_key="legal correctness",
+    continuous=True,
+)
 
 # Evaluator: Tone & Professionalism (LLM-as-Judge).
-@cache
-def tone_evaluator() -> SimpleEvaluator:
-    return _make_judge("tone", "appropriate tone")
+tone_evaluator: SimpleEvaluator = create_llm_as_judge(
+    judge=_EVALUATOR_JUDGE,
+    prompt=load_rubric("tone"),
+    feedback_key="appropriate tone",
+    continuous=True,
+)
 
 
 # Evaluator: Citation Format (Heuristic).

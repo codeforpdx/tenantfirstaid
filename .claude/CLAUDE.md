@@ -9,7 +9,7 @@ Tenant First Aid is a chatbot for Oregon housing/eviction legal information. Fla
 - **Architecture docs**: [Architecture.md](../Architecture.md) — RAG pipeline, endpoints, session management, frontend structure
 - **Deployment docs**: [Deployment.md](../Deployment.md) — CI/CD, secrets, infrastructure
 - **PR template**: [.github/pull_request_template.md](../.github/pull_request_template.md)
-- **Dev commands**: `mise run <task>` — `backend/mise.toml` (checks + RAG ingestion pipeline), `frontend/mise.toml`, root `mise.toml` (monorepo); run `mise tasks` to list
+- **Dev commands**: `backend/Makefile`
 
 ### Key architecture
 
@@ -32,5 +32,4 @@ Load these on demand -- don't include their content in every response, just invo
 | `/frontend` | Working on frontend code (commands, type generation, Docker) |
 | `/corpus-dataset` | Adding, modifying, or reviewing `.txt` law files in `backend/scripts/documents/` (includes ASCII enforcement rules) |
 | `/evaluation` | Running, analyzing, or improving LangSmith evaluations |
-| `/optimize-experiment` | Reducing token usage and latency once quality scores are stable |
 | `/pr` | Writing commit messages, opening PRs, or reviewing code |

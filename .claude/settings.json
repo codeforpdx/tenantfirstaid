@@ -4,19 +4,13 @@
   },
   "permissions": {
     "allow": [
-      "Bash(container exec *)",
-      "Bash(container list*)",
-      "Bash(container logs*)",
-      "WebFetch(domain:ai.google.dev)",
-      "WebFetch(domain:docs.astral.sh)",
-      "WebFetch(domain:docs.digitalocean.com)",
-      "WebFetch(domain:docs.docker.com)",
-      "WebFetch(domain:docs.github.com)",
       "WebFetch(domain:docs.langchain.com)",
-      "WebFetch(domain:mise-versions.jdx.dev)",
-      "WebFetch(domain:mise.jdx.dev)",
-      "WebFetch(domain:nodejs.org)",
-      "WebFetch(domain:reference.langchain.com)"
+      "WebFetch(domain:reference.langchain.com)",
+      "WebFetch(domain:ai.google.dev)",
+      "WebFetch(domain:docs.digitalocean.com)",
+      "WebFetch(domain:docs.github.com)",
+      "WebFetch(domain:docs.docker.com)",
+      "WebFetch(domain:docs.astral.sh)"
     ]
   },
   "enabledPlugins": {

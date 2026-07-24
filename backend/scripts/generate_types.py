@@ -1,6 +1,6 @@
 """Generate a JSON Schema for all Pydantic models exported to the frontend.
 
-Usage: npm run generate-types (from frontend/) or mise run generate-types (from backend/).
+Usage: npm run generate-types (from frontend/) or make generate-types (from backend/).
 """
 
 import json
@@ -9,6 +9,7 @@ from pydantic import RootModel
 from pydantic.json_schema import models_json_schema
 
 from tenantfirstaid.location import Location
+from tenantfirstaid.referrals import Referral as ReferralType
 from tenantfirstaid.schema import ResponseChunk as ResponseChunkType
 
 
@@ -19,10 +20,15 @@ class ResponseChunk(RootModel[ResponseChunkType]):
     """
 
 
+class ReferralList(RootModel[list[ReferralType]]):
+    """List of legal-aid referral records shared with the frontend."""
+
+
 _, schema = models_json_schema(
     [
         (Location, "serialization"),
         (ResponseChunk, "serialization"),
+        (ReferralList, "serialization"),
     ],
     title="TenantFirstAid Models",
 )

@@ -7,11 +7,11 @@ GCS URIs point to the bucket root (files are uploaded flat, not mirrored).
 ASCII enforcement runs first via scripts.enforce_ascii so that any non-ASCII
 content is rewritten in place (or fails loudly with a suggestion table).
 
-To run (from backend/):
-  mise run generate-metadata --bucket <bucket>                            # all documents
-  mise run generate-metadata --bucket <bucket> -- --oregon               # Oregon state only
-  mise run generate-metadata --bucket <bucket> -- --portland             # Portland only
-  mise run generate-metadata --bucket <bucket> -- --oregon --eugene      # multiple
+To run:
+  make generate-metadata GCS_BUCKET_NAME=<bucket>                                    # all documents
+  make generate-metadata GCS_BUCKET_NAME=<bucket> LOC_OPTIONS="--oregon"             # Oregon state only
+  make generate-metadata GCS_BUCKET_NAME=<bucket> LOC_OPTIONS="--portland"           # Portland only
+  make generate-metadata GCS_BUCKET_NAME=<bucket> LOC_OPTIONS="--oregon --eugene"    # multiple
 """
 
 import argparse

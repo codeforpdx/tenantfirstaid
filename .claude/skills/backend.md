@@ -5,25 +5,20 @@ Reference for backend development workflow. Run all commands from `backend/`.
 ## Commands
 
 ```bash
-mise run fmt              # Format + sort imports (ruff)
-mise run lint             # Lint (ruff)
-mise run typecheck        # Type-check (ty)
-mise run test             # Run tests (pytest)
-mise run check            # All of the above (clean, sync, fmt, lint, typecheck, test)
+make fmt                  # Format + sort imports (ruff)
+make lint                 # Lint (ruff)
+make typecheck            # Type-check (ty)
+make test                 # Run tests (pytest)
+make --keep-going check   # All of the above in one shot
 
-# Run any check inside the Dockerfile ci image instead of on the host.
-mise run check --container            # whole suite in a container (auto engine)
-mise run test --container --engine docker
-mise run fmt --container --write      # reformat the host tree via the container
-
-# Single test (pass extra pytest args after --)
-mise run test -- -s -k <test_name>
+# Single test
+uv run pytest -s -k <test_name>
 
 # LangChain-specific tests
 uv run pytest -m langchain
 
 # Coverage
-mise run test -- --cov tenantfirstaid --cov-report html --cov-branch
+make test TEST_OPTIONS="--cov tenantfirstaid --cov-report html --cov-branch"
 ```
 
 All Python commands must be run via `uv run python ...`. Use the `/uv` skill for uv-specific guidance.

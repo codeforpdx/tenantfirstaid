@@ -62,7 +62,7 @@ Live at https://tenantfirstaid.com/
 1. Open a new terminal / tab
 1. `cd ../frontend`
 1. `npm install`
-1. `npm run generate-types`
+1. `npm run generate-frontend-assets`
 1. `npm run dev`
 1. Go to http://localhost:5173
 1. Start chatting
@@ -85,7 +85,7 @@ Live at https://tenantfirstaid.com/
      ```
      or
      ```sh
-     % mise run fmt
+     % make fmt
      ```
   1. _lint_ Python code with `ruff`
      ```sh
@@ -93,7 +93,7 @@ Live at https://tenantfirstaid.com/
      ```
      or
      ```sh
-     % mise run lint
+     % make lint
      ```
   1. _typecheck_ Python code with `ty`
 
@@ -104,7 +104,7 @@ Live at https://tenantfirstaid.com/
      or
 
      ```sh
-     % mise run typecheck
+     % make typecheck
      ```
 
      _typecheck_ with other Python typecheckers which are not protected in [PR Checks](.github/workflows/pr-check.yml) - useful for completeness & a 2nd opinion
@@ -115,7 +115,7 @@ Live at https://tenantfirstaid.com/
         ```
         or
         ```sh
-        % mise run typecheck --checker mypy
+        % make typecheck-mypy
         ```
      1. _typecheck_ Python code with `pyrefly`
         ```sh
@@ -123,7 +123,7 @@ Live at https://tenantfirstaid.com/
         ```
         or
         ```sh
-        % mise run typecheck --checker pyrefly
+        % make typecheck-pyrefly
         ```
 
   1. _test_ Python code with `pytest`
@@ -132,14 +132,14 @@ Live at https://tenantfirstaid.com/
      ```
      or
      ```sh
-     % mise run test
+     % make test
      ```
 
 - or run the above checks in one-shot
   ```sh
-  % mise run check
+  % make --keep-going check
   ```
-  `check` runs `lint`, `typecheck`, and `test` concurrently (after `fmt`), so all three report even if one fails — you see every failure in a single run rather than stopping at the first.
+  `--keep-going` will continue to run checks, even if previous `make` rule fail. Omit if you want to stop after the first `make` rule fails.
 
 | 💡 Using Claude Code? Type `/frontend` in the Claude Code UI for frontend workflow reference. |
 |---|
@@ -151,12 +151,12 @@ Live at https://tenantfirstaid.com/
    % cd frontend
    ```
 
-1. generate TypeScript types from backend models (required before type-checking or building)
+1. generate frontend types and referral data from the backend (required before type-checking, testing, or building)
    ```sh
-   % npm run generate-types
+   % npm run generate-frontend-assets
    ```
 
-   This writes `src/types/models.ts` from the backend Pydantic models (gitignored). Non-generated frontend types are stored in `src/shared/types/` and are checked into source control.
+   This writes `src/types/models.ts` from the backend Pydantic models and `src/generated/referrals.ts` from the validated referral catalog. Both outputs are gitignored. Non-generated frontend types are stored in `src/shared/types/` and are checked into source control.
 
 - run individual checks
 

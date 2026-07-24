@@ -29,21 +29,21 @@ ENV PORT=${PORT}
 
 EXPOSE ${PORT}
 
-CMD ["sh", "-c", "npm run generate-types && npm run dev -- --host 0.0.0.0 --port ${PORT}"]
+CMD ["sh", "-c", "npm run generate-frontend-assets && npm run dev -- --host 0.0.0.0 --port ${PORT}"]
 
 # -----------------------------------------------
 # ci: run all checks and build
 # -----------------------------------------------
 FROM base AS ci
 
-CMD ["sh", "-c", "npm run generate-types && npm run typecheck && npm run lint && npm run test -- --run && npm run build"]
+CMD ["sh", "-c", "npm run generate-frontend-assets && npm run typecheck && npm run lint && npm run test -- --run && npm run build"]
 
 # -----------------------------------------------
 # production-build: compile static assets
 # -----------------------------------------------
 FROM base AS production-build
 
-RUN npm run generate-types && npm run build
+RUN npm run build
 
 # -----------------------------------------------
 # production: minimal image to serve static files

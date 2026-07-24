@@ -149,8 +149,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate types
-        run: npm run generate-types
+      - name: Generate frontend assets
+        run: npm run generate-frontend-assets
 
       - name: Run linting checks
         run: npm run lint

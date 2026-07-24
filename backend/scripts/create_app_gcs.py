@@ -1,6 +1,6 @@
 """Create a Vertex AI Search app and link it to an existing datastore.
 
-Companion to scripts.create_datastore_gcs. Run via `mise run create-app-gcs`.
+Companion to scripts.create_datastore_gcs. Run via `make create-app-gcs`.
 """
 
 import argparse

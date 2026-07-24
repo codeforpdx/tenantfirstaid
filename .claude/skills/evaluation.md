@@ -152,10 +152,6 @@ To detect a 0.10-point improvement with 80% power, you need ~32 repetitions per 
 
 Use `/analyze-experiment <experiment-name-or-uuid>` for automated root-cause diagnosis — it runs the full trace investigation workflow and recommends fixes matched to the failure mode (retrieval miss, query too broad, reasoning failure, instruction conflict, confabulation, misleading retrieval).
 
-## Optimizing a stable system
-
-Use `/optimize-experiment <experiment-name-or-uuid>` once scores are stable and the goal shifts from fixing failures to reducing cost and latency. Three targets: (1) L1/L2 corpus and retrieval improvements that eliminate the need for STOPGAPs; (2) L3 system-prompt size reduction — retiring STOPGAPs whose corpus gaps are fixed, pruning Clarifications that are no longer load-bearing; (3) retrieval parameter tuning — finding the minimum docs×segments that preserves coverage. Do not use this skill while actively investigating failures — fix quality first, then optimize.
-
 ---
 
 ## Editing the system prompt
