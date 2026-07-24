@@ -1,0 +1,296 @@
+# Backend project config (mise monorepo). Addressed from the repo root as
+# `//backend:<task>`, or by bare name from inside this directory (`mise run test`).
+#
+# Each check runs on the host by default; pass --container to run the same check
+# inside the Dockerfile "ci" stage instead, and --engine to pick the runtime
+# (auto|docker|container|podman). Ad-hoc tool flags pass through as trailing args
+# (e.g. `mise run test -- --cov`).
+
+[tools]
+# Mirror backend/Dockerfile's ghcr.io/astral-sh/uv:python3.13-* base.
+# Pinned to an exact version (for reproducibility, and because the aqua backend's
+# `latest` alias currently 404s on astral-sh/uv). Bump as new uv releases land.
+uv = "0.11.26"
+
+[env]
+# Let uv own the Python interpreter (as the uv:python3.13 base image does), so
+# `uv sync` / `uv run` resolve 3.13 regardless of any system Python on PATH.
+# pyproject.toml requires >=3.12,<3.14; 3.13 matches the Dockerfile.
+UV_PYTHON = "3.13"
+
+[tasks.sync]
+description = "Sync deps into .venv."
+# Mirrors the old Makefile's `uv.lock: pyproject.toml` prerequisite: fmt/lint/
+# typecheck/test all `depends` on this, and mise reruns it only when pyproject.toml
+# or uv.lock has changed since the last successful sync (auto outputs track a source
+# hash), so a standalone `mise run test` after a dependency bump (or a teammate's
+# lockfile update) can't run against a stale .venv.
+sources = ["pyproject.toml", "uv.lock"]
+outputs = { auto = true }
+run = "uv sync"
+
+[tasks.serve]
+description = "Run the Flask backend locally."
+run = "uv run python -m tenantfirstaid.app"
+
+[tasks.clean]
+description = "Remove __pycache__ and build artifacts."
+run = '''
+find . -type d -name '__pycache__' -exec rm -r {} +
+rm -rf dist build *.egg-info
+'''
+
+[tasks.fmt]
+description = "Sort imports and format. host: MUTATES; --container: verify-only; --container --write: reformat host tree via the container."
+depends = ["sync"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+flag "--write" help="With --container: bind-mount and reformat the host tree in place (files stay owned by you)."
+flag "--rebuild" help="With --container --write: force a rebuild of the ci image (otherwise reused while deps are unchanged)."
+'''
+run = '''
+set -eu
+if [ -n "${usage_container:-}" ]; then
+  if [ -n "${usage_write:-}" ]; then
+    # Write-back: bind-mount this directory into the ci image and run its ruff as the
+    # current user, so reformatted files are written back to the host owned by you.
+    # Use the image's ruff binary directly (not `uv run`, which would try to re-sync
+    # the root-owned /app/.venv). RUFF_CACHE_DIR points at /tmp to keep the mount clean.
+    # The image is reused across runs while pyproject.toml/uv.lock are unchanged (the
+    # source is mounted live, so it need not be rebuilt); --rebuild forces a fresh build.
+    exec mise run //:_container-run \
+      --image tenantfirstaid-backend:ci --context backend --engine "${usage_engine:-auto}" \
+      --bind-src "$PWD" --bind-dst /src --as-user \
+      --cache-key-files "backend/pyproject.toml backend/uv.lock" \
+      ${usage_rebuild:+--rebuild} \
+      --cmd 'export RUFF_CACHE_DIR=/tmp/ruff-cache; ruff check --select I --fix . && ruff format .'
+  fi
+  # No --write: verify (read-only). Bind the repo ROOT (so the container has the real
+  # .git) and run from /src/backend, so ruff honors .gitignore (excluding any generated
+  # dirs). Bare ruff from the image PATH (not `uv run`, which would use the host's macOS
+  # /src/backend/.venv); the live mount shows edits without a rebuild.
+  exec mise run //:_container-run \
+    --image tenantfirstaid-backend:ci --context backend --engine "${usage_engine:-auto}" \
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "backend/pyproject.toml backend/uv.lock" \
+    --cmd 'cd /src/backend && export RUFF_CACHE_DIR=/tmp/ruff-cache && ruff check --select I && ruff format --check'
+fi
+uv run ruff check --select I --fix
+uv run ruff format
+'''
+
+[tasks.lint]
+description = "Lint with ruff."
+depends = ["sync"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+arg "<options>" var=#true required=#false help="Extra ruff args (was LINT_OPTIONS)."
+'''
+run = '''
+set -eu
+if [ -n "${usage_container:-}" ]; then
+  # Bind the repo ROOT (so the container has the real .git) and run from /src/backend;
+  # ruff then honors .gitignore natively. Bare ruff from the image PATH; the live mount
+  # means edits are seen without a rebuild.
+  exec mise run //:_container-run \
+    --image tenantfirstaid-backend:ci --context backend --engine "${usage_engine:-auto}" \
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "backend/pyproject.toml backend/uv.lock" \
+    --cmd "cd /src/backend && export RUFF_CACHE_DIR=/tmp/ruff-cache && ruff check ${usage_options:-}"
+fi
+uv run ruff check ${usage_options:-}
+'''
+
+# The flag is --checker, not --tool: --tool collides with mise's own
+# `run --tool <tool@ver>` global option, which would swallow the value. A `choices`
+# block is also avoided: in mise 2026.7 a `--` before the passthrough args resets a
+# choices-flag to its default, so the checker is validated by hand in the body.
+[tasks.typecheck]
+description = "Type-check. --checker ty (default, fast) | mypy | pyrefly."
+depends = ["sync"]
+usage = '''
+flag "--checker <checker>" help="Type checker: ty (default) | mypy | pyrefly. mypy/pyrefly are secondary checkers for a second opinion." default="ty"
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+arg "<options>" var=#true required=#false help="Extra checker args (was TYPECHECK_OPTIONS)."
+'''
+run = '''
+set -eu
+opts="${usage_options:-}"
+# In the container the repo is bind-mounted (project at /src/backend), but the toolchain
+# venv is the image's /app/.venv (the host's /src/backend/.venv holds macOS binaries).
+# Pin uv to that venv and use absolute interpreter paths so the checks see your edits
+# without an image rebuild. `--no-sync` avoids touching the root-owned venv. No PYTHONPATH:
+# ty/mypy analyze the /src/backend project directly (CWD); PYTHONPATH would override their
+# default source-root detection (which includes tests/, home of the gcs_helpers helper).
+if [ -n "${usage_container:-}" ]; then
+  venv="/app/.venv"; pre="UV_PROJECT_ENVIRONMENT=$venv"; nosync="--no-sync"
+else
+  venv=".venv"; pre=""; nosync=""
+fi
+mypy_args="--python-executable $venv/bin/python3 --pretty --check-untyped-defs"
+case "${usage_checker:-ty}" in
+  ty)      cmd="$pre uv run $nosync ty check $opts" ;;
+  mypy)    cmd="$pre uv run $nosync mypy -p tenantfirstaid $mypy_args $opts && $pre uv run $nosync mypy -p evaluate $mypy_args $opts && $pre uv run $nosync mypy -p scripts $mypy_args $opts" ;;
+  pyrefly) cmd="$pre uv run $nosync pyrefly check --python-interpreter-path $venv/bin/python3 $opts" ;;
+  *) echo "Unknown --checker '${usage_checker}' (expected ty|mypy|pyrefly)." >&2; exit 2 ;;
+esac
+if [ -n "${usage_container:-}" ]; then
+  # Bind the repo ROOT (real .git) and run from /src/backend so the checker honors
+  # .gitignore. uv is pinned to the image venv (/app/.venv), not the host's macOS
+  # /src/backend/.venv.
+  exec mise run //:_container-run \
+    --image tenantfirstaid-backend:ci --context backend --engine "${usage_engine:-auto}" \
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "backend/pyproject.toml backend/uv.lock" \
+    --cmd "cd /src/backend && $cmd"
+fi
+eval "$cmd"
+'''
+
+[tasks.test]
+description = "Run pytest."
+depends = ["sync"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+arg "<options>" var=#true required=#false help="Extra pytest args, e.g. --cov (was TEST_OPTIONS)."
+'''
+run = '''
+set -eu
+if [ -n "${usage_container:-}" ]; then
+  # Bind the repo ROOT (real .git) and run from /src/backend. Pin uv to the image venv
+  # (/app/.venv, not the host's macOS /src/backend/.venv) and put /src/backend on the
+  # import path so pytest collects your live edits without a rebuild. The app singleton
+  # reads /src/backend/.env, present via the bind mount.
+  exec mise run //:_container-run \
+    --image tenantfirstaid-backend:ci --context backend --engine "${usage_engine:-auto}" \
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "backend/pyproject.toml backend/uv.lock" \
+    --cmd "cd /src/backend && UV_PROJECT_ENVIRONMENT=/app/.venv PYTHONPATH=/src/backend uv run --no-sync pytest --verbose ${usage_options:-}"
+fi
+uv run pytest --verbose ${usage_options:-}
+'''
+
+[tasks.check]
+description = "Full backend check: clean, sync, fmt, lint, typecheck, test."
+usage = '''
+flag "--container" help="Run the whole suite in the Dockerfile ci image (verify-only fmt)."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+'''
+run = '''
+set -eu
+if [ -n "${usage_container:-}" ]; then
+  # One build, one container over the repo-root bind (fmt is verify-only here). Running
+  # from /src/backend with the real .git means ruff/ty honor .gitignore; ty/pytest use
+  # uv pinned to /app/.venv, and pytest imports from /src/backend.
+  exec mise run //:_container-run \
+    --image tenantfirstaid-backend:ci --context backend --engine "${usage_engine:-auto}" \
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "backend/pyproject.toml backend/uv.lock" \
+    --cmd 'cd /src/backend && export RUFF_CACHE_DIR=/tmp/ruff-cache && ruff check --select I && ruff format --check && ruff check && UV_PROJECT_ENVIRONMENT=/app/.venv uv run --no-sync ty check && UV_PROJECT_ENVIRONMENT=/app/.venv PYTHONPATH=/src/backend uv run --no-sync pytest --verbose'
+fi
+# Host lane. clean -> fmt must be ordered (fmt mutates the tree the verify steps
+# read). fmt/lint/typecheck/test all `depends` on sync, so it runs (once, gated by
+# its source hash) before any of them without an explicit step here. lint/typecheck/
+# test are read-only and independent, so run them concurrently; --output keep-order
+# groups each task's output in order so it doesn't garble, and --continue-on-error
+# ensures a failure in one (e.g. lint, which finishes first) doesn't kill the others
+# before they report. The `:::` separators are required: without them mise would treat
+# `typecheck test` as positional args to `lint` (which declares a variadic passthrough
+# arg).
+mise run clean
+mise run fmt
+mise run --continue-on-error --output keep-order lint ::: typecheck ::: test
+'''
+
+[tasks.install]
+description = "Install this package into the environment."
+run = "uv pip install ."
+
+[tasks.generate-types]
+description = "Regenerate the frontend's TypeScript types from the backend Pydantic models."
+run = '''
+cd ../frontend
+npm run generate-types
+'''
+
+[tasks.generate-frontend-assets]
+description = "Regenerate all generated frontend assets (types and the referral catalog)."
+run = '''
+cd ../frontend
+npm run generate-frontend-assets
+'''
+
+# --- Corpus / RAG ingestion pipeline -------------------------------------------
+# Operational commands that build and publish the Vertex AI Search corpus. Ordered
+# as they run: enforce-ascii -> generate-metadata -> upload-to-gcs ->
+# create-datastore-gcs -> create-app-gcs. See .claude/skills/corpus-dataset.md and
+# Deployment.md. The required inputs (bucket/datastore/app ids) are usage flags;
+# ad-hoc script flags pass through as trailing args.
+[tasks.enforce-ascii]
+description = "Validate/rewrite the documents tree to pure ASCII. Pass `-- --check` to validate only."
+usage = '''
+arg "<options>" var=#true required=#false help="Extra args, e.g. --check (was ASCII_OPTIONS)."
+'''
+run = '''
+set -eu
+uv run python -m scripts.enforce_ascii ${usage_options:-}
+'''
+
+[tasks.generate-metadata]
+description = "Regenerate metadata.jsonl for the corpus."
+usage = '''
+flag "--bucket <bucket>" required=#true help="GCS bucket name."
+arg "<options>" var=#true required=#false help="Scope flags, e.g. --portland (was LOC_OPTIONS)."
+'''
+run = '''
+set -eu
+uv run python -m scripts.generate_metadata_jsonl --bucket "$usage_bucket" ${usage_options:-}
+'''
+
+[tasks.upload-to-gcs]
+description = "Create a GCS bucket and upload the corpus."
+usage = '''
+flag "--bucket <bucket>" required=#true help="GCS bucket name (created; fails if it exists)."
+flag "--location <location>" help="Bucket location; overrides the default US multi-region."
+arg "<options>" var=#true required=#false help="Extra args, e.g. --dry-run (was UPLOAD_OPTIONS)."
+'''
+run = '''
+set -eu
+set -- --bucket "$usage_bucket"
+[ -n "${usage_location:-}" ] && set -- "$@" --location "$usage_location"
+uv run python -m scripts.upload_to_gcs "$@" ${usage_options:-}
+'''
+
+[tasks.create-datastore-gcs]
+description = "Create a Vertex AI Search datastore and import from a bucket."
+usage = '''
+flag "--bucket <bucket>" required=#true help="GCS bucket (must match upload-to-gcs)."
+flag "--datastore-id <id>" required=#true help="Resource ID for the new datastore."
+flag "--location <location>" help="Datastore location."
+arg "<options>" var=#true required=#false help="Extra args, e.g. --no-wait (was DATASTORE_OPTIONS)."
+'''
+run = '''
+set -eu
+set -- --bucket "$usage_bucket" --datastore-id "$usage_datastore_id"
+[ -n "${usage_location:-}" ] && set -- "$@" --location "$usage_location"
+uv run python -m scripts.create_datastore_gcs "$@" ${usage_options:-}
+'''
+
+[tasks.create-app-gcs]
+description = "Create a Vertex AI Search app linked to a datastore."
+usage = '''
+flag "--datastore-id <id>" required=#true help="Datastore ID from create-datastore-gcs."
+flag "--app-id <id>" required=#true help="Resource ID for the new app."
+flag "--location <location>" help="App location."
+arg "<options>" var=#true required=#false help="Extra args, e.g. --dry-run (was APP_OPTIONS)."
+'''
+run = '''
+set -eu
+set -- --datastore-id "$usage_datastore_id" --app-id "$usage_app_id"
+[ -n "${usage_location:-}" ] && set -- "$@" --location "$usage_location"
+uv run python -m scripts.create_app_gcs "$@" ${usage_options:-}
+'''
