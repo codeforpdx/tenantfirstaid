@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
-import FrequentInquiries from "../../pages/Chat/components/FrequentInquiries";
+import FrequentInquiries from "../../shared/components/FrequentInquiries";
 import HousingContextProvider from "../../contexts/HousingContext";
 
 const renderPanel = (entry = "/chat/or") =>
@@ -163,6 +163,28 @@ describe("FrequentInquiries", () => {
     fireEvent.click(screen.getAllByRole("button")[1]);
 
     screen.getAllByText(/draft it here/).forEach((el) => {
+      expect(el.closest("a")).toBeNull();
+    });
+  });
+
+  it("links 'draft a letter' to the letter page for the active jurisdiction", () => {
+    renderPanel("/chat/or/portland");
+
+    // Open the property-damage inquiry, whose answer contains the call-to-action.
+    fireEvent.click(screen.getAllByRole("button")[4]);
+
+    screen.getAllByText("draft a letter").forEach((el) => {
+      expect(el.closest("a")).toHaveAttribute("href", "/letter/or/portland");
+    });
+  });
+
+  it("renders 'draft a letter' as plain text on the letter page", () => {
+    renderPanel("/letter/or");
+
+    // Open the property-damage inquiry, whose answer contains the call-to-action.
+    fireEvent.click(screen.getAllByRole("button")[4]);
+
+    screen.getAllByText(/draft a letter/).forEach((el) => {
       expect(el.closest("a")).toBeNull();
     });
   });
