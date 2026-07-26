@@ -1,12 +1,26 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "ignorePatterns": ["dist", "src/types"],
-  "plugins": ["typescript", "unicorn", "oxc", "react"],
+  "plugins": [
+    "import",
+    "typescript",
+    "unicorn",
+    "oxc",
+    "react",
+    "react-perf",
+    "jest",
+    "vitest",
+    "jsdoc"
+  ],
   "categories": {
-    "correctness": "error"
+    "correctness": "error",
+    "suspicious": "warn"
   },
   "rules": {
-    "react/exhaustive-deps": "warn"
+    "react/exhaustive-deps": "warn",
+    "react/only-export-components": "error",
+    "react/react-in-jsx-scope": "off",
+    "react/rules-of-hooks": "error"
   },
   "env": {
     "builtin": true
