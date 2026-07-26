@@ -6,9 +6,11 @@ import useSyncJurisdiction from "../../hooks/useSyncJurisdiction";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { HumanMessage } from "@langchain/core/messages";
 import type { ChatMessage } from "../../shared/types/messages";
+import type { Location } from "../../types/models";
+import type { StreamTextOptions } from "../../pages/Chat/utils/streamHelper";
 
 vi.mock("../../pages/Chat/utils/streamHelper", () => ({
-  streamText: vi.fn<typeof streamText>(),
+  streamText: vi.fn<(options: StreamTextOptions) => Promise<void>>(),
 }));
 
 const mockSetMessages = vi.fn<React.Dispatch<React.SetStateAction<ChatMessage[]>>>();
@@ -18,7 +20,14 @@ const mockSetMessages = vi.fn<React.Dispatch<React.SetStateAction<ChatMessage[]>
 function FormHarness() {
   useSyncJurisdiction();
   return (
-    <InitializationForm addMessage={vi.fn<Props["addMessage"]>()} setMessages={mockSetMessages} />
+    <InitializationForm
+      addMessage={vi.fn<
+        (
+          args: Location,
+        ) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>
+      >()}
+      setMessages={mockSetMessages}
+    />
   );
 }
 
@@ -37,9 +46,12 @@ const renderInitializationForm = (entry = "/chat") => {
 
 /** Extracts the HumanMessage added by the first setMessages call. */
 function getSubmittedMessage(): HumanMessage | undefined {
-  const updater = mockSetMessages.mock.calls.find(
-    (call) => typeof call[0] === "function",
-  )?.[0];
+  const updater = mockSetMessages.mock.calls
+    .map((call) => call[0])
+    .find(
+      (value): value is (prev: ChatMessage[]) => ChatMessage[] =>
+        typeof value === "function",
+    );
   if (!updater) return undefined;
   const result: ChatMessage[] = updater([]);
   return result.find((msg): msg is HumanMessage => msg instanceof HumanMessage);

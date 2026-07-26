@@ -4,11 +4,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import HousingContextProvider from "../../contexts/HousingContext";
 import InputField from "../../pages/Chat/components/InputField";
 import * as streamHelper from "../../pages/Chat/utils/streamHelper";
+import type { ChatMessage } from "../../shared/types/messages";
+import type { Location } from "../../types/models";
 
 const renderInputField = (value: string) => {
   const setMessages = vi.fn<React.Dispatch<React.SetStateAction<ChatMessage[]>>>();
   const setIsLoading = vi.fn<React.Dispatch<React.SetStateAction<boolean>>>();
-  const onChange = vi.fn<(e: React.ChangeEvent<HTMLTextAreaElement>) => void>();
+  const onChange = vi.fn<(e: { target: { value: string } }) => void>();
   const inputRef = { current: null as HTMLTextAreaElement | null };
   const queryClient = new QueryClient();
 
@@ -16,7 +18,15 @@ const renderInputField = (value: string) => {
     <QueryClientProvider client={queryClient}>
       <HousingContextProvider>
         <InputField
-          addMessage={vi.fn<Props["addMessage"]>()}
+          addMessage={
+            vi.fn<
+              (
+                args: Location,
+              ) => Promise<
+                ReadableStreamDefaultReader<Uint8Array> | undefined
+              >
+            >()
+          }
           setMessages={setMessages}
           isLoading={false}
           setIsLoading={setIsLoading}

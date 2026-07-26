@@ -19,6 +19,8 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { HumanMessage } from "@langchain/core/messages";
 import type { ChatMessage } from "../../shared/types/messages";
 
+type Updater = (prev: ChatMessage[]) => ChatMessage[];
+
 beforeAll(() => {
   if (!("scrollTo" in HTMLElement.prototype)) {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -88,7 +90,7 @@ describe("Letter component - effect orchestration", () => {
     mockUseMessages.mockReturnValue({
       addMessage: vi.fn<() => void>(),
       messages: [],
-      setMessages: vi.fn<typeof mockSetMessages>(),
+      setMessages: vi.fn<React.Dispatch<React.SetStateAction<ChatMessage[]>>>(),
     });
   });
 
@@ -135,8 +137,9 @@ describe("Letter component - effect orchestration", () => {
   });
 
   it("shows loading state before second message arrives", async () => {
-    const mockSetMessages = vi.fn<typeof mockSetMessages>();
-    const mockAddMessage = vi.fn<typeof mockAddMessage>();
+    const mockSetMessages =
+      vi.fn<React.Dispatch<React.SetStateAction<ChatMessage[]>>>();
+    const mockAddMessage = vi.fn<() => void>();
 
     mockUseMessages.mockReturnValue({
       addMessage: mockAddMessage,
@@ -199,7 +202,8 @@ describe("Letter component - effect orchestration", () => {
 
   it("adds error message when stream ends without calling onDone", async () => {
     // Simulate a dropped connection: streamText resolves but never calls onDone.
-    const mockSetMessages = vi.fn<typeof mockSetMessages>();
+    const mockSetMessages =
+      vi.fn<React.Dispatch<React.SetStateAction<ChatMessage[]>>>();
     mockStreamText.mockImplementation(() => Promise.resolve());
 
     mockUseMessages.mockReturnValue({
@@ -216,7 +220,8 @@ describe("Letter component - effect orchestration", () => {
 
     // Should not add the instruction message (no letter was cleanly generated).
     const addedInstructionMessage = mockSetMessages.mock.calls.find((call) => {
-      const result = call[0]([]);
+      // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
+      const result = (call[0] as Updater)([]);
       return result.some(
         (msg: ChatMessage) =>
           "text" in msg && msg.text.includes("initial template"),
@@ -226,7 +231,8 @@ describe("Letter component - effect orchestration", () => {
 
     // Should add the error message so the user isn't left with an empty panel.
     const addedErrorMessage = mockSetMessages.mock.calls.find((call) => {
-      const result = call[0]([]);
+      // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
+      const result = (call[0] as Updater)([]);
       return result.some(
         (msg: ChatMessage) =>
           "text" in msg && msg.text.includes("Unable to generate"),

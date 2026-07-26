@@ -1,15 +1,34 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  type Mock,
+} from "vitest";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import {
   streamText,
 } from "../../pages/Chat/utils/streamHelper";
+import type { ChatMessage } from "../../shared/types/messages";
+import type { Location } from "../../types/models";
+
+type AddMessage = (
+  args: Location,
+) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
+type SetMessages = React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+type SetIsLoading = React.Dispatch<React.SetStateAction<boolean>>;
+type Updater = (prev: ChatMessage[]) => ChatMessage[];
 
 function createMockReader(
   chunks: string[],
 ): ReadableStreamDefaultReader<Uint8Array> {
   let index = 0;
   return {
-    read: vi.fn<() => Promise<{ done: boolean; value?: Uint8Array }>>(() => {
+    read: vi.fn<
+      () => Promise<ReadableStreamReadResult<Uint8Array>>
+    >(() => {
       if (index >= chunks.length) {
         return Promise.resolve({ done: true, value: undefined });
       }
@@ -25,14 +44,14 @@ function createMockReader(
 }
 
 describe("streamText", () => {
-  let mockAddMessage: ReturnType<typeof vi.fn>;
-  let mockSetMessages: ReturnType<typeof vi.fn>;
-  let mockSetIsLoading: ReturnType<typeof vi.fn>;
+  let mockAddMessage: Mock<AddMessage>;
+  let mockSetMessages: Mock<SetMessages>;
+  let mockSetIsLoading: Mock<SetIsLoading>;
 
   beforeEach(() => {
-    mockAddMessage = vi.fn<() => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>>();
-    mockSetMessages = vi.fn<(messages: any[]) => any[]>();
-    mockSetIsLoading = vi.fn<(value: boolean) => void>();
+    mockAddMessage = vi.fn<AddMessage>();
+    mockSetMessages = vi.fn<SetMessages>();
+    mockSetIsLoading = vi.fn<SetIsLoading>();
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(Date, "now").mockReturnValue(1000000);
   });
@@ -82,7 +101,8 @@ describe("streamText", () => {
     });
 
     const calls = mockSetMessages.mock.calls;
-    const updateCall = calls[calls.length - 1][0];
+    // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
+    const updateCall = calls[calls.length - 1][0] as Updater;
     const existingMessages = [
       new HumanMessage({ content: "User message", id: "999" }),
       new AIMessage({ content: "First", id: "1000001" }),
@@ -91,7 +111,8 @@ describe("streamText", () => {
     const updated = updateCall(existingMessages);
 
     expect(updated[0]).toEqual(existingMessages[0]);
-    expect(updated[1].content).toBe(
+        // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
+    expect((updated[1] as AIMessage).content).toBe(
       '{"type":"text","content":"First"}\n{"type":"text","content":" chunk"}\n',
     );
   });
@@ -111,7 +132,8 @@ describe("streamText", () => {
 
     // The empty bot message is added before the API call (calls[0]).
     // The catch block appends the error message as the second setMessages call (calls[1]).
-    const updateCall = mockSetMessages.mock.calls[1][0];
+    // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
+    const updateCall = mockSetMessages.mock.calls[1][0] as Updater;
     const existingMessages = [
       new HumanMessage({ content: "User message", id: "999" }),
     ];
@@ -139,11 +161,13 @@ describe("streamText", () => {
     expect(mockSetMessages).toHaveBeenCalledTimes(3);
 
     const lastCalls = mockSetMessages.mock.calls;
-    const lastUpdateCall = lastCalls[lastCalls.length - 1][0];
+    // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
+    const lastUpdateCall = lastCalls[lastCalls.length - 1][0] as Updater;
     const updated = lastUpdateCall([
       new AIMessage({ content: "", id: "1000001" }),
     ]);
-    expect(updated[0].content).toBe(
+        // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
+    expect((updated[0] as AIMessage).content).toBe(
       '{"type":"reasoning","content":"Let me think."}\n{"type":"text","content":"Here is the answer."}\n',
     );
   });
@@ -168,12 +192,15 @@ describe("streamText", () => {
 
     expect(mockSetMessages).toHaveBeenCalledTimes(3); // 1 initial + 2 chunk updates
 
+    // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
     const lastUpdateCall =
-      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0];
+      // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
+      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0] as Updater;
     const updated = lastUpdateCall([
       new AIMessage({ content: "", id: "1000001" }),
     ]);
-    expect(updated[0].content).toBe(
+        // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
+    expect((updated[0] as AIMessage).content).toBe(
       '{"type":"text","content":"Hello"}\n{"type":"text","content":"world"}\n',
     );
   });
@@ -193,7 +220,8 @@ describe("streamText", () => {
     // setMessages is called twice: once to add the empty placeholder, once to replace
     // it with a UiMessage error so the letter page slice(2) can show the error.
     expect(mockSetMessages).toHaveBeenCalledTimes(2);
-    const replaceCall = mockSetMessages.mock.calls[1][0];
+    // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
+    const replaceCall = mockSetMessages.mock.calls[1][0] as Updater;
     const result2 = replaceCall([
       new AIMessage({ content: "", id: "1000001" }),
     ]);
@@ -253,13 +281,17 @@ describe("streamText", () => {
       housingLocation: { city: "portland", state: "or" },
     });
 
+    // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
     const lastUpdateCall =
-      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0];
+      // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
+      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0] as Updater;
     const updated = lastUpdateCall([
       new AIMessage({ content: "", id: "1000001" }),
     ]);
-    expect(updated[0].content).not.toContain('"type":"done"');
-    expect(updated[0].content).toContain('"type":"text"');
+        // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
+    expect((updated[0] as AIMessage).content).not.toContain('"type":"done"');
+        // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
+    expect((updated[0] as AIMessage).content).toContain('"type":"text"');
   });
 
   it("should append letter chunk to bot message content", async () => {
@@ -276,12 +308,15 @@ describe("streamText", () => {
       housingLocation: { city: "portland", state: "or" },
     });
 
+    // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
     const lastUpdateCall =
-      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0];
+      // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
+      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0] as Updater;
     const updated = lastUpdateCall([
       new AIMessage({ content: "", id: "1000001" }),
     ]);
-    expect(updated[0].content).toContain(
+        // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
+    expect((updated[0] as AIMessage).content).toContain(
       '{"type":"letter","content":"Dear Landlord,"}',
     );
   });
