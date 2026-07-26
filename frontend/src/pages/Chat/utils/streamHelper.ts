@@ -63,8 +63,8 @@ async function streamText({
         .filter((line) => line.trim() !== "")
         .forEach((processedText) => {
           try {
-            const parsed = JSON.parse(processedText) as { type?: string };
-            if (parsed.type === "end_of_stream") {
+            const parsed = JSON.parse(processedText);
+            if (typeof parsed === "object" && parsed !== null && "type" in parsed && parsed.type === "end_of_stream") {
               receivedDone = true;
               onDone?.();
               return;

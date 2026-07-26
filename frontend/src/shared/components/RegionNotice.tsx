@@ -11,12 +11,13 @@ const AUTO_DISMISS_MS = 8000;
 export default function RegionNotice() {
   const location = useLocation();
   const unsupportedRegion =
-    (location.state as { unsupportedRegion?: boolean } | null)
-      ?.unsupportedRegion === true;
+    (typeof location.state === "object" && location.state !== null
+      ? location.state.unsupportedRegion
+      : undefined) === true;
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!unsupportedRegion) return;
+    if (!unsupportedRegion) return undefined;
     setVisible(true);
     const timer = setTimeout(() => setVisible(false), AUTO_DISMISS_MS);
     return () => clearTimeout(timer);
