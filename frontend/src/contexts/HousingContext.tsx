@@ -29,8 +29,8 @@ export default function HousingContextProvider({ children }: Props) {
   });
   const [issueDescription, setIssueDescription] = useState("");
 
-  const handleHousingLocation = useCallback(({ city, state }: Location) => {
-    setHousingLocation({ city, state });
+  const handleHousingLocation = useCallback(({ newCity, state }: Location) => {
+    setHousingLocation({ city: newCity, state });
   }, []);
 
   const handleCityChange = useCallback((option: JurisdictionKey | null) => {
