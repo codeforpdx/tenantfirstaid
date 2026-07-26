@@ -47,8 +47,8 @@ export default function FeaturesPanel({ disclaimer }: Props) {
           <ChevronRight size={14} />
         </span>
       </button>
-        <div
-          style={{ "--features-w": "20vw" } as CSSVars}
+      <div
+        style={{ "--features-w": "20vw" } as CSSVars}
         className={clsx(
           "flex flex-col w-full bg-paper-background",
           "border-b lg:border-b-0 border-gray-light",

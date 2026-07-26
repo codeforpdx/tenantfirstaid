@@ -15,7 +15,7 @@ interface Props {
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   value: string;
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onChange: (e: { target: { value: string } }) => void;
 }
 
 /**
@@ -35,9 +35,7 @@ export default function InputField({
   const handleSend = async () => {
     if (!value.trim()) return;
 
-    onChange({
-      target: { value: "" },
-    } as React.ChangeEvent<HTMLTextAreaElement>);
+    onChange({ target: { value: "" } });
 
     const userMessageId = Date.now().toString();
     // Add user message

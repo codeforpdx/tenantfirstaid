@@ -3,10 +3,10 @@ import CheckCircle from "../../../shared/components/CheckCircleIcon";
 import XCircle from "../../../shared/components/XCircleIcon";
 import { headers, comparisonData } from "./ComparisonData";
 
-export default function ComparisonGrid() {
-  const renderIcon = (hasFeature: boolean) =>
-    hasFeature ? <CheckCircle /> : <XCircle />;
+const renderIcon = (hasFeature: boolean) =>
+  hasFeature ? <CheckCircle /> : <XCircle />;
 
+export default function ComparisonGrid() {
   return (
     <div className="bg-[#E6D5B8]/10 backdrop-blur-lg border border-[#E6D5B8]/20 p-12 shadow-[0_15px_40px_rgba(0,0,0,0.2)] rounded-3xl overflow-hidden max-[950px]:overflow-x-auto max-[950px]:p-6 max-[950px]:pl-0">
       <div className="grid grid-cols-4 gap-px bg-[#E6D5B8]/10 max-[950px]:min-w-[700px] [&>div:nth-child(4n+1)]:max-[950px]:sticky [&>div:nth-child(4n+1)]:max-[950px]:left-0 [&>div:nth-child(4n+1)]:max-[950px]:z-10 [&>div:nth-child(4n+1)]:max-[950px]:border-r [&>div:nth-child(4n+1)]:max-[950px]:border-[#E6D5B8]/20 [&>div:nth-child(4n+1)]:max-[950px]:bg-[#0E362D] [&>div:nth-child(1)]:max-[950px]:!bg-emerald-900">

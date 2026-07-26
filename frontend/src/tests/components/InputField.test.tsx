@@ -6,9 +6,9 @@ import InputField from "../../pages/Chat/components/InputField";
 import * as streamHelper from "../../pages/Chat/utils/streamHelper";
 
 const renderInputField = (value: string) => {
-  const setMessages = vi.fn();
-  const setIsLoading = vi.fn();
-  const onChange = vi.fn();
+  const setMessages = vi.fn<React.Dispatch<React.SetStateAction<ChatMessage[]>>>();
+  const setIsLoading = vi.fn<React.Dispatch<React.SetStateAction<boolean>>>();
+  const onChange = vi.fn<(e: React.ChangeEvent<HTMLTextAreaElement>) => void>();
   const inputRef = { current: null as HTMLTextAreaElement | null };
   const queryClient = new QueryClient();
 
@@ -16,7 +16,7 @@ const renderInputField = (value: string) => {
     <QueryClientProvider client={queryClient}>
       <HousingContextProvider>
         <InputField
-          addMessage={vi.fn()}
+          addMessage={vi.fn<Props["addMessage"]>()}
           setMessages={setMessages}
           isLoading={false}
           setIsLoading={setIsLoading}

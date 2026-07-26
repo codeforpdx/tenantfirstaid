@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import {
   streamText,
-  type StreamTextOptions,
 } from "../../pages/Chat/utils/streamHelper";
 
 function createMockReader(
@@ -10,19 +9,19 @@ function createMockReader(
 ): ReadableStreamDefaultReader<Uint8Array> {
   let index = 0;
   return {
-    read: vi.fn(async () => {
+    read: vi.fn<() => Promise<{ done: boolean; value?: Uint8Array }>>(() => {
       if (index >= chunks.length) {
-        return { done: true, value: undefined };
+        return Promise.resolve({ done: true, value: undefined });
       }
       const encoder = new TextEncoder();
       const value = encoder.encode(chunks[index]);
       index++;
-      return { done: false, value };
+      return Promise.resolve({ done: false, value });
     }),
     releaseLock: vi.fn<() => void>(),
     cancel: vi.fn<() => Promise<never>>(),
     closed: Promise.resolve(undefined),
-  } as unknown as ReadableStreamDefaultReader<Uint8Array>;
+  };
 }
 
 describe("streamText", () => {

@@ -8,17 +8,17 @@ import { HumanMessage } from "@langchain/core/messages";
 import type { ChatMessage } from "../../shared/types/messages";
 
 vi.mock("../../pages/Chat/utils/streamHelper", () => ({
-  streamText: vi.fn(),
+  streamText: vi.fn<typeof streamText>(),
 }));
 
-const mockSetMessages = vi.fn();
+const mockSetMessages = vi.fn<React.Dispatch<React.SetStateAction<ChatMessage[]>>>();
 
 // Mirror Chat: the jurisdiction comes from the URL (navbar picker), not the
 // form, so seed it from the route params the way Chat does.
 function FormHarness() {
   useSyncJurisdiction();
   return (
-    <InitializationForm addMessage={vi.fn()} setMessages={mockSetMessages} />
+    <InitializationForm addMessage={vi.fn<Props["addMessage"]>()} setMessages={mockSetMessages} />
   );
 }
 

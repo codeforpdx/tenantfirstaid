@@ -10,6 +10,10 @@ import FeedbackModal from "./FeedbackModal";
 import { useLocation } from "react-router-dom";
 import clsx from "clsx";
 
+const handleClearSession = () => {
+  window.location.reload();
+};
+
 interface Props {
   messages: ChatMessage[];
   addMessage: (
@@ -23,10 +27,6 @@ interface Props {
  * Main chat view that displays the message list, input field, and action buttons.
  * Shows the initialization form when no messages exist.
  */
-const handleClearSession = () => {
-  window.location.reload();
-};
-
 export default function MessageWindow({
   messages,
   addMessage,

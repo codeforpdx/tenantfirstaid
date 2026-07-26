@@ -7,7 +7,7 @@ describe("sendFeedback", () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+    fetchSpy = vi.fn<typeof fetch>().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetchSpy);
   });
 
@@ -17,11 +17,20 @@ describe("sendFeedback", () => {
 
   async function getTranscriptHtml(): Promise<string> {
     const formData: FormData = fetchSpy.mock.calls[0][1].body;
-    const blob = formData.get("transcript") as Blob;
+    const transcript = formData.get("transcript");
+    if (!(transcript instanceof Blob)) {
+      throw new Error("expected transcript form field to be a Blob");
+    }
     return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target?.result as string);
-      reader.readAsText(blob);
+      reader.addEventListener("load", (e) => {
+        const result = e.target?.result;
+        if (typeof result !== "string") {
+          throw new Error("expected FileReader result to be a string");
+        }
+        resolve(result);
+      });
+      reader.readAsText(transcript);
     });
   }
 

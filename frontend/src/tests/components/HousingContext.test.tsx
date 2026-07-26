@@ -3,6 +3,8 @@ import { describe, it, expect } from "vitest";
 import useHousingContext from "../../hooks/useHousingContext";
 import HousingContextProvider from "../../contexts/HousingContext";
 
+const renderOutside = () => render(<ContextDump />);
+
 function ContextDump() {
   const context = useHousingContext();
   return <pre data-testid="ctx">{JSON.stringify(context)}</pre>;
@@ -50,7 +52,8 @@ describe("HousingContext", () => {
   });
 
   it("throws error when used outside provider", () => {
-    const renderOutside = () => render(<ContextDump />);
-    expect(renderOutside).toThrow();
+    expect(renderOutside).toThrow(
+      "useHousing can only be used within HousingContextProvider",
+    );
   });
 });

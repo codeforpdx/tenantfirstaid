@@ -11,7 +11,7 @@ function isResponseChunk(obj: unknown): obj is ResponseChunk {
     return false;
   }
   
-  const type = (obj as any).type;
+  const type = (obj as { type?: unknown }).type;
   if (typeof type !== "string") {
     return false;
   }

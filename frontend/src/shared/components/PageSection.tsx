@@ -22,7 +22,7 @@ export default function PageSection({
   children,
   className = "",
 }: Props) {
-  const HeadingTag = `h${headingLevel}` as "h2" | "h3";
+  const HeadingTag = `h${headingLevel}`;
 
   return (
     <>

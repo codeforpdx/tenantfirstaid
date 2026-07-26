@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
-import MessageWindow from "../../pages/Chat/components/MessageWindow";
+import { default as MessageWindow } from "../../pages/Chat/components/MessageWindow";
 import type { ChatMessage } from "../../shared/types/messages";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import HousingContextProvider from "../../contexts/HousingContext";
@@ -26,8 +26,8 @@ describe("MessageWindow component", () => {
 
   const defaultProps = {
     messages,
-    addMessage: vi.fn(),
-    setMessages: vi.fn(),
+    addMessage: vi.fn<() => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>>(),
+    setMessages: vi.fn<React.Dispatch<React.SetStateAction<ChatMessage[]>>>(),
     isOngoing: true,
   };
 

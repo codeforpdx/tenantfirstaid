@@ -20,11 +20,13 @@ const installMatchMediaMock = () => {
       listeners.delete(cb),
     dispatchEvent: () => false,
   };
-  window.matchMedia = vi.fn().mockReturnValue(mql);
+  window.matchMedia = vi.fn<() => MediaQueryList>().mockReturnValue(mql);
   return {
     fireChange: () =>
       act(() => {
-        listeners.forEach((cb) => cb({} as MediaQueryListEvent));
+        listeners.forEach((cb) => 
+          cb(new window.MediaQueryListEvent("change", { matches: false }))
+        );
       }),
   };
 };
