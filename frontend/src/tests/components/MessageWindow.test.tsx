@@ -26,7 +26,10 @@ describe("MessageWindow component", () => {
 
   const defaultProps = {
     messages,
-    addMessage: vi.fn<() => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>>(),
+    addMessage:
+      vi.fn<
+        () => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>
+      >(),
     setMessages: vi.fn<React.Dispatch<React.SetStateAction<ChatMessage[]>>>(),
     isOngoing: true,
   };

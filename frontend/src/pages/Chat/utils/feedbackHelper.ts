@@ -80,6 +80,8 @@ export default async function sendFeedback(
     body: formData,
   });
   if (!response.ok) {
-    throw new Error(`Feedback submission failed with status ${response.status}`);
+    throw new Error(
+      `Feedback submission failed with status ${response.status}`,
+    );
   }
 }

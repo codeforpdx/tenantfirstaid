@@ -6,21 +6,21 @@ import type { ChatMessage, UiMessage } from "../../shared/types/messages";
 function createMockDocument() {
   const writelnCalls: string[] = [];
 
-    return {
+  return {
+    writeln: vi.fn<(content: string) => void>((content: string) => {
+      writelnCalls.push(content);
+    }),
+    writelnCalls,
+    close: vi.fn<() => void>(),
+    focus: vi.fn<() => void>(),
+    print: vi.fn<() => void>(),
+    document: {
       writeln: vi.fn<(content: string) => void>((content: string) => {
         writelnCalls.push(content);
       }),
-      writelnCalls,
       close: vi.fn<() => void>(),
-      focus: vi.fn<() => void>(),
-      print: vi.fn<() => void>(),
-      document: {
-        writeln: vi.fn<(content: string) => void>((content: string) => {
-          writelnCalls.push(content);
-        }),
-        close: vi.fn<() => void>(),
-      },
-    };
+    },
+  };
 }
 
 describe("exportMessages", () => {
@@ -29,7 +29,9 @@ describe("exportMessages", () => {
 
   beforeEach(() => {
     mockDocument = createMockDocument();
-    windowOpenSpy = vi.fn<() => ReturnType<typeof createMockDocument>>(() => mockDocument);
+    windowOpenSpy = vi.fn<() => ReturnType<typeof createMockDocument>>(
+      () => mockDocument,
+    );
     vi.stubGlobal("window", { open: windowOpenSpy });
   });
 
@@ -134,7 +136,11 @@ describe("exportMessages", () => {
     ).not.toThrow();
 
     // Empty content and special characters
-    vi.stubGlobal("window", { open: vi.fn<() => ReturnType<typeof createMockDocument>>(() => mockDocument) });
+    vi.stubGlobal("window", {
+      open: vi.fn<() => ReturnType<typeof createMockDocument>>(
+        () => mockDocument,
+      ),
+    });
     exportMessages([
       new HumanMessage({ content: "", id: "1" }),
       new AIMessage({

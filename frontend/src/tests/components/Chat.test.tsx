@@ -10,8 +10,16 @@ vi.mock("../../hooks/useLetterContent", () => ({
 vi.mock("../../hooks/useMessages", () => ({
   default: () => ({
     messages: [],
-    setMessages: vi.fn<(messages: import("../../shared/types/messages").ChatMessage[]) => void>(),
-    addMessage: vi.fn<(location: import("../../types/models").Location) => Promise<ReadableStreamDefaultReader<Uint8Array> | null>>(),
+    setMessages:
+      vi.fn<
+        (messages: import("../../shared/types/messages").ChatMessage[]) => void
+      >(),
+    addMessage:
+      vi.fn<
+        (
+          location: import("../../types/models").Location,
+        ) => Promise<ReadableStreamDefaultReader<Uint8Array> | null>
+      >(),
   }),
 }));
 

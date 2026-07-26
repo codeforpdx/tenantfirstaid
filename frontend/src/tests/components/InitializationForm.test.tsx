@@ -13,7 +13,8 @@ vi.mock("../../pages/Chat/utils/streamHelper", () => ({
   streamText: vi.fn<(options: StreamTextOptions) => Promise<void>>(),
 }));
 
-const mockSetMessages = vi.fn<React.Dispatch<React.SetStateAction<ChatMessage[]>>>();
+const mockSetMessages =
+  vi.fn<React.Dispatch<React.SetStateAction<ChatMessage[]>>>();
 
 // Mirror Chat: the jurisdiction comes from the URL (navbar picker), not the
 // form, so seed it from the route params the way Chat does.

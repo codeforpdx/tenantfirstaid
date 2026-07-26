@@ -8,7 +8,8 @@ import type { ChatMessage } from "../../shared/types/messages";
 import type { Location } from "../../types/models";
 
 const renderInputField = (value: string) => {
-  const setMessages = vi.fn<React.Dispatch<React.SetStateAction<ChatMessage[]>>>();
+  const setMessages =
+    vi.fn<React.Dispatch<React.SetStateAction<ChatMessage[]>>>();
   const setIsLoading = vi.fn<React.Dispatch<React.SetStateAction<boolean>>>();
   const onChange = vi.fn<(e: { target: { value: string } }) => void>();
   const inputRef = { current: null as HTMLTextAreaElement | null };
@@ -18,15 +19,11 @@ const renderInputField = (value: string) => {
     <QueryClientProvider client={queryClient}>
       <HousingContextProvider>
         <InputField
-          addMessage={
-            vi.fn<
-              (
-                args: Location,
-              ) => Promise<
-                ReadableStreamDefaultReader<Uint8Array> | undefined
-              >
-            >()
-          }
+          addMessage={vi.fn<
+            (
+              args: Location,
+            ) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>
+          >()}
           setMessages={setMessages}
           isLoading={false}
           setIsLoading={setIsLoading}

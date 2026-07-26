@@ -10,13 +10,18 @@ function isResponseChunk(obj: unknown): obj is ResponseChunk {
   if (typeof obj !== "object" || obj === null) {
     return false;
   }
-  
+
   const type = (obj as { type?: unknown }).type;
   if (typeof type !== "string") {
     return false;
   }
-  
-  return type === "text" || type === "reasoning" || type === "letter" || type === "end_of_stream";
+
+  return (
+    type === "text" ||
+    type === "reasoning" ||
+    type === "letter" ||
+    type === "end_of_stream"
+  );
 }
 
 /**
@@ -119,7 +124,7 @@ export default function MessageContent({ message }: Props) {
                         />
                       );
                     }
-                    
+
                     console.warn(
                       "MessageContent: failed to parse chunk as ResponseChunk, falling back to markdown:",
                       chunk,
