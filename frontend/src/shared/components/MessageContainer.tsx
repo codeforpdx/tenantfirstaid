@@ -18,7 +18,7 @@ export default function MessageContainer({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (letterContent === "") return;
+    if (letterContent === "") return undefined;
     setIsFlashing(true);
     timerRef.current = setTimeout(() => setIsFlashing(false), 1000);
     return () => {
