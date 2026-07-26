@@ -20,10 +20,12 @@ const installMatchMediaMock = () => {
       listeners.delete(cb),
     dispatchEvent: () => false,
   };
-  // oxlint-disable-next-line no-unsafe-type-assertion -- test double implementing only the MediaQueryList members exercised here.
+  const mediaQueryList =
+    // oxlint-disable-next-line no-unsafe-type-assertion -- test double implementing only the MediaQueryList members exercised here.
+    mql as unknown as MediaQueryList;
   window.matchMedia = vi
     .fn<() => MediaQueryList>()
-    .mockReturnValue(mql as unknown as MediaQueryList);
+    .mockReturnValue(mediaQueryList);
   return {
     fireChange: () =>
       act(() => {

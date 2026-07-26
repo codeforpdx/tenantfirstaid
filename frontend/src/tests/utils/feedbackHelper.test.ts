@@ -7,8 +7,10 @@ describe("sendFeedback", () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    // oxlint-disable-next-line no-unsafe-type-assertion -- sendFeedback only reads response.ok.
-    fetchSpy = vi.fn<typeof fetch>().mockResolvedValue({ ok: true } as Response);
+    const okResponse =
+      // oxlint-disable-next-line no-unsafe-type-assertion -- sendFeedback only reads response.ok.
+      { ok: true } as Response;
+    fetchSpy = vi.fn<typeof fetch>().mockResolvedValue(okResponse);
     vi.stubGlobal("fetch", fetchSpy);
   });
 

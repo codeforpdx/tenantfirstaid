@@ -8,9 +8,7 @@ import {
   type Mock,
 } from "vitest";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
-import {
-  streamText,
-} from "../../pages/Chat/utils/streamHelper";
+import { streamText } from "../../pages/Chat/utils/streamHelper";
 import type { ChatMessage } from "../../shared/types/messages";
 import type { Location } from "../../types/models";
 
@@ -26,9 +24,7 @@ function createMockReader(
 ): ReadableStreamDefaultReader<Uint8Array> {
   let index = 0;
   return {
-    read: vi.fn<
-      () => Promise<ReadableStreamReadResult<Uint8Array>>
-    >(() => {
+    read: vi.fn<() => Promise<ReadableStreamReadResult<Uint8Array>>>(() => {
       if (index >= chunks.length) {
         return Promise.resolve({ done: true, value: undefined });
       }
@@ -67,7 +63,7 @@ describe("streamText", () => {
       '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-  
+
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
@@ -92,7 +88,7 @@ describe("streamText", () => {
       '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-  
+
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
@@ -111,7 +107,7 @@ describe("streamText", () => {
     const updated = updateCall(existingMessages);
 
     expect(updated[0]).toEqual(existingMessages[0]);
-        // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
+    // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
     expect((updated[1] as AIMessage).content).toBe(
       '{"type":"text","content":"First"}\n{"type":"text","content":" chunk"}\n',
     );
@@ -119,7 +115,7 @@ describe("streamText", () => {
 
   it("should set loading to false even when error occurs and set error message", async () => {
     mockAddMessage.mockRejectedValue(new Error("Stream failed"));
-  
+
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
@@ -149,7 +145,7 @@ describe("streamText", () => {
       '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-  
+
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
@@ -166,7 +162,7 @@ describe("streamText", () => {
     const updated = lastUpdateCall([
       new AIMessage({ content: "", id: "1000001" }),
     ]);
-        // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
+    // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
     expect((updated[0] as AIMessage).content).toBe(
       '{"type":"reasoning","content":"Let me think."}\n{"type":"text","content":"Here is the answer."}\n',
     );
@@ -182,7 +178,7 @@ describe("streamText", () => {
       '{"type":"text","content":"world"}', // no trailing newline, no done chunk
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-  
+
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
@@ -192,14 +188,15 @@ describe("streamText", () => {
 
     expect(mockSetMessages).toHaveBeenCalledTimes(3); // 1 initial + 2 chunk updates
 
-    // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
     const lastUpdateCall =
       // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
-      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0] as Updater;
+      mockSetMessages.mock.calls[
+        mockSetMessages.mock.calls.length - 1
+      ][0] as Updater;
     const updated = lastUpdateCall([
       new AIMessage({ content: "", id: "1000001" }),
     ]);
-        // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
+    // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
     expect((updated[0] as AIMessage).content).toBe(
       '{"type":"text","content":"Hello"}\n{"type":"text","content":"world"}\n',
     );
@@ -207,7 +204,7 @@ describe("streamText", () => {
 
   it("should handle null reader and log error", async () => {
     mockAddMessage.mockResolvedValue(undefined);
-  
+
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
@@ -235,7 +232,7 @@ describe("streamText", () => {
       '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-  
+
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
@@ -254,7 +251,7 @@ describe("streamText", () => {
       // No done chunk — simulates dropped connection.
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-  
+
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
@@ -274,23 +271,24 @@ describe("streamText", () => {
       '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-  
+
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
     });
 
-    // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
     const lastUpdateCall =
       // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
-      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0] as Updater;
+      mockSetMessages.mock.calls[
+        mockSetMessages.mock.calls.length - 1
+      ][0] as Updater;
     const updated = lastUpdateCall([
       new AIMessage({ content: "", id: "1000001" }),
     ]);
-        // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
+    // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
     expect((updated[0] as AIMessage).content).not.toContain('"type":"done"');
-        // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
+    // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
     expect((updated[0] as AIMessage).content).toContain('"type":"text"');
   });
 
@@ -301,21 +299,22 @@ describe("streamText", () => {
       '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-  
+
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
     });
 
-    // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
     const lastUpdateCall =
       // oxlint-disable-next-line no-unsafe-type-assertion -- streamText always calls setMessages with an updater function here.
-      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0] as Updater;
+      mockSetMessages.mock.calls[
+        mockSetMessages.mock.calls.length - 1
+      ][0] as Updater;
     const updated = lastUpdateCall([
       new AIMessage({ content: "", id: "1000001" }),
     ]);
-        // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
+    // oxlint-disable-next-line no-unsafe-type-assertion -- streamText only ever produces AIMessage bot messages in these updates.
     expect((updated[0] as AIMessage).content).toContain(
       '{"type":"letter","content":"Dear Landlord,"}',
     );
@@ -327,7 +326,7 @@ describe("streamText", () => {
       '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-  
+
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
