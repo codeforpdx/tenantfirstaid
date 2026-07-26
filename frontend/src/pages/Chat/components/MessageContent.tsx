@@ -2,6 +2,36 @@ import SafeMarkdown from "../../../shared/components/SafeMarkdown";
 import type { ChatMessage } from "../../../shared/types/messages";
 import type { ResponseChunk } from "../../../types/models";
 
+/**
+ * Type guard to validate that a parsed object is a ResponseChunk.
+ * A valid ResponseChunk must have a 'type' property that is one of the allowed types.
+ */
+function isResponseChunk(obj: unknown): obj is ResponseChunk {
+  if (typeof obj !== "object" || obj === null) {
+    return false;
+  }
+  
+  const type = (obj as any).type;
+  if (typeof type !== "string") {
+    return false;
+  }
+  
+  return type === "text" || type === "reasoning" || type === "letter" || type === "end_of_stream";
+}
+
+/**
+ * Safely parses a string as a ResponseChunk.
+ * Returns the parsed chunk if valid, null otherwise.
+ */
+function parseResponseChunk(text: string): ResponseChunk | null {
+  try {
+    const parsed = JSON.parse(text);
+    return isResponseChunk(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 interface ChunkProps {
   chunkObj: ResponseChunk;
 }
@@ -30,15 +60,14 @@ function hasRenderableContent(text: string): boolean {
     .split("\n")
     .filter(Boolean)
     .some((chunk) => {
-      try {
-        const parsed = JSON.parse(chunk) as ResponseChunk;
-        return (
-          (parsed.type === "text" && (parsed.content?.length ?? 0) > 0) ||
-          (parsed.type === "reasoning" && (parsed.content?.length ?? 0) > 0)
-        );
-      } catch {
+      const parsed = parseResponseChunk(chunk);
+      if (!parsed) {
         return true;
       }
+      return (
+        (parsed.type === "text" && (parsed.content?.length ?? 0) > 0) ||
+        (parsed.type === "reasoning" && (parsed.content?.length ?? 0) > 0)
+      );
     });
 }
 
@@ -80,8 +109,8 @@ export default function MessageContent({ message }: Props) {
                   .split("\n")
                   .filter((chunk) => chunk.length !== 0)
                   .map((chunk, index) => {
-                    try {
-                      const chunkObj = JSON.parse(chunk) as ResponseChunk;
+                    const chunkObj = parseResponseChunk(chunk);
+                    if (chunkObj) {
                       // type prefix avoids bare index, which React warns against
                       return (
                         <RenderedChunk
@@ -89,17 +118,17 @@ export default function MessageContent({ message }: Props) {
                           chunkObj={chunkObj}
                         />
                       );
-                    } catch {
-                      console.warn(
-                        "MessageContent: failed to parse chunk as JSON, falling back to markdown:",
-                        chunk,
-                      );
-                      return (
-                        <SafeMarkdown key={`automated-${index}`}>
-                          {chunk}
-                        </SafeMarkdown>
-                      );
                     }
+                    
+                    console.warn(
+                      "MessageContent: failed to parse chunk as ResponseChunk, falling back to markdown:",
+                      chunk,
+                    );
+                    return (
+                      <SafeMarkdown key={`automated-${index}`}>
+                        {chunk}
+                      </SafeMarkdown>
+                    );
                   })}
               </>
             ) : (

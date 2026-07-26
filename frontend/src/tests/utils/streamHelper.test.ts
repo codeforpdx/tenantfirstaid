@@ -19,8 +19,8 @@ function createMockReader(
       index++;
       return { done: false, value };
     }),
-    releaseLock: vi.fn(),
-    cancel: vi.fn(),
+    releaseLock: vi.fn<() => void>(),
+    cancel: vi.fn<() => Promise<never>>(),
     closed: Promise.resolve(undefined),
   } as unknown as ReadableStreamDefaultReader<Uint8Array>;
 }
@@ -31,9 +31,9 @@ describe("streamText", () => {
   let mockSetIsLoading: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    mockAddMessage = vi.fn();
-    mockSetMessages = vi.fn();
-    mockSetIsLoading = vi.fn();
+    mockAddMessage = vi.fn<() => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>>();
+    mockSetMessages = vi.fn<(messages: any[]) => any[]>();
+    mockSetIsLoading = vi.fn<(value: boolean) => void>();
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(Date, "now").mockReturnValue(1000000);
   });
@@ -49,13 +49,13 @@ describe("streamText", () => {
       '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-
+  
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
-    } as StreamTextOptions);
+    });
 
     expect(mockAddMessage).toHaveBeenCalledWith({
       city: "portland",
@@ -74,13 +74,13 @@ describe("streamText", () => {
       '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-
+  
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
-    } as StreamTextOptions);
+    });
 
     const calls = mockSetMessages.mock.calls;
     const updateCall = calls[calls.length - 1][0];
@@ -99,13 +99,13 @@ describe("streamText", () => {
 
   it("should set loading to false even when error occurs and set error message", async () => {
     mockAddMessage.mockRejectedValue(new Error("Stream failed"));
-
+  
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
-    } as StreamTextOptions);
+    });
 
     expect(mockSetIsLoading).toHaveBeenCalledWith(false);
     expect(console.error).toHaveBeenCalledWith("Error:", expect.any(Error));
@@ -128,13 +128,13 @@ describe("streamText", () => {
       '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-
+  
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
-    } as StreamTextOptions);
+    });
 
     // 1 initial + 2 chunk updates (done chunk does not trigger setMessages)
     expect(mockSetMessages).toHaveBeenCalledTimes(3);
@@ -159,13 +159,13 @@ describe("streamText", () => {
       '{"type":"text","content":"world"}', // no trailing newline, no done chunk
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-
+  
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
-    } as StreamTextOptions);
+    });
 
     expect(mockSetMessages).toHaveBeenCalledTimes(3); // 1 initial + 2 chunk updates
 
@@ -181,13 +181,13 @@ describe("streamText", () => {
 
   it("should handle null reader and log error", async () => {
     mockAddMessage.mockResolvedValue(undefined);
-
+  
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
-    } as StreamTextOptions);
+    });
 
     expect(console.error).toHaveBeenCalledWith("Stream reader is unavailable");
     expect(mockSetIsLoading).toHaveBeenCalledWith(false);
@@ -202,38 +202,38 @@ describe("streamText", () => {
   });
 
   it("should call onDone when done chunk is received", async () => {
-    const mockOnDone = vi.fn();
+    const mockOnDone = vi.fn<() => void>();
     const mockReader = createMockReader([
       '{"type":"text","content":"Hello"}\n',
       '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-
+  
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       onDone: mockOnDone,
-    } as StreamTextOptions);
+    });
 
     expect(mockOnDone).toHaveBeenCalledTimes(1);
   });
 
   it("should not call onDone when stream ends without a done chunk", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    const mockOnDone = vi.fn();
+    const mockOnDone = vi.fn<() => void>();
     const mockReader = createMockReader([
       '{"type":"text","content":"Hello"}\n',
       // No done chunk — simulates dropped connection.
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-
+  
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       onDone: mockOnDone,
-    } as StreamTextOptions);
+    });
 
     expect(mockOnDone).not.toHaveBeenCalled();
     expect(console.warn).toHaveBeenCalledWith(
@@ -247,12 +247,12 @@ describe("streamText", () => {
       '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-
+  
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
-    } as StreamTextOptions);
+    });
 
     const lastUpdateCall =
       mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0];
@@ -270,12 +270,12 @@ describe("streamText", () => {
       '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-
+  
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
-    } as StreamTextOptions);
+    });
 
     const lastUpdateCall =
       mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0];
@@ -293,12 +293,12 @@ describe("streamText", () => {
       '{"type":"end_of_stream"}\n',
     ]);
     mockAddMessage.mockResolvedValue(mockReader);
-
+  
     await streamText({
       addMessage: mockAddMessage,
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
-    } as StreamTextOptions);
+    });
 
     // 1 initial + 1 text chunk = 2 calls; done chunk adds no call.
     expect(mockSetMessages).toHaveBeenCalledTimes(2);
