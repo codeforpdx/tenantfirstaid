@@ -75,7 +75,7 @@ export default function InputField({
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            handleSend();
+            void handleSend();
           }
         }}
         rows={1}

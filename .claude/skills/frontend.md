@@ -5,13 +5,13 @@ Reference for frontend development workflow. Run all commands from `frontend/`.
 ## Commands
 
 ```bash
-npm run generate-types    # Required before build/typecheck — generates src/types/models.ts
-npm run lint              # Lint (eslint)
-npm run format            # Format (prettier)
-npm run typecheck         # Type-check (tsc) — use the typescript-lsp plugin for inline diagnostics
-npm run build             # Build (auto-generates types first)
-npm run test -- --run     # Run tests (vitest)
-npm run test -- --run --coverage  # With coverage
+bun run generate-types    # Required before build/typecheck — generates src/types/models.ts
+bun run lint              # Lint (oxlint + oxlint-tsgolint, type-aware)
+bun run format            # Format (prettier)
+bun run typecheck         # Type-check (tsc) — use the typescript-lsp plugin for inline diagnostics
+bun run build             # Build (auto-generates types first)
+bun run test -- --run     # Run tests (vitest)
+bun run test -- --run --coverage  # With coverage
 ```
 
 `generate-types` requires `uv` to be installed. It runs the backend Python to emit JSON Schema, piped through `json2ts`. Always run it before `typecheck` or `build` — the generated `src/types/models.ts` is gitignored.

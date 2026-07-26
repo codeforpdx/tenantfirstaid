@@ -36,9 +36,9 @@ export default function useActiveJurisdiction() {
       handleCityChange(option.key);
       handleHousingLocation(toLocation(option));
       if (pathname.startsWith("/letter")) {
-        navigate(pathFor("letter", option));
+        void navigate(pathFor("letter", option));
       } else if (pathname.startsWith("/chat")) {
-        navigate(pathFor("chat", option));
+        void navigate(pathFor("chat", option));
       }
     },
     [handleCityChange, handleHousingLocation, navigate, pathname],

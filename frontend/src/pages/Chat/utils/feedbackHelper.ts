@@ -75,8 +75,11 @@ export default async function sendFeedback(
   formData.append("emailsToCC", emailsToCC);
   formData.append("transcript", blob, "transcript.html");
 
-  await fetch("/api/feedback", {
+  const response = await fetch("/api/feedback", {
     method: "POST",
     body: formData,
   });
+  if (!response.ok) {
+    throw new Error(`Feedback submission failed with status ${response.status}`);
+  }
 }

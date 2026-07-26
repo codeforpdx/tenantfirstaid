@@ -2,18 +2,24 @@
 # `//frontend:<task>`, or by bare name from inside this directory (`mise run check`).
 
 [tools]
-# Mirror frontend/Dockerfile's node:24-* base.
+# Kept for editor/tooling compatibility; frontend/Dockerfile now runs on bun.
 node = "24"
+# Mirror frontend/Dockerfile's oven/bun:1.3.14-slim base.
+bun = "1.3.14"
 
 [tasks.install]
-description = "Install npm dependencies."
-sources = ["package.json", "package-lock.json"]
+description = "Install dependencies."
+sources = ["package.json", "bun.lock"]
 outputs = { auto = true }
-run = "npm install"
+run = "bun install"
+
+[tasks.clean]
+description = "Remove build artifacts, generated types, coverage, and the Vite cache."
+run = "rm -rf dist src/types coverage node_modules/.vite"
 
 [tasks.dev]
 description = "Start the Vite dev server."
-run = "npm run dev"
+run = "bun run dev"
 
 [tasks.check]
 description = "Frontend: generate-types, typecheck, lint, test."
@@ -31,8 +37,8 @@ if [ -n "${usage_container:-}" ]; then
     --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
     --engine "${usage_engine:-auto}"
 fi
-npm run generate-types
-npm run typecheck
-npm run lint
-npm run test -- --run
+bun run generate-types
+bun run typecheck
+bun run lint
+bun run test -- --run
 '''

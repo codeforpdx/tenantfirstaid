@@ -98,7 +98,7 @@ frontend/
 │   │   ├── useMessages.tsx         # Message handling logic
 │   │   ├── useHousingContext.tsx   # Custom hook for housing context
 │   │   └── useLetterContent.tsx    # State management for letter generation
-│   ├── types/                      # Auto-generated TypeScript types (gitignored) — do not edit manually, re-run `mise run generate-types` or `npm run generate-types`
+│   ├── types/                      # Auto-generated TypeScript types (gitignored) — do not edit manually, re-run `mise run generate-types` or `bun run generate-types`
 │   │   └── models.ts                  # All exported types: ResponseChunk, Location, OregonCity, UsaState, chunk interfaces
 │   ├── layouts/                    # Layouts
 │   │   └── PageLayout.tsx          # Layout for pages
@@ -179,7 +179,7 @@ frontend/
 ├── vite.config.ts                  # Vite configuration
 ├── vitest.config.ts                # Vitest configuration
 ├── tsconfig.json                   # TypeScript configuration
-└── eslint.config.js                # ESLint configuration
+└── .oxlintrc.json                  # Oxlint configuration (type-aware via oxlint-tsgolint)
 ```
 
 ### Framework

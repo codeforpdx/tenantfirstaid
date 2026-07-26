@@ -53,6 +53,10 @@ export default function FeedbackModal({ messages, setOpenFeedback }: Props) {
             onChange={(event) => setWordsToRedact(event.target.value)}
           />
         </>
+      ) : status === "error" ? (
+        <div className="flex items-center justify-center h-[80%] w-full">
+          <p>Something went wrong sending your feedback. Please try again.</p>
+        </div>
       ) : (
         <div className="flex items-center justify-center h-[80%] w-full">
           <p>Feedback Sent!</p>
@@ -65,11 +69,15 @@ export default function FeedbackModal({ messages, setOpenFeedback }: Props) {
             border border-green-medium hover:border-green-dark
             hover:bg-green-light`}
           onClick={() => {
-            if (feedback.trim() === "") handleModalClose();
+            if (feedback.trim() === "") {
+              handleModalClose();
+              return;
+            }
             setStatus("sending");
             setTimeout(() => {
-              sendFeedback(messages, feedback, emailsToCC, wordsToRedact);
-              handleModalClose();
+              sendFeedback(messages, feedback, emailsToCC, wordsToRedact)
+                .then(() => handleModalClose())
+                .catch(() => setStatus("error"));
             }, 1000);
           }}
         >

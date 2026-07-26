@@ -212,9 +212,11 @@ run = "uv pip install ."
 
 [tasks.generate-types]
 description = "Regenerate the frontend's TypeScript types from the backend Pydantic models."
+# bun is declared in frontend/mise.toml's own [tools], not this project's -- a bare `cd
+# ../frontend && bun run ...` would not find it on PATH. `mise -C ../frontend exec`
+# resolves the frontend project's own toolchain first.
 run = '''
-cd ../frontend
-npm run generate-types
+mise -C ../frontend exec -- bun run generate-types
 '''
 
 [tasks.docs]

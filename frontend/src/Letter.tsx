@@ -162,7 +162,7 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
       }
     };
 
-    runGenerateLetter();
+    void runGenerateLetter();
   }, [startStreaming, addMessage, setMessages]);
 
   // Clear any pending timer if the component unmounts before it fires.

@@ -7,7 +7,7 @@ describe("sendFeedback", () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    fetchSpy = vi.fn().mockResolvedValue({});
+    fetchSpy = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetchSpy);
   });
 
