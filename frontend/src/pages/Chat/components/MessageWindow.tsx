@@ -23,6 +23,10 @@ interface Props {
  * Main chat view that displays the message list, input field, and action buttons.
  * Shows the initialization form when no messages exist.
  */
+const handleClearSession = () => {
+  window.location.reload();
+};
+
 export default function MessageWindow({
   messages,
   addMessage,
@@ -42,10 +46,6 @@ export default function MessageWindow({
   const displayedMessages = loc.pathname.startsWith("/letter")
     ? messages.slice(LETTER_PAGE_HIDDEN_MESSAGES)
     : messages;
-
-  const handleClearSession = () => {
-    window.location.reload();
-  };
 
   useEffect(() => {
     const messagesElement = messagesRef.current;
