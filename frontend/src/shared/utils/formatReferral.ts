@@ -47,6 +47,7 @@ export function formatCaseStages(caseStages: CaseStage[]): string | null {
 }
 
 export function formatGeographicScope(scope: GeographicScope): string {
+  if (scope.state !== "or") return "Outside Oregon";
   if (!scope.cities || scope.cities.length === 0) return "All of Oregon";
   return (
     scope.cities

@@ -4,7 +4,10 @@ import json
 
 import pytest
 
-from tenantfirstaid.constants import OREGON_LAW_CENTER_PHONE_NUMBER
+from tenantfirstaid.constants import (
+    DEFAULT_INSTRUCTIONS,
+    OREGON_LAW_CENTER_PHONE_NUMBER,
+)
 from tenantfirstaid.langchain_tools import get_legal_aid_referrals
 from tenantfirstaid.referrals import (
     REFERRALS,
@@ -35,7 +38,9 @@ class TestReferralsCatalog:
         """The system prompt's OREGON_LAW_CENTER_PHONE_NUMBER must be sourced
         from the same referral record shown on the Referrals page, so the two
         can't drift apart."""
-        assert REFERRALS_BY_ID["laso"].phone == OREGON_LAW_CENTER_PHONE_NUMBER
+        assert OREGON_LAW_CENTER_PHONE_NUMBER == "888-585-9638"
+        assert REFERRALS_BY_ID["laso"].phone == "888-585-9638"
+        assert OREGON_LAW_CENTER_PHONE_NUMBER in DEFAULT_INSTRUCTIONS
 
 
 class TestGetLegalAidReferralsTool:
@@ -47,5 +52,8 @@ class TestGetLegalAidReferralsTool:
 
     def test_returns_json_matching_catalog(self):
         tool_data = json.loads(get_legal_aid_referrals.invoke({}))
-        catalog_data = [referral.model_dump(mode="json") for referral in REFERRALS]
+        catalog_data = [
+            referral.model_dump(mode="json", exclude_none=True)
+            for referral in REFERRALS
+        ]
         assert tool_data == catalog_data

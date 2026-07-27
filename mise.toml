@@ -274,8 +274,9 @@ fi
 # One-time dev setup, factored so the two independent toolchain lanes provision
 # concurrently. The dependency graph enforces the required ordering that a flat script
 # would express serially: _setup-trust runs once (deduped) before both lanes, the
-# backend and frontend lanes then run in parallel, and setup's own body (generate-types)
-# runs only after both complete. On a fresh clone this roughly halves setup wall time.
+# backend and frontend lanes then run in parallel, and setup's own body
+# (generate-frontend-assets) runs only after both complete. On a fresh clone this
+# roughly halves setup wall time.
 [tasks._setup-trust]
 description = "(internal) Trust every config in the tree so the per-project installs can run."
 hide = true
@@ -304,17 +305,18 @@ mise run //frontend:install
 '''
 
 [tasks.setup]
-description = "One-time dev setup: provision toolchains, install deps, and generate types."
+description = "One-time dev setup: provision toolchains, install deps, and generate frontend assets."
 depends = ["_setup-backend", "_setup-frontend"]
 run = '''
 set -eu
 # Both toolchains and their deps are provisioned in parallel by the _setup-* deps above.
-# Generate the shared TypeScript types. This step straddles both toolchains (uv reads
-# the backend Pydantic models; node's json2ts emits the .ts) and no single project
-# scope has both, so run it in the frontend scope with the backend's mise-managed uv
-# also on PATH.
+# Generate the frontend's build-time assets (shared TypeScript types + the bundled
+# referrals catalog). This step straddles both toolchains (uv reads the backend
+# Pydantic models; node's json2ts emits the .ts) and no single project scope has
+# both, so run it in the frontend scope with the backend's mise-managed uv also on
+# PATH.
 uvdir=$(dirname "$(mise -C backend which uv)")
-mise -C frontend exec -- sh -c "PATH=\"$uvdir:\$PATH\" npm run generate-types"
+mise -C frontend exec -- sh -c "PATH=\"$uvdir:\$PATH\" npm run generate-frontend-assets"
 echo ""
 echo "Setup complete. Start the app with two terminals:"
 echo "  mise run //backend:serve     # Flask API"

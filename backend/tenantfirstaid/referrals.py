@@ -10,9 +10,15 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Final, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .location import OregonCity, UsaState
+
+_TIME_PATTERN: Final = r"^([01]\d|2[0-3]):[0-5]\d$"
+
+# IDs that must be present in referrals_data.json because other modules
+# (e.g. constants.py's OREGON_LAW_CENTER_PHONE_NUMBER) look them up directly.
+_REQUIRED_IDS: Final = {"laso"}
 
 
 class ServiceType(StrEnum):
@@ -42,12 +48,26 @@ class Weekday(StrEnum):
 
 
 class HoursBlock(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     days: list[Weekday]
-    start: str = Field(description="24-hour start time, e.g. '09:00'.")
-    end: str = Field(description="24-hour end time, e.g. '17:00'.")
+    start: str = Field(
+        pattern=_TIME_PATTERN, description="24-hour start time, e.g. '09:00'."
+    )
+    end: str = Field(
+        pattern=_TIME_PATTERN, description="24-hour end time, e.g. '17:00'."
+    )
+
+    @model_validator(mode="after")
+    def _end_after_start(self) -> "HoursBlock":
+        if self.end <= self.start:
+            raise ValueError(f"end ({self.end}) must be after start ({self.start})")
+        return self
 
 
 class GeographicScope(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     state: UsaState = UsaState.OREGON
     cities: list[OregonCity] = Field(
         default_factory=list,
@@ -57,6 +77,8 @@ class GeographicScope(BaseModel):
 
 class Referral(BaseModel):
     """A single legal-aid or tenant-services referral."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     id: str
     organization: str
@@ -84,6 +106,12 @@ def _validate_referrals(referrals: list[Referral]) -> None:
     ids = [r.id for r in referrals]
     if len(ids) != len(set(ids)):
         raise ValueError("Referral IDs must be unique.")
+
+    missing = _REQUIRED_IDS - set(ids)
+    if missing:
+        raise ValueError(
+            f"referrals_data.json is missing required id(s): {sorted(missing)}"
+        )
 
 
 def _load_referrals() -> list[Referral]:

@@ -30,6 +30,10 @@ from .google_auth import load_gcp_credentials
 from .location import OregonCity, UsaState
 from .referrals import REFERRALS
 
+_LEGAL_AID_REFERRALS_JSON: str = json.dumps(
+    [r.model_dump(mode="json", exclude_none=True) for r in REFERRALS]
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -213,7 +217,7 @@ def get_legal_aid_referrals() -> str:
     Returns:
         A JSON array of referral records.
     """
-    return json.dumps([r.model_dump(mode="json") for r in REFERRALS])
+    return _LEGAL_AID_REFERRALS_JSON
 
 
 class QueryOnlyInputSchema(BaseModel):

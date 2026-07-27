@@ -64,7 +64,9 @@ backend/
 |   ├── location.py                     # City & State normalization and sanitization
 |   ├── graph.py                        # Shared LLM, tools, and graph factory (used by chat manager and langgraph dev)
 |   ├── langchain_chat_manager.py       # Per-session agent wrapper with streaming support
-|   ├── langchain_tools.py              # LangChain Agent tools (i.e. RAG retriever)
+|   ├── langchain_tools.py              # LangChain Agent tools (i.e. RAG retriever, get_legal_aid_referrals)
+|   ├── referrals.py                    # Pydantic-validated legal-aid referral catalog, loaded from referrals_data.json
+|   ├── referrals_data.json             # Legal-aid referral catalog data (editable without Python knowledge)
 |   ├── google_auth.py                  # GCP credential loading (inline JSON or file path)
 |   ├── logger.py                       # Project-wide logging setup (colorized stderr handler, `configure_logging()` entrypoint hook)
 |   ├── system_prompt.md                # System prompt (editable without Python knowledge)
@@ -125,11 +127,12 @@ The system uses **LangChain agents** with **Vertex AI RAG** tools for document r
 
 #### Tool-Based Retrieval
 
-The agent has access to three tools:
+The agent has access to four tools:
 
 1. **City-Specific and State Law Retrieval**: Searches documents filtered by city (optional) and state
 2. **Letter Template**: Returns a pre-formatted letter template for the model to fill in
 3. **Generate Letter**: Emits the completed letter as a custom stream chunk for the frontend to render separately from chat text
+4. **Legal Aid Referrals** (`get_legal_aid_referrals`): Returns the validated referral catalog (`referrals.py`, backed by `referrals_data.json`) so the model can recommend an organization matching the tenant's service need, location, and case stage. The same catalog is bundled into the frontend's Referrals page at build time (`generate_referrals.py`), so the chat and the page can't drift apart.
 
 The LLM decides how to call the tool based on the user's query and location context.
 

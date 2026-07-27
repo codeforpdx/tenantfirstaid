@@ -15,7 +15,7 @@ Tenant First Aid is a chatbot for Oregon housing/eviction legal information. Fla
 
 - **Backend** (`backend/`): Flask API with LangChain agent orchestration. The agent uses Vertex AI RAG to retrieve Oregon housing law documents and Google Gemini as the LLM. Key files: `langchain_chat_manager.py` (agent orchestration), `langchain_tools.py` (RAG retriever + letter tools), `schema.py` (Pydantic response chunk types shared with frontend).
 - **Frontend** (`frontend/`): React 19 + TypeScript + Vite + Tailwind CSS 4. Uses `@langchain/core` message types (`HumanMessage`/`AIMessage`) directly for chat state. Streaming via native `ReadableStream`.
-- **Type bridge**: Frontend TypeScript types in `src/types/` are auto-generated from backend Pydantic models via `generate-types` and gitignored. Must regenerate before building or type-checking.
+- **Type bridge**: Frontend TypeScript types in `src/types/` are auto-generated from backend Pydantic models, and the referrals catalog in `src/generated/` is auto-generated from `backend/tenantfirstaid/referrals_data.json`, both via `generate-frontend-assets` and gitignored. Must regenerate before building or type-checking.
 
 ## Style notes
 

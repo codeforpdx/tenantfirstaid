@@ -39,6 +39,9 @@ export default function Referrals() {
           </thead>
           <tbody>
             {referrals.map((referral) => {
+              const providerTypes = referral.provider_types ?? [];
+              const hours = referral.hours ?? [];
+              const eligibility = referral.eligibility ?? [];
               const caseStageLabel = formatCaseStages(
                 referral.case_stages ?? [],
               );
@@ -49,12 +52,11 @@ export default function Referrals() {
                   </td>
                   <td className="border border-gray-medium px-4 py-3 align-top">
                     <div>{formatServiceTypes(referral.service_types)}</div>
-                    {referral.provider_types &&
-                      referral.provider_types.length > 0 && (
-                        <div className="text-gray-medium">
-                          {formatProviderTypes(referral.provider_types)}
-                        </div>
-                      )}
+                    {providerTypes.length > 0 && (
+                      <div className="text-gray-medium">
+                        {formatProviderTypes(providerTypes)}
+                      </div>
+                    )}
                     {caseStageLabel && (
                       <div className="text-gray-medium">{caseStageLabel}</div>
                     )}
@@ -63,11 +65,9 @@ export default function Referrals() {
                     {formatGeographicScope(referral.geographic_scope)}
                   </td>
                   <td className="border border-gray-medium px-4 py-3 align-top">
-                    {referral.hours &&
-                      referral.hours.length > 0 &&
-                      referral.hours.map((block, i) => (
-                        <div key={i}>{formatHoursBlock(block)}</div>
-                      ))}
+                    {hours.map((block, i) => (
+                      <div key={i}>{formatHoursBlock(block)}</div>
+                    ))}
                     {referral.phone && <div>{referral.phone}</div>}
                     {referral.email && (
                       <div>
@@ -93,10 +93,9 @@ export default function Referrals() {
                         </a>
                       </div>
                     )}
-                    {referral.eligibility &&
-                      referral.eligibility.length > 0 && (
-                        <div>{referral.eligibility.join("; ")}</div>
-                      )}
+                    {eligibility.length > 0 && (
+                      <div>Requirements: {eligibility.join("; ")}</div>
+                    )}
                     {referral.notes && (
                       <div className="mt-1">
                         <SafeMarkdown>{referral.notes}</SafeMarkdown>

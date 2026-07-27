@@ -76,7 +76,7 @@ describe("Referrals", () => {
     expect(screen.getByText("Commons Law Center")).toBeInTheDocument();
     expect(screen.getByText("Portland only")).toBeInTheDocument();
     expect(
-      screen.getByText("Must already have a court date"),
+      screen.getByText("Requirements: Must already have a court date"),
     ).toBeInTheDocument();
     expect(screen.getByText("No appointment needed.")).toBeInTheDocument();
   });

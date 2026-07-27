@@ -36,6 +36,9 @@ describe("formatReferral", () => {
     expect(formatGeographicScope({ state: "or", cities: ["portland"] })).toBe(
       "Portland only",
     );
+    expect(formatGeographicScope({ state: "other", cities: [] })).toBe(
+      "Outside Oregon",
+    );
   });
 
   it("formats hours blocks", () => {
