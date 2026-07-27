@@ -1,0 +1,66 @@
+---
+title: "System Prompt"
+---
+
+# Editing the system prompt
+
+The chatbot's system prompt lives in `tenantfirstaid/system_prompt.md`. This is a
+plain-text markdown file that anyone can edit — no Python knowledge required. It
+controls the chatbot's personality, tone, citation style, and legal guardrails.
+
+The file uses two placeholders that are substituted at runtime:
+
+- `{RESPONSE_WORD_LIMIT}` — currently 350.
+- `{OREGON_LAW_CENTER_PHONE_NUMBER}` — currently 888-585-9638.
+
+Everything else is literal text. **Do not** add other `{...}` placeholders —
+Python's `str.format()` will break on stray curly braces.
+
+## Iterating on the system prompt in Studio
+
+You don't have to commit every tweak to test it. LangGraph Studio (available via
+Cloud deployment or `langgraph dev`) exposes the system prompt in a **⚙ Manage
+Assistants** panel next to the chat window. The full prompt from `system_prompt.md`
+is pre-populated as the default — you just edit in place and chat.
+
+::: {#fig-prompt-iterate}
+```{mermaid}
+flowchart LR
+    A["Open Studio"] --> B["Edit prompt in<br>Configuration panel"]
+    B --> C["Chat with<br>the agent"]
+    C --> D{Happy?}
+    D -- No --> B
+    D -- Yes --> E["Copy final prompt<br>into system_prompt.md"]
+    E --> F["Commit & push"]
+    F --> G["Run evaluation<br>to confirm"]
+```
+
+The prompt-iteration loop: edit live in Studio, then persist to the file once you're
+satisfied.
+:::
+
+Step by step:
+
+1. **Open Studio.** Either open LangSmith Cloud → Deployments → your deployment →
+   Studio, or run `langgraph dev` locally and open `http://localhost:2024`.
+2. **Find the Configuration panel.** It's in the sidebar or top bar, depending on
+   your Studio version. You'll see a text field labeled **system_prompt** with the
+   full current prompt.
+3. **Edit the prompt.** Change whatever you want — rephrase a rule, add a guideline,
+   adjust the tone. The edit applies immediately to the next message you send.
+4. **Chat with the agent.** Send a test question and see how the agent responds with
+   your updated prompt. Try several questions to check different behaviors.
+5. **Iterate.** Tweak the prompt again, send another question. Repeat until you're
+   satisfied. Each conversation thread remembers your config, so you can go back and
+   compare.
+6. **Save your work.** Once you have wording you like, copy the prompt text from the
+   Configuration panel and paste it into `tenantfirstaid/system_prompt.md` (keep the
+   `{RESPONSE_WORD_LIMIT}` and `{OREGON_LAW_CENTER_PHONE_NUMBER}` placeholders).
+   Commit and push.
+7. **Run an evaluation** to verify the change didn't break anything across the full
+   example suite (see
+   [Running Evaluations](../backend-contributor/running-evaluations.qmd)).
+
+The Configuration panel is per-conversation — resetting it or starting a new thread
+reverts to the default from `system_prompt.md`. Your changes aren't permanent until
+you commit the file.

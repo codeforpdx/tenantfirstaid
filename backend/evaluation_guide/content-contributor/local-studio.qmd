@@ -1,0 +1,40 @@
+---
+title: "Local Studio"
+---
+
+# Testing the agent with `langgraph dev`
+
+::: {.callout-note}
+**Audience:** frontend and content contributors comfortable with a terminal. No
+LangSmith account required. Plus-tier seat holders can use
+[Cloud Studio](../legal-contributor/cloud-studio.qmd) instead.
+:::
+
+For contributors without a Plus-tier seat, `langgraph dev` runs the same agent
+locally.
+
+```bash
+cd backend
+uv run langgraph dev [--no-browser]
+```
+
+{{< termshow file="demos/langgraph-dev" >}}
+
+This starts a local server on `http://127.0.0.1:2024` with an interactive Studio UI.
+You can:
+
+- chat with the agent and see tool calls and RAG results,
+- inspect the graph execution step by step,
+- use the Configuration panel to iterate on the system prompt — the same workflow as
+  Cloud Studio (see
+  [Editing the System Prompt](../editing-and-results/system-prompt.qmd)).
+
+Requires `langgraph-cli[inmem]` (already in dev dependencies) and GCP credentials in
+your local `.env` (see
+[Setup & Environment Variables](../backend-contributor/setup-and-environment.qmd)).
+
+::: {.callout-note}
+Safari blocks the `http` redirect, so use Vivaldi/Chrome. `--no-browser` runs
+without automatically opening your default browser — navigate to the Studio UI URL
+yourself.
+:::

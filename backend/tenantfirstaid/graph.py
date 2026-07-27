@@ -34,11 +34,23 @@ from .location import OregonCity, TFAAgentStateSchema, UsaState
 # Deferred LLM — built on first use so the module can be imported without
 # valid GCP credentials (e.g. fork CI that only runs unit tests).
 _llm: Optional[ChatGoogleGenerativeAI] = None
+"""Lazily-initialized shared LLM instance."""
 _llm_lock = threading.Lock()
+"""Lock for thread-safe LLM initialization."""
 
 
 def _get_llm() -> ChatGoogleGenerativeAI:
-    """Return the shared LLM instance, creating it on first call."""
+    """Return the shared LLM instance, creating it on first call.
+
+    Thread-safe lazy initialization of the LLM using configured GCP credentials
+    and model parameters.
+
+    Returns:
+        ChatGoogleGenerativeAI instance configured with project, model, and safety settings.
+
+    Raises:
+        AssertionError: If GOOGLE_APPLICATION_CREDENTIALS is not set.
+    """
     global _llm
     with _llm_lock:
         if _llm is None:
@@ -63,6 +75,7 @@ def _get_llm() -> ChatGoogleGenerativeAI:
 
 
 tools: List[BaseTool] = [*get_active_rag_tools(), get_letter_template, generate_letter]
+"""Tools available to the agent: active RAG retrievers plus letter generation."""
 
 
 @dataclass
@@ -79,13 +92,21 @@ class TFAContext:
 class _SystemPromptFromContext(AgentMiddleware[Any, TFAContext]):
     """Middleware that builds the system prompt from context and agent state.
 
-    Reads the base prompt from Studio's configuration panel and appends
-    location context (city/state) from the agent state, mirroring what
-    the web app does via prepare_system_prompt().
-
+    Reads the base prompt from Studio's configuration panel (exposed as a TFAContext
+    field) and appends location context (city/state) from the agent state, mirroring
+    what the web app does via prepare_system_prompt(). This allows lawyers to edit
+    the system prompt directly in LangSmith Studio without redeploying.
     """
 
     def _build(self, request: ModelRequest[TFAContext]) -> SystemMessage:
+        """Build a system message with location context appended.
+
+        Args:
+            request: ModelRequest containing context and agent state.
+
+        Returns:
+            SystemMessage with location context from city/state appended.
+        """
         ctx = request.runtime.context
         # When the agent runs as a subgraph, LangGraph passes the configurable
         # as a raw dict rather than a deserialized TFAContext instance.
@@ -102,6 +123,15 @@ class _SystemPromptFromContext(AgentMiddleware[Any, TFAContext]):
         request: ModelRequest[TFAContext],
         handler: Callable[[ModelRequest[TFAContext]], ModelResponse],
     ) -> ModelResponse:
+        """Wrap synchronous model call with built system message.
+
+        Args:
+            request: ModelRequest to be overridden with location-aware system message.
+            handler: Callable that handles the model request.
+
+        Returns:
+            ModelResponse from the handler.
+        """
         return handler(request.override(system_message=self._build(request)))
 
     async def awrap_model_call(
@@ -109,20 +139,49 @@ class _SystemPromptFromContext(AgentMiddleware[Any, TFAContext]):
         request: ModelRequest[TFAContext],
         handler: Callable[[ModelRequest[TFAContext]], Awaitable[ModelResponse]],
     ) -> ModelResponse:
+        """Wrap asynchronous model call with built system message.
+
+        Args:
+            request: ModelRequest to be overridden with location-aware system message.
+            handler: Async callable that handles the model request.
+
+        Returns:
+            ModelResponse from the handler.
+        """
         return await handler(request.override(system_message=self._build(request)))
 
 
 def _build_system_message(
     base_prompt: str, city: Optional[OregonCity], state: UsaState
 ) -> SystemMessage:
-    """Build a SystemMessage with location context appended."""
+    """Build a SystemMessage with location context appended.
+
+    Appends a line indicating the user's city (if specified) and state to the base
+    prompt, helping the agent tailor responses to local laws and jurisdictions.
+
+    Args:
+        base_prompt: Base system prompt text.
+        city: User's [city](`~location.OregonCity`), or None for state-level queries.
+        state: User's [state](`~location.UsaState`).
+
+    Returns:
+        SystemMessage with location context appended.
+    """
     parts = ([city.title()] if city is not None else []) + [state.upper()]
     location = " ".join(parts)
     return SystemMessage(base_prompt + f"\nThe user is in {location}.\n")
 
 
 def prepare_system_prompt(city: Optional[OregonCity], state: UsaState) -> SystemMessage:
-    """Build the default system prompt with location context appended."""
+    """Build the default system prompt with location context appended.
+
+    Args:
+        city: User's [city](`~location.OregonCity`), or None for state-level queries.
+        state: User's [state](`~location.UsaState`).
+
+    Returns:
+        SystemMessage with default instructions and location context.
+    """
     return _build_system_message(DEFAULT_INSTRUCTIONS, city, state)
 
 
@@ -170,41 +229,64 @@ def create_graph(
 
 
 class _DeploymentInput(TypedDict):
-    """Input schema for the deployment graph, read by Studio to render its UI.
+    """Input schema for the LangGraph deployment wrapper graph.
 
-    The _adapt_query node converts query to a HumanMessage before the agent runs.
+    Defines the fields accepted by LangSmith Studio's input panel. The ``_adapt_query``
+    node converts the query to a HumanMessage before the agent runs.
     """
 
     query: str
+    """User's question."""
     state: UsaState
+    """User's state."""
     city: NotRequired[Optional[OregonCity]]
+    """User's city, optional."""
 
 
 class _DatasetInput(TFAAgentStateSchema):
     """Internal state schema for the deployment wrapper graph.
 
     Extends TFAAgentStateSchema with an optional query field so the adapt node
-    can read it and convert it to a HumanMessage.
+    can read it and convert it to a HumanMessage. This schema is used internally
+    by the wrapper and should not be exposed in user-facing APIs.
     """
 
     query: NotRequired[Optional[str]]
+    """User query string."""
 
 
 def _adapt_query(state: _DatasetInput) -> dict:
     """Convert a bare query string to a HumanMessage if messages is empty.
 
-    This lets the graph accept both dataset-style inputs (query/city/state) and
-    the standard messages-based interface.
+    Enables the graph to accept both dataset-style inputs (query/city/state) for
+    LangSmith evaluation and standard messages-based interfaces. If a query is
+    provided but messages is empty, it is converted to a HumanMessage and returned
+    in the state update.
+
+    Args:
+        state: Current graph state.
+
+    Returns:
+        State dict with messages field set if query was present and messages was empty.
     """
     if state.get("query") and not state.get("messages"):
         return {"messages": [HumanMessage(content=state["query"])]}
     return {}
 
 
-# Graph factory for langgraph.json to reference. LangGraph's loader accepts
-# callables, so this defers credential loading until the runtime actually
-# builds the graph (keeping the module importable without valid GCP creds).
 def graph() -> CompiledStateGraph[Any, Any, Any, Any]:
+    """Graph factory for LangGraph deployment via langgraph.json.
+
+    Builds a wrapper graph that adapts dataset-style inputs (query/city/state) to
+    the agent's messages-based interface. The wrapper runs the inner ``create_graph``
+    agent as a subgraph and exposes Studio context for editable system prompts.
+
+    Called by LangGraph's loader at deployment time; defers credential loading so
+    the module remains importable without valid GCP credentials (useful for CI).
+
+    Returns:
+        A compiled LangGraph state graph for deployment.
+    """
     inner = create_graph()  # no checkpointer — outer graph owns the checkpoint
     # fmt: off
     builder: StateGraph = StateGraph(_DatasetInput, input_schema=_DeploymentInput, context_schema=TFAContext)  # type: ignore

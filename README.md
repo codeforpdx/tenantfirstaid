@@ -141,7 +141,16 @@ Live at https://tenantfirstaid.com/
   ```
   `check` runs `lint`, `typecheck`, and `test` concurrently (after `fmt`), so all three report even if one fails — you see every failure in a single run rather than stopping at the first.
 
-| 💡 Using Claude Code? Type `/frontend` in the Claude Code UI for frontend workflow reference. |
+- build and browse the backend user guide (needs [Quarto](https://quarto.org), or add `--container`)
+  ```sh
+  % mise run docs
+  % mise run docs-serve
+  ```
+  | 💡 On MacOS `docs-serve` will open Safari but can't access the local URL.  Open the URL on a Chrome/Chromium-based browser. |
+
+  `docs-lint`, `docs-check-links`, and `docs-proofread` (or `docs-check` for all three) catch missing docstrings, broken links, and spelling/grammar issues; see the [Command Reference](backend/developer_guide/08-command-reference.qmd) chapter.
+
+| 💡 Using Claude Code? Type `/backend` in the Claude Code UI for backend workflow reference (including docs). |
 |---|
 
 ### Frontend Development & Checks
