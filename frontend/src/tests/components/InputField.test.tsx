@@ -4,11 +4,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import HousingContextProvider from "../../contexts/HousingContext";
 import InputField from "../../pages/Chat/components/InputField";
 import * as streamHelper from "../../pages/Chat/utils/streamHelper";
+import type { ChatMessage } from "../../shared/types/messages";
+import type { Location } from "../../types/models";
 
 const renderInputField = (value: string) => {
-  const setMessages = vi.fn();
-  const setIsLoading = vi.fn();
-  const onChange = vi.fn();
+  const setMessages =
+    vi.fn<React.Dispatch<React.SetStateAction<ChatMessage[]>>>();
+  const setIsLoading = vi.fn<React.Dispatch<React.SetStateAction<boolean>>>();
+  const setValue = vi.fn<(value: string) => void>();
   const inputRef = { current: null as HTMLTextAreaElement | null };
   const queryClient = new QueryClient();
 
@@ -16,19 +19,23 @@ const renderInputField = (value: string) => {
     <QueryClientProvider client={queryClient}>
       <HousingContextProvider>
         <InputField
-          addMessage={vi.fn()}
+          addMessage={vi.fn<
+            (
+              args: Location,
+            ) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>
+          >()}
           setMessages={setMessages}
           isLoading={false}
           setIsLoading={setIsLoading}
           value={value}
           inputRef={inputRef}
-          onChange={onChange}
+          setValue={setValue}
         />
       </HousingContextProvider>
     </QueryClientProvider>,
   );
 
-  return { setMessages, onChange };
+  return { setMessages, setValue };
 };
 
 describe("InputField keyboard handling", () => {
@@ -36,13 +43,13 @@ describe("InputField keyboard handling", () => {
     const streamSpy = vi
       .spyOn(streamHelper, "streamText")
       .mockResolvedValue(undefined);
-    const { setMessages, onChange } = renderInputField("hello world");
+    const { setMessages, setValue } = renderInputField("hello world");
 
     const textarea = screen.getByPlaceholderText(/Type your message here/i);
     fireEvent.keyDown(textarea, { key: "Enter", shiftKey: false });
 
-    // handleSend clears the textarea via onChange and appends a message.
-    expect(onChange).toHaveBeenCalled();
+    // handleSend clears the textarea via setValue and appends a message.
+    expect(setValue).toHaveBeenCalledWith("");
     expect(setMessages).toHaveBeenCalled();
     expect(streamSpy).toHaveBeenCalled();
 

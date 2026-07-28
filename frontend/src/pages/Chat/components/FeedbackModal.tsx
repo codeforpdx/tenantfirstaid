@@ -7,6 +7,8 @@ interface Props {
   setOpenFeedback: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+type FeedbackStatus = "idle" | "sending" | "error";
+
 /**
  * Dialog for submitting feedback with optional email CC and word redaction.
  */
@@ -14,7 +16,7 @@ export default function FeedbackModal({ messages, setOpenFeedback }: Props) {
   const [feedback, setFeedback] = useState("");
   const [wordsToRedact, setWordsToRedact] = useState("");
   const [emailsToCC, setEmailsToCC] = useState("");
-  const [status, setStatus] = useState("idle");
+  const [status, setStatus] = useState<FeedbackStatus>("idle");
 
   const handleModalClose = () => {
     setOpenFeedback(false);
@@ -53,9 +55,13 @@ export default function FeedbackModal({ messages, setOpenFeedback }: Props) {
             onChange={(event) => setWordsToRedact(event.target.value)}
           />
         </>
+      ) : status === "error" ? (
+        <div className="flex items-center justify-center h-[80%] w-full">
+          <p>Something went wrong sending your feedback. Please try again.</p>
+        </div>
       ) : (
         <div className="flex items-center justify-center h-[80%] w-full">
-          <p>Feedback Sent!</p>
+          <p>Sending feedback...</p>
         </div>
       )}
       <div className="flex gap-4">
@@ -65,12 +71,14 @@ export default function FeedbackModal({ messages, setOpenFeedback }: Props) {
             border border-green-medium hover:border-green-dark
             hover:bg-green-light`}
           onClick={() => {
-            if (feedback.trim() === "") handleModalClose();
-            setStatus("sending");
-            setTimeout(() => {
-              sendFeedback(messages, feedback, emailsToCC, wordsToRedact);
+            if (feedback.trim() === "") {
               handleModalClose();
-            }, 1000);
+              return;
+            }
+            setStatus("sending");
+            sendFeedback(messages, feedback, emailsToCC, wordsToRedact)
+              .then(() => handleModalClose())
+              .catch(() => setStatus("error"));
           }}
         >
           Send

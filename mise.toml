@@ -314,7 +314,7 @@ set -eu
 # scope has both, so run it in the frontend scope with the backend's mise-managed uv
 # also on PATH.
 uvdir=$(dirname "$(mise -C backend which uv)")
-mise -C frontend exec -- sh -c "PATH=\"$uvdir:\$PATH\" npm run generate-types"
+mise -C frontend exec -- sh -c "PATH=\"$uvdir:\$PATH\" bun run generate-types"
 echo ""
 echo "Setup complete. Start the app with two terminals:"
 echo "  mise run //backend:serve     # Flask API"
@@ -415,3 +415,7 @@ description = "Run all host checks (backend + frontend)."
 # vice versa). --continue-on-error lets both report; --output keep-order keeps each
 # suite's output ungarbled.
 run = "mise run --continue-on-error --output keep-order //backend:check ::: //frontend:check"
+
+[tasks.clean]
+description = "Remove build artifacts (backend + frontend)."
+depends = ["//backend:clean", "//frontend:clean"]

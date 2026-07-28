@@ -51,7 +51,7 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
       className="flex flex-col gap-3"
       onSubmit={(event) => {
         event.preventDefault();
-        handleInitialInput();
+        void handleInitialInput();
       }}
     >
       <div className="flex px-4 gap-2 items-center justify-center">

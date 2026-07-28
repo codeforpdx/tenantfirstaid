@@ -6,12 +6,11 @@ import { MemoryRouter } from "react-router-dom";
 
 beforeAll(() => {
   if (!("scrollTo" in HTMLElement.prototype)) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
     HTMLElement.prototype.scrollTo = function () {};
   }
-  HTMLDialogElement.prototype.showModal = vi.fn();
-  HTMLDialogElement.prototype.close = vi.fn();
+  HTMLDialogElement.prototype.showModal = vi.fn<() => void>();
+  HTMLDialogElement.prototype.close = vi.fn<() => void>();
 });
 
 const renderLayout = async (path: string) => {

@@ -61,9 +61,9 @@ Live at https://tenantfirstaid.com/
 1. `uv run python -m tenantfirstaid.app`
 1. Open a new terminal / tab
 1. `cd ../frontend`
-1. `npm install`
-1. `npm run generate-types`
-1. `npm run dev`
+1. `bun install`
+1. `bun run generate-types`
+1. `bun run dev`
 1. Go to http://localhost:5173
 1. Start chatting
 
@@ -162,24 +162,24 @@ Live at https://tenantfirstaid.com/
 
 1. generate TypeScript types from backend models (required before type-checking or building)
    ```sh
-   % npm run generate-types
+   % bun run generate-types
    ```
 
    This writes `src/types/models.ts` from the backend Pydantic models (gitignored). Non-generated frontend types are stored in `src/shared/types/` and are checked into source control.
 
 - run individual checks
 
-  1. _lint_ TypeScript code with `eslint`
+  1. _lint_ TypeScript code with `oxlint`
      ```sh
-     % npm run lint
+     % bun run lint
      ```
   1. _typecheck_ TypeScript code with `tsc`
      ```sh
-     % npm run typecheck
+     % bun run typecheck
      ```
   1. _test_ TypeScript code with `vitest`
      ```sh
-     % npm run test -- --run
+     % bun run test -- --run
      ```
 
 | 💡 Using Claude Code? Type `/backend` or `/frontend` in the Claude Code UI for Docker target reference, or `/onboarding` for the compose quick start. |

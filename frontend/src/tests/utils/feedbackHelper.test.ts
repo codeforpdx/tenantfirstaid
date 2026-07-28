@@ -1,13 +1,23 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  type Mock,
+} from "vitest";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import sendFeedback from "../../pages/Chat/utils/feedbackHelper";
 import type { ChatMessage, UiMessage } from "../../shared/types/messages";
 
 describe("sendFeedback", () => {
-  let fetchSpy: ReturnType<typeof vi.fn>;
+  let fetchSpy: Mock<typeof fetch>;
 
   beforeEach(() => {
-    fetchSpy = vi.fn().mockResolvedValue({});
+    fetchSpy = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response(null, { status: 200 }));
     vi.stubGlobal("fetch", fetchSpy);
   });
 
@@ -16,12 +26,22 @@ describe("sendFeedback", () => {
   });
 
   async function getTranscriptHtml(): Promise<string> {
-    const formData: FormData = fetchSpy.mock.calls[0][1].body;
-    const blob = formData.get("transcript") as Blob;
+    // oxlint-disable-next-line no-unsafe-type-assertion -- sendFeedback always posts a FormData body.
+    const formData = fetchSpy.mock.calls[0][1]!.body as FormData;
+    const transcript = formData.get("transcript");
+    if (!(transcript instanceof Blob)) {
+      throw new Error("expected transcript form field to be a Blob");
+    }
     return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target?.result as string);
-      reader.readAsText(blob);
+      reader.addEventListener("load", (e) => {
+        const result = e.target?.result;
+        if (typeof result !== "string") {
+          throw new Error("expected FileReader result to be a string");
+        }
+        resolve(result);
+      });
+      reader.readAsText(transcript);
     });
   }
 
@@ -100,9 +120,23 @@ describe("sendFeedback", () => {
       "/api/feedback",
       expect.objectContaining({ method: "POST" }),
     );
-    const formData: FormData = fetchSpy.mock.calls[0][1].body;
+    // oxlint-disable-next-line no-unsafe-type-assertion -- sendFeedback always posts a FormData body.
+    const formData = fetchSpy.mock.calls[0][1]!.body as FormData;
     expect(formData.get("feedback")).toBe("Very helpful!");
     expect(formData.get("emailsToCC")).toBe("cc@example.com");
     expect(formData.get("transcript")).toBeInstanceOf(Blob);
+  });
+
+  it("should throw when the server responds with a non-ok status", async () => {
+    fetchSpy.mockResolvedValue(new Response(null, { status: 500 }));
+
+    const messages: ChatMessage[] = [
+      new HumanMessage({ content: "Hello", id: "1" }),
+      new AIMessage({ content: "Hi", id: "2" }),
+    ];
+
+    await expect(sendFeedback(messages, "feedback", "", "")).rejects.toThrow(
+      "Feedback submission failed with status 500",
+    );
   });
 });

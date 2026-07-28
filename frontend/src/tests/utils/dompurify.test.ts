@@ -47,8 +47,9 @@ describe("DOMPurify sanitization", () => {
 
     const clean = DOMPurify.sanitize(dirty, SANITIZE_AI_SETTINGS);
 
-    const link = new DOMParser().parseFromString(clean, "text/html").body
-      .firstChild as HTMLAnchorElement;
+    const link = new DOMParser()
+      .parseFromString(clean, "text/html")
+      .body.querySelector<HTMLAnchorElement>("a")!;
 
     expect(link.getAttribute("target")).toBe("_blank");
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");

@@ -20,11 +20,18 @@ const installMatchMediaMock = () => {
       listeners.delete(cb),
     dispatchEvent: () => false,
   };
-  window.matchMedia = vi.fn().mockReturnValue(mql);
+  const mediaQueryList =
+    // oxlint-disable-next-line no-unsafe-type-assertion -- test double implementing only the MediaQueryList members exercised here.
+    mql as unknown as MediaQueryList;
+  window.matchMedia = vi
+    .fn<() => MediaQueryList>()
+    .mockReturnValue(mediaQueryList);
   return {
     fireChange: () =>
       act(() => {
-        listeners.forEach((cb) => cb({} as MediaQueryListEvent));
+        // oxlint-disable-next-line no-unsafe-type-assertion -- jsdom has no MediaQueryListEvent constructor; only `matches` is read.
+        const event = { matches: false } as MediaQueryListEvent;
+        listeners.forEach((cb) => cb(event));
       }),
   };
 };

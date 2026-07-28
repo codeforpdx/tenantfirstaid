@@ -15,7 +15,7 @@ interface Props {
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   value: string;
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  setValue: (value: string) => void;
 }
 
 /**
@@ -28,16 +28,14 @@ export default function InputField({
   setIsLoading,
   inputRef,
   value,
-  onChange,
+  setValue,
 }: Props) {
   const { housingLocation } = useHousingContext();
 
   const handleSend = async () => {
     if (!value.trim()) return;
 
-    onChange({
-      target: { value: "" },
-    } as React.ChangeEvent<HTMLTextAreaElement>);
+    setValue("");
 
     const userMessageId = Date.now().toString();
     // Add user message
@@ -70,12 +68,12 @@ export default function InputField({
     <div className="flex gap-2 mt-4 justify-center items-center mx-auto max-w-[700px]">
       <textarea
         value={value}
-        onChange={onChange}
+        onChange={(e) => setValue(e.target.value)}
         onInput={resizeTextArea}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            handleSend();
+            void handleSend();
           }
         }}
         rows={1}

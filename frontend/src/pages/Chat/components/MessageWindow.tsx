@@ -10,6 +10,10 @@ import FeedbackModal from "./FeedbackModal";
 import { useLocation } from "react-router-dom";
 import clsx from "clsx";
 
+const handleClearSession = () => {
+  window.location.reload();
+};
+
 interface Props {
   messages: ChatMessage[];
   addMessage: (
@@ -42,10 +46,6 @@ export default function MessageWindow({
   const displayedMessages = loc.pathname.startsWith("/letter")
     ? messages.slice(LETTER_PAGE_HIDDEN_MESSAGES)
     : messages;
-
-  const handleClearSession = () => {
-    window.location.reload();
-  };
 
   useEffect(() => {
     const messagesElement = messagesRef.current;
@@ -116,7 +116,7 @@ export default function MessageWindow({
               setIsLoading={setIsLoading}
               inputRef={inputRef}
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              setValue={setInputValue}
             />
             <div className="flex justify-center gap-4 mt-4">
               <button

@@ -124,7 +124,7 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
   }, [jurisdiction, org, setMessages, issueDescription]);
 
   useEffect(() => {
-    if (startStreaming === false || streamLocationRef.current === null) return;
+    if (!startStreaming || streamLocationRef.current === null) return;
     // Reset state to prevent re-running
     setStartStreaming(false);
 
@@ -162,7 +162,7 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
       }
     };
 
-    runGenerateLetter();
+    void runGenerateLetter();
   }, [startStreaming, addMessage, setMessages]);
 
   // Clear any pending timer if the component unmounts before it fires.

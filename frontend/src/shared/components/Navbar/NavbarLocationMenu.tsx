@@ -34,9 +34,13 @@ export default function NavbarLocationMenu() {
   };
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     const handlePointerDown = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+      if (
+        event.target instanceof Node &&
+        !containerRef.current?.contains(event.target)
+      )
+        setOpen(false);
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);

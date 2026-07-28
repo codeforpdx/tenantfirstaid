@@ -34,7 +34,7 @@ flowchart TD
 |-------------|-----|--------------------|---------|
 | **Production** | [tenantfirstaid.com](https://tenantfirstaid.com) | Automatic on push to `main` | Live site for end users |
 | **Staging** | Internal URL (see GitHub environment settings) | Manual (`workflow_dispatch`) | Pre-production validation |
-| **Local** | `http://localhost:5173` | Manual (`uv run python -m tenantfirstaid.app` + `npm run dev`) | Developer iteration and testing |
+| **Local** | `http://localhost:5173` | Manual (`uv run python -m tenantfirstaid.app` + `bun run dev`) | Developer iteration and testing |
 
 Additionally, the agent can be run locally or deployed to LangSmith Cloud for evaluation and interactive testing:
 
@@ -55,7 +55,7 @@ Notable staging-only setting: `SHOW_MODEL_THINKING` can be toggled on to surface
 
 ## Deployment principles
 
-- **Reproducibility**: Python dependencies are pinned in `backend/uv.lock`; Node dependencies are pinned in `frontend/package-lock.json`. The same commit always produces the same build.
+- **Reproducibility**: Python dependencies are pinned in `backend/uv.lock`; Node dependencies are pinned in `frontend/bun.lock`. The same commit always produces the same build.
 - **No secrets in code**: secrets are never committed to the repository. They are stored encrypted in GitHub Actions environments and written to the server at deploy time (see [Secrets and configuration](#secrets-and-configuration)).
 - **Continuous delivery**: every merge to `main` automatically triggers a production deploy via GitHub Actions with no manual steps.
 - **Single concurrency**: the `deploy-to-droplet` concurrency group ensures only one deploy runs at a time; a newer push cancels an in-progress deploy.
@@ -190,8 +190,8 @@ The Flask backend runs under Gunicorn with 10 worker processes and a 300-second 
 ```mermaid
 flowchart TD
     Trigger["Push to main (production)<br/>or manual trigger (staging)"] --> Checkout["Checkout source code"]
-    Checkout --> NodeSetup["Set up Node 20<br/>(cached)"]
-    NodeSetup --> BuildUI["Build React frontend<br/>npm ci && npm run build"]
+    Checkout --> BunSetup["Set up Bun 1.3.14"]
+    BunSetup --> BuildUI["Build React frontend<br/>bun install && bun run build"]
     BuildUI --> SCPBackend["Upload backend/ to droplet via SCP<br/>(replaces existing directory)"]
     SCPBackend --> SCPFrontend["Upload frontend/dist to droplet via SCP<br/>(appends — does not replace backend)"]
     SCPFrontend --> UVInstall["SSH: install uv on droplet<br/>(skip if already present)"]
@@ -498,7 +498,7 @@ If the timer is disabled: `sudo systemctl enable --now certbot.timer`.
 
 | Failing step | Likely cause | Fix |
 |-------------|-------------|-----|
-| **Build UI** | npm dependency or build error | Fix in code; re-merge or trigger `workflow_dispatch` |
+| **Build UI** | bun dependency or build error | Fix in code; re-merge or trigger `workflow_dispatch` |
 | **Upload via SCP** | Droplet unreachable or SSH key invalid | Check droplet status in Digital Ocean console; verify `SSH_KEY` secret is current |
 | **uv sync** | Lockfile conflict or network error | Re-run the workflow; if persistent, check `uv.lock` in the repo |
 | **Write env file** | Malformed secret value (newline in secret) | Edit the offending secret in GitHub environment settings |

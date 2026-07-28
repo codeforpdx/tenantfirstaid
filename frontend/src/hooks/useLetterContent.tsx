@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { ChatMessage } from "../shared/types/messages";
-import type { LetterChunk, ResponseChunk } from "../types/models";
+import type { LetterChunk } from "../types/models";
+import { isResponseChunk } from "../shared/types/guards";
 
 /**
  * Extracts generated letter content from chat messages by scanning all AI
@@ -13,7 +14,11 @@ export function useLetterContent(messages: ChatMessage[]) {
       .flatMap((msg) => msg.text.split("\n").filter(Boolean))
       .flatMap((line) => {
         try {
-          return [JSON.parse(line) as ResponseChunk];
+          const parsed = JSON.parse(line);
+          if (isResponseChunk(parsed)) {
+            return [parsed];
+          }
+          return []; // Not a valid ResponseChunk — skip.
         } catch {
           return []; // Not a JSON chunk — skip.
         }

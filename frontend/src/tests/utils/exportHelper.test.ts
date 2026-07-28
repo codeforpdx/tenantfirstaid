@@ -7,18 +7,18 @@ function createMockDocument() {
   const writelnCalls: string[] = [];
 
   return {
-    writeln: vi.fn((content: string) => {
+    writeln: vi.fn<(content: string) => void>((content: string) => {
       writelnCalls.push(content);
     }),
     writelnCalls,
-    close: vi.fn(),
-    focus: vi.fn(),
-    print: vi.fn(),
+    close: vi.fn<() => void>(),
+    focus: vi.fn<() => void>(),
+    print: vi.fn<() => void>(),
     document: {
-      writeln: vi.fn((content: string) => {
+      writeln: vi.fn<(content: string) => void>((content: string) => {
         writelnCalls.push(content);
       }),
-      close: vi.fn(),
+      close: vi.fn<() => void>(),
     },
   };
 }
@@ -29,7 +29,9 @@ describe("exportMessages", () => {
 
   beforeEach(() => {
     mockDocument = createMockDocument();
-    windowOpenSpy = vi.fn(() => mockDocument);
+    windowOpenSpy = vi.fn<() => ReturnType<typeof createMockDocument>>(
+      () => mockDocument,
+    );
     vi.stubGlobal("window", { open: windowOpenSpy });
   });
 
@@ -125,7 +127,7 @@ describe("exportMessages", () => {
 
   it("should handle edge cases gracefully", () => {
     // Null window (popup blocker)
-    vi.stubGlobal("window", { open: vi.fn(() => null) });
+    vi.stubGlobal("window", { open: vi.fn<() => null>(() => null) });
     expect(() =>
       exportMessages([
         new HumanMessage({ content: "Test", id: "1" }),
@@ -134,7 +136,11 @@ describe("exportMessages", () => {
     ).not.toThrow();
 
     // Empty content and special characters
-    vi.stubGlobal("window", { open: vi.fn(() => mockDocument) });
+    vi.stubGlobal("window", {
+      open: vi.fn<() => ReturnType<typeof createMockDocument>>(
+        () => mockDocument,
+      ),
+    });
     exportMessages([
       new HumanMessage({ content: "", id: "1" }),
       new AIMessage({

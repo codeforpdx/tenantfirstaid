@@ -6,6 +6,8 @@ import FeatureSnippet from "./FeatureSnippet";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { readStorage, writeStorage } from "../utils/storage";
 
+type CSSVars = React.CSSProperties & { "--features-w"?: string };
+
 interface Props {
   disclaimer: React.ReactNode;
 }
@@ -46,7 +48,7 @@ export default function FeaturesPanel({ disclaimer }: Props) {
         </span>
       </button>
       <div
-        style={{ "--features-w": "20vw" } as React.CSSProperties}
+        style={{ "--features-w": "20vw" } as CSSVars}
         className={clsx(
           "flex flex-col w-full bg-paper-background",
           "border-b lg:border-b-0 border-gray-light",
