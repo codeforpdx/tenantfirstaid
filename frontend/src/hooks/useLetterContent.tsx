@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { ChatMessage } from "../shared/types/messages";
 import type { LetterChunk } from "../types/models";
-import { isResponseChunk } from "../types/guards";
+import { isResponseChunk } from "../shared/types/guards";
 
 /**
  * Extracts generated letter content from chat messages by scanning all AI

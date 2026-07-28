@@ -1,7 +1,7 @@
 import SafeMarkdown from "../../../shared/components/SafeMarkdown";
 import type { ChatMessage } from "../../../shared/types/messages";
 import type { ResponseChunk } from "../../../types/models";
-import { isResponseChunk } from "../../../types/guards";
+import { isResponseChunk } from "../../../shared/types/guards";
 
 /**
  * Safely parses a string as a ResponseChunk.
