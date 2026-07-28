@@ -22,7 +22,7 @@ description = "Start the Vite dev server."
 run = "bun run dev"
 
 [tasks.check]
-description = "Frontend: generate-types, typecheck, lint, test."
+description = "Frontend: generate-types, format check, typecheck, lint, test."
 depends = ["install"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."

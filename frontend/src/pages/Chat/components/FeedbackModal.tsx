@@ -61,7 +61,7 @@ export default function FeedbackModal({ messages, setOpenFeedback }: Props) {
         </div>
       ) : (
         <div className="flex items-center justify-center h-[80%] w-full">
-          <p>Feedback Sent!</p>
+          <p>Sending feedback...</p>
         </div>
       )}
       <div className="flex gap-4">
@@ -76,11 +76,9 @@ export default function FeedbackModal({ messages, setOpenFeedback }: Props) {
               return;
             }
             setStatus("sending");
-            setTimeout(() => {
-              sendFeedback(messages, feedback, emailsToCC, wordsToRedact)
-                .then(() => handleModalClose())
-                .catch(() => setStatus("error"));
-            }, 1000);
+            sendFeedback(messages, feedback, emailsToCC, wordsToRedact)
+              .then(() => handleModalClose())
+              .catch(() => setStatus("error"));
           }}
         >
           Send

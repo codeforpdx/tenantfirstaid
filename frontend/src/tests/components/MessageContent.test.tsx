@@ -85,4 +85,15 @@ describe("MessageContent", () => {
       screen.getByText("Is my landlord allowed to do this?"),
     ).toBeInTheDocument();
   });
+
+  it("falls back to rendering unrecognized JSON chunks as markdown", () => {
+    const message = new AIMessage({
+      content: '{"type":"unknown_type","content":"hello"}\n',
+      id: "7",
+    });
+    render(<MessageContent message={message} />);
+    expect(
+      screen.getByText('{"type":"unknown_type","content":"hello"}'),
+    ).toBeInTheDocument();
+  });
 });

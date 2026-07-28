@@ -8,7 +8,6 @@
     "oxc",
     "react",
     "react-perf",
-    "jest",
     "vitest",
     "jsdoc"
   ],

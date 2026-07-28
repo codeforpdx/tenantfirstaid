@@ -1,10 +1,18 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  type Mock,
+} from "vitest";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import sendFeedback from "../../pages/Chat/utils/feedbackHelper";
 import type { ChatMessage, UiMessage } from "../../shared/types/messages";
 
 describe("sendFeedback", () => {
-  let fetchSpy: ReturnType<typeof vi.fn>;
+  let fetchSpy: Mock<typeof fetch>;
 
   beforeEach(() => {
     fetchSpy = vi
@@ -18,7 +26,8 @@ describe("sendFeedback", () => {
   });
 
   async function getTranscriptHtml(): Promise<string> {
-    const formData: FormData = fetchSpy.mock.calls[0][1].body;
+    // oxlint-disable-next-line no-unsafe-type-assertion -- sendFeedback always posts a FormData body.
+    const formData = fetchSpy.mock.calls[0][1]!.body as FormData;
     const transcript = formData.get("transcript");
     if (!(transcript instanceof Blob)) {
       throw new Error("expected transcript form field to be a Blob");
@@ -111,7 +120,8 @@ describe("sendFeedback", () => {
       "/api/feedback",
       expect.objectContaining({ method: "POST" }),
     );
-    const formData: FormData = fetchSpy.mock.calls[0][1].body;
+    // oxlint-disable-next-line no-unsafe-type-assertion -- sendFeedback always posts a FormData body.
+    const formData = fetchSpy.mock.calls[0][1]!.body as FormData;
     expect(formData.get("feedback")).toBe("Very helpful!");
     expect(formData.get("emailsToCC")).toBe("cc@example.com");
     expect(formData.get("transcript")).toBeInstanceOf(Blob);

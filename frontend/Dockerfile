@@ -64,7 +64,10 @@ COPY --from=production-build /workspace/frontend/dist ./dist
 ENV BUN_INSTALL=/usr/local/bun
 ENV PATH="${BUN_INSTALL}/bin:${PATH}"
 
-RUN bun install -g --ignore-scripts serve@14 \
+# serve@14 has a `#!/usr/bin/env node` shebang; this stage starts fresh from
+# oven/bun and doesn't inherit the base stage's node symlink, so add it here too.
+RUN ln -s "$(command -v bun)" /usr/local/bin/node \
+    && bun install -g --ignore-scripts serve@14 \
     && useradd --system --no-create-home appuser \
     && chown -R appuser /app
 USER appuser

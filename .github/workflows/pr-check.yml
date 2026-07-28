@@ -129,6 +129,20 @@ jobs:
         with:
           bun-version: "1.3.14"
 
+      # json2ts (invoked by `bun run generate-types`) has a `#!/usr/bin/env node`
+      # shebang; declare the Node dependency explicitly instead of relying on the
+      # runner image happening to ship one.
+      - name: Set up Node
+        uses: actions/setup-node@v5
+
+      - name: Cache Bun install cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('frontend/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7.3.0
         with:
