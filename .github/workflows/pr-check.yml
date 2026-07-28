@@ -153,8 +153,8 @@ jobs:
       - name: Run linting checks
         run: bun run lint
 
-      - name: Run format fixes
-        run: bun run format
+      - name: Run format checks
+        run: bun run format:check
 
       - name: Run frontend tests
         run: bun run test -- --run

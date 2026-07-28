@@ -10,9 +10,9 @@ const stubMatchMedia = (matches: boolean) =>
     vi.fn().mockReturnValue({
       matches,
       addEventListener:
-        vi.fn<(type: string, listener: (...args: any[]) => void) => void>(),
+        vi.fn<(type: string, listener: (...args: unknown[]) => void) => void>(),
       removeEventListener:
-        vi.fn<(type: string, listener: (...args: any[]) => void) => void>(),
+        vi.fn<(type: string, listener: (...args: unknown[]) => void) => void>(),
     }),
   );
 

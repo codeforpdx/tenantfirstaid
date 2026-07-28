@@ -57,6 +57,9 @@ WORKDIR /app
 
 COPY --from=production-build /workspace/frontend/dist ./dist
 
+ENV BUN_INSTALL=/usr/local/bun
+ENV PATH="${BUN_INSTALL}/bin:${PATH}"
+
 RUN bun install -g --ignore-scripts serve@14 \
     && useradd --system --no-create-home appuser \
     && chown -R appuser /app

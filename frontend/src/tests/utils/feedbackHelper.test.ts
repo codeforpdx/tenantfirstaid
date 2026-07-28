@@ -7,10 +7,9 @@ describe("sendFeedback", () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    const okResponse =
-      // oxlint-disable-next-line no-unsafe-type-assertion -- sendFeedback only reads response.ok.
-      { ok: true } as Response;
-    fetchSpy = vi.fn<typeof fetch>().mockResolvedValue(okResponse);
+    fetchSpy = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response(null, { status: 200 }));
     vi.stubGlobal("fetch", fetchSpy);
   });
 
@@ -116,5 +115,18 @@ describe("sendFeedback", () => {
     expect(formData.get("feedback")).toBe("Very helpful!");
     expect(formData.get("emailsToCC")).toBe("cc@example.com");
     expect(formData.get("transcript")).toBeInstanceOf(Blob);
+  });
+
+  it("should throw when the server responds with a non-ok status", async () => {
+    fetchSpy.mockResolvedValue(new Response(null, { status: 500 }));
+
+    const messages: ChatMessage[] = [
+      new HumanMessage({ content: "Hello", id: "1" }),
+      new AIMessage({ content: "Hi", id: "2" }),
+    ];
+
+    await expect(sendFeedback(messages, "feedback", "", "")).rejects.toThrow(
+      "Feedback submission failed with status 500",
+    );
   });
 });

@@ -1,28 +1,7 @@
 import SafeMarkdown from "../../../shared/components/SafeMarkdown";
 import type { ChatMessage } from "../../../shared/types/messages";
 import type { ResponseChunk } from "../../../types/models";
-
-/**
- * Type guard to validate that a parsed object is a ResponseChunk.
- * A valid ResponseChunk must have a 'type' property that is one of the allowed types.
- */
-function isResponseChunk(obj: unknown): obj is ResponseChunk {
-  if (typeof obj !== "object" || obj === null) {
-    return false;
-  }
-
-  const type = (obj as { type?: unknown }).type;
-  if (typeof type !== "string") {
-    return false;
-  }
-
-  return (
-    type === "text" ||
-    type === "reasoning" ||
-    type === "letter" ||
-    type === "end_of_stream"
-  );
-}
+import { isResponseChunk } from "../../../types/guards";
 
 /**
  * Safely parses a string as a ResponseChunk.

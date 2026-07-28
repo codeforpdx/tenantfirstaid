@@ -7,6 +7,8 @@ interface Props {
   setOpenFeedback: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+type FeedbackStatus = "idle" | "sending" | "error";
+
 /**
  * Dialog for submitting feedback with optional email CC and word redaction.
  */
@@ -14,7 +16,7 @@ export default function FeedbackModal({ messages, setOpenFeedback }: Props) {
   const [feedback, setFeedback] = useState("");
   const [wordsToRedact, setWordsToRedact] = useState("");
   const [emailsToCC, setEmailsToCC] = useState("");
-  const [status, setStatus] = useState("idle");
+  const [status, setStatus] = useState<FeedbackStatus>("idle");
 
   const handleModalClose = () => {
     setOpenFeedback(false);
