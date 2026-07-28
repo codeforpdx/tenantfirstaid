@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.2.0",
   "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "vite",
     "generate-types": "mkdir -p src/types && uv run --directory ../backend python scripts/generate_types.py | json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts",

@@ -190,7 +190,7 @@ The Flask backend runs under Gunicorn with 10 worker processes and a 300-second 
 ```mermaid
 flowchart TD
     Trigger["Push to main (production)<br/>or manual trigger (staging)"] --> Checkout["Checkout source code"]
-    Checkout --> NodeSetup["Set up Node 20<br/>(cached)"]
+    Checkout --> NodeSetup["Set up Node 24<br/>(cached)"]
     NodeSetup --> BuildUI["Build React frontend<br/>npm ci && npm run build"]
     BuildUI --> SCPBackend["Upload backend/ to droplet via SCP<br/>(replaces existing directory)"]
     SCPBackend --> SCPFrontend["Upload frontend/dist to droplet via SCP<br/>(appends — does not replace backend)"]
