@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import About from "../../About";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router";
 
 describe("About component", () => {
   it("renders without crashing", () => {

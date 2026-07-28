@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from "vitest";
 import InitializationForm from "../../pages/Chat/components/InitializationForm";
 import HousingContextProvider from "../../contexts/HousingContext";
 import useSyncJurisdiction from "../../hooks/useSyncJurisdiction";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { MemoryRouter, Routes, Route } from "react-router";
 import { HumanMessage } from "@langchain/core/messages";
 import type { ChatMessage } from "../../shared/types/messages";
 

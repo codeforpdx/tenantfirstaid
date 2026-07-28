@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router";
 import clsx from "clsx";
 import useActiveJurisdiction from "../../hooks/useActiveJurisdiction";
 import type { JurisdictionKey } from "../constants/jurisdictions";

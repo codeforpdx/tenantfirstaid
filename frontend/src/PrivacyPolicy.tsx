@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import BackLink from "./shared/components/BackLink";
 import { useEffect } from "react";
 import { CONTACT_EMAIL } from "./shared/constants/constants";

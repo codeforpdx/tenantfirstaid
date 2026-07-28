@@ -7,7 +7,7 @@ import ExportMessagesButton from "./ExportMessagesButton";
 import InitializationForm from "./InitializationForm";
 import MessageAvatar from "./MessageAvatar";
 import FeedbackModal from "./FeedbackModal";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router";
 import clsx from "clsx";
 
 interface Props {
