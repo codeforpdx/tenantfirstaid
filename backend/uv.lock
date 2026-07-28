@@ -4032,7 +4032,7 @@ wheels = [
 ]
 
 [[package]]
-name = "tenant-first-aid"
+name = "tenantfirstaid"
 version = "0.5.0"
 source = { editable = "." }
 dependencies = [
