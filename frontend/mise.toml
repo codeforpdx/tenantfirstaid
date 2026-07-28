@@ -38,7 +38,7 @@ if [ -n "${usage_container:-}" ]; then
     --engine "${usage_engine:-auto}"
 fi
 bun run generate-types
-bun run format
+bun run format:check
 bun run typecheck
 bun run lint
 bun run test -- --run

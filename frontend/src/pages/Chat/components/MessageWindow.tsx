@@ -116,7 +116,7 @@ export default function MessageWindow({
               setIsLoading={setIsLoading}
               inputRef={inputRef}
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              setValue={setInputValue}
             />
             <div className="flex justify-center gap-4 mt-4">
               <button

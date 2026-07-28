@@ -11,7 +11,7 @@ const renderInputField = (value: string) => {
   const setMessages =
     vi.fn<React.Dispatch<React.SetStateAction<ChatMessage[]>>>();
   const setIsLoading = vi.fn<React.Dispatch<React.SetStateAction<boolean>>>();
-  const onChange = vi.fn<(e: { target: { value: string } }) => void>();
+  const setValue = vi.fn<(value: string) => void>();
   const inputRef = { current: null as HTMLTextAreaElement | null };
   const queryClient = new QueryClient();
 
@@ -29,13 +29,13 @@ const renderInputField = (value: string) => {
           setIsLoading={setIsLoading}
           value={value}
           inputRef={inputRef}
-          onChange={onChange}
+          setValue={setValue}
         />
       </HousingContextProvider>
     </QueryClientProvider>,
   );
 
-  return { setMessages, onChange };
+  return { setMessages, setValue };
 };
 
 describe("InputField keyboard handling", () => {
@@ -43,13 +43,13 @@ describe("InputField keyboard handling", () => {
     const streamSpy = vi
       .spyOn(streamHelper, "streamText")
       .mockResolvedValue(undefined);
-    const { setMessages, onChange } = renderInputField("hello world");
+    const { setMessages, setValue } = renderInputField("hello world");
 
     const textarea = screen.getByPlaceholderText(/Type your message here/i);
     fireEvent.keyDown(textarea, { key: "Enter", shiftKey: false });
 
-    // handleSend clears the textarea via onChange and appends a message.
-    expect(onChange).toHaveBeenCalled();
+    // handleSend clears the textarea via setValue and appends a message.
+    expect(setValue).toHaveBeenCalledWith("");
     expect(setMessages).toHaveBeenCalled();
     expect(streamSpy).toHaveBeenCalled();
 

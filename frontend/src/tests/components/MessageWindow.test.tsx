@@ -8,7 +8,6 @@ import HousingContextProvider from "../../contexts/HousingContext";
 
 beforeAll(() => {
   if (!("scrollTo" in HTMLElement.prototype)) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
     HTMLElement.prototype.scrollTo = function () {};
   }

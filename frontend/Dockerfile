@@ -9,7 +9,11 @@ WORKDIR /workspace/frontend
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    # json2ts (used by `bun run generate-types`) has a `#!/usr/bin/env node`
+    # shebang; bun-slim has no `node` binary, so alias it to `bun` — Bun's
+    # documented drop-in-for-Node approach.
+    && ln -s "$(command -v bun)" /usr/local/bin/node
 
 COPY --from=ghcr.io/astral-sh/uv@sha256:798712e57f879c5393777cbda2bb309b29fcdeb0532129d4b1c3125c5385975a /uv /usr/local/bin/uv
 
