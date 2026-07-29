@@ -1,0 +1,55 @@
+---
+title: "Typical Workflows"
+---
+
+# Typical workflows
+
+## "I want to check quality before a release" (backend contributors)
+
+::: {#fig-wf-release}
+```{mermaid}
+flowchart LR
+    A["Run evaluation<br>run_langsmith_evaluation.py"] --> B["Review scores<br>in LangSmith UI"]
+    B --> C{Passing?}
+    C -- Yes --> D["Ship it"]
+    C -- No --> E["Investigate failing<br>examples in UI"]
+    E --> F["Fix chatbot code<br>or system prompt"]
+    F --> A
+```
+:::
+
+## "I found a chatbot mistake and want to add a test for it"
+
+::: {#fig-wf-add-test}
+```{mermaid}
+flowchart LR
+    A["Write the example<br>(question + reference answer)"]
+    B["Append to JSONL<br>example append"]
+    C["Push to LangSmith<br>dataset push"]
+    D["Run evaluation<br>to confirm it fails"]
+    E["Fix the chatbot"]
+    F["Run evaluation<br>to confirm it passes"]
+    G["Commit JSONL + code fix"]
+
+    A --> B --> C --> D --> E --> F --> G
+```
+:::
+
+## "I want to improve a reference answer using the browser editor" (all audiences)
+
+::: {#fig-wf-ref-answer}
+```{mermaid}
+flowchart LR
+    A["Edit in<br>LangSmith UI"] --> B["Pull back<br>dataset pull"]
+    B --> C["Review diff<br>in git"]
+    C --> D["Commit<br>updated JSONL"]
+```
+:::
+
+## "I want to iterate on the system prompt"
+
+Edit the prompt live in Studio, chat to test, then persist and evaluate — see
+[Editing the System Prompt](../editing-and-results/system-prompt.qmd) for the
+full loop. After a run, use
+[`/analyze-experiment`](../editing-and-results/viewing-results.qmd) to diagnose
+what changed.

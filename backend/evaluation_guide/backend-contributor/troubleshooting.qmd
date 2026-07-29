@@ -1,0 +1,30 @@
+---
+title: "Troubleshooting"
+---
+
+# Troubleshooting
+
+## "Dataset not found"
+
+The dataset hasn't been pushed yet. Run:
+
+```bash
+uv run langsmith-dataset dataset push \
+  dataset-tenant-legal-qa-examples.jsonl \
+  tenant-legal-qa-scenarios
+```
+
+## Scores seem wrong or inconsistent
+
+LLM-as-judge has its own biases and can be inconsistent on borderline cases. Review
+the judge's written rationale for specific failing examples in the LangSmith UI, then
+refine the evaluator rubrics in `evaluators/*.md` if the scoring logic is the problem
+(see [Editing evaluator rubrics](../editing-and-results/evaluator-rubrics.qmd)).
+
+For a systematic breakdown of agent vs. evaluator noise, see
+[Understanding Scores → diagnosing score variance](understanding-scores.qmd#diagnosing-score-variance).
+
+## Evaluation is too slow
+
+Pass `--max-concurrency 3` (or higher) to run multiple examples in parallel, or
+temporarily reduce the dataset size in LangSmith to evaluate a representative subset.

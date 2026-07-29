@@ -1,0 +1,131 @@
+---
+title: "Viewing & Comparing Results"
+---
+
+# Viewing & comparing results
+
+Open <https://smith.langchain.com/> → your dataset → **Experiments** tab.
+
+From there you can:
+
+- see per-example scores and the judge's written rationale for each score,
+- compare two experiments side-by-side to measure the impact of a code change,
+- filter to failing examples to understand where the chatbot struggles.
+
+## How the judge scores each example
+
+When the AI judge scores a response, it receives:
+
+::: {#fig-judge-view}
+```{mermaid}
+flowchart LR
+    subgraph "What the judge receives"
+        I["inputs<br>(question, city, state)"]
+        O["chatbot outputs<br>(response text, reasoning,<br>system prompt)"]
+        R["reference outputs<br>(facts, reference conversation)"]
+    end
+    I --> Verdict
+    O --> Verdict
+    R --> Verdict
+    Verdict["Score + rationale"]
+```
+
+The judge compares what the chatbot actually said against what it should have said,
+given the same question and context.
+:::
+
+## Comparing two experiments from the command line
+
+```bash
+uv run langsmith-dataset experiment compare \
+  tfa-baseline tfa-my-experiment
+```
+
+## Claude-assisted analysis with `/analyze-experiment`
+
+The `/analyze-experiment` skill is a Claude Code command that automates the full
+experiment investigation workflow — from aggregate scores through root-cause
+diagnosis — in a single step.
+
+Invoke it from any Claude Code session in this repository:
+
+```
+/analyze-experiment <experiment-name-or-uuid>
+```
+
+For example:
+
+```
+/analyze-experiment tfa-2026-04-13
+/analyze-experiment c663e09e-1234-...
+```
+
+### What it does
+
+Claude runs the following automatically and synthesizes the findings:
+
+1. **Overview** — `experiment show` and `experiment stats` in parallel to get
+   aggregate scores and per-scenario consistency tables. Identifies scenarios with
+   low means or high variance.
+2. **Exemplar selection** — for the worst-performing scenario, fetches all runs
+   sorted worst-to-best and selects one 0.0 run and one 1.0 run from the same
+   scenario. This controls for question difficulty — any difference between them is a
+   signal about agent behavior, not input variation.
+3. **Trace analysis** — reads the full execution trace for both exemplars, including
+   tool calls, retrieved passages, and the final model output. Looks for which of
+   the following failure modes is present:
+
+   | Failure mode | Signature |
+   |---|---|
+   | **Retrieval miss** | The correct statutory text is absent from retrieved passages in both runs; the 1.0 run succeeded on general knowledge rather than retrieval. |
+   | **Query too broad** | The RAG query echoes the user's words verbatim; specific statute language is absent from results. |
+   | **Reasoning failure** | The correct text was retrieved but the model ignored or misapplied it. |
+   | **Instruction conflict** | Two system-prompt rules contradict each other; the model follows one and suppresses the other. Hard signature: empty `content` field with reasoning tokens but no tool calls. |
+   | **Confabulation** | The model asserted specific numbers, dates, or rules not present in retrieved text or system prompt. |
+   | **Misleading retrieval** | Retrieved passages are technically accurate but framed in a way that leads to a wrong inference. |
+
+4. **Recommended fixes** — matched to the failure mode:
+
+   | Failure mode | Fix |
+   |---|---|
+   | Retrieval miss | Corpus update needed; names the missing statute. |
+   | Query too broad | Better RAG query formulation or updated tool description. |
+   | Reasoning failure | System-prompt guidance targeting that reasoning step. |
+   | Instruction conflict | Identifies the conflicting lines; suggests a carve-out or clarified precedence. |
+   | Confabulation | Tighter anti-hallucination instruction. |
+   | Misleading retrieval | System-prompt trigger to search for the protective statute before drawing conclusions. |
+
+### Output format
+
+Results are presented as: overview table → worst-scenario highlights → root-cause
+diagnosis → recommended fixes.
+
+### Comparing two experiments
+
+If you have a baseline experiment to compare against, include it:
+
+```
+/analyze-experiment <baseline> <experiment>
+```
+
+Claude will run `experiment compare` in parallel with the overview and highlight
+which scenarios improved, regressed, or remained unchanged.
+
+### When to use this vs. the LangSmith UI
+
+The LangSmith UI is best for browsing individual scores and reading judge rationale
+for specific examples. The `/analyze-experiment` skill is best when you want a
+diagnosis — not just the numbers, but a hypothesis about *why* a scenario is failing
+and what to change.
+
+::: {#fig-analyze-loop}
+```{mermaid}
+flowchart LR
+    A["Run evaluation<br>run_langsmith_evaluation.py"] --> B["/analyze-experiment<br>in Claude Code"]
+    B --> C["Root-cause diagnosis<br>+ recommended fixes"]
+    C --> D["Edit system_prompt.md<br>or evaluator rubric"]
+    D --> A
+```
+
+A typical post-experiment loop: run, diagnose, fix, re-run.
+:::
