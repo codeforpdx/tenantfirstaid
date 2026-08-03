@@ -14,6 +14,7 @@ from tenantfirstaid.referrals import (
     REFERRALS_BY_ID,
     HoursBlock,
     Referral,
+    Weekday,
     _validate_referrals,
 )
 
@@ -42,11 +43,11 @@ class TestReferralsCatalog:
 
     def test_hours_require_24_hour_times(self):
         with pytest.raises(ValueError):
-            HoursBlock(days=["monday"], start="9am", end="5pm")
+            HoursBlock(days=[Weekday.MONDAY], start="9am", end="5pm")
 
     def test_hours_end_must_be_after_start(self):
         with pytest.raises(ValueError):
-            HoursBlock(days=["monday"], start="17:00", end="09:00")
+            HoursBlock(days=[Weekday.MONDAY], start="17:00", end="09:00")
 
     def test_required_ids_fail_validation_when_missing(self):
         without_laso = [referral for referral in REFERRALS if referral.id != "laso"]
