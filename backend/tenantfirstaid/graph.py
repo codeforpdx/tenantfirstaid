@@ -27,6 +27,7 @@ from .google_auth import load_gcp_credentials
 from .langchain_tools import (
     generate_letter,
     get_active_rag_tools,
+    get_legal_aid_referrals,
     get_letter_template,
 )
 from .location import OregonCity, TFAAgentStateSchema, UsaState
@@ -74,8 +75,13 @@ def _get_llm() -> ChatGoogleGenerativeAI:
         return _llm
 
 
-tools: List[BaseTool] = [*get_active_rag_tools(), get_letter_template, generate_letter]
-"""Tools available to the agent: active RAG retrievers plus letter generation."""
+tools: List[BaseTool] = [
+    *get_active_rag_tools(),
+    get_letter_template,
+    generate_letter,
+    get_legal_aid_referrals,
+]
+"""Tools available to the agent: active RAG retrievers, letter generation, and legal aid referrals."""
 
 
 @dataclass

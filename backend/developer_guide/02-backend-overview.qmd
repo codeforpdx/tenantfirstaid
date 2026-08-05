@@ -28,7 +28,9 @@ Google Gemini and Vertex AI RAG to produce grounded, jurisdiction-aware answers.
 ├── location.py                # City/state enums, normalization, agent state schema
 ├── graph.py                   # Shared LLM + tools + graph factory (create_graph)
 ├── langchain_chat_manager.py  # Per-session agent wrapper with streaming
-├── langchain_tools.py         # RAG retriever and letter tools
+├── langchain_tools.py         # RAG retriever, letter, and referral tools
+├── referrals.py               # Pydantic-validated legal-aid referral catalog
+├── referrals_data.json        # Referral catalog data (editable without Python knowledge)
 ├── google_auth.py             # GCP credential loading (file path or inline JSON)
 ├── logger.py                  # Centralized logging setup
 ├── feedback.py                # Feedback email + PDF transcript

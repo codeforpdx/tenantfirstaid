@@ -19,8 +19,9 @@ vector retrieval over the Oregon housing-law corpus; Gemini writes the answer.
 
 ## Agent tools
 
-The agent has three tools, and the LLM decides which to call based on the user's
-query and location. One retrieves law; the other two draft a tenant letter.
+The agent has four tools, and the LLM decides which to call based on the user's
+query and location. One retrieves law; two draft a tenant letter; one returns
+legal-aid referrals.
 
 ### Retrieval
 
@@ -46,6 +47,14 @@ prose:
 - [`generate_letter`](../reference/langchain_tools.generate_letter.qmd) emits the
   completed letter as a custom stream chunk so the frontend can render it in a
   separate letter panel rather than inline chat text.
+
+### Legal aid referrals
+
+[`get_legal_aid_referrals`](../reference/langchain_tools.get_legal_aid_referrals.qmd)
+returns the validated referral catalog (`referrals.py`, backed by
+`referrals_data.json`). The same catalog is bundled
+into the frontend's Referrals page at build time (`generate_referrals.py`), so
+the chat and the page can't drift apart.
 
 ## Agent entry points
 

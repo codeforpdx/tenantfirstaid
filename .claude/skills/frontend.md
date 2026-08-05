@@ -5,16 +5,16 @@ Reference for frontend development workflow. Run all commands from `frontend/`.
 ## Commands
 
 ```bash
-npm run generate-types    # Required before build/typecheck — generates src/types/models.ts
+npm run generate-frontend-assets  # Required before build/typecheck — generates src/types/models.ts and src/generated/referrals.ts
 npm run lint              # Lint (eslint)
 npm run format            # Format (prettier)
 npm run typecheck         # Type-check (tsc) — use the typescript-lsp plugin for inline diagnostics
-npm run build             # Build (auto-generates types first)
+npm run build             # Build (auto-generates frontend assets first)
 npm run test -- --run     # Run tests (vitest)
 npm run test -- --run --coverage  # With coverage
 ```
 
-`generate-types` requires `uv` to be installed. It runs the backend Python to emit JSON Schema, piped through `json2ts`. Always run it before `typecheck` or `build` — the generated `src/types/models.ts` is gitignored.
+`generate-frontend-assets` requires `uv` to be installed. It runs `generate-types` (backend Python emits JSON Schema, piped through `json2ts`) and `generate-referrals` (backend Python emits the bundled referrals catalog). Always run it before `typecheck` or `build` — the generated `src/types/models.ts` and `src/generated/referrals.ts` are gitignored.
 
 ## Docker
 
@@ -23,7 +23,7 @@ Frontend Dockerfile targets (`frontend/Dockerfile`):
 | Target | Purpose |
 |---|---|
 | `local` | Dev server for local development (default in compose) |
-| `ci` | Runs generate-types, typecheck, lint, tests, and build |
+| `ci` | Runs generate-frontend-assets, typecheck, lint, tests, and build |
 | `production` | Minimal image serving built static files via `serve` |
 | `production-build` | Compiles static assets (intermediate stage) |
 

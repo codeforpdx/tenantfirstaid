@@ -16,7 +16,7 @@ description = "Start the Vite dev server."
 run = "npm run dev"
 
 [tasks.check]
-description = "Frontend: generate-types, typecheck, lint, test."
+description = "Frontend: generate-frontend-assets, typecheck, lint, test."
 depends = ["install"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
@@ -31,7 +31,7 @@ if [ -n "${usage_container:-}" ]; then
     --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
     --engine "${usage_engine:-auto}"
 fi
-npm run generate-types
+npm run generate-frontend-assets
 npm run typecheck
 npm run lint
 npm run test -- --run

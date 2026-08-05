@@ -28,6 +28,8 @@ to choose the runtime. Ad-hoc tool flags pass through after `--`
 | `clean`           | Remove `__pycache__` and build artifacts.                             |
 | `install`         | Install this package into the environment.                            |
 | `generate-types`  | Regenerate the frontend's TypeScript types from the Pydantic models.  |
+| `generate-referrals` | Regenerate the frontend's bundled referral catalog from the backend referral data. |
+| `generate-frontend-assets` | Regenerate all frontend build-time assets (types and referral catalog). |
 | `docs`            | Build this documentation site with great-docs (needs Quarto; `--container` provides it). |
 | `docs-serve`      | Serve the already-built `great-docs/_site` locally (pure static files, no rebuild). |
 

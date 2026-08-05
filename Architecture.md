@@ -88,7 +88,7 @@ frontend/
 │   ├── About.tsx                   # About page
 │   ├── Disclaimer.tsx              # Legal disclaimer
 │   ├── PrivacyPolicy.tsx           # Privacy policy
-│   ├── Referrals.tsx               # Static referrals table (legal aid organizations)
+│   ├── Referrals.tsx               # Renders legal aid organizations from generated/referrals.ts
 │   ├── main.tsx                    # Application entry point
 │   ├── style.css                   # Global styles
 │   ├── contexts/                   # React Contexts
@@ -98,7 +98,9 @@ frontend/
 │   │   ├── useMessages.tsx         # Message handling logic
 │   │   ├── useHousingContext.tsx   # Custom hook for housing context
 │   │   └── useLetterContent.tsx    # State management for letter generation
-│   ├── types/                      # Auto-generated TypeScript types (gitignored) — do not edit manually, re-run `mise run generate-types` or `npm run generate-types`
+│   ├── generated/                  # Auto-generated frontend data (gitignored)
+│   │   └── referrals.ts            # Validated referral catalog bundled by Vite
+│   ├── types/                      # Auto-generated TypeScript types (gitignored) — do not edit manually, re-run `mise run generate-frontend-assets` or `npm run generate-frontend-assets`
 │   │   └── models.ts                  # All exported types: ResponseChunk, Location, OregonCity, UsaState, chunk interfaces
 │   ├── layouts/                    # Layouts
 │   │   └── PageLayout.tsx          # Layout for pages

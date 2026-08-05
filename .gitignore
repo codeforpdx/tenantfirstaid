@@ -28,8 +28,11 @@ dist/
 .vite/
 *.log
 
-# Auto-generated frontend types (run `make generate-types` to regenerate)
+# Auto-generated frontend types (run `npm run generate-types` to regenerate)
 frontend/src/types/
+
+# Auto-generated frontend data (run `npm run generate-frontend-assets` to regenerate)
+frontend/src/generated/
 
 # Coverage reports
 .coverage
