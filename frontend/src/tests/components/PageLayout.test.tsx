@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
 import { describe, it } from "vitest";
 import HousingContextProvider from "../../contexts/HousingContext";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router";
 
 beforeAll(() => {
   if (!("scrollTo" in HTMLElement.prototype)) {

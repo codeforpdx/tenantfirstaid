@@ -15,7 +15,7 @@ import {
   beforeAll,
 } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { MemoryRouter, Routes, Route } from "react-router";
 import { HumanMessage } from "@langchain/core/messages";
 import type { ChatMessage } from "../../shared/types/messages";
 

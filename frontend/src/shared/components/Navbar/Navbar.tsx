@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router";
 import TenantFirstAidLogo from "../TenantFirstAidLogo";
 import NavbarMenuButton from "./NavbarMenuButton";
 import NavbarLocationMenu from "./NavbarLocationMenu";

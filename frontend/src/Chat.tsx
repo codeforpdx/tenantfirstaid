@@ -7,7 +7,7 @@ import FrequentInquiries from "./shared/components/FrequentInquiries";
 import MessageContainer from "./shared/components/MessageContainer";
 import FeaturesPanel from "./shared/components/FeaturesPanel";
 import MobilePanel from "./shared/components/MobilePanel";
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router";
 import { classifyStateSegment, pathFor } from "./shared/utils/jurisdiction";
 import { DEFAULT_JURISDICTION } from "./shared/constants/jurisdictions";
 import clsx from "clsx";

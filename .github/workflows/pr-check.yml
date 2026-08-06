@@ -74,7 +74,7 @@ jobs:
         run: uv python install 3.13
 
       - name: Sync dependencies
-        run: uv sync --dev
+        run: uv sync --locked --dev
 
       - name: Run formatter checks
         run: uv run ruff format --check
@@ -127,7 +127,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -143,7 +143,7 @@ jobs:
         working-directory: backend
 
       - name: Sync backend dependencies
-        run: uv sync
+        run: uv sync --locked
         working-directory: backend
 
       - name: Install dependencies

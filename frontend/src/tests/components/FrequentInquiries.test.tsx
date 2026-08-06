@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router";
 import FrequentInquiries from "../../shared/components/FrequentInquiries";
 import HousingContextProvider from "../../contexts/HousingContext";
 

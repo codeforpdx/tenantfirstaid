@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink } from "react-router";
 import { NAVBAR_LINKS, NAVBAR_FEATURES } from "../../constants/constants";
 import useActiveJurisdiction from "../../../hooks/useActiveJurisdiction";
 import { pathFor } from "../../utils/jurisdiction";

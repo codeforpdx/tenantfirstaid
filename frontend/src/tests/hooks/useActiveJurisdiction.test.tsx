@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
-import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
+import { MemoryRouter, Routes, Route, useLocation } from "react-router";
 import useActiveJurisdiction from "../../hooks/useActiveJurisdiction";
 import HousingContextProvider from "../../contexts/HousingContext";
 

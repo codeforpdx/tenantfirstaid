@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
+import { MemoryRouter, Routes, Route, useLocation } from "react-router";
 
 vi.mock("../../hooks/useLetterContent", () => ({
   useLetterContent: () => ({ letterContent: "" }),

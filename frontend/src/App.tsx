@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router";
 import Navbar from "./shared/components/Navbar/Navbar";
 import RegionNotice from "./shared/components/RegionNotice";
 import Chat from "./Chat";

@@ -3,7 +3,7 @@ import type { UiMessage } from "./shared/types/messages";
 import MessageWindow from "./pages/Chat/components/MessageWindow";
 import useMessages from "./hooks/useMessages";
 import { useEffect, useRef, useState } from "react";
-import { Navigate, useParams, useSearchParams } from "react-router-dom";
+import { Navigate, useParams, useSearchParams } from "react-router";
 import { useLetterContent } from "./hooks/useLetterContent";
 import { streamText } from "./pages/Chat/utils/streamHelper";
 import LetterGenerationDialog from "./pages/Letter/components/LetterGenerationDialog";

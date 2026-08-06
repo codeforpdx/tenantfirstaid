@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import MessageWindow from "../../pages/Chat/components/MessageWindow";
 import type { ChatMessage } from "../../shared/types/messages";
