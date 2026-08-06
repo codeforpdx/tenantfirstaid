@@ -2,7 +2,7 @@
 
 ## Overview
 
-Tenant First Aid is a chatbot application that provides legal information related to housing and eviction in Oregon. The system uses a Retrieval-Augmented Generation (RAG) architecture to provide accurate, contextual responses based on Oregon housing law documents.  The LangChain framework is used to abstract models and agents.
+Tenant First Aid is a chatbot application that provides legal information related to housing and eviction in Oregon. The system uses a Retrieval-Augmented Generation (RAG) architecture to provide accurate, contextual responses based on Oregon housing law documents. The LangChain framework is used to abstract models and agents.
 
 The application follows a modern web architecture with a Flask-based Python backend serving a React frontend, deployed on Digital Ocean infrastructure.
 
@@ -77,6 +77,8 @@ reading paths (new reader, backend contributor, corpus operator):
 
 The frontend is a modern React application built with TypeScript and Vite. It provides a clean, accessible chat interface for users to interact with the legal advice chatbot.
 
+**Client-Side Message Persistence:** `useMessages` accepts an optional `storageKey`. When given, it loads message state from `sessionStorage` on mount and syncs every state change back to it, so a chat or letter conversation survives a page refresh within the same browser tab session. Chat pages key storage by jurisdiction (`chat_messages:<jurisdiction>`); letter pages key it by jurisdiction and referring org (`letter_messages:<jurisdiction>,<org>`), so switching location or partner link starts a fresh conversation rather than reusing a stale one.
+
 ### Directory/File Structure
 
 ```
@@ -95,7 +97,7 @@ frontend/
 │   │   └── HousingContext.tsx      # Housing context for chat/letter generation
 │   ├── hooks/                      # Custom React hooks
 │   │   ├── useIsMobile.tsx         # Checking mobile state
-│   │   ├── useMessages.tsx         # Message handling logic
+│   │   ├── useMessages.tsx         # Message handling + persistence logic
 │   │   ├── useHousingContext.tsx   # Custom hook for housing context
 │   │   └── useLetterContent.tsx    # State management for letter generation
 │   ├── generated/                  # Auto-generated frontend data (gitignored)
@@ -148,7 +150,8 @@ frontend/
 │   │       ├── buildLocationPrefix.ts # Helper function for location prefix
 │   │       ├── scrolling.ts        # Helper function for window scrolling
 │   │       ├── dompurify.ts        # Helper function for sanitizing text
-│   │       └── formatLocation.ts   # Formats OregonCity/UsaState into a display string (e.g. "Portland, OR")
+│   │       ├── formatLocation.ts   # Formats OregonCity/UsaState into a display string (e.g. "Portland, OR")
+│   │       └── reloadPage.ts       # Wrapper around window.location.reload()
 │   └── tests/                     # Testing suite
 │   │   ├── components/            # Component testing
 │   │   │   ├── About.test.tsx     # About component testing
