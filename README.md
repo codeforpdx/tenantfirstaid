@@ -24,10 +24,10 @@ Live at https://tenantfirstaid.com/
 </details>
 
 <details>
-<summary>Astral UV</summary>
+<summary>mise</summary>
 
-- `uv` is used in the *backend* to install/manage Python dependencies and run Python sub-tools (e.g. `pytest`)
-[Install uv](https://docs.astral.sh/uv/getting-started/installation/)
+- This repo is a [mise](https://mise.jdx.dev) monorepo. `mise` provisions and pins the rest of the toolchain for you — `uv` (backend Python deps/tools) and `node`/`npm` (frontend) — and wires up the dev tasks used throughout this README.
+[Install mise](https://mise.jdx.dev/getting-started.html)
 </details>
 
 <details>
@@ -56,14 +56,9 @@ Live at https://tenantfirstaid.com/
 1. copy `backend/.env.example` to a new file named `.env` in the same directory.
    1. set `GOOGLE_APPLICATION_CREDENTIALS` as per [Google Cloud application default credentials file](#prerequisites)
    1. set `LANGSMITH_API_KEY` as per [LangChain/LangSmith](#prerequisites)
-1. `cd backend`
-1. `uv sync`
-1. `uv run python -m tenantfirstaid.app`
-1. Open a new terminal / tab
-1. `cd ../frontend`
-1. `npm install`
-1. `npm run generate-frontend-assets`
-1. `npm run dev`
+1. `mise run setup` (one-time: provisions the backend/frontend toolchains, installs deps, and generates frontend assets)
+1. `mise run dev` (starts the backend API and frontend dev server together)
+   - or in two separate terminals: `mise run //backend:serve` and `mise run //frontend:dev`
 1. Go to http://localhost:5173
 1. Start chatting
 
@@ -81,27 +76,13 @@ Live at https://tenantfirstaid.com/
 
   1. _format_ Python code with `ruff`
      ```sh
-     % uv run ruff format
-     ```
-     or
-     ```sh
      % mise run fmt
      ```
   1. _lint_ Python code with `ruff`
      ```sh
-     % uv run ruff check
-     ```
-     or
-     ```sh
      % mise run lint
      ```
   1. _typecheck_ Python code with `ty`
-
-     ```sh
-     % uv run ty check
-     ```
-
-     or
 
      ```sh
      % mise run typecheck
@@ -111,35 +92,31 @@ Live at https://tenantfirstaid.com/
 
      1. _typecheck_ Python code with `mypy`
         ```sh
-        % uv run mypy -p tenantfirstaid --python-executable .venv/bin/python3 --check-untyped-defs
-        ```
-        or
-        ```sh
         % mise run typecheck --checker mypy
         ```
      1. _typecheck_ Python code with `pyrefly`
-        ```sh
-        % uv run pyrefly check --python-interpreter .venv/bin/python3
-        ```
-        or
         ```sh
         % mise run typecheck --checker pyrefly
         ```
 
   1. _test_ Python code with `pytest`
      ```sh
-     % uv run pytest
-     ```
-     or
-     ```sh
      % mise run test
      ```
+
+  To pass extra flags straight through to the underlying tool (bypassing the mise task), run it via `mise exec -- uv run <tool> ...`, e.g.
+  ```sh
+  % mise exec -- uv run ruff check --fix
+  % mise exec -- uv run pytest -k test_some_name -v
+  ```
 
 - or run the above checks in one-shot
   ```sh
   % mise run check
   ```
-  `check` runs `lint`, `typecheck`, and `test` concurrently (after `fmt`), so all three report even if one fails — you see every failure in a single run rather than stopping at the first.
+  (equivalent to `mise run //backend:check` from the repo root). `check` runs `lint`, `typecheck`, and `test` concurrently (after `fmt`), so all three report even if one fails — you see every failure in a single run rather than stopping at the first.
+
+  To run both backend and frontend checks together, use `mise run check` from the repo root.
 
 - build and browse the backend user guide (needs [Quarto](https://quarto.org), or add `--container`)
   ```sh
@@ -162,7 +139,7 @@ Live at https://tenantfirstaid.com/
 
 1. generate frontend types and referral data from the backend (required before type-checking, testing, or building)
    ```sh
-   % npm run generate-frontend-assets
+   % mise run //backend:generate-frontend-assets
    ```
 
    This writes `src/types/models.ts` from the backend Pydantic models and `src/generated/referrals.ts` from the validated referral catalog. Both outputs are gitignored. Non-generated frontend types are stored in `src/shared/types/` and are checked into source control.
@@ -171,23 +148,41 @@ Live at https://tenantfirstaid.com/
 
   1. _lint_ TypeScript code with `eslint`
      ```sh
-     % npm run lint
+     % mise exec -- npm run lint
      ```
   1. _typecheck_ TypeScript code with `tsc`
      ```sh
-     % npm run typecheck
+     % mise exec -- npm run typecheck
      ```
   1. _test_ TypeScript code with `vitest`
      ```sh
-     % npm run test -- --run
+     % mise exec -- npm run test -- --run
      ```
+
+- or run the above checks in one-shot (also regenerates frontend assets first)
+  ```sh
+  % mise run //frontend:check
+  ```
+  (bare `mise run check` if you're already in the `frontend/` directory)
+
+  To run both backend and frontend checks together, use `mise run check` from the repo root.
 
 | 💡 Using Claude Code? Type `/backend` or `/frontend` in the Claude Code UI for Docker target reference, or `/onboarding` for the compose quick start. |
 |---|
 
 ### Docker
 
-The project has separate Dockerfiles for backend and frontend, each with multiple build stages. Use `--target` to pick a stage:
+The mise-way to spin up a local deployment of the app in containers (builds the `runtime`/`local` targets below for you, then starts and wires up both services) is:
+
+```sh
+% mise run dev --container
+```
+
+This is engine-agnostic (Docker, Podman, or apple/container — auto-detected; override with `--engine`) and is a cross-engine stand-in for `docker compose`.
+
+Separately, the checks (`mise run check`, `//backend:check`, `//frontend:check`) each accept their own `--container` flag to build and run that check suite against the `ci` target instead of your host toolchain — useful for reproducing a CI failure locally, not for running the app itself.
+
+The project has separate Dockerfiles for backend and frontend, each with multiple build stages, if you need to build an image directly. Use `--target` to pick a stage:
 
 ```sh
 # backend runtime (serves API)
