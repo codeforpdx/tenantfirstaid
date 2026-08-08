@@ -56,7 +56,8 @@ Live at https://tenantfirstaid.com/
 1. copy `backend/.env.example` to a new file named `.env` in the same directory.
    1. set `GOOGLE_APPLICATION_CREDENTIALS` as per [Google Cloud application default credentials file](#prerequisites)
    1. set `LANGSMITH_API_KEY` as per [LangChain/LangSmith](#prerequisites)
-1. `mise run setup` (one-time: provisions the backend/frontend toolchains, installs deps, and generates frontend assets)
+1. `mise run setup` (from the repo root; one-time: provisions the backend/frontend toolchains, installs deps, and generates frontend assets)
+   - on a fresh clone mise will prompt to trust the repo's config — run `mise trust` if prompted
 1. `mise run dev` (starts the backend API and frontend dev server together)
    - or in two separate terminals: `mise run //backend:serve` and `mise run //frontend:dev`
 1. Go to http://localhost:5173
@@ -104,11 +105,12 @@ Live at https://tenantfirstaid.com/
      % mise run test
      ```
 
-  To pass extra flags straight through to the underlying tool (bypassing the mise task), run it via `mise exec -- uv run <tool> ...`, e.g.
+  To pass extra flags straight through to the underlying tool, `lint`, `typecheck`, and `test` all accept trailing args after `--`, e.g.
   ```sh
-  % mise exec -- uv run ruff check --fix
-  % mise exec -- uv run pytest -k test_some_name -v
+  % mise run lint -- --fix
+  % mise run test -- -k test_some_name -v
   ```
+  This is preferred over `mise exec -- uv run <tool> ...`, which bypasses the `sync` dependency and can silently run against a stale `.venv` after a dependency bump.
 
 - or run the above checks in one-shot
   ```sh
@@ -139,8 +141,9 @@ Live at https://tenantfirstaid.com/
 
 1. generate frontend types and referral data from the backend (required before type-checking, testing, or building)
    ```sh
-   % mise run //backend:generate-frontend-assets
+   % mise run setup
    ```
+   (from the repo root — this step needs both the backend's `uv` and the frontend's `node`/`json2ts` on `PATH` at once, which only the root `setup` task splices together; see `mise.toml`'s `_setup-*` tasks. Re-run this any time the backend Pydantic models or referral catalog change.)
 
    This writes `src/types/models.ts` from the backend Pydantic models and `src/generated/referrals.ts` from the validated referral catalog. Both outputs are gitignored. Non-generated frontend types are stored in `src/shared/types/` and are checked into source control.
 
@@ -161,9 +164,9 @@ Live at https://tenantfirstaid.com/
 
 - or run the above checks in one-shot (also regenerates frontend assets first)
   ```sh
-  % mise run //frontend:check
+  % mise run check
   ```
-  (bare `mise run check` if you're already in the `frontend/` directory)
+  (equivalent to `mise run //frontend:check` from the repo root)
 
   To run both backend and frontend checks together, use `mise run check` from the repo root.
 
@@ -180,7 +183,7 @@ The mise-way to spin up a local deployment of the app in containers (builds the 
 
 This is engine-agnostic (Docker, Podman, or apple/container — auto-detected; override with `--engine`) and is a cross-engine stand-in for `docker compose`.
 
-Separately, the checks (`mise run check`, `//backend:check`, `//frontend:check`) each accept their own `--container` flag to build and run that check suite against the `ci` target instead of your host toolchain — useful for reproducing a CI failure locally, not for running the app itself.
+Separately, the checks (`//backend:check`, `//frontend:check`) each accept their own `--container` flag to build and run that check suite against the `ci` target instead of your host toolchain — useful for reproducing a CI failure locally, not for running the app itself.
 
 The project has separate Dockerfiles for backend and frontend, each with multiple build stages, if you need to build an image directly. Use `--target` to pick a stage:
 
