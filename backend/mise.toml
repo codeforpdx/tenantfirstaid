@@ -33,6 +33,31 @@ run = "uv sync"
 description = "Run the Flask backend locally."
 run = "uv run python -m tenantfirstaid.app"
 
+[tasks.gcloud-login-check]
+description = "Smoke-test GOOGLE_APPLICATION_CREDENTIALS by querying the Vertex AI Search datastore directly, the same way the app does."
+depends = ["sync"]
+usage = '''
+arg "<options>" var=#true required=#false help="Extra vertex_ai_search args, e.g. --city portland."
+'''
+run = '''
+set -eu
+out=$(mktemp)
+trap 'rm -f "$out"' EXIT
+if uv run python -m scripts.vertex_ai_search search "eviction notice" ${usage_options:-} >"$out" 2>&1; then
+  echo "GOOGLE_APPLICATION_CREDENTIALS OK -- Vertex AI Search query succeeded."
+else
+  status=$?
+  echo "GOOGLE_APPLICATION_CREDENTIALS check FAILED:" >&2
+  echo "" >&2
+  cat "$out" >&2
+  echo "" >&2
+  echo "If that's a permission/403 error, your Google account may not be granted access to the" >&2
+  echo "tenantfirstaid project yet -- ask a project admin (see the README's Prerequisites section)." >&2
+  echo "Otherwise, check GOOGLE_APPLICATION_CREDENTIALS in backend/.env, or re-run 'mise run //:gcloud-login' to reauthenticate." >&2
+  exit "$status"
+fi
+'''
+
 [tasks.clean]
 description = "Remove __pycache__ and build artifacts."
 run = '''
@@ -210,26 +235,20 @@ mise run --continue-on-error --output keep-order lint ::: typecheck ::: test
 description = "Install this package into the environment."
 run = "uv pip install ."
 
+# These three tasks straddle both toolchains (uv reads the backend Pydantic models;
+# node's json2ts emits the .ts). The frontend tasks themselves splice the backend's
+# mise-managed uv onto PATH (and depend on //backend:sync), so these just delegate.
 [tasks.generate-types]
 description = "Regenerate the frontend's TypeScript types from the backend Pydantic models."
-run = '''
-cd ../frontend
-npm run generate-types
-'''
+run = "mise run //frontend:generate-types"
 
 [tasks.generate-referrals]
 description = "Regenerate the frontend's bundled referral catalog from the backend referrals data."
-run = '''
-cd ../frontend
-npm run generate-referrals
-'''
+run = "mise run //frontend:generate-referrals"
 
 [tasks.generate-frontend-assets]
 description = "Regenerate all frontend build-time assets (types + referral catalog)."
-run = '''
-cd ../frontend
-npm run generate-frontend-assets
-'''
+run = "mise run //frontend:generate-frontend-assets"
 
 [tasks.docs]
 description = "Build the API docs site with great-docs (into great-docs/_site). Needs Quarto: on the host install it yourself; --container uses the Dockerfile ci image, which ships Quarto."

@@ -70,6 +70,43 @@ case "$usage_action" in
 esac
 '''
 
+# --- Google Cloud application default credentials ------------------------------
+# One-time login for local Vertex AI/RAG access. Deliberately standalone (no
+# `depends`, not wired into `setup`) so it never becomes a required part of the
+# provisioning graph — see the per-task `gcloud` tool pin below for why. Only runs the
+# interactive `gcloud auth` steps and prints the resulting ADC path; it does not
+# write to backend/.env itself; the setup step for a fresh checkout would have no
+# .env yet, and on a repeat login silently overwriting a value you may have
+# customized is worse than a two-line copy/paste.
+[tasks.gcloud-login]
+description = "One-time gcloud login for local Vertex AI/RAG credentials. Prints the ADC path to add to backend/.env."
+# gcloud is pinned here rather than in the root [tools] table: a per-task binding
+# provisions it on demand for contributors who actually run this task, instead of
+# every `mise install`/`mise run setup` (including frontend-only contributors)
+# downloading the full Cloud SDK.
+tools = { gcloud = "579.0.0" }
+run = '''
+set -eu
+gcloud auth application-default login
+gcloud auth application-default set-quota-project tenantfirstaid
+config_dir=$(gcloud info --format='value(config.paths.global_config_dir)')
+creds="$config_dir/application_default_credentials.json"
+[ -f "$creds" ] || { echo "expected application default credentials at $creds but the file is missing" >&2; exit 1; }
+echo ""
+echo "Application default credentials written to:"
+echo "  $creds"
+echo ""
+echo "Add (or update) this line in backend/.env:"
+echo "  GOOGLE_APPLICATION_CREDENTIALS=$creds"
+'''
+
+[tasks.gcloud-login-check]
+description = "Smoke-test GOOGLE_APPLICATION_CREDENTIALS by querying the Vertex AI Search datastore directly, the same way the app does."
+usage = '''
+arg "<options>" var=#true required=#false help="Extra vertex_ai_search args, e.g. --city portland."
+'''
+run = "exec mise run //backend:gcloud-login-check -- ${usage_options:-}"
+
 # --- Shared engine resolver ----------------------------------------------------
 # Prints the container engine to use (honoring an explicit --engine, else auto),
 # or exits 1 with guidance if none can be brought up. Both //:_container-run and the
@@ -316,7 +353,7 @@ set -eu
 # both, so run it in the frontend scope with the backend's mise-managed uv also on
 # PATH.
 uvdir=$(dirname "$(mise -C backend which uv)")
-mise -C frontend exec -- sh -c "PATH=\"$uvdir:\$PATH\" npm run generate-frontend-assets"
+mise -C frontend exec -- sh -c "PATH=\"$uvdir:\$PATH\" mise run generate-frontend-assets"
 echo ""
 echo "Setup complete. Start the app with two terminals:"
 echo "  mise run //backend:serve     # Flask API"
