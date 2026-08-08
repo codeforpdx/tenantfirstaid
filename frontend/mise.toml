@@ -15,6 +15,132 @@ run = "npm install"
 description = "Start the Vite dev server."
 run = "npm run dev"
 
+[tasks.lint]
+description = "Lint with eslint."
+depends = ["install"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+arg "<options>" var=#true required=#false help="Extra eslint args."
+'''
+run = '''
+set -eu
+if [ -n "${usage_container:-}" ]; then
+  exec mise run //:_container-run \
+    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+    --engine "${usage_engine:-auto}" \
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "frontend/package.json frontend/package-lock.json" \
+    --cmd "cd /src/frontend && npm run lint -- ${usage_options:-}"
+fi
+npm run lint -- ${usage_options:-}
+'''
+
+[tasks.typecheck]
+description = "Type-check with tsc."
+depends = ["install"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+arg "<options>" var=#true required=#false help="Extra tsc args."
+'''
+run = '''
+set -eu
+if [ -n "${usage_container:-}" ]; then
+  exec mise run //:_container-run \
+    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+    --engine "${usage_engine:-auto}" \
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "frontend/package.json frontend/package-lock.json" \
+    --cmd "cd /src/frontend && npm run typecheck -- ${usage_options:-}"
+fi
+npm run typecheck -- ${usage_options:-}
+'''
+
+[tasks.test]
+description = "Run vitest."
+depends = ["install"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+arg "<options>" var=#true required=#false help="Extra vitest args."
+'''
+run = '''
+set -eu
+if [ -n "${usage_container:-}" ]; then
+  exec mise run //:_container-run \
+    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+    --engine "${usage_engine:-auto}" \
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "frontend/package.json frontend/package-lock.json" \
+    --cmd "cd /src/frontend && npm run test -- --run ${usage_options:-}"
+fi
+npm run test -- --run ${usage_options:-}
+'''
+
+# --container works for these three without the host's PATH-splice trick: the ci
+# image bakes in both uv (Dockerfile COPY) and ../backend (Dockerfile COPY), so
+# generate-types/generate-referrals run against a self-contained image.
+[tasks.generate-types]
+description = "Regenerate the frontend's TypeScript types from the backend Pydantic models."
+depends = ["install"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+'''
+run = '''
+set -eu
+if [ -n "${usage_container:-}" ]; then
+  exec mise run //:_container-run \
+    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+    --engine "${usage_engine:-auto}" \
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "frontend/package.json frontend/package-lock.json" \
+    --cmd "cd /src/frontend && npm run generate-types"
+fi
+npm run generate-types
+'''
+
+[tasks.generate-referrals]
+description = "Regenerate the frontend's bundled referral catalog from the backend referrals data."
+depends = ["install"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+'''
+run = '''
+set -eu
+if [ -n "${usage_container:-}" ]; then
+  exec mise run //:_container-run \
+    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+    --engine "${usage_engine:-auto}" \
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "frontend/package.json frontend/package-lock.json" \
+    --cmd "cd /src/frontend && npm run generate-referrals"
+fi
+npm run generate-referrals
+'''
+
+[tasks.generate-frontend-assets]
+description = "Regenerate frontend build-time assets (types + referral catalog) from the backend."
+depends = ["install"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+'''
+run = '''
+set -eu
+if [ -n "${usage_container:-}" ]; then
+  exec mise run //:_container-run \
+    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+    --engine "${usage_engine:-auto}" \
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "frontend/package.json frontend/package-lock.json" \
+    --cmd "cd /src/frontend && npm run generate-frontend-assets"
+fi
+npm run generate-frontend-assets
+'''
+
 [tasks.check]
 description = "Frontend: generate-frontend-assets, typecheck, lint, test."
 depends = ["install"]
@@ -31,8 +157,12 @@ if [ -n "${usage_container:-}" ]; then
     --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
     --engine "${usage_engine:-auto}"
 fi
-npm run generate-frontend-assets
-npm run typecheck
-npm run lint
-npm run test -- --run
+mise run generate-frontend-assets
+# lint/typecheck/test are read-only and independent, so run them concurrently;
+# --output keep-order groups each task's output in order so it doesn't garble, and
+# --continue-on-error ensures a failure in one doesn't kill the others before they
+# report. The `:::` separators are required: without them mise would treat
+# `typecheck test` as positional args to `lint` (which declares a variadic
+# passthrough arg).
+mise run --continue-on-error --output keep-order lint ::: typecheck ::: test
 '''

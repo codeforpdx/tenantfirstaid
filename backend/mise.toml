@@ -210,25 +210,31 @@ mise run --continue-on-error --output keep-order lint ::: typecheck ::: test
 description = "Install this package into the environment."
 run = "uv pip install ."
 
+# These three tasks straddle both toolchains (uv reads the backend Pydantic models;
+# node's json2ts emits the .ts), so each runs in the frontend scope with the backend's
+# mise-managed uv also spliced onto PATH, mirroring the root `setup` task.
 [tasks.generate-types]
 description = "Regenerate the frontend's TypeScript types from the backend Pydantic models."
 run = '''
-cd ../frontend
-npm run generate-types
+set -eu
+uvdir=$(dirname "$(mise which uv)")
+mise -C ../frontend exec -- sh -c "PATH=\"$uvdir:\$PATH\" mise run generate-types"
 '''
 
 [tasks.generate-referrals]
 description = "Regenerate the frontend's bundled referral catalog from the backend referrals data."
 run = '''
-cd ../frontend
-npm run generate-referrals
+set -eu
+uvdir=$(dirname "$(mise which uv)")
+mise -C ../frontend exec -- sh -c "PATH=\"$uvdir:\$PATH\" mise run generate-referrals"
 '''
 
 [tasks.generate-frontend-assets]
 description = "Regenerate all frontend build-time assets (types + referral catalog)."
 run = '''
-cd ../frontend
-npm run generate-frontend-assets
+set -eu
+uvdir=$(dirname "$(mise which uv)")
+mise -C ../frontend exec -- sh -c "PATH=\"$uvdir:\$PATH\" mise run generate-frontend-assets"
 '''
 
 [tasks.docs]

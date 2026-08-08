@@ -21,11 +21,11 @@ Help a new contributor get the repo set up and running locally for the first tim
 
 Required to run the backend locally (Gemini LLM + Vertex AI RAG). A project admin must grant your Google account access first — ask in Discord #tenantfirstaid-general.
 
-Once granted, `gcloud` itself is provisioned by mise (no separate install) — run:
+Once granted, `gcloud` itself is provisioned by mise on first use (no separate install) — run:
 
 ```sh
-mise trust && mise install   # provisions gcloud, among the other root-pinned tools
-mise run gcloud-login          # runs the auth login + set-quota-project, prints the ADC path
+mise trust
+mise run gcloud-login   # provisions gcloud, runs the auth login + set-quota-project, prints the ADC path
 ```
 
 Note the printed credentials file path — typically `~/.config/gcloud/application_default_credentials.json` on Unix. Do not use `~` in path values; Python won't expand it.
@@ -47,11 +47,11 @@ cp backend/.env.example backend/.env
 
 Setting `GOOGLE_APPLICATION_CREDENTIALS` only works once the project admin has granted your
 Google account access (see the Prerequisites section above). Optionally smoke-test it before
-starting the app — this authenticates the same way the app does and lists your Vertex AI
-Search datastores:
+starting the app — this loads the credential from `backend/.env` the same way the app does
+and queries the same Vertex AI Search serving config:
 
 ```sh
-cd backend && uv run python -m scripts.vertex_ai_list_datastores
+mise -C backend exec -- uv run python -m scripts.vertex_ai_search search "eviction notice" --state or
 ```
 
 ### Option A: Containers (fastest, cross-engine)
@@ -92,8 +92,10 @@ docker compose up --build     # backend :5001, frontend :5173
 
 Checks are driven by [mise](https://mise.jdx.dev), configured as a monorepo: the root
 `mise.toml` ties together `backend/mise.toml` (uv toolchain) and `frontend/mise.toml`
-(node toolchain). One-time setup provisions the pinned tools (uv, node 24, gcloud, and
-— on macOS — apple/container):
+(node toolchain). One-time setup provisions the pinned tools (uv, node 24, and — on
+macOS — apple/container). `gcloud` is a separate, per-task pin — see the Google Cloud
+credentials section above — so it's provisioned only when you run `mise run
+gcloud-login`, not by `setup`:
 
 ```sh
 # Install mise: https://mise.jdx.dev/installing-mise.html

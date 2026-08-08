@@ -36,7 +36,7 @@ Live at https://tenantfirstaid.com/
 - This is needed to spin up a local instance of the backend (i.e. API calls to the chat LLM and RAG agent).
 - The chatbot now uses Google Gemini (previously OpenAI's ChatGPT).
 - The `tenantfirstaid` Google project admin will need to manually assign a role to you (gmail account).  Reach out in the Discord channel #[tenantfirstaid-general](https://discord.com/channels/1068260532806766733/1367177752792531115) to arrange this.
-- You need to authenticate with the gcloud CLI to develop. `gcloud` is provisioned by mise (pinned in the root `mise.toml`), so once you've run `mise install` at the repo root:
+- You need to authenticate with the gcloud CLI to develop. `gcloud` is pinned as a per-task tool in the root `mise.toml`, so it's provisioned on first use — no separate install:
     1. `mise run gcloud-login` — runs `gcloud auth application-default login` + `set-quota-project`, then prints the resulting [application default credentials](https://cloud.google.com/docs/authentication/application-default-credentials) file path
     1. add the printed path as `GOOGLE_APPLICATION_CREDENTIALS=<PATH_TO_CREDS>` to your `backend/.env` file (HINT: don't use path shortcuts like `~` for home, python won't be able to find it).
 </details>
@@ -55,7 +55,7 @@ Live at https://tenantfirstaid.com/
    1. set `LANGSMITH_API_KEY` as per [LangChain/LangSmith](#prerequisites)
 1. `mise run setup` (from the repo root; one-time: provisions the backend/frontend toolchains, installs deps, and generates frontend assets)
    - on a fresh clone mise will prompt to trust the repo's config — run `mise trust` if prompted
-1. (optional) smoke-test your Google Cloud credentials before starting the app: `cd backend && uv run python -m scripts.vertex_ai_list_datastores` — it authenticates the same way the app does and lists your Vertex AI Search datastores
+1. (optional) smoke-test your Google Cloud credentials before starting the app: `mise -C backend exec -- uv run python -m scripts.vertex_ai_search search "eviction notice" --state or` — it loads `GOOGLE_APPLICATION_CREDENTIALS` from `backend/.env` the same way the app does and queries the same Vertex AI Search serving config
 1. `mise run dev` (starts the backend API and frontend dev server together)
    - or in two separate terminals: `mise run //backend:serve` and `mise run //frontend:dev`
 1. Go to http://localhost:5173
@@ -139,9 +139,9 @@ Live at https://tenantfirstaid.com/
 
 1. generate frontend types and referral data from the backend (required before type-checking, testing, or building)
    ```sh
-   % mise run setup
+   % mise run //:setup
    ```
-   (from the repo root — this step needs both the backend's `uv` and the frontend's `node`/`json2ts` on `PATH` at once, which only the root `setup` task splices together; see `mise.toml`'s `_setup-*` tasks. Re-run this any time the backend Pydantic models or referral catalog change.)
+   (root-qualified since this step needs both the backend's `uv` and the frontend's `node`/`json2ts` on `PATH` at once, which only the root `setup` task splices together; see `mise.toml`'s `_setup-*` tasks. Re-run this any time the backend Pydantic models or referral catalog change.)
 
    This writes `src/types/models.ts` from the backend Pydantic models and `src/generated/referrals.ts` from the validated referral catalog. Both outputs are gitignored. Non-generated frontend types are stored in `src/shared/types/` and are checked into source control.
 
@@ -149,24 +149,24 @@ Live at https://tenantfirstaid.com/
 
   1. _lint_ TypeScript code with `eslint`
      ```sh
-     % mise exec -- npm run lint
+     % mise run lint
      ```
   1. _typecheck_ TypeScript code with `tsc`
      ```sh
-     % mise exec -- npm run typecheck
+     % mise run typecheck
      ```
   1. _test_ TypeScript code with `vitest`
      ```sh
-     % mise exec -- npm run test -- --run
+     % mise run test
      ```
+
+  Each accepts extra flags after `--`, e.g. `mise run lint -- --fix`, the same as the backend checks above — and unlike `mise exec`, keeps `npm install` (via the `install` task's dependency) up to date if the lockfile changed.
 
 - or run the above checks in one-shot (also regenerates frontend assets first)
   ```sh
   % mise run check
   ```
-  (equivalent to `mise run //frontend:check` from the repo root)
-
-  To run both backend and frontend checks together, use `mise run check` from the repo root.
+  (equivalent to `mise run //frontend:check` from the repo root; see the backend section above for running both together)
 
 | 💡 Using Claude Code? Type `/backend` or `/frontend` in the Claude Code UI for Docker target reference, or `/onboarding` for the compose quick start. |
 |---|

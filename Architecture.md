@@ -100,7 +100,7 @@ frontend/
 │   │   └── useLetterContent.tsx    # State management for letter generation
 │   ├── generated/                  # Auto-generated frontend data (gitignored)
 │   │   └── referrals.ts            # Validated referral catalog bundled by Vite
-│   ├── types/                      # Auto-generated TypeScript types (gitignored) — do not edit manually, re-run `mise run setup` (from the repo root) to regenerate
+│   ├── types/                      # Auto-generated TypeScript types (gitignored) — do not edit manually, re-run `mise run //:setup` (root-qualified) to regenerate
 │   │   └── models.ts                  # All exported types: ResponseChunk, Location, OregonCity, UsaState, chunk interfaces
 │   ├── layouts/                    # Layouts
 │   │   └── PageLayout.tsx          # Layout for pages
