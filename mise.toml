@@ -100,6 +100,13 @@ echo "Add (or update) this line in backend/.env:"
 echo "  GOOGLE_APPLICATION_CREDENTIALS=$creds"
 '''
 
+[tasks.gcloud-login-check]
+description = "Smoke-test GOOGLE_APPLICATION_CREDENTIALS by querying the Vertex AI Search datastore directly, the same way the app does."
+usage = '''
+arg "<options>" var=#true required=#false help="Extra vertex_ai_search args, e.g. --city portland."
+'''
+run = "exec mise run //backend:gcloud-login-check -- ${usage_options:-}"
+
 # --- Shared engine resolver ----------------------------------------------------
 # Prints the container engine to use (honoring an explicit --engine, else auto),
 # or exits 1 with guidance if none can be brought up. Both //:_container-run and the

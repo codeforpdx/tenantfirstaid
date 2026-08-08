@@ -31,7 +31,7 @@ if [ -n "${usage_container:-}" ]; then
     --engine "${usage_engine:-auto}" \
     --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
-    --cmd "cd /src/frontend && npm run lint -- ${usage_options:-}"
+    --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/eslint . ${usage_options:-}"
 fi
 npm run lint -- ${usage_options:-}
 '''
@@ -52,7 +52,7 @@ if [ -n "${usage_container:-}" ]; then
     --engine "${usage_engine:-auto}" \
     --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
-    --cmd "cd /src/frontend && npm run typecheck -- ${usage_options:-}"
+    --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/tsc --noEmit -p tsconfig.app.json ${usage_options:-}"
 fi
 npm run typecheck -- ${usage_options:-}
 '''
@@ -73,14 +73,16 @@ if [ -n "${usage_container:-}" ]; then
     --engine "${usage_engine:-auto}" \
     --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
-    --cmd "cd /src/frontend && npm run test -- --run ${usage_options:-}"
+    --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/vitest --run ${usage_options:-}"
 fi
 npm run test -- --run ${usage_options:-}
 '''
 
-# --container works for these three without the host's PATH-splice trick: the ci
-# image bakes in both uv (Dockerfile COPY) and ../backend (Dockerfile COPY), so
-# generate-types/generate-referrals run against a self-contained image.
+# --container keeps the bind-mount (for live source), but must not let it shadow the
+# image's own tooling: json2ts is invoked from the image's baked node_modules/.bin, and
+# UV_PROJECT_ENVIRONMENT is redirected to a container-only scratch path so `uv run
+# --directory ../backend` (which resolves into the bind-mounted /src/backend) syncs its
+# own throwaway venv instead of reading/writing the host's .venv.
 [tasks.generate-types]
 description = "Regenerate the frontend's TypeScript types from the backend Pydantic models."
 depends = ["install"]
@@ -96,7 +98,7 @@ if [ -n "${usage_container:-}" ]; then
     --engine "${usage_engine:-auto}" \
     --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
-    --cmd "cd /src/frontend && npm run generate-types"
+    --cmd "cd /src/frontend && mkdir -p src/types && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_types.py | /workspace/frontend/node_modules/.bin/json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts"
 fi
 npm run generate-types
 '''
@@ -116,7 +118,7 @@ if [ -n "${usage_container:-}" ]; then
     --engine "${usage_engine:-auto}" \
     --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
-    --cmd "cd /src/frontend && npm run generate-referrals"
+    --cmd "cd /src/frontend && mkdir -p src/generated && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_referrals.py > src/generated/referrals.ts"
 fi
 npm run generate-referrals
 '''
@@ -136,7 +138,7 @@ if [ -n "${usage_container:-}" ]; then
     --engine "${usage_engine:-auto}" \
     --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
-    --cmd "cd /src/frontend && npm run generate-frontend-assets"
+    --cmd "cd /src/frontend && mkdir -p src/types src/generated && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_types.py | /workspace/frontend/node_modules/.bin/json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_referrals.py > src/generated/referrals.ts"
 fi
 npm run generate-frontend-assets
 '''

@@ -25,7 +25,7 @@ Once granted, `gcloud` itself is provisioned by mise on first use (no separate i
 
 ```sh
 mise trust
-mise run gcloud-login   # provisions gcloud, runs the auth login + set-quota-project, prints the ADC path
+mise run //:gcloud-login   # provisions gcloud, runs the auth login + set-quota-project, prints the ADC path
 ```
 
 Note the printed credentials file path — typically `~/.config/gcloud/application_default_credentials.json` on Unix. Do not use `~` in path values; Python won't expand it.
@@ -51,7 +51,7 @@ starting the app — this loads the credential from `backend/.env` the same way 
 and queries the same Vertex AI Search serving config:
 
 ```sh
-mise -C backend exec -- uv run python -m scripts.vertex_ai_search search "eviction notice" --state or
+mise run //:gcloud-login-check
 ```
 
 ### Option A: Containers (fastest, cross-engine)
@@ -95,7 +95,7 @@ Checks are driven by [mise](https://mise.jdx.dev), configured as a monorepo: the
 (node toolchain). One-time setup provisions the pinned tools (uv, node 24, and — on
 macOS — apple/container). `gcloud` is a separate, per-task pin — see the Google Cloud
 credentials section above — so it's provisioned only when you run `mise run
-gcloud-login`, not by `setup`:
+//:gcloud-login`, not by `setup`:
 
 ```sh
 # Install mise: https://mise.jdx.dev/installing-mise.html

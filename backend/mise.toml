@@ -33,6 +33,31 @@ run = "uv sync"
 description = "Run the Flask backend locally."
 run = "uv run python -m tenantfirstaid.app"
 
+[tasks.gcloud-login-check]
+description = "Smoke-test GOOGLE_APPLICATION_CREDENTIALS by querying the Vertex AI Search datastore directly, the same way the app does."
+depends = ["sync"]
+usage = '''
+arg "<options>" var=#true required=#false help="Extra vertex_ai_search args, e.g. --city portland."
+'''
+run = '''
+set -eu
+out=$(mktemp)
+trap 'rm -f "$out"' EXIT
+if uv run python -m scripts.vertex_ai_search search "eviction notice" ${usage_options:-} >"$out" 2>&1; then
+  echo "GOOGLE_APPLICATION_CREDENTIALS OK -- Vertex AI Search query succeeded."
+else
+  status=$?
+  echo "GOOGLE_APPLICATION_CREDENTIALS check FAILED:" >&2
+  echo "" >&2
+  cat "$out" >&2
+  echo "" >&2
+  echo "If that's a permission/403 error, your Google account may not be granted access to the" >&2
+  echo "tenantfirstaid project yet -- ask a project admin (see the README's Prerequisites section)." >&2
+  echo "Otherwise, check GOOGLE_APPLICATION_CREDENTIALS in backend/.env, or re-run 'mise run //:gcloud-login' to reauthenticate." >&2
+  exit "$status"
+fi
+'''
+
 [tasks.clean]
 description = "Remove __pycache__ and build artifacts."
 run = '''
@@ -218,7 +243,7 @@ description = "Regenerate the frontend's TypeScript types from the backend Pydan
 run = '''
 set -eu
 uvdir=$(dirname "$(mise which uv)")
-mise -C ../frontend exec -- sh -c "PATH=\"$uvdir:\$PATH\" mise run generate-types"
+mise -C ../frontend exec -- sh -c "PATH=\"$uvdir:\$PATH\" mise run //frontend:generate-types"
 '''
 
 [tasks.generate-referrals]
@@ -226,7 +251,7 @@ description = "Regenerate the frontend's bundled referral catalog from the backe
 run = '''
 set -eu
 uvdir=$(dirname "$(mise which uv)")
-mise -C ../frontend exec -- sh -c "PATH=\"$uvdir:\$PATH\" mise run generate-referrals"
+mise -C ../frontend exec -- sh -c "PATH=\"$uvdir:\$PATH\" mise run //frontend:generate-referrals"
 '''
 
 [tasks.generate-frontend-assets]
@@ -234,7 +259,7 @@ description = "Regenerate all frontend build-time assets (types + referral catal
 run = '''
 set -eu
 uvdir=$(dirname "$(mise which uv)")
-mise -C ../frontend exec -- sh -c "PATH=\"$uvdir:\$PATH\" mise run generate-frontend-assets"
+mise -C ../frontend exec -- sh -c "PATH=\"$uvdir:\$PATH\" mise run //frontend:generate-frontend-assets"
 '''
 
 [tasks.docs]
