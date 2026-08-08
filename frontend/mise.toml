@@ -85,7 +85,7 @@ npm run test -- --run ${usage_options:-}
 # own throwaway venv instead of reading/writing the host's .venv.
 [tasks.generate-types]
 description = "Regenerate the frontend's TypeScript types from the backend Pydantic models."
-depends = ["install"]
+depends = ["install", "//backend:sync"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
@@ -100,12 +100,12 @@ if [ -n "${usage_container:-}" ]; then
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
     --cmd "cd /src/frontend && mkdir -p src/types && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_types.py | /workspace/frontend/node_modules/.bin/json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts"
 fi
-npm run generate-types
+PATH="$(dirname "$(mise -C ../backend which uv)"):$PATH" npm run generate-types
 '''
 
 [tasks.generate-referrals]
 description = "Regenerate the frontend's bundled referral catalog from the backend referrals data."
-depends = ["install"]
+depends = ["install", "//backend:sync"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
@@ -120,12 +120,12 @@ if [ -n "${usage_container:-}" ]; then
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
     --cmd "cd /src/frontend && mkdir -p src/generated && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_referrals.py > src/generated/referrals.ts"
 fi
-npm run generate-referrals
+PATH="$(dirname "$(mise -C ../backend which uv)"):$PATH" npm run generate-referrals
 '''
 
 [tasks.generate-frontend-assets]
 description = "Regenerate frontend build-time assets (types + referral catalog) from the backend."
-depends = ["install"]
+depends = ["install", "//backend:sync"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
@@ -140,7 +140,7 @@ if [ -n "${usage_container:-}" ]; then
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
     --cmd "cd /src/frontend && mkdir -p src/types src/generated && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_types.py | /workspace/frontend/node_modules/.bin/json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_referrals.py > src/generated/referrals.ts"
 fi
-npm run generate-frontend-assets
+PATH="$(dirname "$(mise -C ../backend which uv)"):$PATH" npm run generate-frontend-assets
 '''
 
 [tasks.check]
