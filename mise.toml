@@ -73,7 +73,7 @@ esac
 # --- Google Cloud application default credentials ------------------------------
 # One-time login for local Vertex AI/RAG access. Deliberately standalone (no
 # `depends`, not wired into `setup`) so it never becomes a required part of the
-# provisioning graph — see the `gcloud` [tools] entry above for why. Only runs the
+# provisioning graph — see the per-task `gcloud` tool pin below for why. Only runs the
 # interactive `gcloud auth` steps and prints the resulting ADC path; it does not
 # write to backend/.env itself; the setup step for a fresh checkout would have no
 # .env yet, and on a repeat login silently overwriting a value you may have
