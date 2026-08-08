@@ -28,6 +28,13 @@ config_roots = ["backend", "frontend"]
 # Pinned like uv/node for reproducibility; bump as new apple/container releases land.
 container = { version = "1.1.0", os = ["macos"] }
 
+# Google Cloud CLI, needed only for the one-time `gcloud-login` task below (application
+# default credentials for local Vertex AI/RAG access). Not a dependency of `setup` or any
+# check/build task — kept out of that graph so a broken/interactive gcloud install can
+# never block `mise install`/`mise run setup` for contributors who already have ADC set up
+# or don't touch the backend's Google Cloud calls.
+gcloud = "579.0.0"
+
 # --- apple/container system service --------------------------------------------
 # Manage the apple/container background service (the "daemon" the CLI talks to).
 # apple/container is macOS-only, so this is a no-op elsewhere — the binary check
@@ -68,6 +75,30 @@ case "$usage_action" in
     container builder delete --force || true
     container builder start ;;
 esac
+'''
+
+# --- Google Cloud application default credentials ------------------------------
+# One-time login for local Vertex AI/RAG access. Deliberately standalone (no
+# `depends`, not wired into `setup`) so it never becomes a required part of the
+# provisioning graph — see the `gcloud` [tools] entry above for why. Only runs the
+# interactive `gcloud auth` steps and prints the resulting ADC path; it does not
+# write to backend/.env itself; the setup step for a fresh checkout would have no
+# .env yet, and on a repeat login silently overwriting a value you may have
+# customized is worse than a two-line copy/paste.
+[tasks.gcloud-login]
+description = "One-time gcloud login for local Vertex AI/RAG credentials. Prints the ADC path to add to backend/.env."
+run = '''
+set -eu
+gcloud auth application-default login
+gcloud auth application-default set-quota-project tenantfirstaid
+config_dir=$(gcloud info --format='value(config.paths.global_config_dir)')
+creds="$config_dir/application_default_credentials.json"
+echo ""
+echo "Application default credentials written to:"
+echo "  $creds"
+echo ""
+echo "Add (or update) this line in backend/.env:"
+echo "  GOOGLE_APPLICATION_CREDENTIALS=$creds"
 '''
 
 # --- Shared engine resolver ----------------------------------------------------
