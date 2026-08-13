@@ -6,6 +6,7 @@ import Chat from "./Chat";
 import LoadingPage from "./pages/LoadingPage";
 import PageLayout from "./layouts/PageLayout";
 import HomePage from "./pages/HomePage/HomePage";
+import DevicePrivacyGuard from "./shared/components/DevicePrivacyGuard";
 
 // Lazy-loading for less frequented pages
 const About = lazy(() => import("./About"));
@@ -27,8 +28,22 @@ export default function App() {
             element={
               <Suspense fallback={<LoadingPage />}>
                 <Routes>
-                  <Route path="/chat/:state?/:city?" element={<Chat />} />
-                  <Route path="/letter/:state?/:city?" element={<Letter />} />
+                  <Route
+                    path="/chat/:state?/:city?"
+                    element={
+                      <DevicePrivacyGuard>
+                        <Chat />
+                      </DevicePrivacyGuard>
+                    }
+                  />
+                  <Route
+                    path="/letter/:state?/:city?"
+                    element={
+                      <DevicePrivacyGuard>
+                        <Letter />
+                      </DevicePrivacyGuard>
+                    }
+                  />
                   <Route path="/about" element={<About />} />
                   <Route path="/disclaimer" element={<Disclaimer />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
