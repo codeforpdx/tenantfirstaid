@@ -2,19 +2,35 @@ import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import type { Location } from "../types/models";
 import type { ChatMessage, UiMessage } from "../shared/types/messages";
+import {
+  readSessionStorage,
+  removeSessionStorage,
+  writeSessionStorage,
+} from "../shared/utils/storage";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 
-type StoredMessage = { type: "human" | "ai"; content: string; id: string };
+type StoredMessage = {
+  type: "human" | "ai";
+  content: string;
+  id: string;
+  complete?: boolean;
+};
 
 function loadFromStorage(key: string): ChatMessage[] {
   try {
-    const raw = sessionStorage.getItem(key);
+    const raw = readSessionStorage(key);
     if (!raw) return [];
     const stored: StoredMessage[] = JSON.parse(raw);
     return stored.map((msg) =>
       msg.type === "human"
         ? new HumanMessage({ content: msg.content, id: msg.id })
-        : new AIMessage({ content: msg.content, id: msg.id }),
+        : new AIMessage({
+            content: msg.content,
+            id: msg.id,
+            // Messages stored before completion tracking were only written
+            // after they had content, so preserve them as completed history.
+            additional_kwargs: { complete: msg.complete ?? true },
+          }),
     );
   } catch {
     return [];
@@ -90,18 +106,22 @@ export default function useMessages(storageKey?: string) {
     const toStore: StoredMessage[] = messages
       .filter(
         (msg): msg is Exclude<ChatMessage, UiMessage> =>
-          msg.type !== "ui" && msg.text.trim() !== "" && Boolean(msg.id),
+          msg.type !== "ui" &&
+          msg.text.trim() !== "" &&
+          Boolean(msg.id) &&
+          (msg.type !== "ai" || msg.additional_kwargs.complete === true),
       )
       .map((msg) => ({
-        type: msg instanceof HumanMessage ? "human" : "ai",
+        type: msg.type,
         content: typeof msg.content === "string" ? msg.content : msg.text,
         id: msg.id as string,
+        ...(msg.type === "ai" ? { complete: true } : {}),
       }));
     if (toStore.length === 0) {
-      sessionStorage.removeItem(storageKey);
+      removeSessionStorage(storageKey);
       return;
     }
-    sessionStorage.setItem(storageKey, JSON.stringify(toStore));
+    writeSessionStorage(storageKey, JSON.stringify(toStore));
   }, [messages, storageKey]);
 
   const addMessage = useMutation({
@@ -117,7 +137,7 @@ export default function useMessages(storageKey?: string) {
 
   function clearMessages() {
     if (storageKey) {
-      sessionStorage.removeItem(storageKey);
+      removeSessionStorage(storageKey);
     }
     setMessages([]);
   }

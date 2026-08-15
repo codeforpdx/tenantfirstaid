@@ -60,6 +60,16 @@ describe("useMessages", () => {
     expect(result.current.messages).toEqual([]);
   });
 
+  it("starts with empty messages when sessionStorage reads are blocked", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("Access denied", "SecurityError");
+    });
+
+    expect(() =>
+      renderHook(() => useMessages("test_key"), { wrapper }),
+    ).not.toThrow();
+  });
+
   it("loads messages from sessionStorage on init", () => {
     const stored = [
       { type: "human", content: "hello", id: "1" },
@@ -84,6 +94,59 @@ describe("useMessages", () => {
 
     const stored = JSON.parse(sessionStorage.getItem("test_key") ?? "[]");
     expect(stored).toEqual([{ type: "human", content: "hi", id: "1" }]);
+  });
+
+  it("keeps working when sessionStorage quota is exceeded", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("Quota exceeded", "QuotaExceededError");
+    });
+    const { result } = renderHook(() => useMessages("test_key"), { wrapper });
+
+    expect(() => {
+      act(() => {
+        result.current.setMessages([
+          new HumanMessage({ content: "hi", id: "1" }),
+        ]);
+      });
+    }).not.toThrow();
+    expect(result.current.messages).toHaveLength(1);
+  });
+
+  it("does not persist an incomplete AI message", () => {
+    const { result } = renderHook(() => useMessages("test_key"), { wrapper });
+
+    act(() => {
+      result.current.setMessages([
+        new HumanMessage({ content: "hi", id: "1" }),
+        new AIMessage({
+          content: "partial answer",
+          id: "2",
+          additional_kwargs: { complete: false },
+        }),
+      ]);
+    });
+
+    expect(JSON.parse(sessionStorage.getItem("test_key") ?? "[]")).toEqual([
+      { type: "human", content: "hi", id: "1" },
+    ]);
+  });
+
+  it("persists and restores a complete AI message", () => {
+    const { result } = renderHook(() => useMessages("test_key"), { wrapper });
+
+    act(() => {
+      result.current.setMessages([
+        new AIMessage({
+          content: "complete answer",
+          id: "2",
+          additional_kwargs: { complete: true },
+        }),
+      ]);
+    });
+
+    expect(JSON.parse(sessionStorage.getItem("test_key") ?? "[]")).toEqual([
+      { type: "ai", content: "complete answer", id: "2", complete: true },
+    ]);
   });
 
   it("preserves and sends a guarded initial message in Strict Mode", async () => {
@@ -200,6 +263,21 @@ describe("useMessages", () => {
 
     expect(result.current.messages).toEqual([]);
     expect(sessionStorage.getItem("test_key")).toBeNull();
+  });
+
+  it("clearMessages resets state when sessionStorage removal is blocked", () => {
+    const { result } = renderHook(() => useMessages("test_key"), { wrapper });
+    act(() => {
+      result.current.setMessages([
+        new HumanMessage({ content: "hi", id: "1" }),
+      ]);
+    });
+    vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
+      throw new DOMException("Access denied", "SecurityError");
+    });
+
+    expect(() => act(() => result.current.clearMessages())).not.toThrow();
+    expect(result.current.messages).toEqual([]);
   });
 
   it("clearMessages without a storageKey only resets state", () => {

@@ -8,6 +8,7 @@ import InitializationForm from "./InitializationForm";
 import MessageAvatar from "./MessageAvatar";
 import FeedbackModal from "./FeedbackModal";
 import clsx from "clsx";
+import useHousingContext from "../../../hooks/useHousingContext";
 
 type MessageWindowMode = "chat" | "letter";
 
@@ -39,6 +40,7 @@ export default function MessageWindow({
   const [openFeedback, setOpenFeedback] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
+  const { handleFormReset } = useHousingContext();
 
   // Hides the initial user prompt and AI letter response on the letter page
   // (index 0 = user prompt, index 1 = AI letter generation).
@@ -47,6 +49,7 @@ export default function MessageWindow({
     mode === "letter" ? messages.slice(LETTER_PAGE_HIDDEN_MESSAGES) : messages;
 
   const handleClearSession = () => {
+    handleFormReset();
     clearMessages();
   };
 

@@ -5,6 +5,19 @@ import MessageWindow from "../../pages/Chat/components/MessageWindow";
 import type { ChatMessage } from "../../shared/types/messages";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import HousingContextProvider from "../../contexts/HousingContext";
+import useHousingContext from "../../hooks/useHousingContext";
+
+function IssueDescriptionProbe() {
+  const { issueDescription, handleIssueDescription } = useHousingContext();
+
+  return (
+    <textarea
+      data-testid="issue-description-probe"
+      value={issueDescription}
+      onChange={handleIssueDescription}
+    />
+  );
+}
 
 beforeAll(() => {
   if (!("scrollTo" in HTMLElement.prototype)) {
@@ -120,5 +133,29 @@ describe("MessageWindow component", () => {
     fireEvent.click(screen.getByRole("button", { name: "clear chat" }));
 
     expect(clearMessages).toHaveBeenCalledTimes(1);
+  });
+
+  it("resets the issue description when clearing the chat", () => {
+    const queryClient = new QueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <HousingContextProvider>
+          <MemoryRouter initialEntries={["/chat/or/portland"]}>
+            <IssueDescriptionProbe />
+            <MessageWindow {...defaultProps} />
+          </MemoryRouter>
+        </HousingContextProvider>
+      </QueryClientProvider>,
+    );
+
+    const issueDescription = screen.getByTestId("issue-description-probe");
+    fireEvent.change(issueDescription, {
+      target: { value: "My previous housing issue" },
+    });
+    expect(issueDescription).toHaveValue("My previous housing issue");
+
+    fireEvent.click(screen.getByRole("button", { name: "clear chat" }));
+
+    expect(issueDescription).toHaveValue("");
   });
 });

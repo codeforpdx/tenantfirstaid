@@ -45,3 +45,27 @@ export function writeSessionStorage(key: string, value: string): void {
     // Ignored: callers treat persistence as best-effort.
   }
 }
+
+/**
+ * Removes a sessionStorage value as best-effort persistence.
+ * Storage failures are ignored.
+ */
+export function removeSessionStorage(key: string): void {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // Ignored: callers treat persistence as best-effort.
+  }
+}
+
+/**
+ * Clears all sessionStorage as best-effort persistence.
+ * Storage failures are ignored.
+ */
+export function clearSessionStorage(): void {
+  try {
+    sessionStorage.clear();
+  } catch {
+    // Ignored: callers treat persistence as best-effort.
+  }
+}

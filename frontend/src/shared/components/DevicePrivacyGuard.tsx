@@ -1,9 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { readSessionStorage, writeSessionStorage } from "../utils/storage";
+import { useEffect, useRef, useState } from "react";
+import {
+  clearSessionStorage,
+  readSessionStorage,
+  writeSessionStorage,
+} from "../utils/storage";
 
 export const DEVICE_PRIVACY_STORAGE_KEY = "device_privacy";
 export const PUBLIC_DEVICE_IDLE_MS = 5 * 60 * 1000;
 export const SHUTDOWN_SECONDS = 120;
+const IDLE_CHECK_INTERVAL_MS = 1000;
 
 type DevicePrivacy = "private" | "public";
 
@@ -21,33 +26,19 @@ interface Props {
  * public device, clears the session after an inactivity warning expires.
  */
 export default function DevicePrivacyGuard({ children }: Props) {
-  const [devicePrivacy, setDevicePrivacy] =
-    useState<DevicePrivacy | null>(readDevicePrivacy);
+  const [devicePrivacy, setDevicePrivacy] = useState<DevicePrivacy | null>(
+    readDevicePrivacy,
+  );
   const [shutdownDeadline, setShutdownDeadline] = useState<number | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState(SHUTDOWN_SECONDS);
-  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearIdleTimer = useCallback(() => {
-    if (idleTimerRef.current !== null) {
-      clearTimeout(idleTimerRef.current);
-      idleTimerRef.current = null;
-    }
-  }, []);
-
-  const resetIdleTimer = useCallback(() => {
-    if (devicePrivacy !== "public" || shutdownDeadline !== null) return;
-    clearIdleTimer();
-    idleTimerRef.current = setTimeout(() => {
-      setShutdownDeadline(Date.now() + SHUTDOWN_SECONDS * 1000);
-      setSecondsRemaining(SHUTDOWN_SECONDS);
-    }, PUBLIC_DEVICE_IDLE_MS);
-  }, [clearIdleTimer, devicePrivacy, shutdownDeadline]);
+  const lastActivityRef = useRef(Date.now());
 
   useEffect(() => {
-    if (devicePrivacy !== "public" || shutdownDeadline !== null) {
-      clearIdleTimer();
-      return;
-    }
+    if (devicePrivacy !== "public" || shutdownDeadline !== null) return;
+
+    const recordActivity = () => {
+      lastActivityRef.current = Date.now();
+    };
 
     const activityEvents: (keyof WindowEventMap)[] = [
       "click",
@@ -57,17 +48,24 @@ export default function DevicePrivacyGuard({ children }: Props) {
       "touchstart",
     ];
     activityEvents.forEach((event) =>
-      window.addEventListener(event, resetIdleTimer, { passive: true }),
+      window.addEventListener(event, recordActivity, { passive: true }),
     );
-    resetIdleTimer();
+    recordActivity();
+
+    const idleCheckTimer = window.setInterval(() => {
+      if (Date.now() - lastActivityRef.current >= PUBLIC_DEVICE_IDLE_MS) {
+        setShutdownDeadline(Date.now() + SHUTDOWN_SECONDS * 1000);
+        setSecondsRemaining(SHUTDOWN_SECONDS);
+      }
+    }, IDLE_CHECK_INTERVAL_MS);
 
     return () => {
       activityEvents.forEach((event) =>
-        window.removeEventListener(event, resetIdleTimer),
+        window.removeEventListener(event, recordActivity),
       );
-      clearIdleTimer();
+      window.clearInterval(idleCheckTimer);
     };
-  }, [clearIdleTimer, devicePrivacy, resetIdleTimer, shutdownDeadline]);
+  }, [devicePrivacy, shutdownDeadline]);
 
   useEffect(() => {
     if (shutdownDeadline === null) return;
@@ -81,7 +79,7 @@ export default function DevicePrivacyGuard({ children }: Props) {
 
       if (remaining === 0) {
         window.clearInterval(countdownTimer);
-        sessionStorage.clear();
+        clearSessionStorage();
         window.close();
         // Browsers only permit scripts to close tabs that scripts opened.
         // Redirect away from sensitive content when closing is blocked.
@@ -108,8 +106,8 @@ export default function DevicePrivacyGuard({ children }: Props) {
     return (
       <Modal title="Is this a public or private device?">
         <p className="mb-5 text-gray-dark">
-          Choose public if other people can access this device. We will use
-          your answer to help protect your conversation history.
+          Choose public if other people can access this device. We will use your
+          answer to help protect your conversation history.
         </p>
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
           <button
