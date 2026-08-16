@@ -121,6 +121,24 @@ describe("streamText", () => {
     expect(result[1].text).toContain("Sorry, I encountered an error");
   });
 
+  it("should silently stop without an error message when the request is aborted", async () => {
+    mockAddMessage.mockRejectedValue(
+      new DOMException("The user aborted a request.", "AbortError"),
+    );
+
+    await streamText({
+      addMessage: mockAddMessage,
+      setMessages: mockSetMessages,
+      housingLocation: { city: "portland", state: "or" },
+      setIsLoading: mockSetIsLoading,
+    } as StreamTextOptions);
+
+    expect(mockSetIsLoading).toHaveBeenCalledWith(false);
+    expect(console.error).not.toHaveBeenCalled();
+    // Only the initial empty placeholder was added — no error message patched in.
+    expect(mockSetMessages).toHaveBeenCalledTimes(1);
+  });
+
   it("should accumulate reasoning and text chunks in order", async () => {
     const mockReader = createMockReader([
       '{"type":"reasoning","content":"Let me think."}\n',

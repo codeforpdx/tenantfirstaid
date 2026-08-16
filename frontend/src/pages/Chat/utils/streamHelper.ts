@@ -118,6 +118,12 @@ async function streamText({
       processLines(lines);
     }
   } catch (error) {
+    // The request was intentionally cancelled (e.g. jurisdiction changed
+    // mid-stream) — the message list has already moved on, so don't patch
+    // it with an error meant for a conversation that's no longer showing.
+    if (error instanceof DOMException && error.name === "AbortError") {
+      return;
+    }
     console.error("Error:", error);
     const errorMessage: UiMessage = {
       type: "ui",

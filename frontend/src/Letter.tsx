@@ -1,7 +1,9 @@
 import { HumanMessage } from "@langchain/core/messages";
 import type { UiMessage } from "./shared/types/messages";
 import MessageWindow from "./pages/Chat/components/MessageWindow";
-import useMessages from "./hooks/useMessages";
+import useMessages, {
+  LETTER_MESSAGES_STORAGE_PREFIX,
+} from "./hooks/useMessages";
 import { useEffect, useRef, useState } from "react";
 import { Navigate, useParams, useSearchParams } from "react-router-dom";
 import { useLetterContent } from "./hooks/useLetterContent";
@@ -83,7 +85,7 @@ interface LetterViewProps {
 
 function LetterView({ jurisdiction, org }: LetterViewProps) {
   const { addMessage, messages, setMessages, clearMessages } = useMessages(
-    `letter_messages:${jurisdiction.key},${org ?? ""}`,
+    `${LETTER_MESSAGES_STORAGE_PREFIX}${jurisdiction.key},${org ?? ""}`,
   );
   const isOngoing = messages.length > 0;
   const { letterContent } = useLetterContent(messages);
@@ -91,6 +93,9 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
   const streamLocationRef = useRef<Location | null>(null);
   const [isGenerating, setIsGenerating] = useState(letterContent === "");
   const dialogRef = useRef<HTMLDialogElement>(null);
+  // Captured once at mount: a restored, already-complete letter shouldn't
+  // re-show the "generating" dialog.
+  const shouldShowGenerationDialog = useRef(letterContent === "");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasInitialized = useRef(false);
   const LOADING_DISPLAY_DELAY_MS = 1000;
@@ -195,7 +200,9 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
   }, []);
 
   useEffect(() => {
-    dialogRef.current?.showModal();
+    if (shouldShowGenerationDialog.current) {
+      dialogRef.current?.showModal();
+    }
   }, []);
 
   function handleClearMessages() {

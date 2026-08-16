@@ -77,7 +77,9 @@ reading paths (new reader, backend contributor, corpus operator):
 
 The frontend is a modern React application built with TypeScript and Vite. It provides a clean, accessible chat interface for users to interact with the legal advice chatbot.
 
-**Client-Side Message Persistence:** `useMessages` accepts an optional `storageKey`. When given, it loads message state from `sessionStorage` on mount and syncs every state change back to it, so a chat or letter conversation survives a page refresh within the same browser tab session. Chat pages key storage by jurisdiction (`chat_messages:<jurisdiction>`); letter pages key it by jurisdiction and referring org (`letter_messages:<jurisdiction>,<org>`), so switching location or partner link starts a fresh conversation rather than reusing a stale one.
+**Client-Side Message Persistence:** `useMessages` accepts an optional `storageKey`. When given, it loads message state from `sessionStorage` on mount and syncs every state change back to it, so a chat or letter conversation can survive a page refresh without being saved to the server. Chat pages key storage by jurisdiction (`chat_messages:<jurisdiction>`); letter pages key it by jurisdiction and referring org (`letter_messages:<jurisdiction>,<org>`), so switching location or partner link starts a fresh conversation rather than reusing a stale one. The messages normally remain available for the browser-tab session; on a public device, they are removed early if the inactivity warning expires.
+
+**Device Privacy:** `DevicePrivacyGuard` asks each browser-tab session whether the device is public or private. On public devices, five minutes without user activity opens a 120-second warning. If the warning expires, the guard removes the device-privacy choice and all `chat_messages:*` and `letter_messages:*` entries from `sessionStorage`, then attempts to close the page and redirects to the home page when the browser blocks scripted closing. Cleanup is intentionally limited to Tenant First Aid's known keys so other applications' session data is not removed.
 
 ### Directory/File Structure
 

@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  clearSessionStorage,
   readSessionStorage,
+  removeSessionStorage,
+  removeSessionStorageByPrefix,
   writeSessionStorage,
 } from "../utils/storage";
+import {
+  CHAT_MESSAGES_STORAGE_PREFIX,
+  LETTER_MESSAGES_STORAGE_PREFIX,
+} from "../../hooks/useMessages";
 
 export const DEVICE_PRIVACY_STORAGE_KEY = "device_privacy";
 export const PUBLIC_DEVICE_IDLE_MS = 5 * 60 * 1000;
@@ -15,6 +20,16 @@ type DevicePrivacy = "private" | "public";
 function readDevicePrivacy(): DevicePrivacy | null {
   const stored = readSessionStorage(DEVICE_PRIVACY_STORAGE_KEY);
   return stored === "private" || stored === "public" ? stored : null;
+}
+
+/**
+ * Removes the sessionStorage keys this app is known to write, rather than
+ * clearing all of sessionStorage, so unrelated data isn't touched.
+ */
+function clearKnownSessionStorage() {
+  removeSessionStorage(DEVICE_PRIVACY_STORAGE_KEY);
+  removeSessionStorageByPrefix(CHAT_MESSAGES_STORAGE_PREFIX);
+  removeSessionStorageByPrefix(LETTER_MESSAGES_STORAGE_PREFIX);
 }
 
 interface Props {
@@ -79,7 +94,7 @@ export default function DevicePrivacyGuard({ children }: Props) {
 
       if (remaining === 0) {
         window.clearInterval(countdownTimer);
-        clearSessionStorage();
+        clearKnownSessionStorage();
         window.close();
         // Browsers only permit scripts to close tabs that scripts opened.
         // Redirect away from sensitive content when closing is blocked.
@@ -104,7 +119,7 @@ export default function DevicePrivacyGuard({ children }: Props) {
 
   if (devicePrivacy === null) {
     return (
-      <Modal title="Is this a public or private device?">
+      <Modal title="Is this a public or private device?" dismissible={false}>
         <p className="mb-5 text-gray-dark">
           Choose public if other people can access this device. We will use your
           answer to help protect your conversation history.
@@ -135,7 +150,7 @@ export default function DevicePrivacyGuard({ children }: Props) {
         {children}
       </div>
       {shutdownDeadline !== null && (
-        <Modal title="Are you still there?">
+        <Modal title="Are you still there?" onClose={cancelShutdown}>
           <p className="mb-5 text-gray-dark" aria-live="polite">
             If you do nothing, this page will close in {secondsRemaining}{" "}
             {secondsRemaining === 1 ? "second" : "seconds"}, clearing all
@@ -159,22 +174,33 @@ export default function DevicePrivacyGuard({ children }: Props) {
 interface ModalProps {
   children: React.ReactNode;
   title: string;
+  /** When false, Escape cannot dismiss the dialog; only an explicit choice can. */
+  dismissible?: boolean;
+  onClose?: () => void;
 }
 
-function Modal({ children, title }: ModalProps) {
+
+function Modal({ children, title, dismissible = true, onClose }: ModalProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    dialogRef.current?.showModal();
+  }, []);
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      ref={dialogRef}
+      onCancel={(event) => {
+        if (!dismissible) event.preventDefault();
+      }}
+      onClose={onClose}
       aria-labelledby="device-privacy-dialog-title"
+      className="fixed top-1/2 left-1/2 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border-none bg-white p-6 shadow-xl backdrop:bg-black/50"
     >
-      <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
-        <h2 id="device-privacy-dialog-title" className="mb-3 text-xl font-bold">
-          {title}
-        </h2>
-        {children}
-      </div>
-    </div>
+      <h2 id="device-privacy-dialog-title" className="mb-3 text-xl font-bold">
+        {title}
+      </h2>
+      {children}
+    </dialog>
   );
 }

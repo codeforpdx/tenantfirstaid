@@ -1,5 +1,5 @@
 import MessageWindow from "./pages/Chat/components/MessageWindow";
-import useMessages from "./hooks/useMessages";
+import useMessages, { CHAT_MESSAGES_STORAGE_PREFIX } from "./hooks/useMessages";
 import useSyncJurisdiction from "./hooks/useSyncJurisdiction";
 import { useLetterContent } from "./hooks/useLetterContent";
 import ChatDisclaimer from "./pages/Chat/components/ChatDisclaimer";
@@ -48,7 +48,7 @@ function ChatView() {
   const { state, city } = useParams();
   const jurisdiction = resolveJurisdiction(state, city);
   const { addMessage, messages, setMessages, clearMessages } = useMessages(
-    `chat_messages:${jurisdiction.key}`,
+    `${CHAT_MESSAGES_STORAGE_PREFIX}${jurisdiction.key}`,
   );
   const isOngoing = messages.length > 0;
   const { letterContent } = useLetterContent(messages);

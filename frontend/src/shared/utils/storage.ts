@@ -59,12 +59,17 @@ export function removeSessionStorage(key: string): void {
 }
 
 /**
- * Clears all sessionStorage as best-effort persistence.
- * Storage failures are ignored.
+ * Removes every sessionStorage key starting with the given prefix, as
+ * best-effort persistence. Storage failures are ignored.
  */
-export function clearSessionStorage(): void {
+export function removeSessionStorageByPrefix(prefix: string): void {
   try {
-    sessionStorage.clear();
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key?.startsWith(prefix)) keysToRemove.push(key);
+    }
+    keysToRemove.forEach((key) => sessionStorage.removeItem(key));
   } catch {
     // Ignored: callers treat persistence as best-effort.
   }

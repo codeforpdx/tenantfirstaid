@@ -9,6 +9,9 @@ import {
 } from "../shared/utils/storage";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 
+export const CHAT_MESSAGES_STORAGE_PREFIX = "chat_messages:";
+export const LETTER_MESSAGES_STORAGE_PREFIX = "letter_messages:";
+
 type StoredMessage = {
   type: "human" | "ai";
   content: string;
@@ -60,6 +63,7 @@ export function deserializeAiMessage(text: string): string {
 async function addNewMessage(
   messages: ChatMessage[],
   { city, state }: Location,
+  signal: AbortSignal,
 ) {
   const serializedMsg = messages.map((msg) => ({
     role: msg.type,
@@ -71,6 +75,7 @@ async function addNewMessage(
     headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify({ messages: serializedMsg, city, state }),
+    signal,
   });
   return response.body?.getReader();
 }
@@ -89,13 +94,21 @@ export default function useMessages(storageKey?: string) {
   // from the new key instead of persisting the previous conversation over it.
   const loadedStorageKeyRef = useRef(storageKey);
   const isChangingStorageKeyRef = useRef(false);
+  // Aborts any in-flight request tied to the previous storageKey, so its
+  // stream stops trying to patch a bot message that no longer exists.
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (loadedStorageKeyRef.current === storageKey) return;
     loadedStorageKeyRef.current = storageKey;
     isChangingStorageKeyRef.current = true;
+    abortControllerRef.current?.abort();
     setMessages(storageKey ? loadFromStorage(storageKey) : []);
   }, [storageKey]);
+
+  useEffect(() => {
+    return () => abortControllerRef.current?.abort();
+  }, []);
 
   useEffect(() => {
     if (isChangingStorageKeyRef.current) {
@@ -131,7 +144,13 @@ export default function useMessages(storageKey?: string) {
         (msg): msg is Exclude<ChatMessage, UiMessage> =>
           msg.type !== "ui" && msg.text.trim() !== "",
       );
-      return await addNewMessage(filteredMessages, { city, state });
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      return await addNewMessage(
+        filteredMessages,
+        { city, state },
+        controller.signal,
+      );
     },
   });
 

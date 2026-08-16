@@ -35,6 +35,7 @@ vi.mock("../../pages/Chat/utils/streamHelper", () => ({
 
 vi.mock("../../hooks/useMessages", () => ({
   default: vi.fn(),
+  LETTER_MESSAGES_STORAGE_PREFIX: "letter_messages:",
 }));
 
 vi.mock("../../hooks/useLetterContent", () => ({

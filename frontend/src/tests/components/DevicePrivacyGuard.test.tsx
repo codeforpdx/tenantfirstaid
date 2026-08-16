@@ -1,5 +1,13 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import DevicePrivacyGuard, {
   DEVICE_PRIVACY_STORAGE_KEY,
   PUBLIC_DEVICE_IDLE_MS,
@@ -7,6 +15,20 @@ import DevicePrivacyGuard, {
 } from "../../shared/components/DevicePrivacyGuard";
 
 describe("DevicePrivacyGuard", () => {
+  beforeAll(() => {
+    HTMLDialogElement.prototype.showModal = vi.fn(function (
+      this: HTMLDialogElement,
+    ) {
+      this.setAttribute("open", "");
+    });
+    HTMLDialogElement.prototype.close = vi.fn(function (
+      this: HTMLDialogElement,
+    ) {
+      this.removeAttribute("open");
+      this.dispatchEvent(new Event("close"));
+    });
+  });
+
   beforeEach(() => {
     localStorage.clear();
     sessionStorage.clear();
@@ -65,5 +87,28 @@ describe("DevicePrivacyGuard", () => {
     act(() => vi.advanceTimersByTime(1000));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("removes message history and closes the page when the warning expires", () => {
+    vi.useFakeTimers();
+    const closeSpy = vi.spyOn(window, "close").mockImplementation(() => {});
+    sessionStorage.setItem(DEVICE_PRIVACY_STORAGE_KEY, "public");
+    sessionStorage.setItem("chat_messages:portland", "chat history");
+    sessionStorage.setItem("letter_messages:portland", "letter history");
+    sessionStorage.setItem("unrelated", "keep me");
+    render(
+      <DevicePrivacyGuard>
+        <div>Sensitive page</div>
+      </DevicePrivacyGuard>,
+    );
+
+    act(() => vi.advanceTimersByTime(PUBLIC_DEVICE_IDLE_MS));
+    act(() => vi.advanceTimersByTime(SHUTDOWN_SECONDS * 1000));
+
+    expect(sessionStorage.getItem(DEVICE_PRIVACY_STORAGE_KEY)).toBeNull();
+    expect(sessionStorage.getItem("chat_messages:portland")).toBeNull();
+    expect(sessionStorage.getItem("letter_messages:portland")).toBeNull();
+    expect(sessionStorage.getItem("unrelated")).toBe("keep me");
+    expect(closeSpy).toHaveBeenCalledOnce();
   });
 });

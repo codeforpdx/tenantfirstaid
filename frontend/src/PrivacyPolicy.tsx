@@ -19,7 +19,7 @@ export default function PrivacyPolicy() {
           <div className="flex flex-col">
             <span>Privacy Policy</span>
             <em className="text-base font-normal">
-              Last Updated: December 7, 2025
+              Last Updated: August 16, 2026
             </em>
           </div>
         }
@@ -59,10 +59,14 @@ export default function PrivacyPolicy() {
         className="space-y-4"
       >
         <p>
-          Tenant First Aid does not store or retain any personal data or
-          conversation transcripts during normal usage. All interactions are
-          processed in real time and are not saved to our servers. We do not
-          encourage you to provide your name, address, or other sensitive
+          Tenant First Aid does not save conversation transcripts to our servers
+          during normal usage. To preserve your conversation when you refresh
+          the page, chat and letter messages are stored temporarily in your
+          browser's session storage. If you identify the device as public,
+          five minutes of inactivity starts a two-minute warning. If the warning
+          expires, Tenant First Aid removes its message history from session
+          storage and closes the page or redirects it to the home page. We do
+          not encourage you to provide your name, address, or other sensitive
           information, and generally do not need it to answer the type of
           general questions that Tenant First Aid is meant for.
         </p>

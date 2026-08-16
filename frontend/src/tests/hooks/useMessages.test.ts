@@ -280,6 +280,37 @@ describe("useMessages", () => {
     expect(result.current.messages).toEqual([]);
   });
 
+  it("aborts an in-flight request when the storageKey changes mid-stream", async () => {
+    let capturedSignal: AbortSignal | undefined;
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation((_url, init) => {
+        capturedSignal = init?.signal ?? undefined;
+        // Never resolves — simulates a request still streaming when the
+        // jurisdiction (storageKey) changes underneath it.
+        return new Promise<Response>(() => {});
+      });
+
+    const { result, rerender } = renderHook(
+      ({ storageKey }) => useMessages(storageKey),
+      {
+        initialProps: { storageKey: "first_key" },
+        wrapper,
+      },
+    );
+
+    act(() => {
+      void result.current.addMessage({ city: "portland", state: "or" });
+    });
+
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
+    expect(capturedSignal?.aborted).toBe(false);
+
+    rerender({ storageKey: "second_key" });
+
+    await waitFor(() => expect(capturedSignal?.aborted).toBe(true));
+  });
+
   it("clearMessages without a storageKey only resets state", () => {
     const { result } = renderHook(() => useMessages(), { wrapper });
 
