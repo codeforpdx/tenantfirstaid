@@ -1,5 +1,5 @@
 import MessageWindow from "./pages/Chat/components/MessageWindow";
-import useMessages from "./hooks/useMessages";
+import useMessages, { CHAT_MESSAGES_STORAGE_PREFIX } from "./hooks/useMessages";
 import useSyncJurisdiction from "./hooks/useSyncJurisdiction";
 import { useLetterContent } from "./hooks/useLetterContent";
 import ChatDisclaimer from "./pages/Chat/components/ChatDisclaimer";
@@ -8,7 +8,11 @@ import MessageContainer from "./shared/components/MessageContainer";
 import FeaturesPanel from "./shared/components/FeaturesPanel";
 import MobilePanel from "./shared/components/MobilePanel";
 import { Navigate, useParams } from "react-router-dom";
-import { classifyStateSegment, pathFor } from "./shared/utils/jurisdiction";
+import {
+  classifyStateSegment,
+  pathFor,
+  resolveJurisdiction,
+} from "./shared/utils/jurisdiction";
 import { DEFAULT_JURISDICTION } from "./shared/constants/jurisdictions";
 import clsx from "clsx";
 
@@ -41,7 +45,11 @@ export default function Chat() {
 
 function ChatView() {
   useSyncJurisdiction();
-  const { addMessage, messages, setMessages } = useMessages();
+  const { state, city } = useParams();
+  const jurisdiction = resolveJurisdiction(state, city);
+  const { addMessage, messages, setMessages, clearMessages } = useMessages(
+    `${CHAT_MESSAGES_STORAGE_PREFIX}${jurisdiction.key}`,
+  );
   const isOngoing = messages.length > 0;
   const { letterContent } = useLetterContent(messages);
 
@@ -57,10 +65,12 @@ function ChatView() {
             )}
           >
             <MessageWindow
+              mode="chat"
               messages={messages}
               addMessage={addMessage}
               setMessages={setMessages}
               isOngoing={isOngoing}
+              clearMessages={clearMessages}
             />
           </div>
         </MessageContainer>

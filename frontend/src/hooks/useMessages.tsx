@@ -1,7 +1,44 @@
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Location } from "../types/models";
 import type { ChatMessage, UiMessage } from "../shared/types/messages";
+import {
+  readSessionStorage,
+  removeSessionStorage,
+  writeSessionStorage,
+} from "../shared/utils/storage";
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
+
+export const CHAT_MESSAGES_STORAGE_PREFIX = "chat_messages:";
+export const LETTER_MESSAGES_STORAGE_PREFIX = "letter_messages:";
+
+type StoredMessage = {
+  type: "human" | "ai";
+  content: string;
+  id: string;
+  complete?: boolean;
+};
+
+function loadFromStorage(key: string): ChatMessage[] {
+  try {
+    const raw = readSessionStorage(key);
+    if (!raw) return [];
+    const stored: StoredMessage[] = JSON.parse(raw);
+    return stored.map((msg) =>
+      msg.type === "human"
+        ? new HumanMessage({ content: msg.content, id: msg.id })
+        : new AIMessage({
+            content: msg.content,
+            id: msg.id,
+            // Messages stored before completion tracking were only written
+            // after they had content, so preserve them as completed history.
+            additional_kwargs: { complete: msg.complete ?? true },
+          }),
+    );
+  } catch {
+    return [];
+  }
+}
 
 /**
  * Converts a stored AI message (JSONL chunks) back to plain text for backend
@@ -26,6 +63,7 @@ export function deserializeAiMessage(text: string): string {
 async function addNewMessage(
   messages: ChatMessage[],
   { city, state }: Location,
+  signal: AbortSignal,
 ) {
   const serializedMsg = messages.map((msg) => ({
     role: msg.type,
@@ -37,6 +75,7 @@ async function addNewMessage(
     headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify({ messages: serializedMsg, city, state }),
+    signal,
   });
   return response.body?.getReader();
 }
@@ -44,9 +83,59 @@ async function addNewMessage(
 /**
  * Hook for managing chat messages and sending queries to the backend.
  * Provides message state, a setter, and a mutation for posting new messages.
+ * When a storageKey is given, messages persist to sessionStorage so a page
+ * refresh restores the conversation.
  */
-export default function useMessages() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export default function useMessages(storageKey?: string) {
+  const [messages, setMessages] = useState<ChatMessage[]>(() =>
+    storageKey ? loadFromStorage(storageKey) : [],
+  );
+  // Track the storageKey a load was applied for, so a change in key reloads
+  // from the new key instead of persisting the previous conversation over it.
+  const loadedStorageKeyRef = useRef(storageKey);
+  const isChangingStorageKeyRef = useRef(false);
+  // Aborts any in-flight request tied to the previous storageKey, so its
+  // stream stops trying to patch a bot message that no longer exists.
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (loadedStorageKeyRef.current === storageKey) return;
+    loadedStorageKeyRef.current = storageKey;
+    isChangingStorageKeyRef.current = true;
+    abortControllerRef.current?.abort();
+    setMessages(storageKey ? loadFromStorage(storageKey) : []);
+  }, [storageKey]);
+
+  useEffect(() => {
+    return () => abortControllerRef.current?.abort();
+  }, []);
+
+  useEffect(() => {
+    if (isChangingStorageKeyRef.current) {
+      isChangingStorageKeyRef.current = false;
+      return;
+    }
+    if (!storageKey) return;
+    const toStore: StoredMessage[] = messages
+      .filter(
+        (msg): msg is Exclude<ChatMessage, UiMessage> =>
+          msg.type !== "ui" &&
+          msg.text.trim() !== "" &&
+          Boolean(msg.id) &&
+          (msg.type !== "ai" || msg.additional_kwargs.complete === true),
+      )
+      .map((msg) => ({
+        type: msg.type,
+        content: typeof msg.content === "string" ? msg.content : msg.text,
+        id: msg.id as string,
+        ...(msg.type === "ai" ? { complete: true } : {}),
+      }));
+    if (toStore.length === 0) {
+      removeSessionStorage(storageKey);
+      return;
+    }
+    writeSessionStorage(storageKey, JSON.stringify(toStore));
+  }, [messages, storageKey]);
 
   const addMessage = useMutation({
     mutationFn: async ({ city, state }: Location) => {
@@ -55,13 +144,27 @@ export default function useMessages() {
         (msg): msg is Exclude<ChatMessage, UiMessage> =>
           msg.type !== "ui" && msg.text.trim() !== "",
       );
-      return await addNewMessage(filteredMessages, { city, state });
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      return await addNewMessage(
+        filteredMessages,
+        { city, state },
+        controller.signal,
+      );
     },
   });
+
+  function clearMessages() {
+    if (storageKey) {
+      removeSessionStorage(storageKey);
+    }
+    setMessages([]);
+  }
 
   return {
     messages,
     setMessages,
     addMessage: addMessage.mutateAsync,
+    clearMessages,
   };
 }
