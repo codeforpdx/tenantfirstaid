@@ -20,14 +20,11 @@ flag "--engine <engine>" help="Container engine: auto|docker|container|podman." 
 '''
 run = '''
 set -eu
-if [ -n "${usage_container:-}" ]; then
-  exec mise run //:_container-run \
-    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
-    --engine "${usage_engine:-auto}" \
-    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
-    --cache-key-files "frontend/package.json frontend/package-lock.json" \
-    --cmd "cd /src/frontend && npm run build:only"
-fi
+. ../scripts/container_dispatch.sh
+container_dispatch \
+  --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+  --cache-key-files "frontend/package.json frontend/package-lock.json" \
+  --cmd "cd /src/frontend && npm run build:only"
 npm run build:only
 '''
 
@@ -50,14 +47,11 @@ prettier_mode="--check"
 if [ -n "${usage_write:-}" ]; then
   prettier_mode="--write"
 fi
-if [ -n "${usage_container:-}" ]; then
-  exec mise run //:_container-run \
-    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
-    --engine "${usage_engine:-auto}" \
-    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
-    --cache-key-files "frontend/package.json frontend/package-lock.json" \
-    --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/prettier $prettier_mode . ${usage_options:-}"
-fi
+. ../scripts/container_dispatch.sh
+container_dispatch \
+  --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+  --cache-key-files "frontend/package.json frontend/package-lock.json" \
+  --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/prettier $prettier_mode . ${usage_options:-}"
 npx prettier "$prettier_mode" . ${usage_options:-}
 '''
 
@@ -71,14 +65,11 @@ arg "<options>" var=#true required=#false help="Extra eslint args."
 '''
 run = '''
 set -eu
-if [ -n "${usage_container:-}" ]; then
-  exec mise run //:_container-run \
-    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
-    --engine "${usage_engine:-auto}" \
-    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
-    --cache-key-files "frontend/package.json frontend/package-lock.json" \
-    --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/eslint . ${usage_options:-}"
-fi
+. ../scripts/container_dispatch.sh
+container_dispatch \
+  --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+  --cache-key-files "frontend/package.json frontend/package-lock.json" \
+  --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/eslint . ${usage_options:-}"
 npm run lint -- ${usage_options:-}
 '''
 
@@ -92,14 +83,11 @@ arg "<options>" var=#true required=#false help="Extra tsc args."
 '''
 run = '''
 set -eu
-if [ -n "${usage_container:-}" ]; then
-  exec mise run //:_container-run \
-    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
-    --engine "${usage_engine:-auto}" \
-    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
-    --cache-key-files "frontend/package.json frontend/package-lock.json" \
-    --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/tsc --noEmit -p tsconfig.app.json ${usage_options:-}"
-fi
+. ../scripts/container_dispatch.sh
+container_dispatch \
+  --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+  --cache-key-files "frontend/package.json frontend/package-lock.json" \
+  --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/tsc --noEmit -p tsconfig.app.json ${usage_options:-}"
 npm run typecheck -- ${usage_options:-}
 '''
 
@@ -113,14 +101,11 @@ arg "<options>" var=#true required=#false help="Extra vitest args."
 '''
 run = '''
 set -eu
-if [ -n "${usage_container:-}" ]; then
-  exec mise run //:_container-run \
-    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
-    --engine "${usage_engine:-auto}" \
-    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
-    --cache-key-files "frontend/package.json frontend/package-lock.json" \
-    --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/vitest --run ${usage_options:-}"
-fi
+. ../scripts/container_dispatch.sh
+container_dispatch \
+  --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+  --cache-key-files "frontend/package.json frontend/package-lock.json" \
+  --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/vitest --run ${usage_options:-}"
 npm run test -- --run ${usage_options:-}
 '''
 
@@ -140,14 +125,12 @@ flag "--engine <engine>" help="Container engine: auto|docker|container|podman." 
 '''
 run = '''
 set -eu
-if [ -n "${usage_container:-}" ]; then
-  exec mise run //:_container-run \
-    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
-    --engine "${usage_engine:-auto}" \
-    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
-    --cache-key-files "frontend/package.json frontend/package-lock.json" \
-    --cmd "cd /src/frontend && mkdir -p src/types && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_types.py | /workspace/frontend/node_modules/.bin/json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts"
-fi
+. ../scripts/container_dispatch.sh
+bkuv="UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend"
+container_dispatch \
+  --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+  --cache-key-files "frontend/package.json frontend/package-lock.json" \
+  --cmd "cd /src/frontend && mkdir -p src/types && $bkuv python scripts/generate_types.py | /workspace/frontend/node_modules/.bin/json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts"
 . scripts/require-backend-uv.sh
 npm run generate-types
 '''
@@ -163,14 +146,12 @@ flag "--engine <engine>" help="Container engine: auto|docker|container|podman." 
 '''
 run = '''
 set -eu
-if [ -n "${usage_container:-}" ]; then
-  exec mise run //:_container-run \
-    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
-    --engine "${usage_engine:-auto}" \
-    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
-    --cache-key-files "frontend/package.json frontend/package-lock.json" \
-    --cmd "cd /src/frontend && mkdir -p src/generated && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_referrals.py > src/generated/referrals.ts"
-fi
+. ../scripts/container_dispatch.sh
+bkuv="UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend"
+container_dispatch \
+  --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+  --cache-key-files "frontend/package.json frontend/package-lock.json" \
+  --cmd "cd /src/frontend && mkdir -p src/generated && $bkuv python scripts/generate_referrals.py > src/generated/referrals.ts"
 . scripts/require-backend-uv.sh
 npm run generate-referrals
 '''
@@ -186,14 +167,12 @@ flag "--engine <engine>" help="Container engine: auto|docker|container|podman." 
 '''
 run = '''
 set -eu
-if [ -n "${usage_container:-}" ]; then
-  exec mise run //:_container-run \
-    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
-    --engine "${usage_engine:-auto}" \
-    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
-    --cache-key-files "frontend/package.json frontend/package-lock.json" \
-    --cmd "cd /src/frontend && mkdir -p src/types src/generated && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_types.py | /workspace/frontend/node_modules/.bin/json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_referrals.py > src/generated/referrals.ts"
-fi
+. ../scripts/container_dispatch.sh
+bkuv="UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend"
+container_dispatch \
+  --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+  --cache-key-files "frontend/package.json frontend/package-lock.json" \
+  --cmd "cd /src/frontend && mkdir -p src/types src/generated && $bkuv python scripts/generate_types.py | /workspace/frontend/node_modules/.bin/json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts && $bkuv python scripts/generate_referrals.py > src/generated/referrals.ts"
 . scripts/require-backend-uv.sh
 npm run generate-frontend-assets
 '''
