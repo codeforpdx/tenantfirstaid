@@ -214,7 +214,7 @@ PATH="$(dirname "$uvbin"):$PATH" npm run generate-frontend-assets
 '''
 
 [tasks.check]
-description = "Frontend: generate-frontend-assets, typecheck, lint, test."
+description = "Frontend: fmt, generate-frontend-assets, build, typecheck, lint, test."
 depends = ["install"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."

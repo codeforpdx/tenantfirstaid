@@ -1,0 +1,4 @@
+dist
+src/types
+src/generated
+coverage
