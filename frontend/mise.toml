@@ -11,6 +11,26 @@ sources = ["package.json", "package-lock.json"]
 outputs = { auto = true }
 run = "npm install"
 
+[tasks.build]
+description = "Build the frontend for production."
+depends = ["install", "generate-frontend-assets"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+'''
+run = '''
+set -eu
+if [ -n "${usage_container:-}" ]; then
+  exec mise run //:_container-run \
+    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+    --engine "${usage_engine:-auto}" \
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "frontend/package.json frontend/package-lock.json" \
+    --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/npm run build"
+fi
+npm run build
+'''
+
 [tasks.dev]
 description = "Start the Vite dev server."
 run = "npm run dev"
@@ -204,15 +224,8 @@ if [ -n "${usage_container:-}" ]; then
     --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
     --engine "${usage_engine:-auto}"
 fi
-mise run fmt
-mise run generate-frontend-assets
-# build is required to verify that the project actually compiles
-npm run build
-# lint/typecheck/test are read-only and independent, so run them concurrently;
-# --output keep-order groups each task's output in order so it doesn't garble, and
-# --continue-on-error ensures a failure in one doesn't kill the others before they
-# report. The `:::` separators are required: without them mise would treat
-# `typecheck test` as positional args to `lint` (which declares a variadic
-# passthrough arg).
-mise run --continue-on-error --output keep-order lint ::: typecheck ::: test
+# Prepare: format and generate assets in parallel
+mise run -o keep-order fmt ::: generate-frontend-assets
+# Verify: build and other checks in parallel
+mise run --continue-on-error -o keep-order build ::: lint ::: typecheck ::: test
 '''
