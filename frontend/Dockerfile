@@ -36,7 +36,7 @@ CMD ["sh", "-c", "npm run generate-frontend-assets && npm run dev -- --host 0.0.
 # -----------------------------------------------
 FROM base AS ci
 
-CMD ["sh", "-c", "npm run generate-frontend-assets && npm run typecheck && npm run lint && npm run test -- --run && npm run build"]
+CMD ["sh", "-c", "npx prettier --check . && npm run generate-frontend-assets && npm run typecheck && npm run lint && npm run test -- --run && npm run build"]
 
 # -----------------------------------------------
 # production-build: compile static assets

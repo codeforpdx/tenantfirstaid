@@ -20,11 +20,16 @@ flag "--engine <engine>" help="Container engine: auto|docker|container|podman." 
 '''
 run = '''
 set -eu
-. ../scripts/container_dispatch.sh
-container_dispatch \
-  --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
-  --cache-key-files "frontend/package.json frontend/package-lock.json" \
-  --cmd "cd /src/frontend && npm run build:only"
+if [ -n "${usage_container:-}" ]; then
+  # No bind-mount: the image's own /workspace/frontend/node_modules (built for the
+  # container's platform) must be what tsc/vite/esbuild/rollup resolve, not whatever
+  # native binaries happen to be installed on the host (see PR #387 review).
+  exec mise run //:_container-run \
+    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+    --cache-key-files "frontend/package.json frontend/package-lock.json" \
+    --engine "${usage_engine:-auto}" \
+    --cmd "npm run build:only"
+fi
 npm run build:only
 '''
 
@@ -33,26 +38,35 @@ description = "Start the Vite dev server."
 run = "npm run dev"
 
 [tasks.fmt]
-description = "Format frontend code with prettier. Checks only unless --write is passed."
+description = "Format with prettier. host: MUTATES; --container: verify-only; --container --write: reformat host tree via the container."
 depends = ["install"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
-flag "--write" help="Reformat in place instead of just checking."
+flag "--write" help="With --container: bind-mount and reformat the host tree in place."
 arg "<options>" var=#true required=#false help="Extra prettier args."
 '''
 run = '''
 set -eu
-prettier_mode="--check"
-if [ -n "${usage_write:-}" ]; then
-  prettier_mode="--write"
+if [ -n "${usage_container:-}" ]; then
+  if [ -n "${usage_write:-}" ]; then
+    # Write-back: bind-mount this directory into the ci image and run its prettier, so
+    # reformatted files are written back to the host.
+    . ../scripts/container_dispatch.sh
+    container_dispatch --bind-src "$PWD" \
+      --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+      --cache-key-files "frontend/package.json frontend/package-lock.json" \
+      --cmd "cd /src/frontend && npx prettier --write . ${usage_options:-}"
+  fi
+  # No --write: verify (read-only). No bind-mount, so prettier resolves the image's own
+  # node_modules rather than the host's (see build/test's --container branches).
+  exec mise run //:_container-run \
+    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+    --cache-key-files "frontend/package.json frontend/package-lock.json" \
+    --engine "${usage_engine:-auto}" \
+    --cmd "npx prettier --check . ${usage_options:-}"
 fi
-. ../scripts/container_dispatch.sh
-container_dispatch \
-  --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
-  --cache-key-files "frontend/package.json frontend/package-lock.json" \
-  --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/prettier $prettier_mode . ${usage_options:-}"
-npx prettier "$prettier_mode" . ${usage_options:-}
+npx prettier --write . ${usage_options:-}
 '''
 
 [tasks.lint]
@@ -101,11 +115,14 @@ arg "<options>" var=#true required=#false help="Extra vitest args."
 '''
 run = '''
 set -eu
-. ../scripts/container_dispatch.sh
-container_dispatch \
-  --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
-  --cache-key-files "frontend/package.json frontend/package-lock.json" \
-  --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/vitest --run ${usage_options:-}"
+if [ -n "${usage_container:-}" ]; then
+  # No bind-mount: see build's --container branch for why.
+  exec mise run //:_container-run \
+    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+    --cache-key-files "frontend/package.json frontend/package-lock.json" \
+    --engine "${usage_engine:-auto}" \
+    --cmd "npm run test -- --run ${usage_options:-}"
+fi
 npm run test -- --run ${usage_options:-}
 '''
 
