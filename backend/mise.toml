@@ -41,6 +41,13 @@ arg "<options>" var=#true required=#false help="Extra vertex_ai_search args, e.g
 '''
 run = '''
 set -eu
+# Check for placeholder in VERTEX_AI_DATASTORE_LAWS before calling API
+if [[ "${VERTEX_AI_DATASTORE_LAWS:-}" == *"<"* ]]; then
+  echo "ERROR: VERTEX_AI_DATASTORE_LAWS is still a placeholder (<DATASTORE_ID>)." >&2
+  echo "Please set it to your actual datastore ID in backend/.env." >&2
+  exit 1
+fi
+
 out=$(mktemp)
 trap 'rm -f "$out"' EXIT
 if uv run python -m scripts.vertex_ai_search search "eviction notice" ${usage_options:-} >"$out" 2>&1; then
@@ -53,7 +60,7 @@ else
   echo "" >&2
   echo "If that's a permission/403 error, your Google account may not be granted access to the" >&2
   echo "tenantfirstaid project yet -- ask a project admin (see the README's Prerequisites section)." >&2
-  echo "Otherwise, check GOOGLE_APPLICATION_CREDENTIALS in backend/.env, or re-run 'mise run //:gcloud-login' to reauthenticate." >&2
+  echo "Otherwise, check GOOGLE_APPLICATION_CREDENTIALS or VERTEX_AI_DATASTORE_LAWS in backend/.env, or re-run 'mise run //:gcloud-login' to reauthenticate." >&2
   exit "$status"
 fi
 '''

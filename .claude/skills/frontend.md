@@ -5,16 +5,16 @@ Reference for frontend development workflow. Run all commands from `frontend/`.
 ## Commands
 
 ```bash
-npm run generate-frontend-assets  # Required before build/typecheck — generates src/types/models.ts and src/generated/referrals.ts
-npm run lint              # Lint (eslint)
-npm run format            # Format (prettier)
-npm run typecheck         # Type-check (tsc) — use the typescript-lsp plugin for inline diagnostics
-npm run build             # Build (auto-generates frontend assets first)
-npm run test -- --run     # Run tests (vitest)
-npm run test -- --run --coverage  # With coverage
+mise run generate-frontend-assets  # Required before build/typecheck — generates src/types/models.ts and src/generated/referrals.ts
+mise run lint              # Lint (eslint)
+mise run fmt               # Format (prettier)
+mise run typecheck         # Type-check (tsc) — use the typescript-lsp plugin for inline diagnostics
+mise run build             # Build (auto-generates frontend assets first)
+mise run test -- --run     # Run tests (vitest)
+mise run test -- --run --coverage  # With coverage
 ```
 
-`generate-frontend-assets` requires `uv` to be installed. It runs `generate-types` (backend Python emits JSON Schema, piped through `json2ts`) and `generate-referrals` (backend Python emits the bundled referrals catalog). Always run it before `typecheck` or `build` — the generated `src/types/models.ts` and `src/generated/referrals.ts` are gitignored.
+`generate-frontend-assets` automatically handles the backend `uv` requirement via a path splice. Always run it before `typecheck` or `build` — the generated `src/types/models.ts` and `src/generated/referrals.ts` are gitignored.
 
 ## Docker
 

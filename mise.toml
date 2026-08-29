@@ -105,7 +105,7 @@ description = "Smoke-test GOOGLE_APPLICATION_CREDENTIALS by querying the Vertex 
 usage = '''
 arg "<options>" var=#true required=#false help="Extra vertex_ai_search args, e.g. --city portland."
 '''
-run = "exec mise run //backend:gcloud-login-check -- ${usage_options:-}"
+run = "exec mise run //backend:gcloud-login-check ${usage_options:+-- $usage_options}"
 
 # --- Shared engine resolver ----------------------------------------------------
 # Prints the container engine to use (honoring an explicit --engine, else auto),
@@ -350,10 +350,8 @@ set -eu
 # Generate the frontend's build-time assets (shared TypeScript types + the bundled
 # referrals catalog). This step straddles both toolchains (uv reads the backend
 # Pydantic models; node's json2ts emits the .ts) and no single project scope has
-# both, so run it in the frontend scope with the backend's mise-managed uv also on
-# PATH.
-uvdir=$(dirname "$(mise -C backend which uv)")
-mise -C frontend exec -- sh -c "PATH=\"$uvdir:\$PATH\" mise run generate-frontend-assets"
+# both, so run it in the frontend scope.
+mise run //frontend:generate-frontend-assets
 echo ""
 echo "Setup complete. Start the app with two terminals:"
 echo "  mise run //backend:serve     # Flask API"

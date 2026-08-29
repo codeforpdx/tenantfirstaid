@@ -51,8 +51,9 @@ Live at https://tenantfirstaid.com/
 
 1. clone repo
 1. copy `backend/.env.example` to a new file named `.env` in the same directory.
-   1. set `GOOGLE_APPLICATION_CREDENTIALS` as per [Google Cloud application default credentials file](#prerequisites) (requires the project admin to have already granted your Google account access, per that section)
-   1. set `LANGSMITH_API_KEY` as per [LangChain/LangSmith](#prerequisites)
+    1. set `GOOGLE_APPLICATION_CREDENTIALS` as per [Google Cloud application default credentials file](#prerequisites) (requires the project admin to have already granted your Google account access, per that section)
+    1. set `LANGSMITH_API_KEY` as per [LangChain/LangSmith](#prerequisites)
+    1. set `VERTEX_AI_DATASTORE_LAWS` as per the production example in `backend/.env.example:20`
 1. `mise run setup` (from the repo root; one-time: provisions the backend/frontend toolchains, installs deps, and generates frontend assets)
    - on a fresh clone mise will prompt to trust the repo's config — run `mise trust` if prompted
 1. (optional) smoke-test your Google Cloud credentials before starting the app: `mise run //:gcloud-login-check` — it loads `GOOGLE_APPLICATION_CREDENTIALS` from `backend/.env` the same way the app does and queries the same Vertex AI Search serving config
@@ -141,7 +142,7 @@ Live at https://tenantfirstaid.com/
    ```sh
    % mise run //backend:generate-frontend-assets
    ```
-   (root-qualified since this splices the frontend's `node`/`json2ts` onto the backend's `PATH`; see `backend/mise.toml`. Re-run this any time the backend Pydantic models or referral catalog change. `mise run //:setup` also does this, plus a full toolchain provision/install — use that instead only when you need the heavier one-time setup.)
+    (root-qualified since this splices the backend's `uv` onto the frontend's `PATH`; see `frontend/mise.toml`. Re-run this any time the backend Pydantic models or referral catalog change. `mise run //:setup` also does this, plus a full toolchain provision/install — use that instead only when you need the heavier one-time setup.)
 
    This writes `src/types/models.ts` from the backend Pydantic models and `src/generated/referrals.ts` from the validated referral catalog. Both outputs are gitignored. Non-generated frontend types are stored in `src/shared/types/` and are checked into source control.
 
