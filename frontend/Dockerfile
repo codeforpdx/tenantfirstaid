@@ -16,6 +16,13 @@ COPY --from=ghcr.io/astral-sh/uv@sha256:798712e57f879c5393777cbda2bb309b29fcdeb0
 COPY frontend/package*.json ./
 RUN npm ci
 
+# Put the image's own binaries on PATH (mirroring the backend image's /app/.venv/bin), so
+# mise tasks that bind-mount the host tree over the workdir can invoke `eslint`, `tsc`,
+# `prettier`, `json2ts` by name instead of hardcoding this WORKDIR in every --cmd. Bare
+# `npm run` is NOT a substitute in those lanes: it resolves ./node_modules from the cwd,
+# which the mount has replaced with the host tree (wrong-platform native binaries).
+ENV PATH=/workspace/frontend/node_modules/.bin:$PATH
+
 COPY frontend/ ./
 COPY backend/ ../backend/
 
@@ -36,7 +43,7 @@ CMD ["sh", "-c", "npm run generate-frontend-assets && npm run dev -- --host 0.0.
 # -----------------------------------------------
 FROM base AS ci
 
-CMD ["sh", "-c", "npx prettier --check . && npm run generate-frontend-assets && npm run typecheck && npm run lint && npm run test -- --run && npm run build"]
+CMD ["sh", "-c", "npm run format:check && npm run generate-frontend-assets && npm run typecheck && npm run lint && npm run test -- --run && npm run build"]
 
 # -----------------------------------------------
 # production-build: compile static assets

@@ -90,14 +90,15 @@ run = '''
 set -eu
 if [ -n "${usage_container:-}" ]; then
   if [ -n "${usage_write:-}" ]; then
-    # Write-back: bind-mount this directory into the ci image and run its ruff as the
-    # current user, so reformatted files are written back to the host owned by you.
+    # Write-back: bind-mount the repo (container_dispatch puts the root at /src and the
+    # workdir at /src/backend) into the ci image and run its ruff as the current user, so
+    # reformatted files are written back to the host owned by you.
     # Use the image's ruff binary directly (not `uv run`, which would try to re-sync
     # the root-owned /app/.venv). RUFF_CACHE_DIR points at /tmp to keep the mount clean.
     # The image is reused across runs while pyproject.toml/uv.lock are unchanged (the
     # source is mounted live, so it need not be rebuilt); --rebuild forces a fresh build.
     . ../scripts/container_dispatch.sh
-    container_dispatch --bind-src "$PWD" \
+    container_dispatch --project backend \
       --image tenantfirstaid-backend:ci --context backend \
       --cache-key-files "backend/pyproject.toml backend/uv.lock" \
       ${usage_rebuild:+--rebuild} \
@@ -108,10 +109,10 @@ if [ -n "${usage_container:-}" ]; then
   # dirs). Bare ruff from the image PATH (not `uv run`, which would use the host's macOS
   # /src/backend/.venv); the live mount shows edits without a rebuild.
   . ../scripts/container_dispatch.sh
-  container_dispatch \
+  container_dispatch --project backend \
     --image tenantfirstaid-backend:ci --context backend \
     --cache-key-files "backend/pyproject.toml backend/uv.lock" \
-    --cmd 'cd /src/backend && export RUFF_CACHE_DIR=/tmp/ruff-cache && ruff check --select I && ruff format --check'
+    --cmd 'export RUFF_CACHE_DIR=/tmp/ruff-cache && ruff check --select I && ruff format --check'
 fi
 uv run ruff check --select I --fix
 uv run ruff format
@@ -132,10 +133,10 @@ if [ -n "${usage_container:-}" ]; then
   # ruff then honors .gitignore natively. Bare ruff from the image PATH; the live mount
   # means edits are seen without a rebuild.
   . ../scripts/container_dispatch.sh
-  container_dispatch \
+  container_dispatch --project backend \
     --image tenantfirstaid-backend:ci --context backend \
     --cache-key-files "backend/pyproject.toml backend/uv.lock" \
-    --cmd "cd /src/backend && export RUFF_CACHE_DIR=/tmp/ruff-cache && ruff check ${usage_options:-}"
+    --cmd "export RUFF_CACHE_DIR=/tmp/ruff-cache && ruff check ${usage_options:-}"
 fi
 uv run ruff check ${usage_options:-}
 '''
@@ -179,10 +180,10 @@ if [ -n "${usage_container:-}" ]; then
   # .gitignore. uv is pinned to the image venv (/app/.venv), not the host's macOS
   # /src/backend/.venv.
   . ../scripts/container_dispatch.sh
-  container_dispatch \
+  container_dispatch --project backend \
     --image tenantfirstaid-backend:ci --context backend \
     --cache-key-files "backend/pyproject.toml backend/uv.lock" \
-    --cmd "cd /src/backend && $cmd"
+    --cmd "$cmd"
 fi
 eval "$cmd"
 '''
@@ -203,10 +204,10 @@ if [ -n "${usage_container:-}" ]; then
   # import path so pytest collects your live edits without a rebuild. The app singleton
   # reads /src/backend/.env, present via the bind mount.
   . ../scripts/container_dispatch.sh
-  container_dispatch \
+  container_dispatch --project backend \
     --image tenantfirstaid-backend:ci --context backend \
     --cache-key-files "backend/pyproject.toml backend/uv.lock" \
-    --cmd "cd /src/backend && UV_PROJECT_ENVIRONMENT=/app/.venv PYTHONPATH=/src/backend uv run --no-sync pytest --verbose ${usage_options:-}"
+    --cmd "UV_PROJECT_ENVIRONMENT=/app/.venv PYTHONPATH=/src/backend uv run --no-sync pytest --verbose ${usage_options:-}"
 fi
 uv run pytest --verbose ${usage_options:-}
 '''
@@ -224,10 +225,10 @@ if [ -n "${usage_container:-}" ]; then
   # from /src/backend with the real .git means ruff/ty honor .gitignore; ty/pytest use
   # uv pinned to /app/.venv, and pytest imports from /src/backend.
   . ../scripts/container_dispatch.sh
-  container_dispatch \
+  container_dispatch --project backend \
     --image tenantfirstaid-backend:ci --context backend \
     --cache-key-files "backend/pyproject.toml backend/uv.lock" \
-    --cmd 'cd /src/backend && export RUFF_CACHE_DIR=/tmp/ruff-cache && ruff check --select I && ruff format --check && ruff check && UV_PROJECT_ENVIRONMENT=/app/.venv uv run --no-sync ty check && UV_PROJECT_ENVIRONMENT=/app/.venv PYTHONPATH=/src/backend uv run --no-sync pytest --verbose'
+    --cmd 'export RUFF_CACHE_DIR=/tmp/ruff-cache && ruff check --select I && ruff format --check && ruff check && UV_PROJECT_ENVIRONMENT=/app/.venv uv run --no-sync ty check && UV_PROJECT_ENVIRONMENT=/app/.venv PYTHONPATH=/src/backend uv run --no-sync pytest --verbose'
 fi
 # Host lane. clean -> fmt must be ordered (fmt mutates the tree the verify steps
 # read). fmt/lint/typecheck/test all `depends` on sync, so it runs (once, gated by
@@ -274,18 +275,19 @@ arg "<options>" var=#true required=#false help="Extra great-docs args, e.g. --no
 run = '''
 set -eu
 if [ -n "${usage_container:-}" ]; then
-  # Bind-mount this directory into the ci image and run its great-docs as the current
-  # user, so the generated great-docs/ site is written back to the host owned by you.
+  # Bind-mount the repo into the docs image (container_dispatch puts the root at /src and
+  # the workdir at /src/backend) and run its great-docs as the current user, so the
+  # generated great-docs/ site is written back to the host owned by you.
   # Use the image's great-docs binary directly (on PATH via /app/.venv/bin), not
   # `uv run`, which would try to re-sync the root-owned /app/.venv. Quarto lives on the
   # system PATH inside the image. The image is reused across runs while pyproject.toml/
   # uv.lock are unchanged; --rebuild forces a fresh build.
   . ../scripts/container_dispatch.sh
-  container_dispatch --bind-src "$PWD" \
+  container_dispatch --project backend \
     --image tenantfirstaid-backend:docs --target docs --context backend \
     --cache-key-files "backend/pyproject.toml backend/uv.lock" \
     ${usage_rebuild:+--rebuild} \
-    --cmd "PYTHONPATH=/src great-docs build ${usage_options:-}"
+    --cmd "PYTHONPATH=/src/backend great-docs build ${usage_options:-}"
 fi
 uv run great-docs build ${usage_options:-}
 '''
@@ -316,7 +318,7 @@ uv run great-docs preview --site-dir great-docs/_site --port "${usage_port:-3000
 # rebuild. The tree is bind-mounted live (as the current user) so the checks see your
 # uncommitted edits, and ad-hoc great-docs flags pass through after `--`.
 #
-# PYTHONPATH=/src makes great-docs introspect the bind-mounted source rather than the
+# PYTHONPATH=/src/backend makes great-docs introspect the bind-mounted source rather than the
 # copy baked into the image at build time, so editing a docstring does NOT require an
 # image rebuild — only dependency changes (pyproject.toml/uv.lock) do.
 #
@@ -334,11 +336,11 @@ run = '''
 set -eu
 if [ -n "${usage_container:-}" ]; then
   . ../scripts/container_dispatch.sh
-  container_dispatch --bind-src "$PWD" \
+  container_dispatch --project backend \
     --image tenantfirstaid-backend:docs --target docs --context backend \
     --cache-key-files "backend/pyproject.toml backend/uv.lock" \
     ${usage_rebuild:+--rebuild} \
-    --cmd "PYTHONPATH=/src great-docs lint ${usage_options:-}"
+    --cmd "PYTHONPATH=/src/backend great-docs lint ${usage_options:-}"
 fi
 uv run great-docs lint ${usage_options:-}
 '''
@@ -366,11 +368,11 @@ set -eu
 ignore="-i github.com/codeforpdx/tenantfirstaid/blob/[^/]+/tenantfirstaid/ -i tenantfirstaid\\.com&quot"
 if [ -n "${usage_container:-}" ]; then
   . ../scripts/container_dispatch.sh
-  container_dispatch --bind-src "$PWD" \
+  container_dispatch --project backend \
     --image tenantfirstaid-backend:docs --target docs --context backend \
     --cache-key-files "backend/pyproject.toml backend/uv.lock" \
     ${usage_rebuild:+--rebuild} \
-    --cmd "PYTHONPATH=/src great-docs check-links $ignore ${usage_options:-}"
+    --cmd "PYTHONPATH=/src/backend great-docs check-links $ignore ${usage_options:-}"
 fi
 uv run great-docs check-links $ignore ${usage_options:-}
 '''
@@ -401,16 +403,17 @@ ignore="--ignore=MissingDeterminer,MissingPreposition,UseEllipsisCharacter,Expan
 # live in developer_guide/ and evaluation_guide/ (both declared as custom great-docs
 # sections), so enumerate their .qmd files explicitly when the caller passed no paths.
 # The paths must be absolute: great-docs does `path.relative_to(project_root)`, which
-# fails on a relative path (project_root is /src in the container, $PWD on the host).
+# fails on a relative path (project_root is /src/backend in the container -- the workdir
+# container_dispatch sets -- and $PWD on the host).
 if [ -n "${usage_container:-}" ]; then
   targets="${usage_options:-}"
-  [ -z "$targets" ] && targets=$(find developer_guide evaluation_guide -name '*.qmd' | sort | sed 's#^#/src/#' | tr '\n' ' ')
+  [ -z "$targets" ] && targets=$(find developer_guide evaluation_guide -name '*.qmd' | sort | sed 's#^#/src/backend/#' | tr '\n' ' ')
   . ../scripts/container_dispatch.sh
-  container_dispatch --bind-src "$PWD" \
+  container_dispatch --project backend \
     --image tenantfirstaid-backend:docs --target docs --context backend \
     --cache-key-files "backend/pyproject.toml backend/uv.lock" \
     ${usage_rebuild:+--rebuild} \
-    --cmd "PYTHONPATH=/src great-docs proofread $dict $ignore $targets"
+    --cmd "PYTHONPATH=/src/backend great-docs proofread $dict $ignore $targets"
 fi
 targets="${usage_options:-}"
 [ -z "$targets" ] && targets=$(find "$PWD/developer_guide" "$PWD/evaluation_guide" -name '*.qmd' | sort | tr '\n' ' ')

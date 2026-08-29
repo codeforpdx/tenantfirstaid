@@ -217,7 +217,8 @@ flag "--dockerfile <path>" help="Dockerfile path (-f); default <context>/Dockerf
 flag "--target <stage>" help="build --target stage." default="ci"
 flag "--cmd <cmd>" help="Command to run via `sh -c`; default the image's CMD."
 flag "--bind-src <path>" help="Host path to bind-mount into the container (enables write-back)."
-flag "--bind-dst <path>" help="Mount point for --bind-src; also becomes the workdir."
+flag "--bind-dst <path>" help="Mount point for --bind-src; also the default workdir."
+flag "--workdir <path>" help="Working directory inside the container; default --bind-dst."
 flag "--env-file <path>" help="Bind-mount a host env file read-only to /app/.env (so the app singleton loads it). Ignored if the path is missing."
 flag "--as-user" help="Run as the current uid:gid so mounted writes stay owned by you."
 flag "--cache-key-files <files>" help="Space-separated files whose hash gates image reuse (mount mode)."
@@ -280,14 +281,18 @@ if [ -n "$build_needed" ]; then
 else
   echo ">> reusing cached image $image (deps unchanged; pass --rebuild to force a rebuild)"
 fi
-# Assemble `run` options. Optional bind-mount (--bind-src:--bind-dst, made the workdir)
+# Assemble `run` options. Optional bind-mount (--bind-src:--bind-dst, which is also the
+# default workdir unless --workdir names a path under it — that is how a repo-root mount
+# runs with a project subdirectory as its cwd, without the command having to `cd`)
 # and run-as-current-user (--as-user) support write-back tasks: on Linux+Docker
 # --user is required for host-owned output; on macOS the VM maps writes to you either
 # way, but --user keeps it consistent. HOME is set to a writable path because the
 # mapped uid has no passwd entry (so tools that need $HOME still work).
 set -- run --rm
 if [ -n "${usage_bind_src:-}" ] && [ -n "${usage_bind_dst:-}" ]; then
-  set -- "$@" -v "$usage_bind_src:$usage_bind_dst" -w "$usage_bind_dst"
+  set -- "$@" -v "$usage_bind_src:$usage_bind_dst" -w "${usage_workdir:-$usage_bind_dst}"
+elif [ -n "${usage_workdir:-}" ]; then
+  set -- "$@" -w "$usage_workdir"
 fi
 # Mount a host env file read-only at /app/.env so the app singleton (which reads
 # <package>/../.env) finds MODEL_NAME/GOOGLE_* at runtime. The image never bakes in

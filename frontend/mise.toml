@@ -50,23 +50,26 @@ run = '''
 set -eu
 if [ -n "${usage_container:-}" ]; then
   if [ -n "${usage_write:-}" ]; then
-    # Write-back: bind-mount this directory into the ci image and run its prettier, so
-    # reformatted files are written back to the host.
+    # Write-back: MOUNTED lane. container_dispatch --project frontend mounts the repo root
+    # at /src and runs from /src/frontend, so reformatted files land on the host. Bare
+    # `prettier` (image PATH), not `npm run format`, per the naming rule in
+    # scripts/container_dispatch.sh -- the workdir here is the host tree.
     . ../scripts/container_dispatch.sh
-    container_dispatch --bind-src "$PWD" \
+    container_dispatch --project frontend \
       --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
       --cache-key-files "frontend/package.json frontend/package-lock.json" \
-      --cmd "cd /src/frontend && npx prettier --write . ${usage_options:-}"
+      --cmd "prettier --write . ${usage_options:-}"
   fi
-  # No --write: verify (read-only). No bind-mount, so prettier resolves the image's own
-  # node_modules rather than the host's (see build/test's --container branches).
+  # No --write: verify (read-only). UNMOUNTED lane, so the cwd is the image's own tree and
+  # `npm run` is the right call, per the same rule (as in build/test's --container
+  # branches). The two lanes differ on purpose: the rule keys off the mount, not the task.
   exec mise run //:_container-run \
     --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
     --engine "${usage_engine:-auto}" \
-    --cmd "npx prettier --check . ${usage_options:-}"
+    --cmd "npm run format:check -- ${usage_options:-}"
 fi
-npx prettier --write . ${usage_options:-}
+npm run format -- ${usage_options:-}
 '''
 
 [tasks.lint]
@@ -80,10 +83,10 @@ arg "<options>" var=#true required=#false help="Extra eslint args."
 run = '''
 set -eu
 . ../scripts/container_dispatch.sh
-container_dispatch \
+container_dispatch --project frontend \
   --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
   --cache-key-files "frontend/package.json frontend/package-lock.json" \
-  --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/eslint . ${usage_options:-}"
+  --cmd "eslint . ${usage_options:-}"
 npm run lint -- ${usage_options:-}
 '''
 
@@ -98,10 +101,10 @@ arg "<options>" var=#true required=#false help="Extra tsc args."
 run = '''
 set -eu
 . ../scripts/container_dispatch.sh
-container_dispatch \
+container_dispatch --project frontend \
   --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
   --cache-key-files "frontend/package.json frontend/package-lock.json" \
-  --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/tsc --noEmit -p tsconfig.app.json ${usage_options:-}"
+  --cmd "tsc --noEmit -p tsconfig.app.json ${usage_options:-}"
 npm run typecheck -- ${usage_options:-}
 '''
 
@@ -127,7 +130,8 @@ npm run test -- --run ${usage_options:-}
 '''
 
 # --container keeps the bind-mount (for live source), but must not let it shadow the
-# image's own tooling: json2ts is invoked from the image's baked node_modules/.bin, and
+# image's own tooling: json2ts is resolved from the image's PATH (its baked
+# node_modules/.bin) rather than via `npm run`, which would find the host's, and
 # UV_PROJECT_ENVIRONMENT is redirected to a container-only scratch path so `uv run
 # --directory ../backend` (which resolves into the bind-mounted /src/backend) syncs its
 # own throwaway venv instead of reading/writing the host's .venv.
@@ -135,7 +139,11 @@ npm run test -- --run ${usage_options:-}
 description = "Regenerate the frontend's TypeScript types from the backend Pydantic models."
 depends = ["install", "//backend:sync"]
 sources = ["../backend/tenantfirstaid/schema.py", "../backend/tenantfirstaid/location.py", "../backend/tenantfirstaid/referrals.py", "../backend/scripts/generate_types.py"]
-outputs = { auto = true }
+# Name the real output rather than `{ auto = true }`: auto keys freshness on the sources
+# checksum alone, so deleting this gitignored file (git clean -xdf, a fresh worktree)
+# would leave the task "fresh" and the next typecheck/build would fail on a missing
+# module. Listing it makes mise re-run when the file is gone.
+outputs = ["src/types/models.ts"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
@@ -144,10 +152,10 @@ run = '''
 set -eu
 . ../scripts/container_dispatch.sh
 bkuv="UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend"
-container_dispatch \
+container_dispatch --project frontend \
   --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
   --cache-key-files "frontend/package.json frontend/package-lock.json" \
-  --cmd "cd /src/frontend && mkdir -p src/types && $bkuv python scripts/generate_types.py | /workspace/frontend/node_modules/.bin/json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts"
+  --cmd "mkdir -p src/types && $bkuv python scripts/generate_types.py | json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts"
 . scripts/require-backend-uv.sh
 npm run generate-types
 '''
@@ -156,7 +164,8 @@ npm run generate-types
 description = "Regenerate the frontend's bundled referral catalog from the backend referrals data."
 depends = ["install", "//backend:sync"]
 sources = ["../backend/tenantfirstaid/referrals.py", "../backend/tenantfirstaid/referrals_data.json", "../backend/scripts/generate_referrals.py"]
-outputs = { auto = true }
+# See generate-types for why the output is named rather than `{ auto = true }`.
+outputs = ["src/generated/referrals.ts"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
@@ -165,10 +174,10 @@ run = '''
 set -eu
 . ../scripts/container_dispatch.sh
 bkuv="UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend"
-container_dispatch \
+container_dispatch --project frontend \
   --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
   --cache-key-files "frontend/package.json frontend/package-lock.json" \
-  --cmd "cd /src/frontend && mkdir -p src/generated && $bkuv python scripts/generate_referrals.py > src/generated/referrals.ts"
+  --cmd "mkdir -p src/generated && $bkuv python scripts/generate_referrals.py > src/generated/referrals.ts"
 . scripts/require-backend-uv.sh
 npm run generate-referrals
 '''
@@ -177,7 +186,8 @@ npm run generate-referrals
 description = "Regenerate frontend build-time assets (types + referral catalog) from the backend."
 depends = ["install", "//backend:sync"]
 sources = ["../backend/tenantfirstaid/schema.py", "../backend/tenantfirstaid/location.py", "../backend/tenantfirstaid/referrals.py", "../backend/tenantfirstaid/referrals_data.json", "../backend/scripts/generate_types.py", "../backend/scripts/generate_referrals.py"]
-outputs = { auto = true }
+# See generate-types for why the outputs are named rather than `{ auto = true }`.
+outputs = ["src/types/models.ts", "src/generated/referrals.ts"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
@@ -186,10 +196,10 @@ run = '''
 set -eu
 . ../scripts/container_dispatch.sh
 bkuv="UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend"
-container_dispatch \
+container_dispatch --project frontend \
   --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
   --cache-key-files "frontend/package.json frontend/package-lock.json" \
-  --cmd "cd /src/frontend && mkdir -p src/types src/generated && $bkuv python scripts/generate_types.py | /workspace/frontend/node_modules/.bin/json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts && $bkuv python scripts/generate_referrals.py > src/generated/referrals.ts"
+  --cmd "mkdir -p src/types src/generated && $bkuv python scripts/generate_types.py | json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts && $bkuv python scripts/generate_referrals.py > src/generated/referrals.ts"
 . scripts/require-backend-uv.sh
 npm run generate-frontend-assets
 '''

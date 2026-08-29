@@ -142,7 +142,7 @@ Live at https://tenantfirstaid.com/
    ```sh
    % mise run generate-frontend-assets
    ```
-    (this splices the backend's `uv` onto the frontend's `PATH`; see `frontend/mise.toml`. Re-run this any time the backend Pydantic models or referral catalog change. `mise run //:setup` also does this, plus a full toolchain provision/install — use that instead only when you need the heavier one-time setup.)
+    (this splices the backend's `uv` onto the frontend's `PATH`; see `frontend/scripts/require-backend-uv.sh`. Re-run this any time the backend Pydantic models or referral catalog change. `mise run //:setup` also does this, plus a full toolchain provision/install — use that instead only when you need the heavier one-time setup.)
 
    This writes `src/types/models.ts` from the backend Pydantic models and `src/generated/referrals.ts` from the validated referral catalog. Both outputs are gitignored. Non-generated frontend types are stored in `src/shared/types/` and are checked into source control.
 
@@ -177,12 +177,17 @@ Live at https://tenantfirstaid.com/
 The mise-way to spin up a local deployment of the app in containers (builds the `runtime`/`local` targets below for you, then starts and wires up both services) is:
 
 ```sh
-% mise run dev --container
+% mise run //:dev --container
 ```
+
+The `//:` prefix is load-bearing: it names the root task explicitly, so this works from anywhere in the repo. A bare `mise run dev` from inside `frontend/` (where the previous section left you) resolves to `//frontend:dev` — the Vite dev server, which takes no `--container` flag.
 
 This is engine-agnostic (Docker, Podman, or apple/container — auto-detected; override with `--engine`) and is a cross-engine stand-in for `docker compose`.
 
-Separately, the checks (`//backend:check`, `//frontend:check`) each accept their own `--container` flag to build and run that check suite against the `ci` target instead of your host toolchain — useful for reproducing a CI failure locally, not for running the app itself.
+Separately, every backend and frontend check task accepts `--container` (plus `--engine`) to run that step against the `ci` target rather than your host tooling — useful for reproducing a CI failure locally, not for running the app itself. Two caveats:
+
+- **The host toolchain is still required.** `--container` changes where the *check* runs, not the task's `depends`, so mise still provisions the toolchain and runs `install`/`sync` on the host first. Only `mise run //frontend:check --container` is close to a host-free lane: it runs the image's baked source under its default command.
+- **`--container` does not propagate.** It applies to the task you name, not to tasks it depends on or delegates to. Pass it to each step you want containerized.
 
 The project has separate Dockerfiles for backend and frontend, each with multiple build stages, if you need to build an image directly. Use `--target` to pick a stage:
 
