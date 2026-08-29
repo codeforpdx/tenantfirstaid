@@ -218,9 +218,9 @@ fi
 # are reported rather than silently reformatted out from under the check.
 mise run fmt
 # Generate assets once up front. build/lint/typecheck/test each also depend on
-# generate-frontend-assets, but it declares sources/outputs, so mise's own caching
-# (not cross-task dedup within a single invocation) is what guarantees the four
-# tasks below never race a concurrent regeneration of the files they read.
+# generate-frontend-assets, so this run is what actually regenerates the files;
+# its sources/outputs caching then makes each dependent task's re-run of it a
+# cheap no-op instead of a race with a concurrent regeneration.
 mise run generate-frontend-assets
 mise run --continue-on-error -o keep-order build ::: lint ::: typecheck ::: test
 '''
