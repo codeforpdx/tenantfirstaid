@@ -10,8 +10,8 @@ mise run lint              # Lint (eslint)
 mise run fmt               # Format (prettier)
 mise run typecheck         # Type-check (tsc) — use the typescript-lsp plugin for inline diagnostics
 mise run build             # Build (auto-generates frontend assets first)
-mise run test --run     # Run tests (vitest)
-mise run test --run --coverage  # With coverage
+mise run test            # Run tests (vitest)
+mise run test -- --coverage  # With coverage
 ```
 
 `generate-frontend-assets` automatically handles the backend `uv` requirement via a path splice. Always run it before `typecheck` or `build` — the generated `src/types/models.ts` and `src/generated/referrals.ts` are gitignored.

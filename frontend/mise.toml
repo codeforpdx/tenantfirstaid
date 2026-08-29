@@ -26,14 +26,9 @@ if [ -n "${usage_container:-}" ]; then
     --engine "${usage_engine:-auto}" \
     --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
-    --cmd "cd /src/frontend && npm run build"
+    --cmd "cd /src/frontend && npm run build:only"
 fi
-uvbin=$(mise -C ../backend which uv || true)
-if [ -z "$uvbin" ] || [ ! -x "$uvbin" ]; then
-  echo "ERROR: Backend uv binary not found. Please run 'mise install' in the backend directory." >&2
-  exit 1
-fi
-PATH="$(dirname "$uvbin"):$PATH" npm run build
+npm run build:only
 '''
 
 [tasks.dev]
@@ -41,38 +36,34 @@ description = "Start the Vite dev server."
 run = "npm run dev"
 
 [tasks.fmt]
-description = "Format frontend code with prettier."
+description = "Format frontend code with prettier. Checks only unless --write is passed."
 depends = ["install"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
-flag "--write" help="With --container: bind-mount and reformat the host tree in place."
+flag "--write" help="Reformat in place instead of just checking."
 arg "<options>" var=#true required=#false help="Extra prettier args."
 '''
 run = '''
 set -eu
-if [ -n "${usage_container:-}" ]; then
-  if [ -n "${usage_write:-}" ]; then
-    exec mise run //:_container-run \
-      --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
-      --engine "${usage_engine:-auto}" \
-      --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
-      --cache-key-files "frontend/package.json frontend/package-lock.json" \
-      --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/prettier --write ."
-  fi
-    exec mise run //:_container-run \
-      --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
-      --engine "${usage_engine:-auto}" \
-      --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
-      --cache-key-files "frontend/package.json frontend/package-lock.json" \
-      --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/prettier --check ."
+prettier_mode="--check"
+if [ -n "${usage_write:-}" ]; then
+  prettier_mode="--write"
 fi
-npm run format -- ${usage_options:-}
+if [ -n "${usage_container:-}" ]; then
+  exec mise run //:_container-run \
+    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+    --engine "${usage_engine:-auto}" \
+    --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
+    --cache-key-files "frontend/package.json frontend/package-lock.json" \
+    --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/prettier $prettier_mode . ${usage_options:-}"
+fi
+npx prettier "$prettier_mode" . ${usage_options:-}
 '''
 
 [tasks.lint]
 description = "Lint with eslint."
-depends = ["install"]
+depends = ["install", "generate-frontend-assets"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
@@ -93,7 +84,7 @@ npm run lint -- ${usage_options:-}
 
 [tasks.typecheck]
 description = "Type-check with tsc."
-depends = ["install"]
+depends = ["install", "generate-frontend-assets"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
@@ -114,7 +105,7 @@ npm run typecheck -- ${usage_options:-}
 
 [tasks.test]
 description = "Run vitest."
-depends = ["install"]
+depends = ["install", "generate-frontend-assets"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
@@ -141,6 +132,8 @@ npm run test -- --run ${usage_options:-}
 [tasks.generate-types]
 description = "Regenerate the frontend's TypeScript types from the backend Pydantic models."
 depends = ["install", "//backend:sync"]
+sources = ["../backend/tenantfirstaid/schema.py", "../backend/tenantfirstaid/location.py", "../backend/tenantfirstaid/referrals.py", "../backend/scripts/generate_types.py"]
+outputs = { auto = true }
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
@@ -155,17 +148,15 @@ if [ -n "${usage_container:-}" ]; then
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
     --cmd "cd /src/frontend && mkdir -p src/types && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_types.py | /workspace/frontend/node_modules/.bin/json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts"
 fi
-uvbin=$(mise -C ../backend which uv || true)
-if [ -z "$uvbin" ] || [ ! -x "$uvbin" ]; then
-  echo "ERROR: Backend uv binary not found. Please run 'mise install' in the backend directory." >&2
-  exit 1
-fi
-PATH="$(dirname "$uvbin"):$PATH" npm run generate-types
+. scripts/require-backend-uv.sh
+npm run generate-types
 '''
 
 [tasks.generate-referrals]
 description = "Regenerate the frontend's bundled referral catalog from the backend referrals data."
 depends = ["install", "//backend:sync"]
+sources = ["../backend/tenantfirstaid/referrals.py", "../backend/tenantfirstaid/referrals_data.json", "../backend/scripts/generate_referrals.py"]
+outputs = { auto = true }
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
@@ -180,17 +171,15 @@ if [ -n "${usage_container:-}" ]; then
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
     --cmd "cd /src/frontend && mkdir -p src/generated && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_referrals.py > src/generated/referrals.ts"
 fi
-uvbin=$(mise -C ../backend which uv || true)
-if [ -z "$uvbin" ] || [ ! -x "$uvbin" ]; then
-  echo "ERROR: Backend uv binary not found. Please run 'mise install' in the backend directory." >&2
-  exit 1
-fi
-PATH="$(dirname "$uvbin"):$PATH" npm run generate-referrals
+. scripts/require-backend-uv.sh
+npm run generate-referrals
 '''
 
 [tasks.generate-frontend-assets]
 description = "Regenerate frontend build-time assets (types + referral catalog) from the backend."
 depends = ["install", "//backend:sync"]
+sources = ["../backend/tenantfirstaid/schema.py", "../backend/tenantfirstaid/location.py", "../backend/tenantfirstaid/referrals.py", "../backend/tenantfirstaid/referrals_data.json", "../backend/scripts/generate_types.py", "../backend/scripts/generate_referrals.py"]
+outputs = { auto = true }
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
@@ -205,12 +194,8 @@ if [ -n "${usage_container:-}" ]; then
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
     --cmd "cd /src/frontend && mkdir -p src/types src/generated && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_types.py | /workspace/frontend/node_modules/.bin/json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_referrals.py > src/generated/referrals.ts"
 fi
-uvbin=$(mise -C ../backend which uv || true)
-if [ -z "$uvbin" ] || [ ! -x "$uvbin" ]; then
-  echo "ERROR: Backend uv binary not found. Please run 'mise install' in the backend directory." >&2
-  exit 1
-fi
-PATH="$(dirname "$uvbin"):$PATH" npm run generate-frontend-assets
+. scripts/require-backend-uv.sh
+npm run generate-frontend-assets
 '''
 
 [tasks.check]
@@ -229,9 +214,13 @@ if [ -n "${usage_container:-}" ]; then
     --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
     --engine "${usage_engine:-auto}"
 fi
-# Format first to avoid racing with asset generation
+# Check formatting first (before asset generation writes files) so failures
+# are reported rather than silently reformatted out from under the check.
 mise run fmt
-# Generate assets and then verify build/lint/test in parallel
+# Generate assets once up front. build/lint/typecheck/test each also depend on
+# generate-frontend-assets, but it declares sources/outputs, so mise's own caching
+# (not cross-task dedup within a single invocation) is what guarantees the four
+# tasks below never race a concurrent regeneration of the files they read.
 mise run generate-frontend-assets
 mise run --continue-on-error -o keep-order build ::: lint ::: typecheck ::: test
 '''

@@ -140,9 +140,9 @@ Live at https://tenantfirstaid.com/
 
 1. generate frontend types and referral data from the backend (required before type-checking, testing, or building)
    ```sh
-   % mise run //backend:generate-frontend-assets
+   % mise run generate-frontend-assets
    ```
-    (root-qualified since this splices the backend's `uv` onto the frontend's `PATH`; see `frontend/mise.toml`. Re-run this any time the backend Pydantic models or referral catalog change. `mise run //:setup` also does this, plus a full toolchain provision/install — use that instead only when you need the heavier one-time setup.)
+    (this splices the backend's `uv` onto the frontend's `PATH`; see `frontend/mise.toml`. Re-run this any time the backend Pydantic models or referral catalog change. `mise run //:setup` also does this, plus a full toolchain provision/install — use that instead only when you need the heavier one-time setup.)
 
    This writes `src/types/models.ts` from the backend Pydantic models and `src/generated/referrals.ts` from the validated referral catalog. Both outputs are gitignored. Non-generated frontend types are stored in `src/shared/types/` and are checked into source control.
 
