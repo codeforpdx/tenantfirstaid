@@ -184,10 +184,11 @@ The `//:` prefix is load-bearing: it names the root task explicitly, so this wor
 
 This is engine-agnostic (Docker, Podman, or apple/container — auto-detected; override with `--engine`) and is a cross-engine stand-in for `docker compose`.
 
-Separately, every backend and frontend check task accepts `--container` (plus `--engine`) to run that step against the `ci` target rather than your host tooling — useful for reproducing a CI failure locally, not for running the app itself. Two caveats:
+Separately, every backend and frontend check task accepts `--container` (plus `--engine`) to run that step against the `ci` target rather than your host tooling — useful for reproducing a CI failure locally, not for running the app itself. It's still somewhat experimental; three things to know:
 
-- **The host toolchain is still required.** `--container` changes where the *check* runs, not the task's `depends`, so mise still provisions the toolchain and runs `install`/`sync` on the host first. Only `mise run //frontend:check --container` is close to a host-free lane: it runs the image's baked source under its default command.
-- **`--container` does not propagate.** It applies to the task you name, not to tasks it depends on or delegates to. Pass it to each step you want containerized.
+- **It doesn't save you from setting up the repo.** `--container` changes where the check itself runs, but your local install still happens first — expect an `npm install` (and, for anything that regenerates types, a backend venv sync) before the container starts. So it's a way to reproduce CI, not a way to skip `mise run //:setup` or avoid installing Node and uv. Making it fully self-contained is possible and partly built, but isn't wired up yet.
+- **Lint and type errors will match CI even when your local packages don't.** For `mise run lint --container` and `mise run typecheck --container`, the eslint, TypeScript and plugin versions come from the image rather than your `node_modules`. If CI reports an error you can't reproduce — or your editor is happy but the build isn't — this is the thing to reach for.
+- **`--container` doesn't cascade.** It applies only to the command you type, not to any step that command triggers. Add it to each thing you want containerized.
 
 The project has separate Dockerfiles for backend and frontend, each with multiple build stages, if you need to build an image directly. Use `--target` to pick a stage:
 
