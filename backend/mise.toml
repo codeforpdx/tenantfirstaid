@@ -41,10 +41,10 @@ arg "<options>" var=#true required=#false help="Extra vertex_ai_search args, e.g
 '''
 run = '''
 set -eu
-# Check for placeholder in VERTEX_AI_DATASTORE_LAWS before calling API
-if [[ "${VERTEX_AI_DATASTORE_LAWS:-}" == *"<"* ]]; then
-  echo "ERROR: VERTEX_AI_DATASTORE_LAWS is still a placeholder (<DATASTORE_ID>)." >&2
-  echo "Please set it to your actual datastore ID in backend/.env." >&2
+# Check for placeholder in VERTEX_AI_DATASTORE_LAWS by reading .env directly
+if sed -n 's/^VERTEX_AI_DATASTORE_LAWS=//p' .env 2>/dev/null | grep -q '<'; then
+  echo "ERROR: VERTEX_AI_DATASTORE_LAWS is still a placeholder (<DATASTORE_ID>) in backend/.env." >&2
+  echo "Please set it to your actual datastore ID." >&2
   exit 1
 fi
 
@@ -64,6 +64,7 @@ else
   exit "$status"
 fi
 '''
+
 
 [tasks.clean]
 description = "Remove __pycache__ and build artifacts."

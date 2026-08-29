@@ -26,9 +26,14 @@ if [ -n "${usage_container:-}" ]; then
     --engine "${usage_engine:-auto}" \
     --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" --bind-dst /src --as-user \
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
-    --cmd "cd /src/frontend && /workspace/frontend/node_modules/.bin/npm run build"
+    --cmd "cd /src/frontend && npm run build"
 fi
-npm run build
+uvbin=$(mise -C ../backend which uv || true)
+if [ -z "$uvbin" ] || [ ! -x "$uvbin" ]; then
+  echo "ERROR: Backend uv binary not found. Please run 'mise install' in the backend directory." >&2
+  exit 1
+fi
+PATH="$(dirname "$uvbin"):$PATH" npm run build
 '''
 
 [tasks.dev]
@@ -150,7 +155,7 @@ if [ -n "${usage_container:-}" ]; then
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
     --cmd "cd /src/frontend && mkdir -p src/types && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_types.py | /workspace/frontend/node_modules/.bin/json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts"
 fi
-uvbin=$(mise -C ../backend which uv)
+uvbin=$(mise -C ../backend which uv || true)
 if [ -z "$uvbin" ] || [ ! -x "$uvbin" ]; then
   echo "ERROR: Backend uv binary not found. Please run 'mise install' in the backend directory." >&2
   exit 1
@@ -175,7 +180,7 @@ if [ -n "${usage_container:-}" ]; then
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
     --cmd "cd /src/frontend && mkdir -p src/generated && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_referrals.py > src/generated/referrals.ts"
 fi
-uvbin=$(mise -C ../backend which uv)
+uvbin=$(mise -C ../backend which uv || true)
 if [ -z "$uvbin" ] || [ ! -x "$uvbin" ]; then
   echo "ERROR: Backend uv binary not found. Please run 'mise install' in the backend directory." >&2
   exit 1
@@ -200,7 +205,7 @@ if [ -n "${usage_container:-}" ]; then
     --cache-key-files "frontend/package.json frontend/package-lock.json" \
     --cmd "cd /src/frontend && mkdir -p src/types src/generated && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_types.py | /workspace/frontend/node_modules/.bin/json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts && UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend python scripts/generate_referrals.py > src/generated/referrals.ts"
 fi
-uvbin=$(mise -C ../backend which uv)
+uvbin=$(mise -C ../backend which uv || true)
 if [ -z "$uvbin" ] || [ ! -x "$uvbin" ]; then
   echo "ERROR: Backend uv binary not found. Please run 'mise install' in the backend directory." >&2
   exit 1
@@ -224,8 +229,9 @@ if [ -n "${usage_container:-}" ]; then
     --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
     --engine "${usage_engine:-auto}"
 fi
-# Prepare: format and generate assets in parallel
-mise run -o keep-order fmt ::: generate-frontend-assets
-# Verify: build and other checks in parallel
+# Format first to avoid racing with asset generation
+mise run fmt
+# Generate assets and then verify build/lint/test in parallel
+mise run generate-frontend-assets
 mise run --continue-on-error -o keep-order build ::: lint ::: typecheck ::: test
 '''
