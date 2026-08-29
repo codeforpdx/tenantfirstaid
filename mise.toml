@@ -218,6 +218,7 @@ flag "--target <stage>" help="build --target stage." default="ci"
 flag "--cmd <cmd>" help="Command to run via `sh -c`; default the image's CMD."
 flag "--bind-src <path>" help="Host path to bind-mount into the container (enables write-back)."
 flag "--bind-dst <path>" help="Mount point for --bind-src; also the default workdir."
+flag "--mounts <specs>" help="Newline-separated host:container bind mounts, as an alternative to one --bind-src (see scripts/container_dispatch.sh)."
 flag "--workdir <path>" help="Working directory inside the container; default --bind-dst."
 flag "--env-file <path>" help="Bind-mount a host env file read-only to /app/.env (so the app singleton loads it). Ignored if the path is missing."
 flag "--as-user" help="Run as the current uid:gid so mounted writes stay owned by you."
@@ -238,7 +239,7 @@ cd "${MISE_PROJECT_ROOT:-.}"
 
 # Decide whether to (re)build. apple/container re-transfers the whole build context
 # (megabytes) and re-exports the image on every build, which dominates wall time even
-# when every layer is cached. When the source is bind-mounted (--bind-src) the image
+# when every layer is cached. When the source is bind-mounted (--bind-src/--mounts) the image
 # is only a *tool provider*, so a cached image can be reused as long as the pinned deps
 # (--cache-key-files, e.g. pyproject.toml + uv.lock) are unchanged. Pass --rebuild to
 # always rebuild. Without a mount the image bakes in the source, so we always rebuild.
@@ -249,7 +250,7 @@ if [ -n "${usage_cache_key_files:-}" ]; then
   key=$(cat $usage_cache_key_files 2>/dev/null | sha256sum | cut -d' ' -f1)
   marker="${XDG_CACHE_HOME:-$HOME/.cache}/mise-tenantfirstaid/$(echo "$image" | tr '/:' '__').key"
 fi
-if [ -z "${usage_rebuild:-}" ] && [ -n "${usage_bind_src:-}" ] && [ -n "$key" ] \
+if [ -z "${usage_rebuild:-}" ] && { [ -n "${usage_bind_src:-}" ] || [ -n "${usage_mounts:-}" ]; } && [ -n "$key" ] \
    && "$engine" image inspect "$image" >/dev/null 2>&1 \
    && [ -f "$marker" ] && [ "$(cat "$marker")" = "$key" ]; then
   build_needed=""
@@ -293,6 +294,18 @@ if [ -n "${usage_bind_src:-}" ] && [ -n "${usage_bind_dst:-}" ]; then
   set -- "$@" -v "$usage_bind_src:$usage_bind_dst" -w "${usage_workdir:-$usage_bind_dst}"
 elif [ -n "${usage_workdir:-}" ]; then
   set -- "$@" -w "$usage_workdir"
+fi
+# --mounts is the disentangled alternative to one blunt --bind-src: several narrow binds
+# that together cover only the paths meant to come from the host, so a dependency
+# directory nested under them is simply never mounted over. Split on newlines only, so
+# a path containing spaces still works.
+if [ -n "${usage_mounts:-}" ]; then
+  _oldifs=$IFS; IFS='
+'
+  for _m in $usage_mounts; do
+    [ -n "$_m" ] && set -- "$@" -v "$_m"
+  done
+  IFS=$_oldifs; unset _oldifs _m
 fi
 # Mount a host env file read-only at /app/.env so the app singleton (which reads
 # <package>/../.env) finds MODEL_NAME/GOOGLE_* at runtime. The image never bakes in

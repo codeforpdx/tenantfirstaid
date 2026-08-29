@@ -12,7 +12,7 @@ outputs = { auto = true }
 run = "npm install"
 
 [tasks.build]
-description = "Build the frontend for production."
+description = "Build the frontend for production. host: writes dist/; --container: verify-only (the image's dist/ is discarded)."
 depends = ["install", "generate-frontend-assets"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
@@ -82,8 +82,12 @@ arg "<options>" var=#true required=#false help="Extra eslint args."
 '''
 run = '''
 set -eu
+# --image-dir: eslint's flat config resolves its plugins (and typescript-eslint's
+# typescript) by walking up from the config file, so a repo-root mount would hand it the
+# HOST's node_modules and quietly defeat the point of --container. Mounting only the
+# source into the image's own tree leaves node_modules the image's.
 . ../scripts/container_dispatch.sh
-container_dispatch --project frontend \
+container_dispatch --project frontend --image-dir /workspace/frontend \
   --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
   --cache-key-files "frontend/package.json frontend/package-lock.json" \
   --cmd "eslint . ${usage_options:-}"
@@ -100,8 +104,11 @@ arg "<options>" var=#true required=#false help="Extra tsc args."
 '''
 run = '''
 set -eu
+# --image-dir: tsc resolves @types and library .d.ts by walking up from each source file,
+# which is inside the mount, so a repo-root mount would type-check against the host's
+# node_modules. See lint's comment and scripts/container_dispatch.sh.
 . ../scripts/container_dispatch.sh
-container_dispatch --project frontend \
+container_dispatch --project frontend --image-dir /workspace/frontend \
   --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
   --cache-key-files "frontend/package.json frontend/package-lock.json" \
   --cmd "tsc --noEmit -p tsconfig.app.json ${usage_options:-}"

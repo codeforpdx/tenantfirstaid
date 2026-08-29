@@ -367,12 +367,17 @@ set -eu
 #      https://(www.)tenantfirstaid.com&quot and 404s it; the bare URLs check out fine.
 ignore="-i github.com/codeforpdx/tenantfirstaid/blob/[^/]+/tenantfirstaid/ -i tenantfirstaid\\.com&quot"
 if [ -n "${usage_container:-}" ]; then
+  # The --cmd string below is re-parsed by a nested `sh -c` inside the container, where an
+  # unescaped '&' backgrounds the preceding command instead of staying literal (unlike the
+  # host line below, which only word-splits $ignore, never re-interprets shell metachars).
+  # Escape it for that nested shell only, so the host invocation is unaffected.
+  ignore_container=$(printf '%s' "$ignore" | sed 's/&/\\&/g')
   . ../scripts/container_dispatch.sh
   container_dispatch --project backend \
     --image tenantfirstaid-backend:docs --target docs --context backend \
     --cache-key-files "backend/pyproject.toml backend/uv.lock" \
     ${usage_rebuild:+--rebuild} \
-    --cmd "PYTHONPATH=/src/backend great-docs check-links $ignore ${usage_options:-}"
+    --cmd "PYTHONPATH=/src/backend great-docs check-links $ignore_container ${usage_options:-}"
 fi
 uv run great-docs check-links $ignore ${usage_options:-}
 '''
