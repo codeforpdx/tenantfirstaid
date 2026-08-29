@@ -210,8 +210,11 @@ if [ -n "${usage_container:-}" ]; then
     --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
     --engine "${usage_engine:-auto}"
 fi
-# Check formatting first (before asset generation writes files) so failures
-# are reported rather than silently reformatted out from under the check.
+# Format first, and ordered: fmt MUTATES the tree that the verify steps below read
+# (matching //backend:check). It reformats rather than failing, so a formatting-only
+# problem shows up as a dirty working tree here, not as a failed check — CI's
+# verify-only lane (frontend/Dockerfile's ci stage runs `prettier --check .`) is what
+# turns that into a hard failure. Use `mise run fmt --container` to verify locally.
 mise run fmt
 # Generate assets once up front. build/lint/typecheck/test each also depend on
 # generate-frontend-assets, so this run is what actually regenerates the files;

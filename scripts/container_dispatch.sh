@@ -12,13 +12,13 @@
 # and skips this helper, calling //:_container-run directly.
 container_dispatch() {
   [ -n "${usage_container:-}" ] || return 0
-  bind_src="$(git -C "$PWD" rev-parse --show-toplevel)"
-  if [ "${1:-}" = "--bind-src" ]; then
-    bind_src="$2"
-    shift 2
+  # POSIX sh has no `local`, and this is sourced into arbitrary task bodies, so keep the
+  # caller-supplied override in the positional parameters rather than a named variable.
+  if [ "${1:-}" != "--bind-src" ]; then
+    set -- --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" "$@"
   fi
   exec mise run //:_container-run \
     --engine "${usage_engine:-auto}" \
-    --bind-src "$bind_src" --bind-dst /src --as-user \
+    --bind-dst /src --as-user \
     "$@"
 }
