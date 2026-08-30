@@ -371,7 +371,10 @@ set -eu
 # both, so run it in the frontend scope.
 mise run //frontend:generate-frontend-assets
 echo ""
-echo "Setup complete. Start the app with two terminals:"
+echo "Setup complete. Start the app with:"
+echo "  mise run dev                 # Flask API + Vite dev server -> http://localhost:5173"
+echo ""
+echo "Or in two separate terminals:"
 echo "  mise run //backend:serve     # Flask API"
 echo "  mise run //frontend:dev      # Vite dev server -> http://localhost:5173"
 '''

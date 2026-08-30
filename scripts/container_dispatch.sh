@@ -45,8 +45,10 @@
 # Every entry of the host project directory is mounted at <path>/<entry> except those in
 # --exclude (default: the dependency roots). What is never mounted simply stays the
 # image's, so the disentangling is structural rather than a shadowing trick, and it uses
-# nothing but plain bind mounts -- the one primitive every engine supports identically
-# (verified on apple/container and Docker).
+# nothing but plain bind mounts -- the most basic primitive, and the only one this repo
+# relies on behaving the same everywhere. Exercised on apple/container; the Docker and
+# Podman lanes are reasoned from the primitive, not yet measured, so if you have a Docker
+# daemon handy, `mise run //frontend:lint --container --engine docker` is the check.
 #
 # Trade-off vs. the repo-root mode: the container gets the project directory only, not the
 # repo root, so there is no .git and no sibling project. Lanes that need either (ruff and

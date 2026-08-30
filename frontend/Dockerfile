@@ -43,7 +43,9 @@ CMD ["sh", "-c", "npm run generate-frontend-assets && npm run dev -- --host 0.0.
 # -----------------------------------------------
 FROM base AS ci
 
-CMD ["sh", "-c", "npm run format:check && npm run generate-frontend-assets && npm run typecheck && npm run lint && npm run test -- --run && npm run build"]
+# `build:only`, not `build`: the chain already regenerated the assets above, and `build`
+# would run that whole pipeline (uv sync, Pydantic introspection, json2ts) a second time.
+CMD ["sh", "-c", "npm run format:check && npm run generate-frontend-assets && npm run typecheck && npm run lint && npm run test -- --run && npm run build:only"]
 
 # -----------------------------------------------
 # production-build: compile static assets

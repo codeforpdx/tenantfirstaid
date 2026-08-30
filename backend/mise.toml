@@ -445,8 +445,10 @@ if [ -n "${usage_container:-}" ]; then
 fi
 # Independent read-only checks — run them concurrently. `:::` separates the parallel
 # task invocations (same pattern as the `check` task); -o keep-order groups each
-# task's output so the parallel logs don't interleave.
-mise run -o keep-order docs-lint $c ::: docs-check-links $c ::: docs-proofread $c
+# task's output so the parallel logs don't interleave, and --continue-on-error lets
+# all three report rather than stopping at the first failure (a docs-lint failure
+# should not hide broken links or a proofreading complaint).
+mise run --continue-on-error -o keep-order docs-lint $c ::: docs-check-links $c ::: docs-proofread $c
 '''
 
 # --- Corpus / RAG ingestion pipeline -------------------------------------------
