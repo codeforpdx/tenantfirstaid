@@ -55,6 +55,14 @@
 # great-docs honoring .gitignore, the generate-* tasks reaching ../backend) keep the
 # repo-root mode above.
 #
+# Known asymmetry: the mount set is built by enumerating what the host HAS, so deleting a
+# TOP-LEVEL entry does not un-mount it -- nothing covers that path and the image's baked
+# copy shows through, e.g. `rm lighthouserc.json` and lint still sees the image's. This is
+# a deliberate trade-off, not an oversight: deletions nested inside a mounted directory
+# (src/...) do reflect, which is the common case, and the alternative (masking every
+# absence with an empty tmpfs) trades a rare stale file for a primitive that is not
+# uniformly supported across engines. Use --rebuild after deleting a top-level entry.
+#
 # HOW TO NAME A BINARY IN A --cmd -- the rule follows from whether the lane mounts:
 #   * Mounted (this helper): the workdir is the HOST tree, so anything that resolves
 #     tooling relative to the cwd finds host-platform binaries. Invoke the binary by BARE
@@ -91,12 +99,20 @@ container_dispatch() {
 
   if [ -z "$_cd_image_dir" ]; then
     # Repo-root mode: one mount, the whole repo at /src, workdir /src/<project>.
-    set -- --workdir "/src/$_cd_project" "$@"
-    unset _cd_project _cd_image_dir _cd_exclude
+    # Capture-and-check rather than inlining the substitution: command substitution in an
+    # argument does not trip `set -e`, so if git fails (tarball export, no git on PATH) an
+    # empty --bind-src would reach _container-run, which would skip the mount entirely and
+    # leave --workdir pointing at a path that does not exist -- surfacing as a baffling
+    # error from the tool instead of a clear one from here.
+    _cd_root=$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null) || _cd_root=""
+    if [ -z "$_cd_root" ]; then
+      echo "container_dispatch: --project $_cd_project needs a git checkout (git rev-parse --show-toplevel failed); the repo-root mount is derived from it" >&2
+      exit 1
+    fi
+    set -- --bind-src "$_cd_root" --bind-dst /src --workdir "/src/$_cd_project" "$@"
+    unset _cd_project _cd_image_dir _cd_exclude _cd_root
     exec mise run //:_container-run \
       --engine "${usage_engine:-auto}" \
-      --bind-src "$(git -C "$PWD" rev-parse --show-toplevel)" \
-      --bind-dst /src \
       --as-user \
       "$@"
   fi
@@ -111,9 +127,17 @@ container_dispatch() {
   # are filtered -- a tracked directory is mounted whole, so gitignored *generated* files
   # inside it (src/types/models.ts, src/generated/referrals.ts) still come along, which
   # lint and typecheck require. Newline separated: //:_container-run splits on newlines
-  # only, so a path containing spaces survives.
+  # only, so a path containing spaces survives -- but only if the producer here preserves
+  # it too, so IFS is pinned to a newline for the loops below. `ls -A` and `check-ignore`
+  # both emit newline-separated records; --exclude is space-separated at the call site
+  # ("node_modules .venv"), so normalize it while IFS is still the default.
+  # shellcheck disable=SC2086 # deliberate word-split of the space-separated --exclude.
+  _cd_exclude=$(printf '%s\n' $_cd_exclude)
   _cd_ignored=$(ls -A "$PWD" | git -C "$PWD" check-ignore --stdin 2>/dev/null || true)
   _cd_mounts=""
+  _cd_oldifs=$IFS
+  IFS='
+'
   for _cd_entry in $(ls -A "$PWD"); do
     _cd_skip=""
     for _cd_ex in $_cd_exclude; do
@@ -126,8 +150,9 @@ container_dispatch() {
     _cd_mounts="$_cd_mounts$PWD/$_cd_entry:$_cd_image_dir/$_cd_entry
 "
   done
+  IFS=$_cd_oldifs
   set -- --mounts "$_cd_mounts" --workdir "$_cd_image_dir" "$@"
-  unset _cd_project _cd_image_dir _cd_exclude _cd_mounts _cd_entry _cd_skip _cd_ex _cd_ignored
+  unset _cd_project _cd_image_dir _cd_exclude _cd_mounts _cd_entry _cd_skip _cd_ex _cd_ignored _cd_oldifs
   exec mise run //:_container-run \
     --engine "${usage_engine:-auto}" \
     --as-user \
