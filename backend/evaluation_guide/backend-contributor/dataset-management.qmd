@@ -60,6 +60,7 @@ Reports three categories:
 | `<` | example exists only on the left (would be lost on a pull, missing on a push) |
 | `>` | example exists only on the right |
 | `~` | same `scenario_id` on both sides but content differs — shows a field-level unified diff |
+| `(no scenario_id)` | example on that side has no `scenario_id` — reported with a preview of its question, since there is no ID to key it by |
 
 Example output:
 
@@ -75,6 +76,7 @@ Example output:
          "Landlord must repair within reasonable time"
        ],
 > scenario_id=18
+> (no scenario_id) My landlord entered without notice, is that legal?
 ```
 
 `dataset diff` is the right first step before pushing or pulling — it tells you
@@ -88,28 +90,38 @@ Examples created through the LangSmith browser UI will not have a `scenario_id` 
 their metadata. The tooling uses `scenario_id` as the stable key for diff, merge, and
 push operations, so new examples must be assigned one before they can be committed.
 
-1. **Pull** the dataset to get the current state, including any UI-created examples:
+`example adopt` does the labelling, writing the IDs straight onto the remote
+examples. Note that neither `dataset push` nor `example update` can do this job:
+push only *creates* examples whose `scenario_id` is absent from the remote, so it
+would duplicate the content and leave the originals unlabeled, and `example update`
+locates its target by `scenario_id`, which is exactly what these examples lack.
+
+1. **Preview** the assignments. IDs are handed out in creation order, starting one
+   past the highest already in use (override with `--start-id`):
+
+   ```bash
+   uv run langsmith-dataset example adopt \
+     tenant-legal-qa-scenarios --dry-run
+   ```
+
+2. **Adopt** them, dropping `--dry-run`:
+
+   ```bash
+   uv run langsmith-dataset example adopt tenant-legal-qa-scenarios
+   ```
+
+   Only metadata is written — `inputs` and `outputs` are left exactly as the UI
+   saved them. Anything worth a human look is reported as a warning on stderr, such
+   as an empty `inputs.query` or a `reference_conversation` message with empty
+   content. Both are common when an example was part-way edited in the browser.
+   Fix those in the UI (or with `example update` once the example has an ID).
+
+3. **Pull** the labeled examples into the local file:
 
    ```bash
    uv run langsmith-dataset dataset pull \
      tenant-legal-qa-scenarios \
      dataset-tenant-legal-qa-examples.jsonl
-   ```
-
-2. **Identify** the new examples in the JSONL file — they will have
-   `"metadata": null` or a metadata object without a `scenario_id` field.
-
-3. **Assign a `scenario_id`** to each new example. Pick the next available integer
-   (one higher than the current maximum). Also fill in the other required metadata
-   fields (`city`, `state`, `tags`, `dataset_split`) to match the schema. For example:
-
-   ```json
-   {
-     "metadata": { "scenario_id": 42, "city": null, "state": "OR",
-                   "tags": ["city-None", "state-OR"], "dataset_split": ["train"] },
-     "inputs": { "query": "...", "city": null, "state": "OR" },
-     "outputs": { "facts": [...], "reference_conversation": [...] }
-   }
    ```
 
 4. **Validate** the file:
@@ -119,13 +131,16 @@ push operations, so new examples must be assigned one before they can be committ
      dataset-tenant-legal-qa-examples.jsonl
    ```
 
-5. **Push** to write the assigned IDs back to LangSmith:
+5. **Verify** that the two sides now agree:
 
    ```bash
-   uv run langsmith-dataset dataset push \
-     dataset-tenant-legal-qa-examples.jsonl \
-     tenant-legal-qa-scenarios
+   uv run langsmith-dataset dataset diff \
+     tenant-legal-qa-scenarios \
+     dataset-tenant-legal-qa-examples.jsonl
    ```
+
+   It should report `No differences.` Any example still unlabeled on the remote
+   shows up as a `(no scenario_id)` line.
 
 6. **Commit** the updated JSONL file.
 
@@ -138,6 +153,9 @@ uv run langsmith-dataset example list tenant-legal-qa-scenarios
 # Append new examples from a JSONL file without touching existing ones.
 uv run langsmith-dataset example append \
   tenant-legal-qa-scenarios new-examples.jsonl
+
+# Assign scenario_ids to any examples created in the LangSmith UI.
+uv run langsmith-dataset example adopt tenant-legal-qa-scenarios --dry-run
 
 # Remove an example by its scenario_id.
 uv run langsmith-dataset example remove \
