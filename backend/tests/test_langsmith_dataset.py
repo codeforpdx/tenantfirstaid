@@ -12,6 +12,8 @@ from hypothesis import strategies as st
 
 from evaluate.langsmith_dataset import (
     RETENTION_DAYS,
+    _adopt_metadata,
+    _adopt_warnings,
     _apply_dataset_schemas,
     _as_utc,
     _check_retrieval_from_traces,
@@ -24,11 +26,15 @@ from evaluate.langsmith_dataset import (
     _load_dataset_schemas,
     _load_examples,
     _message_text,
+    _next_scenario_id,
+    _partition_by_scenario_id,
+    _query_preview,
     _read_jsonl,
     _render_transcript,
     _scan_pii,
     _scenario_id,
     _tabulate,
+    _unlabeled_label,
     _Validate,
     _warn_pii,
     build_parser,
@@ -40,6 +46,7 @@ from evaluate.langsmith_dataset import (
     cmd_dataset_pull,
     cmd_dataset_push,
     cmd_dataset_validate,
+    cmd_example_adopt,
     cmd_example_append,
     cmd_example_list,
     cmd_example_remove,
@@ -99,6 +106,19 @@ def _make_remote_example(scenario_id: int):
     ex = MagicMock()
     ex.id = uuid4()
     ex.metadata = {"scenario_id": scenario_id}
+    return ex
+
+
+def _make_unlabeled_remote_example(
+    query: str = "unlabeled question", created_at=None, city="Portland"
+):
+    """A remote example authored by hand in the LangSmith UI: no scenario_id."""
+    ex = MagicMock()
+    ex.id = uuid4()
+    ex.metadata = {"dataset_split": ["base"]}
+    ex.inputs = {"query": query, "city": city, "state": "OR"}
+    ex.outputs = {"facts": [], "reference_conversation": []}
+    ex.created_at = created_at or datetime(2026, 1, 1, tzinfo=timezone.utc)
     return ex
 
 
@@ -201,6 +221,65 @@ def test_scenario_id_raises_on_missing():
 def test_scenario_id_raises_on_missing_metadata():
     with pytest.raises(ValueError, match="missing scenario_id"):
         _scenario_id({})
+
+
+def test_scenario_id_returns_default_when_missing():
+    assert _scenario_id({"metadata": {}}, default=None) is None
+    assert _scenario_id({}, default=-1) == -1
+
+
+def test_scenario_id_default_ignored_when_present():
+    assert _scenario_id({"metadata": {"scenario_id": 7}}, default=None) == 7
+
+
+def test_scenario_id_falsy_default_is_returned():
+    """A default of 0 or None must not be mistaken for "no default given"."""
+    assert _scenario_id({"metadata": {}}, default=0) == 0
+
+
+# ── _partition_by_scenario_id ─────────────────────────────────────────────────
+
+
+def test_partition_by_scenario_id_splits_labeled_and_unlabeled():
+    labeled = _make_scenario(1)
+    unlabeled = {"metadata": {"dataset_split": ["base"]}, "inputs": {}, "outputs": {}}
+    by_id, leftovers = _partition_by_scenario_id([labeled, unlabeled])
+
+    assert by_id == {1: labeled}
+    assert leftovers == [unlabeled]
+
+
+def test_partition_by_scenario_id_all_labeled():
+    by_id, leftovers = _partition_by_scenario_id([_make_scenario(1), _make_scenario(2)])
+    assert sorted(by_id) == [1, 2]
+    assert leftovers == []
+
+
+def test_partition_by_scenario_id_missing_metadata_key():
+    """An example with no metadata at all is unlabeled, not an error."""
+    by_id, leftovers = _partition_by_scenario_id([{"inputs": {}, "outputs": {}}])
+    assert by_id == {}
+    assert len(leftovers) == 1
+
+
+# ── _unlabeled_label ──────────────────────────────────────────────────────────
+
+
+def test_unlabeled_label_includes_query_preview():
+    label = _unlabeled_label({"inputs": {"query": "Can my landlord evict me?"}})
+    assert "no scenario_id" in label
+    assert "Can my landlord evict me?" in label
+
+
+def test_unlabeled_label_truncates_long_query():
+    label = _unlabeled_label({"inputs": {"query": "x" * 200}})
+    assert label.endswith("...")
+    assert len(label) < 100
+
+
+def test_unlabeled_label_handles_empty_query():
+    assert "<empty query>" in _unlabeled_label({"inputs": {"query": "   "}})
+    assert "<empty query>" in _unlabeled_label({})
 
 
 # ── _tabulate ──────────────────────────────────────────────────────────────────
@@ -1088,6 +1167,363 @@ def test_cmd_dataset_diff_mixed(tmp_path, capsys):
     assert "< scenario_id=1" in out
     assert "~ scenario_id=2" in out
     assert "> scenario_id=3" in out
+
+
+def test_cmd_dataset_diff_reports_unlabeled_remote_examples(tmp_path, capsys):
+    """A remote example with no scenario_id is reported, not raised on."""
+    f = tmp_path / "right.jsonl"
+    f.write_text(json.dumps(_make_valid_record(1)) + "\n")
+
+    mock_client = MagicMock()
+    mock_client.read_dataset.return_value = MagicMock(id=uuid4())
+    mock_client.list_examples.return_value = [
+        _make_unlabeled_remote_example("hand written question"),
+    ]
+
+    args = MagicMock()
+    args.left = "remote-ds"
+    args.right = f
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        cmd_dataset_diff(args)
+
+    out = capsys.readouterr().out
+    assert "< (no scenario_id) hand written question" in out
+    assert "> scenario_id=1" in out
+
+
+def test_cmd_dataset_diff_unlabeled_alongside_labeled(tmp_path, capsys):
+    """Labeled examples still diff normally when unlabeled ones are present."""
+    f = tmp_path / "right.jsonl"
+    f.write_text(json.dumps(_make_valid_record(1)) + "\n")
+
+    labeled = _make_remote_example(1)
+    labeled.inputs = _make_valid_record(1)["inputs"]
+    labeled.outputs = _make_valid_record(1)["outputs"]
+    labeled.metadata = _make_valid_record(1)["metadata"]
+
+    mock_client = MagicMock()
+    mock_client.read_dataset.return_value = MagicMock(id=uuid4())
+    mock_client.list_examples.return_value = [
+        labeled,
+        _make_unlabeled_remote_example(),
+    ]
+
+    args = MagicMock()
+    args.left = "remote-ds"
+    args.right = f
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        cmd_dataset_diff(args)
+
+    out = capsys.readouterr().out
+    # scenario_id 1 matches on both sides, so only the unlabeled one is reported.
+    assert "scenario_id=1" not in out
+    assert "< (no scenario_id)" in out
+
+
+def test_cmd_dataset_push_ignores_unlabeled_remote_examples(tmp_path, capsys):
+    """Unlabeled remote examples cannot match a local scenario_id, so push proceeds."""
+    f = tmp_path / "data.jsonl"
+    f.write_text(json.dumps(_make_valid_record(1)) + "\n")
+
+    mock_client = MagicMock()
+    mock_client.read_dataset.return_value = MagicMock(id=uuid4())
+    mock_client.list_examples.return_value = [_make_unlabeled_remote_example()]
+    mock_client._headers = {}
+    mock_client.request_with_retries.return_value = MagicMock()
+
+    args = MagicMock()
+    args.file = f
+    args.remote = "my-ds"
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        with patch("evaluate.langsmith_dataset.langsmith_utils"):
+            cmd_dataset_push(args)
+
+    mock_client.create_example.assert_called_once()
+    assert "Pushed 1" in capsys.readouterr().out
+
+
+def test_cmd_dataset_merge_ignores_unlabeled_target_examples(tmp_path, capsys):
+    f = tmp_path / "source.jsonl"
+    f.write_text(json.dumps(_make_valid_record(1)) + "\n")
+
+    mock_client = MagicMock()
+    mock_client.read_dataset.return_value = MagicMock(id=uuid4())
+    mock_client.list_examples.return_value = [_make_unlabeled_remote_example()]
+    mock_client._headers = {}
+    mock_client.request_with_retries.return_value = MagicMock()
+
+    args = MagicMock()
+    args.source = f
+    args.target = "target-ds"
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        with patch("evaluate.langsmith_dataset.langsmith_utils"):
+            cmd_dataset_merge(args)
+
+    mock_client.create_example.assert_called_once()
+    assert "Merged 1" in capsys.readouterr().out
+
+
+def test_cmd_example_show_skips_unlabeled_remote_examples(tmp_path, capsys):
+    """Unlabeled examples are passed over rather than crashing the lookup."""
+    labeled = _make_remote_example(7)
+    labeled.inputs = {"query": "q"}
+    labeled.outputs = {"facts": [], "reference_conversation": []}
+
+    mock_client = MagicMock()
+    mock_client.read_dataset.return_value = MagicMock(id=uuid4())
+    mock_client.list_examples.return_value = [
+        _make_unlabeled_remote_example(),
+        labeled,
+    ]
+
+    args = MagicMock()
+    args.dataset = "remote-ds"
+    args.scenario_id = 7
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        cmd_example_show(args)
+
+    assert '"scenario_id": 7' in capsys.readouterr().out
+
+
+def test_cmd_example_update_skips_unlabeled_local_records(tmp_path, capsys):
+    """The local file is only warn-validated, so a stray record must not crash."""
+    f = tmp_path / "data.jsonl"
+    unlabeled = {"metadata": {}, "inputs": {}, "outputs": {}}
+    f.write_text(
+        json.dumps(unlabeled) + "\n" + json.dumps(_make_valid_record(3)) + "\n"
+    )
+
+    remote_ex = _make_remote_example(3)
+    mock_client = MagicMock()
+    mock_client.read_dataset.return_value = MagicMock(id=uuid4())
+    mock_client.list_examples.return_value = [remote_ex]
+
+    args = MagicMock()
+    args.file = f
+    args.dataset = "remote-ds"
+    args.scenario_id = 3
+    args.dry_run = False
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        cmd_example_update(args)
+
+    mock_client.update_example.assert_called_once()
+
+
+# ── _query_preview / _next_scenario_id / _adopt_* ─────────────────────────────
+
+
+def test_query_preview_short_query_verbatim():
+    assert _query_preview({"inputs": {"query": "short one"}}) == "short one"
+
+
+def test_query_preview_empty():
+    assert _query_preview({"inputs": {"query": ""}}) == "<empty query>"
+
+
+def test_next_scenario_id_from_highest_in_use():
+    assert _next_scenario_id([_make_scenario(0), _make_scenario(6)]) == 7
+
+
+def test_next_scenario_id_ignores_unlabeled():
+    unlabeled = {"metadata": {}, "inputs": {}, "outputs": {}}
+    assert _next_scenario_id([_make_scenario(3), unlabeled]) == 4
+
+
+def test_next_scenario_id_starts_at_zero_when_none_labeled():
+    assert _next_scenario_id([{"metadata": {}, "inputs": {}, "outputs": {}}]) == 0
+    assert _next_scenario_id([]) == 0
+
+
+def test_adopt_metadata_derives_tags_from_inputs():
+    record = {"metadata": {}, "inputs": {"city": "Eugene", "state": "OR"}}
+    assert _adopt_metadata(record, 12) == {
+        "city": "Eugene",
+        "tags": ["city-Eugene", "state-OR"],
+        "state": "OR",
+        "scenario_id": 12,
+        "dataset_split": ["base"],
+    }
+
+
+def test_adopt_metadata_null_city_tagged_as_none():
+    record = {"metadata": {}, "inputs": {"city": None, "state": "OR"}}
+    meta = _adopt_metadata(record, 1)
+    assert meta["city"] is None
+    assert meta["tags"] == ["city-None", "state-OR"]
+
+
+def test_adopt_metadata_preserves_existing_dataset_split():
+    record = {"metadata": {"dataset_split": ["train"]}, "inputs": {"state": "OR"}}
+    assert _adopt_metadata(record, 1)["dataset_split"] == ["train"]
+
+
+def test_adopt_warnings_flags_empty_query():
+    record = {"inputs": {"query": "  "}, "outputs": {"reference_conversation": []}}
+    assert any("query is empty" in w for w in _adopt_warnings(record))
+
+
+def test_adopt_warnings_flags_blank_messages():
+    record = {
+        "inputs": {"query": "real question"},
+        "outputs": {
+            "reference_conversation": [
+                {"type": "human", "content": ""},
+                {"type": "human", "content": "real question"},
+            ]
+        },
+    }
+    warnings = _adopt_warnings(record)
+    assert len(warnings) == 1
+    assert "1 reference_conversation message(s) have empty content" in warnings[0]
+
+
+def test_adopt_warnings_clean_example():
+    record = {
+        "inputs": {"query": "q"},
+        "outputs": {"reference_conversation": [{"type": "human", "content": "q"}]},
+    }
+    assert _adopt_warnings(record) == []
+
+
+# ── cmd_example_adopt ─────────────────────────────────────────────────────────
+
+
+def _adopt_client(examples):
+    mock_client = MagicMock()
+    mock_client.read_dataset.return_value = MagicMock(id=uuid4())
+    mock_client.list_examples.return_value = examples
+    return mock_client
+
+
+def _adopt_args(**overrides):
+    args = MagicMock()
+    args.dataset = "my-ds"
+    args.start_id = None
+    args.dry_run = False
+    for k, v in overrides.items():
+        setattr(args, k, v)
+    return args
+
+
+def test_cmd_example_adopt_assigns_next_ids_in_creation_order(capsys):
+    labeled = _make_remote_example(6)
+    labeled.inputs = {"query": "old", "city": None, "state": "OR"}
+    labeled.outputs = {}
+    labeled.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+
+    newer = _make_unlabeled_remote_example(
+        "second", created_at=datetime(2026, 3, 1, tzinfo=timezone.utc)
+    )
+    older = _make_unlabeled_remote_example(
+        "first", created_at=datetime(2026, 2, 1, tzinfo=timezone.utc)
+    )
+
+    mock_client = _adopt_client([labeled, newer, older])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        cmd_example_adopt(_adopt_args())
+
+    assigned = {
+        c.kwargs["example_id"]: c.kwargs["metadata"]["scenario_id"]
+        for c in mock_client.update_example.call_args_list
+    }
+    assert assigned == {older.id: 7, newer.id: 8}
+    out = capsys.readouterr().out
+    assert "Assigned scenario_id=7: first" in out
+    assert "Assigned scenario_id=8: second" in out
+    assert "Assigned 2 scenario_id(s)" in out
+
+
+def test_cmd_example_adopt_leaves_labeled_examples_alone(capsys):
+    labeled = _make_remote_example(3)
+    labeled.inputs = {"query": "q", "city": None, "state": "OR"}
+    labeled.outputs = {}
+    labeled.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+
+    mock_client = _adopt_client([labeled])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        cmd_example_adopt(_adopt_args())
+
+    mock_client.update_example.assert_not_called()
+    assert "No unlabeled examples" in capsys.readouterr().out
+
+
+def test_cmd_example_adopt_dry_run_writes_nothing(capsys):
+    mock_client = _adopt_client([_make_unlabeled_remote_example()])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        cmd_example_adopt(_adopt_args(dry_run=True))
+
+    mock_client.update_example.assert_not_called()
+    out = capsys.readouterr().out
+    assert "Would assign scenario_id=0" in out
+    assert "dataset pull" not in out
+
+
+def test_cmd_example_adopt_honours_start_id(capsys):
+    mock_client = _adopt_client([_make_unlabeled_remote_example()])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        cmd_example_adopt(_adopt_args(start_id=42))
+
+    meta = mock_client.update_example.call_args.kwargs["metadata"]
+    assert meta["scenario_id"] == 42
+
+
+def test_cmd_example_adopt_writes_metadata_only(capsys):
+    """Inputs and outputs are never touched, only metadata."""
+    ex = _make_unlabeled_remote_example(city=None)
+    mock_client = _adopt_client([ex])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        cmd_example_adopt(_adopt_args())
+
+    kwargs = mock_client.update_example.call_args.kwargs
+    assert set(kwargs) == {"example_id", "metadata"}
+    assert kwargs["metadata"]["tags"] == ["city-None", "state-OR"]
+
+
+def test_cmd_example_adopt_warns_on_suspect_content(capsys):
+    ex = _make_unlabeled_remote_example(query="")
+    ex.outputs = {"reference_conversation": [{"type": "human", "content": ""}]}
+    mock_client = _adopt_client([ex])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        cmd_example_adopt(_adopt_args())
+
+    err = capsys.readouterr().err
+    assert "inputs.query is empty" in err
+    assert "have empty content" in err
+    # The example is still adopted; the warning is advisory.
+    mock_client.update_example.assert_called_once()
+
+
+def test_cmd_example_adopt_tolerates_missing_created_at(capsys):
+    ex = _make_unlabeled_remote_example()
+    ex.created_at = None
+    mock_client = _adopt_client([ex])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        cmd_example_adopt(_adopt_args())
+
+    mock_client.update_example.assert_called_once()
+
+
+def test_build_parser_example_adopt_defaults():
+    args = build_parser().parse_args(["example", "adopt"])
+    assert args.func is cmd_example_adopt
+    assert args.dataset == "tenant-legal-qa-scenarios"
+    assert args.start_id is None
+    assert args.dry_run is False
+
+
+def test_build_parser_example_adopt_flags():
+    args = build_parser().parse_args(
+        ["example", "adopt", "other-ds", "--start-id", "9", "--dry-run"]
+    )
+    assert args.dataset == "other-ds"
+    assert args.start_id == 9
+    assert args.dry_run is True
 
 
 # ── property-based tests ───────────────────────────────────────────────────────

@@ -10,6 +10,7 @@ Usage examples:
     dataset diff ./my-dataset.jsonl my-dataset
     dataset validate ./my-dataset.jsonl
     example list my-dataset
+    example adopt my-dataset --dry-run
     experiment list my-dataset
     experiment show <name-or-uuid>
     experiment stats <name-or-uuid>
@@ -67,6 +68,9 @@ _SYSTEM_PROMPT_PATH = EVALUATE_DIR.parent / "tenantfirstaid" / "system_prompt.md
 # LangSmith's default trace retention; queries reaching further back return
 # nothing older than this because expired traces are already purged.
 RETENTION_DAYS = 14
+
+# Sort fallback for examples the API returns without a creation timestamp.
+_EPOCH = datetime.min.replace(tzinfo=timezone.utc)
 
 
 @dataclass(frozen=True)
@@ -260,9 +264,9 @@ def cmd_dataset_push(args: argparse.Namespace) -> None:
     _apply_dataset_schemas(client, ds.id)
 
     existing_ids = {
-        _scenario_id({"metadata": ex.metadata})
+        _scenario_id({"metadata": ex.metadata}, default=None)
         for ex in client.list_examples(dataset_id=ds.id)
-    }
+    } - {None}
     to_add = [ex for ex in examples if _scenario_id(ex) not in existing_ids]
     for ex in to_add:
         client.create_example(
@@ -329,11 +333,96 @@ def _load_examples(
     ]
 
 
-def _scenario_id(example: dict) -> int:
+_NO_DEFAULT: Any = object()
+
+
+def _scenario_id(example: dict, default: Any = _NO_DEFAULT) -> Any:
+    """Return the example's scenario_id, or default when it carries none.
+
+    With no default a missing scenario_id is an error, which is what the local
+    JSONL path wants: those records are schema-validated and must always have one.
+    Examples authored by hand in the LangSmith web UI frequently do not, so
+    callers reading a remote dataset should pass a default and handle the
+    unlabeled examples explicitly rather than crashing on the first one.
+    """
     sc_id = (example.get("metadata") or {}).get("scenario_id")
     if sc_id is None:
-        raise ValueError(f"Example is missing scenario_id in metadata: {example}")
+        if default is _NO_DEFAULT:
+            raise ValueError(f"Example is missing scenario_id in metadata: {example}")
+        return default
     return sc_id
+
+
+def _partition_by_scenario_id(
+    examples: list[dict],
+) -> tuple[dict[int, dict], list[dict]]:
+    """Split examples into a {scenario_id: example} map plus the unlabeled ones."""
+    by_id: dict[int, dict] = {}
+    unlabeled: list[dict] = []
+    for ex in examples:
+        sc_id = _scenario_id(ex, default=None)
+        if sc_id is None:
+            unlabeled.append(ex)
+        else:
+            by_id[sc_id] = ex
+    return by_id, unlabeled
+
+
+def _query_preview(example: dict) -> str:
+    """Return a short single-line preview of an example's question."""
+    query = ((example.get("inputs") or {}).get("query") or "").strip()
+    if not query:
+        return "<empty query>"
+    return query[:60] + "..." if len(query) > 60 else query
+
+
+def _unlabeled_label(example: dict) -> str:
+    """Describe an example that carries no scenario_id, for diff output."""
+    return f"(no scenario_id) {_query_preview(example)}"
+
+
+def _next_scenario_id(examples: list[dict]) -> int:
+    """Return one past the highest scenario_id in use, or 0 if none are labeled."""
+    by_id, _ = _partition_by_scenario_id(examples)
+    return max(by_id) + 1 if by_id else 0
+
+
+def _adopt_metadata(example: dict, scenario_id: int) -> dict:
+    """Build the metadata block for an unlabeled example, keyed off its inputs.
+
+    city and state come from the example's own inputs so that the metadata and the
+    inputs cannot disagree; dataset_split is preserved when the UI already set one.
+    """
+    inputs = example.get("inputs") or {}
+    city = inputs.get("city")
+    state = inputs.get("state")
+    return {
+        "city": city,
+        "tags": [f"city-{city if city else 'None'}", f"state-{state}"],
+        "state": state,
+        "scenario_id": scenario_id,
+        "dataset_split": (example.get("metadata") or {}).get("dataset_split")
+        or ["base"],
+    }
+
+
+def _adopt_warnings(example: dict) -> list[str]:
+    """Flag content problems common in UI-authored examples, for a human to review.
+
+    Adoption only assigns metadata; it never edits inputs or outputs, because
+    repairing them is a judgement call.  These warnings say where to look.
+    """
+    warnings: list[str] = []
+    if not ((example.get("inputs") or {}).get("query") or "").strip():
+        warnings.append("inputs.query is empty")
+    blank = sum(
+        1
+        for msg in (example.get("outputs") or {}).get("reference_conversation") or []
+        if not (msg.get("content") or "").strip()
+    )
+    if blank:
+        warnings.append(f"{blank} reference_conversation message(s) have empty content")
+    return warnings
 
 
 _EXAMPLE_DIFF_FIELDS = ("inputs", "outputs", "metadata")
@@ -374,8 +463,8 @@ def cmd_dataset_diff(args: argparse.Namespace) -> None:
         print(str(exc), file=sys.stderr)
         sys.exit(1)
 
-    left_by_id = {_scenario_id(ex): ex for ex in left}
-    right_by_id = {_scenario_id(ex): ex for ex in right}
+    left_by_id, left_unlabeled = _partition_by_scenario_id(left)
+    right_by_id, right_unlabeled = _partition_by_scenario_id(right)
 
     only_left = sorted(left_by_id.keys() - right_by_id.keys())
     only_right = sorted(right_by_id.keys() - left_by_id.keys())
@@ -385,8 +474,14 @@ def cmd_dataset_diff(args: argparse.Namespace) -> None:
     for sid in only_left:
         print(f"< scenario_id={sid}")
         found_diff = True
+    for ex in left_unlabeled:
+        print(f"< {_unlabeled_label(ex)}")
+        found_diff = True
     for sid in only_right:
         print(f"> scenario_id={sid}")
+        found_diff = True
+    for ex in right_unlabeled:
+        print(f"> {_unlabeled_label(ex)}")
         found_diff = True
     for sid in common:
         diff_lines = _example_content_diff(left_by_id[sid], right_by_id[sid])
@@ -413,7 +508,9 @@ def cmd_dataset_merge(args: argparse.Namespace) -> None:
     target_ds = client.read_dataset(dataset_name=args.target)
     _apply_dataset_schemas(client, target_ds.id)
     existing = list(client.list_examples(dataset_id=target_ds.id))
-    existing_ids = {_scenario_id({"metadata": ex.metadata}) for ex in existing}
+    existing_ids = {
+        _scenario_id({"metadata": ex.metadata}, default=None) for ex in existing
+    } - {None}
 
     to_add = [ex for ex in source_examples if _scenario_id(ex) not in existing_ids]
     for ex in to_add:
@@ -461,7 +558,9 @@ def cmd_example_show(args: argparse.Namespace) -> None:
     else:
         examples = _load_examples(ref, make_client())
 
-    matches = [ex for ex in examples if _scenario_id(ex) == args.scenario_id]
+    matches = [
+        ex for ex in examples if _scenario_id(ex, default=None) == args.scenario_id
+    ]
     if not matches:
         print(f"Example {args.scenario_id} not found.", file=sys.stderr)
         sys.exit(1)
@@ -504,10 +603,56 @@ def cmd_example_remove(args: argparse.Namespace) -> None:
     print(f"Removed example {args.scenario_id} from '{args.dataset}'.")
 
 
+def cmd_example_adopt(args: argparse.Namespace) -> None:
+    """Assign scenario_ids to remote examples that were authored in the LangSmith UI.
+
+    Examples created in the browser carry no scenario_id, which is the stable key the
+    rest of the tooling diffs and merges on.  Neither push (which only creates) nor
+    example update (which looks its target up by scenario_id) can label them, so this
+    fills the gap by patching metadata onto the existing examples in place.
+    """
+    client = make_client()
+    ds = client.read_dataset(dataset_name=args.dataset)
+    remote = sorted(
+        client.list_examples(dataset_id=ds.id),
+        key=lambda e: _as_utc(e.created_at) if e.created_at else _EPOCH,
+    )
+    records = [
+        {"metadata": ex.metadata, "inputs": ex.inputs, "outputs": ex.outputs}
+        for ex in remote
+    ]
+
+    next_id = args.start_id if args.start_id is not None else _next_scenario_id(records)
+    verb = "Would assign" if args.dry_run else "Assigned"
+
+    adopted = 0
+    for ex, record in zip(remote, records):
+        if _scenario_id(record, default=None) is not None:
+            continue
+        metadata = _adopt_metadata(record, next_id + adopted)
+        adopted += 1
+        print(f"{verb} scenario_id={metadata['scenario_id']}: {_query_preview(record)}")
+        for warning in _adopt_warnings(record):
+            print(
+                f"  warning: scenario_id={metadata['scenario_id']}: {warning}",
+                file=sys.stderr,
+            )
+        if not args.dry_run:
+            client.update_example(example_id=ex.id, metadata=metadata)
+
+    if not adopted:
+        print(f"No unlabeled examples in '{args.dataset}'.")
+        return
+    print(f"{verb} {adopted} scenario_id(s) in '{args.dataset}'.")
+    if not args.dry_run:
+        print("Run 'dataset pull' to bring the labeled examples into the local file.")
+
+
 def cmd_example_update(args: argparse.Namespace) -> None:
     local_examples = {
-        _scenario_id(ex): ex
+        sid: ex
         for ex in _read_jsonl(args.file, validate=_Validate("warn"))
+        if (sid := _scenario_id(ex, default=None)) is not None
     }
     if args.scenario_id not in local_examples:
         print(f"Example {args.scenario_id} not found in {args.file}.", file=sys.stderr)
@@ -1850,6 +1995,39 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("scenario_id", type=int, help="scenario_id from metadata.")
     p.set_defaults(func=cmd_example_remove)
+
+    p = example_sub.add_parser(
+        "adopt",
+        help="Assign scenario_ids to remote examples created in the LangSmith UI.",
+        description=(
+            "Assign a scenario_id, and the city/state/tags/dataset_split metadata that "
+            "goes with it, to every remote example that lacks one. IDs are handed out "
+            "in creation order starting one past the highest currently in use. Only "
+            "metadata is written: inputs and outputs are left untouched, and content "
+            "worth a human look is reported as a warning. Follow with 'dataset pull' "
+            "to bring the labeled examples into the local JSONL file."
+        ),
+    )
+    p.add_argument(
+        "dataset",
+        nargs="?",
+        default=DEFAULT_DATASET_NAME,
+        metavar="name",
+        help=f"LangSmith dataset name (default: {DEFAULT_DATASET_NAME})",
+    )
+    p.add_argument(
+        "--start-id",
+        type=int,
+        default=None,
+        metavar="N",
+        help="First scenario_id to assign (default: one past the highest in use).",
+    )
+    p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the assignments without writing them to LangSmith.",
+    )
+    p.set_defaults(func=cmd_example_adopt)
 
     p = example_sub.add_parser("update", help="Update an example from a JSONL file.")
     p.add_argument(
