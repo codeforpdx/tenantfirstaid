@@ -155,8 +155,12 @@ jobs:
       - name: Run linting checks
         run: npm run lint
 
-      - name: Run format fixes
-        run: npx prettier --write .
+      # --check, not --write: a --write here reformats files in a throwaway runner and
+      # discards them, so it can never fail and never gated anything. --check makes CI
+      # agree with the container lane (frontend/Dockerfile's ci stage runs the same
+      # check). Run `mise run fmt` locally to fix; the host `check` task does it for you.
+      - name: Check formatting
+        run: npx prettier --check .
 
       - name: Run frontend tests
         run: npm run test

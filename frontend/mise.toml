@@ -11,12 +11,208 @@ sources = ["package.json", "package-lock.json"]
 outputs = { auto = true }
 run = "npm install"
 
+[tasks.build]
+description = "Build the frontend for production. host: writes dist/; --container: verify-only (the image's dist/ is discarded)."
+depends = ["install", "generate-frontend-assets"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+'''
+run = '''
+set -eu
+if [ -n "${usage_container:-}" ]; then
+  # No bind-mount: the image's own /workspace/frontend/node_modules (built for the
+  # container's platform) must be what tsc/vite/esbuild/rollup resolve, not whatever
+  # native binaries happen to be installed on the host (see PR #387 review).
+  exec mise run //:_container-run \
+    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+    --cache-key-files "frontend/package.json frontend/package-lock.json" \
+    --engine "${usage_engine:-auto}" \
+    --cmd "npm run build:only"
+fi
+npm run build:only
+'''
+
 [tasks.dev]
 description = "Start the Vite dev server."
 run = "npm run dev"
 
+[tasks.fmt]
+description = "Format with prettier. host: MUTATES; --container: verify-only; --container --write: reformat host tree via the container."
+depends = ["install"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+flag "--write" help="With --container: bind-mount and reformat the host tree in place."
+arg "<options>" var=#true required=#false help="Extra prettier args."
+'''
+run = '''
+set -eu
+if [ -n "${usage_container:-}" ]; then
+  if [ -n "${usage_write:-}" ]; then
+    # Write-back: MOUNTED lane. container_dispatch --project frontend mounts the repo root
+    # at /src and runs from /src/frontend, so reformatted files land on the host. Bare
+    # `prettier` (image PATH), not `npm run format`, per the naming rule in
+    # scripts/container_dispatch.sh -- the workdir here is the host tree.
+    . ../scripts/container_dispatch.sh
+    container_dispatch --project frontend \
+      --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+      --cache-key-files "frontend/package.json frontend/package-lock.json" \
+      --cmd "prettier --write . ${usage_options:-}"
+  fi
+  # No --write: verify (read-only). UNMOUNTED lane, so the cwd is the image's own tree and
+  # `npm run` is the right call, per the same rule (as in build/test's --container
+  # branches). The two lanes differ on purpose: the rule keys off the mount, not the task.
+  exec mise run //:_container-run \
+    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+    --cache-key-files "frontend/package.json frontend/package-lock.json" \
+    --engine "${usage_engine:-auto}" \
+    --cmd "npm run format:check -- ${usage_options:-}"
+fi
+npm run format -- ${usage_options:-}
+'''
+
+[tasks.lint]
+description = "Lint with eslint."
+depends = ["install", "generate-frontend-assets"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+arg "<options>" var=#true required=#false help="Extra eslint args."
+'''
+run = '''
+set -eu
+# --image-dir: eslint's flat config resolves its plugins (and typescript-eslint's
+# typescript) by walking up from the config file, so a repo-root mount would hand it the
+# HOST's node_modules and quietly defeat the point of --container. Mounting only the
+# source into the image's own tree leaves node_modules the image's.
+. ../scripts/container_dispatch.sh
+container_dispatch --project frontend --image-dir /workspace/frontend \
+  --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+  --cache-key-files "frontend/package.json frontend/package-lock.json" \
+  --cmd "eslint . ${usage_options:-}"
+npm run lint -- ${usage_options:-}
+'''
+
+[tasks.typecheck]
+description = "Type-check with tsc."
+depends = ["install", "generate-frontend-assets"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+arg "<options>" var=#true required=#false help="Extra tsc args."
+'''
+run = '''
+set -eu
+# --image-dir: tsc resolves @types and library .d.ts by walking up from each source file,
+# which is inside the mount, so a repo-root mount would type-check against the host's
+# node_modules. See lint's comment and scripts/container_dispatch.sh.
+. ../scripts/container_dispatch.sh
+container_dispatch --project frontend --image-dir /workspace/frontend \
+  --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+  --cache-key-files "frontend/package.json frontend/package-lock.json" \
+  --cmd "tsc --noEmit -p tsconfig.app.json ${usage_options:-}"
+npm run typecheck -- ${usage_options:-}
+'''
+
+[tasks.test]
+description = "Run vitest."
+depends = ["install", "generate-frontend-assets"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+arg "<options>" var=#true required=#false help="Extra vitest args."
+'''
+run = '''
+set -eu
+if [ -n "${usage_container:-}" ]; then
+  # No bind-mount: see build's --container branch for why.
+  exec mise run //:_container-run \
+    --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+    --cache-key-files "frontend/package.json frontend/package-lock.json" \
+    --engine "${usage_engine:-auto}" \
+    --cmd "npm run test -- --run ${usage_options:-}"
+fi
+npm run test -- --run ${usage_options:-}
+'''
+
+# --container keeps the bind-mount (for live source), but must not let it shadow the
+# image's own tooling: json2ts is resolved from the image's PATH (its baked
+# node_modules/.bin) rather than via `npm run`, which would find the host's, and
+# UV_PROJECT_ENVIRONMENT is redirected to a container-only scratch path so `uv run
+# --directory ../backend` (which resolves into the bind-mounted /src/backend) syncs its
+# own throwaway venv instead of reading/writing the host's .venv.
+[tasks.generate-types]
+description = "Regenerate the frontend's TypeScript types from the backend Pydantic models."
+depends = ["install", "//backend:sync"]
+sources = ["../backend/tenantfirstaid/schema.py", "../backend/tenantfirstaid/location.py", "../backend/tenantfirstaid/referrals.py", "../backend/scripts/generate_types.py"]
+# Name the real output rather than `{ auto = true }`: auto keys freshness on the sources
+# checksum alone, so deleting this gitignored file (git clean -xdf, a fresh worktree)
+# would leave the task "fresh" and the next typecheck/build would fail on a missing
+# module. Listing it makes mise re-run when the file is gone.
+outputs = ["src/types/models.ts"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+'''
+run = '''
+set -eu
+. ../scripts/container_dispatch.sh
+bkuv="UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend"
+container_dispatch --project frontend \
+  --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+  --cache-key-files "frontend/package.json frontend/package-lock.json" \
+  --cmd "mkdir -p src/types && $bkuv python scripts/generate_types.py | json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts"
+. scripts/require-backend-uv.sh
+npm run generate-types
+'''
+
+[tasks.generate-referrals]
+description = "Regenerate the frontend's bundled referral catalog from the backend referrals data."
+depends = ["install", "//backend:sync"]
+sources = ["../backend/tenantfirstaid/referrals.py", "../backend/tenantfirstaid/referrals_data.json", "../backend/scripts/generate_referrals.py"]
+# See generate-types for why the output is named rather than `{ auto = true }`.
+outputs = ["src/generated/referrals.ts"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+'''
+run = '''
+set -eu
+. ../scripts/container_dispatch.sh
+bkuv="UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend"
+container_dispatch --project frontend \
+  --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+  --cache-key-files "frontend/package.json frontend/package-lock.json" \
+  --cmd "mkdir -p src/generated && $bkuv python scripts/generate_referrals.py > src/generated/referrals.ts"
+. scripts/require-backend-uv.sh
+npm run generate-referrals
+'''
+
+[tasks.generate-frontend-assets]
+description = "Regenerate frontend build-time assets (types + referral catalog) from the backend."
+depends = ["install", "//backend:sync"]
+sources = ["../backend/tenantfirstaid/schema.py", "../backend/tenantfirstaid/location.py", "../backend/tenantfirstaid/referrals.py", "../backend/tenantfirstaid/referrals_data.json", "../backend/scripts/generate_types.py", "../backend/scripts/generate_referrals.py"]
+# See generate-types for why the outputs are named rather than `{ auto = true }`.
+outputs = ["src/types/models.ts", "src/generated/referrals.ts"]
+usage = '''
+flag "--container" help="Run in the Dockerfile ci image instead of on the host."
+flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+'''
+run = '''
+set -eu
+. ../scripts/container_dispatch.sh
+bkuv="UV_PROJECT_ENVIRONMENT=/tmp/backend-venv uv run --directory ../backend"
+container_dispatch --project frontend \
+  --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
+  --cache-key-files "frontend/package.json frontend/package-lock.json" \
+  --cmd "mkdir -p src/types src/generated && $bkuv python scripts/generate_types.py | json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts && $bkuv python scripts/generate_referrals.py > src/generated/referrals.ts"
+. scripts/require-backend-uv.sh
+npm run generate-frontend-assets
+'''
+
 [tasks.check]
-description = "Frontend: generate-frontend-assets, typecheck, lint, test."
+description = "Frontend: fmt, generate-frontend-assets, build, typecheck, lint, test."
 depends = ["install"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
@@ -31,8 +227,16 @@ if [ -n "${usage_container:-}" ]; then
     --image tenantfirstaid-frontend:ci --context . --dockerfile frontend/Dockerfile \
     --engine "${usage_engine:-auto}"
 fi
-npm run generate-frontend-assets
-npm run typecheck
-npm run lint
-npm run test -- --run
+# Format first, and ordered: fmt MUTATES the tree that the verify steps below read
+# (matching //backend:check). It reformats rather than failing, so a formatting-only
+# problem shows up as a dirty working tree here, not as a failed check — CI's
+# verify-only lane (frontend/Dockerfile's ci stage runs `prettier --check .`) is what
+# turns that into a hard failure. Use `mise run fmt --container` to verify locally.
+mise run fmt
+# Generate assets once up front. build/lint/typecheck/test each also depend on
+# generate-frontend-assets, so this run is what actually regenerates the files;
+# its sources/outputs caching then makes each dependent task's re-run of it a
+# cheap no-op instead of a race with a concurrent regeneration.
+mise run generate-frontend-assets
+mise run --continue-on-error -o keep-order build ::: lint ::: typecheck ::: test
 '''

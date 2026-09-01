@@ -34,7 +34,7 @@ flowchart TD
 |-------------|-----|--------------------|---------|
 | **Production** | [tenantfirstaid.com](https://tenantfirstaid.com) | Automatic on push to `main` | Live site for end users |
 | **Staging** | Internal URL (see GitHub environment settings) | Manual (`workflow_dispatch`) | Pre-production validation |
-| **Local** | `http://localhost:5173` | Manual (`uv run python -m tenantfirstaid.app` + `npm run dev`) | Developer iteration and testing |
+| **Local** | `http://localhost:5173` | Manual (`mise run dev`) | Developer iteration and testing |
 
 Additionally, the agent can be run locally or deployed to LangSmith Cloud for evaluation and interactive testing:
 

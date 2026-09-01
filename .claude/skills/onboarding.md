@@ -21,15 +21,14 @@ Help a new contributor get the repo set up and running locally for the first tim
 
 Required to run the backend locally (Gemini LLM + Vertex AI RAG). A project admin must grant your Google account access first — ask in Discord #tenantfirstaid-general.
 
-Once granted:
+Once granted, `gcloud` itself is provisioned by mise on first use (no separate install) — run:
 
 ```sh
-# Install gcloud CLI: https://cloud.google.com/sdk/docs/install
-gcloud auth application-default login
-gcloud auth application-default set-quota-project tenantfirstaid
+mise trust
+mise run //:gcloud-login   # provisions gcloud, runs the auth login + set-quota-project, prints the ADC path
 ```
 
-Note the credentials file path — typically `~/.config/gcloud/application_default_credentials.json` on Unix. Do not use `~` in path values; Python won't expand it.
+Note the printed credentials file path — typically `~/.config/gcloud/application_default_credentials.json` on Unix. Do not use `~` in path values; Python won't expand it.
 
 ### LangSmith API key
 
@@ -44,6 +43,15 @@ First set up the backend env file (both options below read it):
 ```sh
 cp backend/.env.example backend/.env
 # Set GOOGLE_APPLICATION_CREDENTIALS (the creds path from above) and LANGSMITH_API_KEY.
+```
+
+Setting `GOOGLE_APPLICATION_CREDENTIALS` only works once the project admin has granted your
+Google account access (see the Prerequisites section above). Optionally smoke-test it before
+starting the app — this loads the credential from `backend/.env` the same way the app does
+and queries the same Vertex AI Search serving config:
+
+```sh
+mise run //:gcloud-login-check
 ```
 
 ### Option A: Containers (fastest, cross-engine)
@@ -85,7 +93,9 @@ docker compose up --build     # backend :5001, frontend :5173
 Checks are driven by [mise](https://mise.jdx.dev), configured as a monorepo: the root
 `mise.toml` ties together `backend/mise.toml` (uv toolchain) and `frontend/mise.toml`
 (node toolchain). One-time setup provisions the pinned tools (uv, node 24, and — on
-macOS — apple/container):
+macOS — apple/container). `gcloud` is a separate, per-task pin — see the Google Cloud
+credentials section above — so it's provisioned only when you run `mise run
+//:gcloud-login`, not by `setup`:
 
 ```sh
 # Install mise: https://mise.jdx.dev/installing-mise.html

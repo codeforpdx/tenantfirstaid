@@ -8,10 +8,12 @@
     "generate-types": "mkdir -p src/types && uv run --directory ../backend python scripts/generate_types.py | json2ts --unreachableDefinitions --additionalProperties false > src/types/models.ts",
     "generate-referrals": "mkdir -p src/generated && uv run --directory ../backend python scripts/generate_referrals.py > src/generated/referrals.ts",
     "generate-frontend-assets": "npm run generate-types && npm run generate-referrals",
-    "build": "npm run generate-frontend-assets && tsc -b && vite build",
+    "build": "npm run generate-frontend-assets && npm run build:only",
+    "build:only": "tsc -b && vite build",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "preview": "vite preview",
     "test": "vitest",
     "test:coverage": "vitest run --coverage"
