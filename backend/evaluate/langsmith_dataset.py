@@ -419,14 +419,17 @@ class ScenarioId(int):
             return default
         return sc_id
 
-    # TODO: same as from_example above — this and next_id below operate on whole
-    # example dicts, not just ScenarioId's own metadata/value inputs. They'd move
-    # to ExampleRecord too, if that's ever built.
+    # TODO: same as from_example above — this operates on whole example dicts, not
+    # just ScenarioId's own metadata/value inputs. It'd move to ExampleRecord too,
+    # if that's ever built.
     @classmethod
     def partition(
         cls, examples: list[dict]
     ) -> "tuple[dict[ScenarioId, dict], list[dict]]":
-        """Split examples into a {scenario_id: example} map plus the unlabeled ones."""
+        """Split examples into a {scenario_id: example} map plus the unlabeled ones.
+
+        A duplicate scenario_id silently keeps only the last example that has it.
+        """
         by_id: dict[ScenarioId, dict] = {}
         unlabeled: list[dict] = []
         for ex in examples:
@@ -436,12 +439,6 @@ class ScenarioId(int):
             else:
                 by_id[sc_id] = ex
         return by_id, unlabeled
-
-    @classmethod
-    def next_id(cls, examples: list[dict]) -> "ScenarioId":
-        """Return one past the highest scenario_id in use, or 0 if none are labeled."""
-        by_id, _ = cls.partition(examples)
-        return cls(max(by_id) + 1) if by_id else cls(0)
 
     @classmethod
     def existing_ids(cls, examples: Iterable[Any]) -> "set[ScenarioId]":
@@ -480,8 +477,9 @@ def _adopt_metadata(example: dict, scenario_id: int) -> dict:
     """Build the metadata block for an unlabeled example, keyed off its inputs.
 
     city and state come from the example's own inputs so that the metadata and the
-    inputs cannot disagree. Any other key the UI already set on the example's
-    metadata (dataset_split included) is preserved, not dropped.
+    inputs cannot disagree — this overwrites any city/state the UI already set on
+    metadata. Any other key the UI already set (dataset_split included) is
+    preserved, not dropped.
     """
     inputs = example.get("inputs") or {}
     city = inputs.get("city")
@@ -614,8 +612,23 @@ def cmd_dataset_merge(args: argparse.Namespace) -> None:
     existing = list(client.list_examples(dataset_id=target_ds.id))
     existing_ids = ScenarioId.existing_ids(existing)
 
+    # _load_examples doesn't schema-validate a remote source, so it may contain
+    # examples with no scenario_id (e.g. authored in the LangSmith UI); from_example
+    # with no default would raise ValueError on those instead of merging cleanly.
+    scenario_ids = [ScenarioId.from_example(ex, default=None) for ex in source_examples]
+    unlabeled = sum(1 for sc_id in scenario_ids if sc_id is None)
+    if unlabeled:
+        print(
+            f"warning: {unlabeled} source example(s) have no integer scenario_id and "
+            "will be merged unconditionally; run 'example adopt' on the source first "
+            "to avoid duplicates.",
+            file=sys.stderr,
+        )
+
     to_add = [
-        ex for ex in source_examples if ScenarioId.from_example(ex) not in existing_ids
+        ex
+        for ex, sc_id in zip(source_examples, scenario_ids)
+        if sc_id not in existing_ids
     ]
     for ex in to_add:
         client.create_example(
@@ -645,9 +658,17 @@ def cmd_example_list(args: argparse.Namespace) -> None:
     client = make_client()
     ds = client.read_dataset(dataset_name=args.dataset)
     examples = list(client.list_examples(dataset_id=ds.id))
+
+    def sort_key(e: Any) -> tuple[int, int | str]:
+        sc_id = ScenarioId.from_metadata(e.metadata)
+        if sc_id is not None:
+            return (0, sc_id)
+        return (1, str(e.id))
+
     rows = []
-    for ex in sorted(examples, key=lambda e: (e.metadata or {}).get("scenario_id", 0)):
-        sid = str((ex.metadata or {}).get("scenario_id", "?")).rjust(4)
+    for ex in sorted(examples, key=sort_key):
+        sc_id = ScenarioId.from_metadata(ex.metadata)
+        sid = str(sc_id if sc_id is not None else "?").rjust(4)
         tags = str((ex.metadata or {}).get("tags", []))
         query = (ex.inputs or {}).get("query", "")[:80]
         rows.append((sid, tags, query))
@@ -700,7 +721,7 @@ def cmd_example_remove(args: argparse.Namespace) -> None:
     matches = [
         ex
         for ex in examples
-        if (ex.metadata or {}).get("scenario_id") == args.scenario_id
+        if ScenarioId.from_metadata(ex.metadata) == args.scenario_id
     ]
     if not matches:
         print(f"Example {args.scenario_id} not found.", file=sys.stderr)
@@ -748,7 +769,7 @@ def cmd_example_adopt(args: argparse.Namespace) -> None:
 
     adopted = 0
     for ex, record in zip(remote, records):
-        if record not in unlabeled:
+        if ScenarioId.from_metadata(record.get("metadata")) is not None:
             continue
         metadata = _adopt_metadata(record, next_id + adopted)
         adopted += 1
@@ -998,9 +1019,15 @@ def _index_feedback_by_run(client: Any, run_ids: list) -> dict[str, list]:
 def _index_scenario_ids(
     client: Any, example_ids: list, default: int = -1
 ) -> dict[str, int]:
-    """Return {str(example_id): scenario_id} fetched from example metadata."""
+    """Return {str(example_id): scenario_id} fetched from example metadata.
+
+    default is used both when scenario_id is absent and when it's present but
+    unparseable (e.g. an explicit null, the shape the LangSmith UI produces).
+    """
     return {
-        str(ex.id): (ex.metadata or {}).get("scenario_id", default)
+        str(ex.id): sc_id
+        if (sc_id := ScenarioId.from_metadata(ex.metadata)) is not None
+        else default
         for ex in client.list_examples(example_ids=example_ids)
     }
 

@@ -1422,7 +1422,7 @@ def test_cmd_example_update_skips_unlabeled_local_records(tmp_path, capsys):
     mock_client.update_example.assert_called_once()
 
 
-# ── _query_preview / ScenarioId.next_id / _adopt_* ────────────────────────────
+# ── _query_preview / _adopt_* ──────────────────────────────────────────────
 
 
 def test_query_preview_short_query_verbatim():
@@ -1440,20 +1440,6 @@ def test_query_preview_non_string_query_does_not_crash():
     assert _query_preview({"inputs": {"query": 42}}) == "42"
 
 
-def test_scenario_id_next_id_from_highest_in_use():
-    assert ScenarioId.next_id([_make_scenario(0), _make_scenario(6)]) == 7
-
-
-def test_scenario_id_next_id_ignores_unlabeled():
-    unlabeled = {"metadata": {}, "inputs": {}, "outputs": {}}
-    assert ScenarioId.next_id([_make_scenario(3), unlabeled]) == 4
-
-
-def test_scenario_id_next_id_starts_at_zero_when_none_labeled():
-    assert ScenarioId.next_id([{"metadata": {}, "inputs": {}, "outputs": {}}]) == 0
-    assert ScenarioId.next_id([]) == 0
-
-
 def test_scenario_id_partition_treats_non_int_as_unlabeled():
     """A non-int scenario_id (e.g. a stray string from hand-edited JSON) must not be
     trusted as a dict key downstream, so it's bucketed as unlabeled instead."""
@@ -1461,11 +1447,6 @@ def test_scenario_id_partition_treats_non_int_as_unlabeled():
     by_id, unlabeled = ScenarioId.partition([_make_scenario(3), non_int])
     assert by_id == {3: _make_scenario(3)}
     assert unlabeled == [non_int]
-
-
-def test_scenario_id_next_id_ignores_non_int_scenario_id():
-    non_int = {"metadata": {"scenario_id": "99"}, "inputs": {}, "outputs": {}}
-    assert ScenarioId.next_id([_make_scenario(3), non_int]) == 4
 
 
 def test_adopt_metadata_derives_tags_from_inputs():
