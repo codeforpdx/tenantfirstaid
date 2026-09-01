@@ -3,6 +3,7 @@ Test location sanitization and other methods
 """
 
 import json
+from datetime import datetime
 from typing import Dict, cast
 from unittest.mock import MagicMock, patch
 
@@ -18,8 +19,10 @@ from tenantfirstaid.constants import DatastoreKey
 from tenantfirstaid.google_auth import load_gcp_credentials
 from tenantfirstaid.langchain_tools import (
     CityStateLawsInputSchema,
+    NoticeServiceMethod,
     RagBuilder,
     _make_rag_tool,
+    calculate_ors_90_160_notice_deadline,
     filter_builder,
     generate_letter,
     get_active_rag_tools,
@@ -401,3 +404,168 @@ def test_rag_search_gives_up_after_three_attempts(mock_retriever_class, mock_cre
         builder.search("test query")
 
     assert mock_instance.invoke.call_count == 3
+
+
+# --- calculate_ors_90_160_notice_deadline tests ---
+
+
+def _fmt(dt: datetime) -> str:
+    return dt.strftime("%A, %B %d, %Y at %I:%M %p")
+
+
+def test_notice_deadline_day_based_personal_delivery():
+    """ORS 90.160(1): day of service excluded, last day counted through 11:59 PM."""
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-01-01",
+            "period_value": 30,
+            "period_unit": "days",
+            "service_method": NoticeServiceMethod.PERSONAL_DELIVERY,
+        }
+    )
+    assert f"DEADLINE: {_fmt(datetime(2026, 1, 31, 23, 59))}" in result
+    assert "ORS 90.160(1)" in result
+    assert "90.155(2)" not in result
+
+
+def test_notice_deadline_day_based_mail_alone_adds_three_days():
+    """ORS 90.155(2): mail-alone service extends the minimum period by 3 days."""
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-01-01",
+            "period_value": 30,
+            "period_unit": "days",
+            "service_method": NoticeServiceMethod.FIRST_CLASS_MAIL,
+        }
+    )
+    assert f"DEADLINE: {_fmt(datetime(2026, 2, 3, 23, 59))}" in result
+    assert "ORS 90.155(2)" in result
+
+
+def test_notice_deadline_hour_based_starts_immediately_on_service():
+    """ORS 90.160(2)(a): hour clock starts immediately upon service."""
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-01-01",
+            "service_time": "14:00",
+            "period_value": 72,
+            "period_unit": "hours",
+            "service_method": NoticeServiceMethod.PERSONAL_DELIVERY,
+        }
+    )
+    assert f"DEADLINE: {_fmt(datetime(2026, 1, 4, 14, 0))}" in result
+    assert "ORS 90.160(2)(a)" in result
+
+
+def test_notice_deadline_hour_based_mail_and_attach_termination_special_start():
+    """ORS 90.160(2)(b): mail-and-attach termination notice starts the clock at
+    11:59 PM on the day both methods completed, regardless of service_time."""
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-01-01",
+            "period_value": 72,
+            "period_unit": "hours",
+            "service_method": NoticeServiceMethod.MAIL_AND_ATTACH,
+            "is_termination_notice": True,
+        }
+    )
+    assert f"DEADLINE: {_fmt(datetime(2026, 1, 4, 23, 59))}" in result
+    assert "ORS 90.160(2)(b)" in result
+    assert "rental agreement authorizes it" in result
+
+
+def test_notice_deadline_hour_based_mail_and_attach_non_termination_needs_service_time():
+    """The 90.160(2)(b) special start is for termination notices only — a
+    non-termination mail-and-attach hour-based notice still needs service_time."""
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-01-01",
+            "period_value": 24,
+            "period_unit": "hours",
+            "service_method": NoticeServiceMethod.MAIL_AND_ATTACH,
+            "is_termination_notice": False,
+        }
+    )
+    assert "MISSING INPUT" in result
+    assert "DEADLINE:" not in result
+
+
+def test_notice_deadline_hour_based_missing_service_time():
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-01-01",
+            "period_value": 72,
+            "period_unit": "hours",
+            "service_method": NoticeServiceMethod.PERSONAL_DELIVERY,
+        }
+    )
+    assert "MISSING INPUT" in result
+    assert "DEADLINE:" not in result
+
+
+def test_notice_deadline_email_only_termination_is_rejected():
+    """ORS 90.155(5): e-mail alone never validly serves a termination notice."""
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-01-01",
+            "period_value": 30,
+            "period_unit": "days",
+            "service_method": NoticeServiceMethod.EMAIL_ONLY,
+            "is_termination_notice": True,
+        }
+    )
+    assert "SERVICE INVALID" in result
+    assert "DEADLINE:" not in result
+
+
+def test_notice_deadline_email_and_mail_requires_termination_flag():
+    """email_and_mail models ORS 90.155(5), which only governs termination notices."""
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-01-01",
+            "period_value": 30,
+            "period_unit": "days",
+            "service_method": NoticeServiceMethod.EMAIL_AND_MAIL,
+            "is_termination_notice": False,
+        }
+    )
+    assert "INPUT MISMATCH" in result
+    assert "DEADLINE:" not in result
+
+
+def test_notice_deadline_unit_check_states_both_units_unambiguously():
+    """The result must spell out that the period is hours, not days (or vice versa),
+    so the model can't relay the wrong unit to the tenant."""
+    days_result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-01-01",
+            "period_value": 30,
+            "period_unit": "days",
+            "service_method": NoticeServiceMethod.PERSONAL_DELIVERY,
+        }
+    )
+    assert "30 DAYS, NOT 30 HOURS" in days_result
+
+    hours_result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-01-01",
+            "service_time": "09:00",
+            "period_value": 72,
+            "period_unit": "hours",
+            "service_method": NoticeServiceMethod.PERSONAL_DELIVERY,
+        }
+    )
+    assert "72 HOURS, NOT 72 DAYS" in hours_result
+
+
+def test_notice_deadline_weekend_holiday_note_present():
+    """ORS 90.160 explicitly overrides ORCP 10 — no weekend/holiday roll-forward."""
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-01-01",
+            "period_value": 30,
+            "period_unit": "days",
+            "service_method": NoticeServiceMethod.PERSONAL_DELIVERY,
+        }
+    )
+    assert "Do NOT push this to the next business day" in result

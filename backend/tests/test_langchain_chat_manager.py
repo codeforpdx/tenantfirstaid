@@ -46,12 +46,13 @@ def test_prepare_system_prompt_includes_city_state(oregon_state, portland_city):
 
 def test_tools_include_rag_retrieval():
     """Test that tools list includes RAG retrieval and letter template tools."""
-    assert len(tools) == 4
+    assert len(tools) == 5
     tool_names = [tool.name for tool in tools]
     assert "retrieve_city_state_laws" in tool_names
     assert "generate_letter" in tool_names
     assert "get_letter_template" in tool_names
     assert "get_legal_aid_referrals" in tool_names
+    assert "calculate_ors_90_160_notice_deadline" in tool_names
 
 
 def test_system_prompt_no_city(oregon_state):
