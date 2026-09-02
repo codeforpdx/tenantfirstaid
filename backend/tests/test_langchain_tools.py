@@ -421,6 +421,7 @@ def test_notice_deadline_day_based_personal_delivery():
             "period_value": 30,
             "period_unit": "days",
             "service_method": NoticeServiceMethod.PERSONAL_DELIVERY,
+            "is_termination_notice": False,
         }
     )
     assert f"DEADLINE: {_fmt(datetime(2026, 1, 31, 23, 59))}" in result
@@ -436,6 +437,7 @@ def test_notice_deadline_day_based_mail_alone_adds_three_days():
             "period_value": 30,
             "period_unit": "days",
             "service_method": NoticeServiceMethod.FIRST_CLASS_MAIL,
+            "is_termination_notice": False,
         }
     )
     assert f"DEADLINE: {_fmt(datetime(2026, 2, 3, 23, 59))}" in result
@@ -451,6 +453,7 @@ def test_notice_deadline_hour_based_starts_immediately_on_service():
             "period_value": 72,
             "period_unit": "hours",
             "service_method": NoticeServiceMethod.PERSONAL_DELIVERY,
+            "is_termination_notice": False,
         }
     )
     assert f"DEADLINE: {_fmt(datetime(2026, 1, 4, 14, 0))}" in result
@@ -467,9 +470,27 @@ def test_notice_deadline_accepts_12_hour_service_time():
             "period_value": 72,
             "period_unit": "hours",
             "service_method": NoticeServiceMethod.PERSONAL_DELIVERY,
+            "is_termination_notice": False,
         }
     )
     assert f"DEADLINE: {_fmt(datetime(2026, 1, 4, 14, 0))}" in result
+
+
+def test_notice_deadline_hour_based_mail_alone_adds_three_days():
+    """ORS 90.155(2)'s three-day mail extension applies to hour-based periods too,
+    added on top of the hour count rather than replacing it."""
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-01-01",
+            "service_time": "14:00",
+            "period_value": 72,
+            "period_unit": "hours",
+            "service_method": NoticeServiceMethod.FIRST_CLASS_MAIL,
+            "is_termination_notice": False,
+        }
+    )
+    assert f"DEADLINE: {_fmt(datetime(2026, 1, 7, 14, 0))}" in result
+    assert "ORS 90.160(2)(a) and ORS 90.155(2)" in result
 
 
 def test_notice_deadline_hour_based_mail_and_attach_termination_special_start():
@@ -512,6 +533,7 @@ def test_notice_deadline_hour_based_missing_service_time():
             "period_value": 72,
             "period_unit": "hours",
             "service_method": NoticeServiceMethod.PERSONAL_DELIVERY,
+            "is_termination_notice": False,
         }
     )
     assert "MISSING INPUT" in result
@@ -557,6 +579,7 @@ def test_notice_deadline_unit_check_states_both_units_unambiguously():
             "period_value": 30,
             "period_unit": "days",
             "service_method": NoticeServiceMethod.PERSONAL_DELIVERY,
+            "is_termination_notice": False,
         }
     )
     assert "30 DAYS, NOT 30 HOURS" in days_result
@@ -568,6 +591,7 @@ def test_notice_deadline_unit_check_states_both_units_unambiguously():
             "period_value": 72,
             "period_unit": "hours",
             "service_method": NoticeServiceMethod.PERSONAL_DELIVERY,
+            "is_termination_notice": False,
         }
     )
     assert "72 HOURS, NOT 72 DAYS" in hours_result
@@ -581,6 +605,7 @@ def test_notice_deadline_weekend_holiday_note_present():
             "period_value": 30,
             "period_unit": "days",
             "service_method": NoticeServiceMethod.PERSONAL_DELIVERY,
+            "is_termination_notice": False,
         }
     )
     assert "Do NOT push this to the next business day" in result

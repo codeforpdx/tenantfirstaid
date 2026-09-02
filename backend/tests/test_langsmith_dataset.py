@@ -264,18 +264,24 @@ def test_scenario_id_from_example_raises_on_missing_metadata():
         ScenarioId.from_example({})
 
 
-def test_scenario_id_from_example_returns_default_when_missing():
-    assert ScenarioId.from_example({"metadata": {}}, default=None) is None
-    assert ScenarioId.from_example({}, default=-1) == -1
+def test_scenario_id_from_example_or_returns_default_when_missing():
+    assert ScenarioId.from_example_or({"metadata": {}}, None) is None
+    assert ScenarioId.from_example_or({}, -1) == -1
 
 
-def test_scenario_id_from_example_default_ignored_when_present():
-    assert ScenarioId.from_example({"metadata": {"scenario_id": 7}}, default=None) == 7
+def test_scenario_id_from_example_or_default_ignored_when_present():
+    assert ScenarioId.from_example_or({"metadata": {"scenario_id": 7}}, None) == 7
 
 
-def test_scenario_id_from_example_falsy_default_is_returned():
+def test_scenario_id_from_example_or_falsy_default_is_returned():
     """A default of 0 or None must not be mistaken for "no default given"."""
-    assert ScenarioId.from_example({"metadata": {}}, default=0) == 0
+    assert ScenarioId.from_example_or({"metadata": {}}, 0) == 0
+
+
+def test_scenario_id_rejects_string_construction():
+    """ScenarioId("7") must not silently bypass parse()'s validation."""
+    with pytest.raises(TypeError, match="plain int"):
+        ScenarioId("7")  # ty: ignore[invalid-argument-type]
 
 
 # ── ScenarioId.partition ──────────────────────────────────────────────────────
@@ -301,6 +307,55 @@ def test_scenario_id_partition_missing_metadata_key():
     by_id, leftovers = ScenarioId.partition([{"inputs": {}, "outputs": {}}])
     assert by_id == {}
     assert len(leftovers) == 1
+
+
+# ── ScenarioId.existing_ids ───────────────────────────────────────────────────
+
+
+def test_scenario_id_existing_ids_returns_labeled_ids_only():
+    examples = [
+        _make_remote_example(1),
+        _make_remote_example(2),
+        _make_unlabeled_remote_example(),
+    ]
+    assert ScenarioId.existing_ids(examples) == {1, 2}
+
+
+def test_scenario_id_existing_ids_deduplicates():
+    examples = [_make_remote_example(1), _make_remote_example(1)]
+    assert ScenarioId.existing_ids(examples) == {1}
+
+
+def test_scenario_id_existing_ids_empty_when_none_labeled():
+    examples = [_make_unlabeled_remote_example(), _make_unlabeled_remote_example()]
+    assert ScenarioId.existing_ids(examples) == set()
+
+
+# ── ScenarioId.sort_key ───────────────────────────────────────────────────────
+
+
+def test_scenario_id_sort_key_orders_labeled_before_unlabeled():
+    labeled = _make_remote_example(5)
+    unlabeled = _make_unlabeled_remote_example()
+    assert sorted([labeled, unlabeled], key=ScenarioId.sort_key) == [
+        labeled,
+        unlabeled,
+    ]
+
+
+def test_scenario_id_sort_key_labeled_sorts_by_scenario_id():
+    ex1 = _make_remote_example(1)
+    ex2 = _make_remote_example(2)
+    assert sorted([ex2, ex1], key=ScenarioId.sort_key) == [ex1, ex2]
+
+
+def test_scenario_id_sort_key_unlabeled_sorts_by_example_id():
+    ex_a = _make_unlabeled_remote_example()
+    ex_a.id = "aaa"
+    ex_b = _make_unlabeled_remote_example()
+    ex_b.id = "bbb"
+    assert ScenarioId.sort_key(ex_a) == (1, "aaa")
+    assert sorted([ex_b, ex_a], key=ScenarioId.sort_key) == [ex_a, ex_b]
 
 
 # ── _unlabeled_label ──────────────────────────────────────────────────────────

@@ -37,7 +37,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Literal, NamedTuple
+from typing import Any, Literal, NamedTuple, TypeVar
 
 import jsonschema
 from langchain_core.prompts import (
@@ -305,8 +305,9 @@ def cmd_dataset_pull(args: argparse.Namespace) -> None:
     unlabeled = sum(1 for key, _ in keyed if key[0] == 1)
     if unlabeled:
         print(
-            f"warning: {unlabeled} example(s) have no integer scenario_id; "
-            "run 'example adopt' before pulling to keep the local file schema-valid.",
+            f"warning: {unlabeled} example(s) have no integer scenario_id; they will "
+            "be pulled as unlabeled. Run 'example adopt' on them before the next "
+            "'dataset push' or 'example update'.",
             file=sys.stderr,
         )
 
@@ -352,6 +353,7 @@ def _load_examples(
 
 
 _NO_DEFAULT: Any = object()
+_T = TypeVar("_T")
 
 
 class ScenarioId(int):
@@ -365,6 +367,15 @@ class ScenarioId(int):
     which fold all of those into `None` ("unlabeled") instead of a value that
     looks numeric but isn't.
     """
+
+    def __new__(cls, value: int) -> "ScenarioId":
+        if type(value) is not int:
+            raise TypeError(
+                f"ScenarioId must be constructed from a plain int, not "
+                f"{type(value).__name__} ({value!r}); use ScenarioId.parse() to "
+                "convert an untrusted value instead."
+            )
+        return super().__new__(cls, value)
 
     @classmethod
     def parse(cls, value: Any) -> "ScenarioId | None":
@@ -398,23 +409,31 @@ class ScenarioId(int):
     # `.scenario_id_or(default)`, not here — along with partition and sort_key
     # below, which have the same problem.
     @classmethod
-    def from_example(cls, example: dict, default: Any = _NO_DEFAULT) -> Any:
-        """Return the example's scenario_id, or default when it carries none.
+    def from_example(cls, example: dict) -> "ScenarioId":
+        """Return the example's scenario_id, raising if it carries none.
 
-        With no default a missing scenario_id is an error, which is what the local
-        JSONL path wants: those records are schema-validated and must always have one.
-        Examples authored by hand in the LangSmith web UI frequently do not, so
-        callers reading a remote dataset should pass a default and handle the
-        unlabeled examples explicitly rather than crashing on the first one.
+        This is what the local JSONL path wants: those records are schema-validated
+        and must always have one. Examples authored by hand in the LangSmith web UI
+        frequently do not — callers reading a remote dataset should use
+        `from_example_or` instead and handle the unlabeled examples explicitly rather
+        than crashing on the first one.
         """
         sc_id = cls.from_metadata(example.get("metadata"))
         if sc_id is None:
-            if default is _NO_DEFAULT:
-                raise ValueError(
-                    f"Example is missing scenario_id in metadata: {example}"
-                )
-            return default
+            raise ValueError(f"Example is missing scenario_id in metadata: {example}")
         return sc_id
+
+    @classmethod
+    def from_example_or(cls, example: dict, default: _T) -> "ScenarioId | _T":
+        """Return the example's scenario_id, or default when it carries none.
+
+        Examples authored by hand in the LangSmith web UI frequently lack a
+        scenario_id, so callers reading a remote dataset should use this and handle
+        the unlabeled examples explicitly, rather than `from_example` crashing on the
+        first one.
+        """
+        sc_id = cls.from_metadata(example.get("metadata"))
+        return default if sc_id is None else sc_id
 
     # TODO: same as from_example above — this operates on whole example dicts, not
     # just ScenarioId's own metadata/value inputs. It'd move to ExampleRecord too,
@@ -632,7 +651,7 @@ def cmd_dataset_merge(args: argparse.Namespace) -> None:
     # _load_examples doesn't schema-validate a remote source, so it may contain
     # examples with no scenario_id (e.g. authored in the LangSmith UI); from_example
     # with no default would raise ValueError on those instead of merging cleanly.
-    scenario_ids = [ScenarioId.from_example(ex, default=None) for ex in source_examples]
+    scenario_ids = [ScenarioId.from_example_or(ex, None) for ex in source_examples]
     unlabeled = sum(1 for sc_id in scenario_ids if sc_id is None)
     if unlabeled:
         print(
@@ -697,7 +716,7 @@ def cmd_example_show(args: argparse.Namespace) -> None:
     matches = [
         ex
         for ex in examples
-        if ScenarioId.from_example(ex, default=None) == args.scenario_id
+        if ScenarioId.from_example_or(ex, None) == args.scenario_id
     ]
     if not matches:
         print(f"Example {args.scenario_id} not found.", file=sys.stderr)
@@ -805,7 +824,7 @@ def cmd_example_update(args: argparse.Namespace) -> None:
     local_examples = {
         sid: ex
         for ex in _read_jsonl(args.file, validate=_Validate("warn"))
-        if (sid := ScenarioId.from_example(ex, default=None)) is not None
+        if (sid := ScenarioId.from_example_or(ex, None)) is not None
     }
     if args.scenario_id not in local_examples:
         print(f"Example {args.scenario_id} not found in {args.file}.", file=sys.stderr)
