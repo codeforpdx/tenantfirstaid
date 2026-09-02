@@ -1531,6 +1531,18 @@ def test_adopt_warnings_clean_example():
     assert _adopt_warnings(record) == []
 
 
+def test_adopt_warnings_flags_non_list_reference_conversation():
+    """A malformed (non-list) reference_conversation warns instead of crashing —
+    this is exactly the kind of unvalidated UI-authored content the function
+    exists to flag."""
+    record = {
+        "inputs": {"query": "q", "state": "OR"},
+        "outputs": {"reference_conversation": "oops not a list"},
+    }
+    warnings = _adopt_warnings(record)
+    assert any("reference_conversation is not a list" in w for w in warnings)
+
+
 def test_adopt_warnings_flags_schema_invalid_metadata():
     """A missing/invalid state (never a valid enum value) surfaces as a warning."""
     record = {

@@ -15,7 +15,7 @@ from google.oauth2.credentials import Credentials
 from langchain_core.tools import BaseTool, tool
 from langchain_google_community import VertexAISearchRetriever
 from langgraph.config import get_stream_writer
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -330,6 +330,23 @@ class NoticeDeadlineInputSchema(BaseModel):
         ORS 90.155(5) mail+e-mail requirement and the ORS 90.160(2)(b) 11:59 PM clock
         start apply.""",
     )
+
+    @field_validator("service_time", mode="before")
+    @classmethod
+    def _parse_service_time(cls, v: object) -> object:
+        """Accept 12-hour clock strings ("2:30 PM") in addition to 24-hour/ISO.
+
+        Pydantic's built-in `time` parsing only understands 24-hour/ISO-8601
+        strings, but the field description invites 12-hour input, which is
+        what LLM callers naturally produce.
+        """
+        if isinstance(v, str):
+            for fmt in ("%I:%M %p", "%I:%M%p", "%I %p"):
+                try:
+                    return datetime.strptime(v.strip(), fmt).time()
+                except ValueError:
+                    continue
+        return v
 
 
 @tool(args_schema=NoticeDeadlineInputSchema, response_format="content")

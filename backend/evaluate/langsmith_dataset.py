@@ -296,13 +296,9 @@ def cmd_dataset_pull(args: argparse.Namespace) -> None:
     client = make_client()
     ds = client.read_dataset(dataset_name=args.remote)
 
-    def sort_key(e: Any) -> tuple[int, int | str]:
-        sc_id = ScenarioId.from_metadata(e.metadata)
-        if sc_id is not None:
-            return (0, sc_id)
-        return (1, str(e.id))
-
-    keyed = [(sort_key(e), e) for e in client.list_examples(dataset_id=ds.id)]
+    keyed = [
+        (ScenarioId.sort_key(e), e) for e in client.list_examples(dataset_id=ds.id)
+    ]
     keyed.sort(key=lambda pair: pair[0])
     examples = [e for _, e in keyed]
 
@@ -399,7 +395,8 @@ class ScenarioId(int):
     # TODO: this reaches into a whole example dict rather than just a metadata
     # dict (unlike parse/from_metadata above). If ExampleRecord (see the TODO on
     # _load_examples) is ever built, this belongs there as `.scenario_id`/
-    # `.scenario_id_or(default)`, not here.
+    # `.scenario_id_or(default)`, not here — along with partition and sort_key
+    # below, which have the same problem.
     @classmethod
     def from_example(cls, example: dict, default: Any = _NO_DEFAULT) -> Any:
         """Return the example's scenario_id, or default when it carries none.
@@ -452,6 +449,18 @@ class ScenarioId(int):
             for ex in examples
             if (sc_id := cls.from_metadata(ex.metadata)) is not None
         }
+
+    # TODO: same as from_example/partition above — this reaches into a whole
+    # example object rather than just metadata (here a LangSmith SDK Example,
+    # attribute access rather than a dict). Move to ExampleRecord alongside them
+    # if that's ever built.
+    @classmethod
+    def sort_key(cls, e: Any) -> "tuple[int, int | str]":
+        """Sort key: labeled examples by scenario_id, unlabeled by example id."""
+        sc_id = cls.from_metadata(e.metadata)
+        if sc_id is not None:
+            return (0, sc_id)
+        return (1, str(e.id))
 
 
 def _query_preview(example: dict) -> str:
@@ -510,10 +519,18 @@ def _adopt_warnings(
     query = raw_query.strip() if isinstance(raw_query, str) else str(raw_query or "")
     if not query:
         warnings.append("inputs.query is empty")
+    reference_conversation = (example.get("outputs") or {}).get(
+        "reference_conversation"
+    )
+    if reference_conversation is not None and not isinstance(
+        reference_conversation, list
+    ):
+        warnings.append("outputs.reference_conversation is not a list")
+        reference_conversation = []
     blank = sum(
         1
-        for msg in (example.get("outputs") or {}).get("reference_conversation") or []
-        if not _message_text(msg.get("content")).strip()
+        for msg in reference_conversation or []
+        if isinstance(msg, dict) and not _message_text(msg.get("content")).strip()
     )
     if blank:
         warnings.append(f"{blank} reference_conversation message(s) have empty content")
@@ -659,14 +676,8 @@ def cmd_example_list(args: argparse.Namespace) -> None:
     ds = client.read_dataset(dataset_name=args.dataset)
     examples = list(client.list_examples(dataset_id=ds.id))
 
-    def sort_key(e: Any) -> tuple[int, int | str]:
-        sc_id = ScenarioId.from_metadata(e.metadata)
-        if sc_id is not None:
-            return (0, sc_id)
-        return (1, str(e.id))
-
     rows = []
-    for ex in sorted(examples, key=sort_key):
+    for ex in sorted(examples, key=ScenarioId.sort_key):
         sc_id = ScenarioId.from_metadata(ex.metadata)
         sid = str(sc_id if sc_id is not None else "?").rjust(4)
         tags = str((ex.metadata or {}).get("tags", []))

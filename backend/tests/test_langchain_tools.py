@@ -457,6 +457,21 @@ def test_notice_deadline_hour_based_starts_immediately_on_service():
     assert "ORS 90.160(2)(a)" in result
 
 
+def test_notice_deadline_accepts_12_hour_service_time():
+    """service_time also accepts 12-hour clock strings, as its own description
+    promises (e.g. "2:30 PM"), not just 24-hour/ISO."""
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-01-01",
+            "service_time": "2:00 PM",
+            "period_value": 72,
+            "period_unit": "hours",
+            "service_method": NoticeServiceMethod.PERSONAL_DELIVERY,
+        }
+    )
+    assert f"DEADLINE: {_fmt(datetime(2026, 1, 4, 14, 0))}" in result
+
+
 def test_notice_deadline_hour_based_mail_and_attach_termination_special_start():
     """ORS 90.160(2)(b): mail-and-attach termination notice starts the clock at
     11:59 PM on the day both methods completed, regardless of service_time."""
