@@ -266,10 +266,12 @@ class NoticeServiceMethod(StrEnum):
     """Methods of serving a written notice under ORS 90.155(1) and (5).
 
     Scope note: this models ORS 90.155/90.160 only — the primary service-and-timing
-    framework for landlord/tenant notices. It does not model ORS 90.150(3) (when a
-    mailed notice counts as "served" for actual-notice-equivalence purposes) or any
-    notice type that supplies its own delivery rule (e.g. ORS 90.425 abandoned
-    personal property, ORS 90.300(14) security deposit accountings).
+    framework for landlord/tenant notices. ORS 90.155(1) itself carves out ORS 90.300
+    (security deposit accountings), 90.315 (utility/service charges), 90.425
+    (abandoned personal property), and 90.675 (manufactured dwelling abandonment) —
+    those notice types supply their own delivery rule and are NOT modeled here. It
+    also does not model ORS 90.150(3) (when a mailed notice counts as "served" for
+    actual-notice-equivalence purposes).
     """
 
     PERSONAL_DELIVERY = "personal_delivery"
@@ -284,9 +286,12 @@ class NoticeServiceMethod(StrEnum):
     an hour-based termination notice gets the ORS 90.160(2)(b) 11:59 PM clock start."""
 
     EMAIL_AND_MAIL = "email_and_mail"
-    """ORS 90.155(5): first-class mail AND e-mail, required for a notice terminating the
-    tenancy served by e-mail. Valid only under a signed ORS 90.155(1)(d) addendum. No
-    90.155(2) extension — instead gets the ORS 90.160(2)(b) 11:59 PM clock start."""
+    """For a termination notice, ORS 90.155(5): first-class mail AND e-mail, required,
+    valid only under a signed ORS 90.155(1)(d) addendum. No 90.155(2) extension —
+    instead gets the ORS 90.160(2)(b) 11:59 PM clock start. For a non-termination
+    notice, this is ordinary ORS 90.155(1)(b) mail service with the e-mail copy as an
+    ORS 90.155(3) alternative method alongside it: the 90.155(2) three-day extension
+    applies and there is no special clock start."""
 
     EMAIL_ONLY = "email_only"
     """ORS 90.155(1)(d): e-mail alone. Valid only under a signed addendum, and only for a
@@ -328,12 +333,15 @@ class NoticeDeadlineInputSchema(BaseModel):
         mail AND attachment to a designated location, valid only if the written
         rental agreement authorizes it; no 90.155(2) extension, but an hour-based
         termination notice gets the ORS 90.160(2)(b) 11:59 PM clock start instead.
-        email_and_mail — mail AND e-mail, REQUIRED (not optional) for a termination
-        notice served by e-mail under ORS 90.155(5), valid only under a signed
-        addendum; same 11:59 PM clock start as mail_and_attach, no 90.155(2)
-        extension. email_only — e-mail alone, valid only under a signed addendum
-        and ONLY for a notice that does not terminate the tenancy — e-mail alone
-        never validly serves a termination notice.""",
+        email_and_mail — mail AND e-mail. For a termination notice this is REQUIRED
+        (not optional) under ORS 90.155(5), valid only under a signed addendum; same
+        11:59 PM clock start as mail_and_attach, no 90.155(2) extension. For a
+        non-termination notice, this is ordinary first-class mail service under
+        90.155(1)(b) with the e-mail copy as an ORS 90.155(3) alternative method —
+        the 90.155(2) three-day extension applies, same as first_class_mail alone.
+        email_only — e-mail alone, valid only under a signed addendum and ONLY for a
+        notice that does not terminate the tenancy — e-mail alone never validly
+        serves a termination notice.""",
     )
     is_termination_notice: bool = Field(
         description="""True if this notice terminates the tenancy, False if it does not.
@@ -368,8 +376,8 @@ def calculate_ors_90_160_notice_deadline(
     period_value: int,
     period_unit: Literal["hours", "days"],
     service_method: NoticeServiceMethod,
+    is_termination_notice: bool,
     service_time: Optional[time] = None,
-    is_termination_notice: bool = False,
 ) -> str:
     """Compute the exact deadline of an Oregon landlord-tenant notice period.
 
@@ -378,19 +386,23 @@ def calculate_ors_90_160_notice_deadline(
     mail-and-attach/e-mail-and-mail clock start are easy to mix up, and mixing up hours
     with days produces a deadline that's off by roughly a factor of 24.
 
+    Do not call this for a notice governed by ORS 90.300, 90.315, 90.425, or 90.675 —
+    those statutes supply their own service/timing rule instead of ORS 90.155/90.160.
+
     Args:
         service_date: Date the notice was served (or, for mail_and_attach/email_and_mail,
             the date both methods were completed).
         period_value: The notice period's length, in period_unit's unit.
         period_unit: "hours" or "days" — must match the governing statute exactly.
         service_method: How the notice was served, under ORS 90.155(1) or (5).
+        is_termination_notice: True if the notice terminates the tenancy.
         service_time: Clock time of service. Required for hour-based periods unless the
             ORS 90.160(2)(b) special start applies (see is_termination_notice).
-        is_termination_notice: True if the notice terminates the tenancy.
 
     Returns:
-        A formatted result giving the computed deadline, its statutory basis, and an
-        explicit hours-vs-days check — relay it to the tenant as given, don't recompute.
+        A formatted result with an AGENT NOTES section (accuracy-checking scaffolding
+        for you, never relay it) and a TENANT-FACING ANSWER section (relay this part
+        to the tenant as given, don't recompute it).
     """
     if service_method == NoticeServiceMethod.EMAIL_ONLY and is_termination_notice:
         return (
@@ -401,19 +413,18 @@ def calculate_ors_90_160_notice_deadline(
             "for it. If the notice was also sent by first-class mail, call this tool "
             "again with service_method=email_and_mail."
         )
-    if (
+    # email_and_mail + non-termination isn't ORS 90.155(5) (that's termination-only) —
+    # it's ordinary ORS 90.155(1)(b) mail service with the e-mail copy as an ORS
+    # 90.155(3) alternative method alongside it. Treat it exactly like
+    # first_class_mail: the 90.155(2) extension applies, no special clock start.
+    email_and_mail_as_mail_alternative = (
         service_method == NoticeServiceMethod.EMAIL_AND_MAIL
         and not is_termination_notice
-    ):
-        return (
-            "INPUT MISMATCH, NO DEADLINE COMPUTED: email_and_mail models ORS 90.155(5), "
-            "which only applies to notices terminating the tenancy. If this notice "
-            "terminates the tenancy, call again with is_termination_notice=true. "
-            "Otherwise, for a non-termination notice sent by e-mail, use "
-            "service_method=email_only."
-        )
-
-    mail_extension_applies = service_method == NoticeServiceMethod.FIRST_CLASS_MAIL
+    )
+    mail_extension_applies = (
+        service_method == NoticeServiceMethod.FIRST_CLASS_MAIL
+        or email_and_mail_as_mail_alternative
+    )
     special_hour_start = is_termination_notice and service_method in (
         NoticeServiceMethod.MAIL_AND_ATTACH,
         NoticeServiceMethod.EMAIL_AND_MAIL,
@@ -444,13 +455,18 @@ def calculate_ors_90_160_notice_deadline(
             # ORS 90.160(2)(a): clock starts immediately upon service.
             clock_start = datetime.combine(service_date, service_time)
             basis = "ORS 90.160(2)(a)"
+        # Wall-clock arithmetic, not elapsed time — e.g. a 72-hour notice served the
+        # Friday before spring-forward lands an hour "early" read as elapsed time.
+        # This is a defensible reading of ORS 90.160(2)'s "consecutive hours" and is a
+        # deliberate choice, not an oversight.
         deadline = clock_start + timedelta(hours=period_value)
         if mail_extension_applies:
             # ORS 90.155(2)'s three-day extension applies on top of the hour count.
             deadline += timedelta(days=3)
     # Applies to both branches: ORS 90.155(2)'s mail extension is available whether
-    # the underlying period is day-based or hour-based, whenever service was by
-    # first-class mail alone.
+    # the underlying period is day-based or hour-based, whenever service included
+    # first-class mail under ORS 90.155(1)(b) (alone, or alongside e-mail for a
+    # non-termination notice).
     basis += " and ORS 90.155(2)" if mail_extension_applies else ""
 
     caveats = []
@@ -465,10 +481,16 @@ def calculate_ors_90_160_notice_deadline(
         caveats.append(
             "e-mail service is only valid if a signed ORS 90.155(1)(d) addendum authorizes it"
         )
+    if email_and_mail_as_mail_alternative:
+        caveats.append(
+            "this notice was served by first-class mail under ORS 90.155(1)(b); the "
+            "e-mail copy is an ORS 90.155(3) alternative method that neither adds "
+            "nor removes time from the deadline"
+        )
 
     other_unit = "days" if period_unit == "hours" else "hours"
-    lines = [
-        "NOTICE DEADLINE CALCULATION — relay this result as given; do not recompute it by hand.",
+    agent_notes = [
+        "=== AGENT NOTES — accuracy-checking scaffolding, NEVER relay this section to the tenant ===",
         "",
         f"Inputs: {period_value} {period_unit}, served {service_date.isoformat()}"
         + (
@@ -481,23 +503,26 @@ def calculate_ors_90_160_notice_deadline(
         f"UNIT CHECK: this is a {period_value}-{period_unit[:-1]} period. It is "
         f"{period_value} {period_unit.upper()}, NOT {period_value} {other_unit.upper()} "
         f'— never restate it using the word "{other_unit}".',
+    ]
+
+    tenant_lines = [
+        "=== TENANT-FACING ANSWER — relay this section to the tenant as given, do not recompute it ===",
         "",
         f"Legal basis: {basis}."
         + (
-            " The ORS 90.155(2) mail extension adds 3 days because the notice was mailed alone."
+            " The ORS 90.155(2) mail extension adds 3 days because the notice was served by first-class mail."
             if mail_extension_applies
             else ""
         ),
     ]
     if caveats:
-        lines.append("Caveat: " + "; ".join(caveats) + ".")
-    lines += [
+        tenant_lines.append("Caveat: " + "; ".join(caveats) + ".")
+    tenant_lines += [
         "",
-        f"DEADLINE: {deadline.strftime('%A, %B %d, %Y at %I:%M %p')}. Do NOT push this to "
-        "the next business day — ORS 90.160 overrides ORCP 10, so weekends and holidays "
-        "do not extend it. Relay this exact date/time.",
+        f"DEADLINE: {deadline.strftime('%A, %B %d, %Y at %I:%M %p')}. This deadline is "
+        "NOT extended for weekends or holidays — ORS 90.160 overrides ORCP 10.",
     ]
-    return "\n".join(lines)
+    return "\n".join(agent_notes + [""] + tenant_lines)
 
 
 class QueryOnlyInputSchema(BaseModel):

@@ -26,6 +26,7 @@ Usage examples:
 
 import argparse
 import difflib
+import functools
 import json
 import logging
 import math
@@ -157,16 +158,25 @@ def _git_is_clean(path: Path) -> bool:
     return result.returncode == 0 and not result.stdout.strip()
 
 
+@functools.lru_cache(maxsize=1)
+def _load_schema_properties() -> dict:
+    """Return DEFAULT_SCHEMA's top-level "properties" object, cached.
+
+    Both _load_dataset_schemas and _load_metadata_schema read the same file; this
+    collapses them to one read+parse instead of one per call.
+    """
+    return json.loads(DEFAULT_SCHEMA.read_text()).get("properties", {})
+
+
 def _load_dataset_schemas() -> tuple[dict, dict]:
     """Return (inputs_schema, outputs_schema) extracted from DEFAULT_SCHEMA."""
-    props = json.loads(DEFAULT_SCHEMA.read_text()).get("properties", {})
+    props = _load_schema_properties()
     return props["inputs"], props["outputs"]
 
 
 def _load_metadata_schema() -> dict:
     """Return the metadata schema extracted from DEFAULT_SCHEMA."""
-    props = json.loads(DEFAULT_SCHEMA.read_text()).get("properties", {})
-    return props["metadata"]
+    return _load_schema_properties()["metadata"]
 
 
 def _apply_dataset_schemas(client: Client, dataset_id: Any) -> None:
@@ -352,7 +362,6 @@ def _load_examples(
     ]
 
 
-_NO_DEFAULT: Any = object()
 _T = TypeVar("_T")
 
 
@@ -386,6 +395,11 @@ class ScenarioId(int):
         scenario_id would be silently treated as unlabeled. bool doesn't count,
         even though it's an int subclass in Python.
         """
+        if isinstance(value, cls):
+            # Idempotent: parse(already-a-ScenarioId) returns it unchanged instead of
+            # raising, since ScenarioId's own __new__ rejects non-plain-int values
+            # (including ScenarioId itself, since type(value) is not int for it).
+            return value
         if isinstance(value, bool):
             return None
         if isinstance(value, int):
@@ -420,7 +434,9 @@ class ScenarioId(int):
         """
         sc_id = cls.from_metadata(example.get("metadata"))
         if sc_id is None:
-            raise ValueError(f"Example is missing scenario_id in metadata: {example}")
+            raise ValueError(
+                f"Example is missing scenario_id in metadata: {_unlabeled_label(example)}"
+            )
         return sc_id
 
     @classmethod

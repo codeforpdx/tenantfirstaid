@@ -26,6 +26,7 @@ from evaluate.langsmith_dataset import (
     _git_is_clean,
     _load_dataset_schemas,
     _load_examples,
+    _load_metadata_schema,
     _message_text,
     _query_preview,
     _read_jsonl,
@@ -234,6 +235,14 @@ def test_scenario_id_parse_accepts_whole_number_float():
     assert ScenarioId.parse(7.5) is None
 
 
+def test_scenario_id_parse_is_idempotent():
+    """parse(already-a-ScenarioId) must return it unchanged, not raise — ScenarioId's
+    own __new__ rejects non-plain-int construction, which would otherwise make
+    parse(parse(x)) crash."""
+    sid = ScenarioId(7)
+    assert ScenarioId.parse(sid) is sid
+
+
 def test_scenario_id_from_metadata_reads_metadata_dict():
     assert ScenarioId.from_metadata({"scenario_id": 3}) == 3
     assert ScenarioId.from_metadata({"scenario_id": "3"}) is None
@@ -262,6 +271,19 @@ def test_scenario_id_from_example_raises_on_missing():
 def test_scenario_id_from_example_raises_on_missing_metadata():
     with pytest.raises(ValueError, match="missing scenario_id"):
         ScenarioId.from_example({})
+
+
+def test_scenario_id_from_example_missing_error_has_no_full_record():
+    """The exception message must not dump the whole example dict (which may contain
+    a tenant's verbatim question in inputs.query) — only a short preview."""
+    example = {
+        "metadata": {},
+        "inputs": {"query": "my landlord is trying to evict me because I am sick"},
+        "outputs": {},
+    }
+    with pytest.raises(ValueError) as exc_info:
+        ScenarioId.from_example(example)
+    assert "outputs" not in str(exc_info.value)
 
 
 def test_scenario_id_from_example_or_returns_default_when_missing():
@@ -473,6 +495,11 @@ def test_load_dataset_schemas_returns_dicts():
 def test_load_dataset_schemas_inputs_has_query():
     inputs_schema, _ = _load_dataset_schemas()
     assert "query" in inputs_schema.get("properties", {})
+
+
+def test_load_metadata_schema_returns_metadata_properties():
+    schema = _load_metadata_schema()
+    assert "scenario_id" in schema.get("properties", {})
 
 
 # ── _apply_dataset_schemas ─────────────────────────────────────────────────────
