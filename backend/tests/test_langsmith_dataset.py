@@ -1,5 +1,6 @@
 """Tests for evaluate/langsmith_dataset.py."""
 
+import enum
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -12,6 +13,7 @@ from hypothesis import strategies as st
 
 from evaluate.langsmith_dataset import (
     RETENTION_DAYS,
+    ScenarioId,
     _adopt_metadata,
     _adopt_warnings,
     _apply_dataset_schemas,
@@ -25,14 +27,13 @@ from evaluate.langsmith_dataset import (
     _git_is_clean,
     _load_dataset_schemas,
     _load_examples,
+    _load_metadata_schema,
     _message_text,
-    _next_scenario_id,
-    _partition_by_scenario_id,
     _query_preview,
+    _query_text,
     _read_jsonl,
     _render_transcript,
     _scan_pii,
-    _scenario_id,
     _tabulate,
     _unlabeled_label,
     _Validate,
@@ -206,60 +207,179 @@ def test_read_jsonl_validate_warn_continues(tmp_path, capsys):
     assert "Line 1" in err
 
 
-# ── _scenario_id ───────────────────────────────────────────────────────────────
+# ── ScenarioId ─────────────────────────────────────────────────────────────────
 
 
-def test_scenario_id_returns_id():
-    assert _scenario_id({"metadata": {"scenario_id": 42}}) == 42
+def test_scenario_id_parse_accepts_int():
+    sid = ScenarioId.parse(7)
+    assert sid == 7
+    assert isinstance(sid, ScenarioId)
 
 
-def test_scenario_id_raises_on_missing():
+def test_scenario_id_parse_rejects_bool():
+    """True/False are ints in Python but must never be mistaken for a real id."""
+    assert ScenarioId.parse(True) is None
+    assert ScenarioId.parse(False) is None
+
+
+def test_scenario_id_parse_rejects_non_int():
+    assert ScenarioId.parse("7") is None
+    assert ScenarioId.parse(None) is None
+
+
+def test_scenario_id_parse_accepts_whole_number_float():
+    """The metadata schema's "integer" type accepts a fractionless JSON number
+    (e.g. 5.0), so parse must too or a schema-valid scenario_id would be
+    silently treated as unlabeled."""
+    sid = ScenarioId.parse(7.0)
+    assert sid == 7
+    assert isinstance(sid, ScenarioId)
+    assert ScenarioId.parse(7.5) is None
+
+
+def test_scenario_id_parse_is_idempotent():
+    """parse(already-a-ScenarioId) must return it unchanged, not raise — ScenarioId's
+    own __new__ rejects non-plain-int construction, which would otherwise make
+    parse(parse(x)) crash."""
+    sid = ScenarioId(7)
+    assert ScenarioId.parse(sid) is sid
+
+
+def test_scenario_id_from_metadata_reads_metadata_dict():
+    assert ScenarioId.from_metadata({"scenario_id": 3}) == 3
+    assert ScenarioId.from_metadata({"scenario_id": "3"}) is None
+    assert ScenarioId.from_metadata({}) is None
+    assert ScenarioId.from_metadata(None) is None
+
+
+def test_scenario_id_is_usable_as_dict_key_and_sortable():
+    """ScenarioId must behave like a plain int for the places that key or sort on it."""
+    assert {ScenarioId(3): "x"} == {3: "x"}
+    assert sorted([ScenarioId(3), ScenarioId(1), ScenarioId(2)]) == [1, 2, 3]
+
+
+# ── ScenarioId.from_example ───────────────────────────────────────────────────
+
+
+def test_scenario_id_from_example_returns_id():
+    assert ScenarioId.from_example({"metadata": {"scenario_id": 42}}) == 42
+
+
+def test_scenario_id_from_example_raises_on_missing():
     with pytest.raises(ValueError, match="missing scenario_id"):
-        _scenario_id({"metadata": {}})
+        ScenarioId.from_example({"metadata": {}})
 
 
-def test_scenario_id_raises_on_missing_metadata():
+def test_scenario_id_from_example_raises_on_missing_metadata():
     with pytest.raises(ValueError, match="missing scenario_id"):
-        _scenario_id({})
+        ScenarioId.from_example({})
 
 
-def test_scenario_id_returns_default_when_missing():
-    assert _scenario_id({"metadata": {}}, default=None) is None
-    assert _scenario_id({}, default=-1) == -1
+def test_scenario_id_from_example_missing_error_has_no_full_record():
+    """The exception message must not dump the whole example dict (which may contain
+    a tenant's verbatim question in inputs.query) — only a short preview."""
+    example = {
+        "metadata": {},
+        "inputs": {"query": "my landlord is trying to evict me because I am sick"},
+        "outputs": {},
+    }
+    with pytest.raises(ValueError) as exc_info:
+        ScenarioId.from_example(example)
+    assert "outputs" not in str(exc_info.value)
 
 
-def test_scenario_id_default_ignored_when_present():
-    assert _scenario_id({"metadata": {"scenario_id": 7}}, default=None) == 7
+def test_scenario_id_from_example_or_returns_default_when_missing():
+    assert ScenarioId.from_example_or({"metadata": {}}, None) is None
+    assert ScenarioId.from_example_or({}, -1) == -1
 
 
-def test_scenario_id_falsy_default_is_returned():
+def test_scenario_id_from_example_or_default_ignored_when_present():
+    assert ScenarioId.from_example_or({"metadata": {"scenario_id": 7}}, None) == 7
+
+
+def test_scenario_id_from_example_or_falsy_default_is_returned():
     """A default of 0 or None must not be mistaken for "no default given"."""
-    assert _scenario_id({"metadata": {}}, default=0) == 0
+    assert ScenarioId.from_example_or({"metadata": {}}, 0) == 0
 
 
-# ── _partition_by_scenario_id ─────────────────────────────────────────────────
+def test_scenario_id_rejects_string_construction():
+    """ScenarioId("7") must not silently bypass parse()'s validation."""
+    with pytest.raises(TypeError, match="plain int"):
+        ScenarioId("7")  # ty: ignore[invalid-argument-type]
 
 
-def test_partition_by_scenario_id_splits_labeled_and_unlabeled():
+# ── ScenarioId.partition ──────────────────────────────────────────────────────
+
+
+def test_scenario_id_partition_splits_labeled_and_unlabeled():
     labeled = _make_scenario(1)
     unlabeled = {"metadata": {"dataset_split": ["base"]}, "inputs": {}, "outputs": {}}
-    by_id, leftovers = _partition_by_scenario_id([labeled, unlabeled])
+    by_id, leftovers = ScenarioId.partition([labeled, unlabeled])
 
     assert by_id == {1: labeled}
     assert leftovers == [unlabeled]
 
 
-def test_partition_by_scenario_id_all_labeled():
-    by_id, leftovers = _partition_by_scenario_id([_make_scenario(1), _make_scenario(2)])
+def test_scenario_id_partition_all_labeled():
+    by_id, leftovers = ScenarioId.partition([_make_scenario(1), _make_scenario(2)])
     assert sorted(by_id) == [1, 2]
     assert leftovers == []
 
 
-def test_partition_by_scenario_id_missing_metadata_key():
+def test_scenario_id_partition_missing_metadata_key():
     """An example with no metadata at all is unlabeled, not an error."""
-    by_id, leftovers = _partition_by_scenario_id([{"inputs": {}, "outputs": {}}])
+    by_id, leftovers = ScenarioId.partition([{"inputs": {}, "outputs": {}}])
     assert by_id == {}
     assert len(leftovers) == 1
+
+
+# ── ScenarioId.existing_ids ───────────────────────────────────────────────────
+
+
+def test_scenario_id_existing_ids_returns_labeled_ids_only():
+    examples = [
+        _make_remote_example(1),
+        _make_remote_example(2),
+        _make_unlabeled_remote_example(),
+    ]
+    assert ScenarioId.existing_ids(examples) == {1, 2}
+
+
+def test_scenario_id_existing_ids_deduplicates():
+    examples = [_make_remote_example(1), _make_remote_example(1)]
+    assert ScenarioId.existing_ids(examples) == {1}
+
+
+def test_scenario_id_existing_ids_empty_when_none_labeled():
+    examples = [_make_unlabeled_remote_example(), _make_unlabeled_remote_example()]
+    assert ScenarioId.existing_ids(examples) == set()
+
+
+# ── ScenarioId.sort_key ───────────────────────────────────────────────────────
+
+
+def test_scenario_id_sort_key_orders_labeled_before_unlabeled():
+    labeled = _make_remote_example(5)
+    unlabeled = _make_unlabeled_remote_example()
+    assert sorted([labeled, unlabeled], key=ScenarioId.sort_key) == [
+        labeled,
+        unlabeled,
+    ]
+
+
+def test_scenario_id_sort_key_labeled_sorts_by_scenario_id():
+    ex1 = _make_remote_example(1)
+    ex2 = _make_remote_example(2)
+    assert sorted([ex2, ex1], key=ScenarioId.sort_key) == [ex1, ex2]
+
+
+def test_scenario_id_sort_key_unlabeled_sorts_by_example_id():
+    ex_a = _make_unlabeled_remote_example()
+    ex_a.id = "aaa"
+    ex_b = _make_unlabeled_remote_example()
+    ex_b.id = "bbb"
+    assert ScenarioId.sort_key(ex_a) == (1, "aaa")
+    assert sorted([ex_b, ex_a], key=ScenarioId.sort_key) == [ex_a, ex_b]
 
 
 # ── _unlabeled_label ──────────────────────────────────────────────────────────
@@ -377,6 +497,11 @@ def test_load_dataset_schemas_returns_dicts():
 def test_load_dataset_schemas_inputs_has_query():
     inputs_schema, _ = _load_dataset_schemas()
     assert "query" in inputs_schema.get("properties", {})
+
+
+def test_load_metadata_schema_returns_metadata_properties():
+    schema = _load_metadata_schema()
+    assert "scenario_id" in schema.get("properties", {})
 
 
 # ── _apply_dataset_schemas ─────────────────────────────────────────────────────
@@ -675,6 +800,46 @@ def test_cmd_dataset_pull_dry_run_does_not_write(tmp_path, capsys):
 
     assert not local.exists()
     assert "Would pull" in capsys.readouterr().out
+
+
+def test_cmd_dataset_pull_sorts_mixed_labeled_and_unlabeled(tmp_path, capsys):
+    """A null or missing scenario_id must not crash the sort against int ids, and
+    should be pulled after every labeled example, with a warning printed."""
+    local = tmp_path / "out.jsonl"
+
+    labeled = _make_remote_example(5)
+    labeled.inputs = {"query": "q", "state": "OR", "city": None}
+    labeled.outputs = {"facts": [], "reference_conversation": []}
+
+    explicit_null = MagicMock()
+    explicit_null.id = uuid4()
+    explicit_null.metadata = {"scenario_id": None}
+    explicit_null.inputs = {"query": "q2", "state": "OR", "city": None}
+    explicit_null.outputs = {"facts": [], "reference_conversation": []}
+
+    missing = MagicMock()
+    missing.id = uuid4()
+    missing.metadata = {}
+    missing.inputs = {"query": "q3", "state": "OR", "city": None}
+    missing.outputs = {"facts": [], "reference_conversation": []}
+
+    mock_client = MagicMock()
+    mock_client.read_dataset.return_value = MagicMock(id=uuid4())
+    mock_client.list_examples.return_value = [explicit_null, missing, labeled]
+
+    args = MagicMock()
+    args.file = local
+    args.remote = "my-ds"
+    args.force = True
+    args.dry_run = False
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        cmd_dataset_pull(args)
+
+    records = _read_jsonl(local)
+    assert [r["metadata"].get("scenario_id") for r in records][0] == 5
+    err = capsys.readouterr().err
+    assert "2 example(s) have no integer scenario_id" in err
 
 
 def test_cmd_dataset_pull_dirty_file_exits(tmp_path, capsys):
@@ -992,6 +1157,32 @@ def test_cmd_example_update_not_in_local_file_exits(tmp_path, capsys):
         cmd_example_update(args)
     assert exc.value.code == 1
     assert "99" in capsys.readouterr().err
+
+
+def test_cmd_example_update_remote_lookup_rejects_bool_scenario_id(tmp_path, capsys):
+    """A remote example with metadata.scenario_id=True must not be matched by
+    args.scenario_id=1 (True == 1 in Python) the way a raw == comparison would."""
+    f = tmp_path / "data.jsonl"
+    f.write_text(json.dumps(_make_valid_record(1)) + "\n")
+
+    malformed = MagicMock()
+    malformed.id = uuid4()
+    malformed.metadata = {"scenario_id": True}
+
+    args = MagicMock()
+    args.file = f
+    args.scenario_id = 1
+    args.dataset = "my-dataset"
+
+    mock_client = MagicMock()
+    mock_client.read_dataset.return_value = MagicMock(id=uuid4())
+    mock_client.list_examples.return_value = [malformed]
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        with pytest.raises(SystemExit) as exc:
+            cmd_example_update(args)
+    assert exc.value.code == 1
+    mock_client.update_example.assert_not_called()
 
 
 def test_cmd_example_update_not_in_remote_exits(tmp_path, capsys):
@@ -1315,7 +1506,7 @@ def test_cmd_example_update_skips_unlabeled_local_records(tmp_path, capsys):
     mock_client.update_example.assert_called_once()
 
 
-# ── _query_preview / _next_scenario_id / _adopt_* ─────────────────────────────
+# ── _query_preview / _adopt_* ──────────────────────────────────────────────
 
 
 def test_query_preview_short_query_verbatim():
@@ -1326,18 +1517,20 @@ def test_query_preview_empty():
     assert _query_preview({"inputs": {"query": ""}}) == "<empty query>"
 
 
-def test_next_scenario_id_from_highest_in_use():
-    assert _next_scenario_id([_make_scenario(0), _make_scenario(6)]) == 7
+def test_query_preview_non_string_query_does_not_crash():
+    """inputs.query is schema-required to be a string, but adopt/diff run on
+    UI-authored examples before they're schema-validated."""
+    assert _query_preview({"inputs": {"query": None}}) == "<empty query>"
+    assert _query_preview({"inputs": {"query": 42}}) == "42"
 
 
-def test_next_scenario_id_ignores_unlabeled():
-    unlabeled = {"metadata": {}, "inputs": {}, "outputs": {}}
-    assert _next_scenario_id([_make_scenario(3), unlabeled]) == 4
-
-
-def test_next_scenario_id_starts_at_zero_when_none_labeled():
-    assert _next_scenario_id([{"metadata": {}, "inputs": {}, "outputs": {}}]) == 0
-    assert _next_scenario_id([]) == 0
+def test_scenario_id_partition_treats_non_int_as_unlabeled():
+    """A non-int scenario_id (e.g. a stray string from hand-edited JSON) must not be
+    trusted as a dict key downstream, so it's bucketed as unlabeled instead."""
+    non_int = {"metadata": {"scenario_id": "7"}, "inputs": {}, "outputs": {}}
+    by_id, unlabeled = ScenarioId.partition([_make_scenario(3), non_int])
+    assert by_id == {3: _make_scenario(3)}
+    assert unlabeled == [non_int]
 
 
 def test_adopt_metadata_derives_tags_from_inputs():
@@ -1363,6 +1556,19 @@ def test_adopt_metadata_preserves_existing_dataset_split():
     assert _adopt_metadata(record, 1)["dataset_split"] == ["train"]
 
 
+def test_adopt_metadata_preserves_unknown_keys():
+    """Metadata keys the UI already set that adoption doesn't compute should survive,
+    not be dropped by rebuilding the dict from scratch."""
+    record = {
+        "metadata": {"reviewer": "jdoe", "notes": "flagged for follow-up"},
+        "inputs": {"city": "Eugene", "state": "OR"},
+    }
+    meta = _adopt_metadata(record, 5)
+    assert meta["reviewer"] == "jdoe"
+    assert meta["notes"] == "flagged for follow-up"
+    assert meta["scenario_id"] == 5
+
+
 def test_adopt_warnings_flags_empty_query():
     record = {"inputs": {"query": "  "}, "outputs": {"reference_conversation": []}}
     assert any("query is empty" in w for w in _adopt_warnings(record))
@@ -1370,7 +1576,7 @@ def test_adopt_warnings_flags_empty_query():
 
 def test_adopt_warnings_flags_blank_messages():
     record = {
-        "inputs": {"query": "real question"},
+        "inputs": {"query": "real question", "state": "OR"},
         "outputs": {
             "reference_conversation": [
                 {"type": "human", "content": ""},
@@ -1383,12 +1589,52 @@ def test_adopt_warnings_flags_blank_messages():
     assert "1 reference_conversation message(s) have empty content" in warnings[0]
 
 
+def test_adopt_warnings_handles_structured_content_without_crashing():
+    """A message's content may be a list of content blocks (as real chat traces
+    produce) rather than a plain string; this must not raise AttributeError."""
+    record = {
+        "inputs": {"query": "real question", "state": "OR"},
+        "outputs": {
+            "reference_conversation": [
+                {"type": "ai", "content": [{"type": "text", "text": "an answer"}]},
+                {"type": "ai", "content": [{"type": "text", "text": ""}]},
+            ]
+        },
+    }
+    warnings = _adopt_warnings(record)
+    assert any(
+        "1 reference_conversation message(s) have empty content" in w for w in warnings
+    )
+
+
 def test_adopt_warnings_clean_example():
+    record = {
+        "inputs": {"query": "q", "state": "OR"},
+        "outputs": {"reference_conversation": [{"type": "human", "content": "q"}]},
+    }
+    assert _adopt_warnings(record) == []
+
+
+def test_adopt_warnings_flags_non_list_reference_conversation():
+    """A malformed (non-list) reference_conversation warns instead of crashing —
+    this is exactly the kind of unvalidated UI-authored content the function
+    exists to flag."""
+    record = {
+        "inputs": {"query": "q", "state": "OR"},
+        "outputs": {"reference_conversation": "oops not a list"},
+    }
+    warnings = _adopt_warnings(record)
+    assert any("reference_conversation is not a list" in w for w in warnings)
+
+
+def test_adopt_warnings_flags_schema_invalid_metadata():
+    """A missing/invalid state (never a valid enum value) surfaces as a warning."""
     record = {
         "inputs": {"query": "q"},
         "outputs": {"reference_conversation": [{"type": "human", "content": "q"}]},
     }
-    assert _adopt_warnings(record) == []
+    warnings = _adopt_warnings(record)
+    assert any("schema-invalid" in w for w in warnings)
 
 
 # ── cmd_example_adopt ─────────────────────────────────────────────────────────
@@ -1471,6 +1717,23 @@ def test_cmd_example_adopt_honours_start_id(capsys):
 
     meta = mock_client.update_example.call_args.kwargs["metadata"]
     assert meta["scenario_id"] == 42
+
+
+def test_cmd_example_adopt_start_id_collision_aborts(capsys):
+    """A --start-id that would reuse an existing scenario_id must fail loudly,
+    before writing anything, rather than silently overwriting that example."""
+    labeled = _make_remote_example(42)
+    labeled.inputs = {"query": "q", "city": None, "state": "OR"}
+    labeled.outputs = {}
+    labeled.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+
+    mock_client = _adopt_client([labeled, _make_unlabeled_remote_example()])
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        with pytest.raises(SystemExit):
+            cmd_example_adopt(_adopt_args(start_id=42))
+
+    mock_client.update_example.assert_not_called()
+    assert "collide" in capsys.readouterr().err
 
 
 def test_cmd_example_adopt_writes_metadata_only(capsys):
@@ -2908,3 +3171,45 @@ def test_cmd_experiment_markdown_no_pii_warning_when_clean(tmp_path, capsys):
         cmd_experiment_markdown(_md_args(out))
 
     assert "may contain PII" not in capsys.readouterr().err
+
+
+def test_scenario_id_parse_accepts_int_enum_member():
+    """An IntEnum member parses to a ScenarioId rather than raising, honoring parse's contract that it never raises for an unusable value."""
+
+    class _Scenario(enum.IntEnum):
+        EVICTION = 7
+
+    parsed = ScenarioId.parse(_Scenario.EVICTION)
+    assert parsed == 7
+    assert type(parsed) is ScenarioId
+
+
+def test_adopt_warnings_validates_supplied_metadata():
+    """_adopt_warnings accepts a caller-supplied metadata object so the schema check runs against the id actually uploaded, and still works when the argument is omitted."""
+    example = {"inputs": {"query": "Can my landlord raise rent mid-lease?"}}
+
+    supplied = _adopt_warnings(example, None, {"scenario_id": 42})
+    assert isinstance(supplied, list)
+
+    fallback = _adopt_warnings(example)
+    assert isinstance(fallback, list)
+
+
+def test_scenario_id_is_unlabeled():
+    """is_unlabeled reports whether an example carries an integer scenario_id without callers decoding sort_key's private tuple encoding."""
+
+    class _Example:
+        def __init__(self, metadata):
+            self.metadata = metadata
+
+    assert ScenarioId.is_unlabeled(_Example({})) is True
+    assert ScenarioId.is_unlabeled(_Example(None)) is True
+    assert ScenarioId.is_unlabeled(_Example({"scenario_id": 3})) is False
+
+
+def test_query_text_coerces_non_string_and_missing_values():
+    """_query_text stringifies a non-string inputs.query and returns the empty string for a falsy or absent one, so callers can test emptiness without handling None."""
+    assert _query_text({"inputs": {"query": "  spaced  "}}) == "spaced"
+    assert _query_text({"inputs": {"query": 42}}) == "42"
+    assert _query_text({"inputs": {"query": None}}) == ""
+    assert _query_text({}) == ""

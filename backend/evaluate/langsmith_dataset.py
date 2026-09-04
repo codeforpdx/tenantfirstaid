@@ -26,6 +26,7 @@ Usage examples:
 
 import argparse
 import difflib
+import functools
 import json
 import logging
 import math
@@ -33,11 +34,11 @@ import re
 import statistics
 import subprocess
 import sys
-from collections.abc import Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Literal, NamedTuple
+from typing import Any, Literal, NamedTuple, TypeVar
 
 import jsonschema
 from langchain_core.prompts import (
@@ -157,10 +158,34 @@ def _git_is_clean(path: Path) -> bool:
     return result.returncode == 0 and not result.stdout.strip()
 
 
-def _load_dataset_schemas() -> tuple[dict, dict]:
+@functools.lru_cache(maxsize=1)
+def _load_schema_properties() -> Mapping[str, Any]:
+    """Return DEFAULT_SCHEMA's top-level "properties" object, cached.
+
+    Both _load_dataset_schemas and _load_metadata_schema read the same file; this
+    collapses them to one read+parse instead of one per call.
+
+    The Mapping return type marks the cached object read-only: every consumer here
+    only reads it, and a shared cache that anyone could edit in place would leak
+    one caller's edit into the next caller's read. Two limits are worth naming.
+    The protection is static-only -- a type checker rejects an in-place edit, but
+    nothing stops one at runtime -- and it is shallow, since the values are Any and
+    a nested dict inside is still mutable. At runtime the object remains a plain
+    dict, so json.dumps, jsonschema, and the LangSmith SDK keep working unchanged
+    and no caller needs to unwrap it.
+    """
+    return json.loads(DEFAULT_SCHEMA.read_text()).get("properties", {})
+
+
+def _load_dataset_schemas() -> tuple[Mapping[str, Any], Mapping[str, Any]]:
     """Return (inputs_schema, outputs_schema) extracted from DEFAULT_SCHEMA."""
-    props = json.loads(DEFAULT_SCHEMA.read_text()).get("properties", {})
+    props = _load_schema_properties()
     return props["inputs"], props["outputs"]
+
+
+def _load_metadata_schema() -> Mapping[str, Any]:
+    """Return the metadata schema extracted from DEFAULT_SCHEMA."""
+    return _load_schema_properties()["metadata"]
 
 
 def _apply_dataset_schemas(client: Client, dataset_id: Any) -> None:
@@ -225,8 +250,10 @@ def cmd_dataset_create(args: argparse.Namespace) -> None:
         inputs_schema, outputs_schema = _load_dataset_schemas()
         ds = client.create_dataset(
             dataset_name=args.name,
-            inputs_schema=inputs_schema,
-            outputs_schema=outputs_schema,
+            # Copy on the way out. The loaders hand back a read-only view of a
+            # cached object, while the SDK's signature asks for a dict it owns.
+            inputs_schema=dict(inputs_schema),
+            outputs_schema=dict(outputs_schema),
         )
         print(f"Created '{args.name}' (uuid: {ds.id}).")
 
@@ -258,16 +285,14 @@ def cmd_dataset_push(args: argparse.Namespace) -> None:
         inputs_schema, outputs_schema = _load_dataset_schemas()
         ds = client.create_dataset(
             dataset_name=args.remote,
-            inputs_schema=inputs_schema,
-            outputs_schema=outputs_schema,
+            # Copy on the way out, as in cmd_dataset_create above.
+            inputs_schema=dict(inputs_schema),
+            outputs_schema=dict(outputs_schema),
         )
     _apply_dataset_schemas(client, ds.id)
 
-    existing_ids = {
-        _scenario_id({"metadata": ex.metadata}, default=None)
-        for ex in client.list_examples(dataset_id=ds.id)
-    } - {None}
-    to_add = [ex for ex in examples if _scenario_id(ex) not in existing_ids]
+    existing_ids = ScenarioId.existing_ids(client.list_examples(dataset_id=ds.id))
+    to_add = [ex for ex in examples if ScenarioId.from_example(ex) not in existing_ids]
     for ex in to_add:
         client.create_example(
             inputs=ex["inputs"],
@@ -292,10 +317,21 @@ def cmd_dataset_pull(args: argparse.Namespace) -> None:
 
     client = make_client()
     ds = client.read_dataset(dataset_name=args.remote)
-    examples = sorted(
-        client.list_examples(dataset_id=ds.id),
-        key=lambda e: (e.metadata or {}).get("scenario_id", 0),
-    )
+
+    keyed = [
+        (ScenarioId.sort_key(e), e) for e in client.list_examples(dataset_id=ds.id)
+    ]
+    keyed.sort(key=lambda pair: pair[0])
+    examples = [e for _, e in keyed]
+
+    unlabeled = sum(1 for _, e in keyed if ScenarioId.is_unlabeled(e))
+    if unlabeled:
+        print(
+            f"warning: {unlabeled} example(s) have no integer scenario_id; they will "
+            "be pulled as unlabeled. Run 'example adopt' on them before the next "
+            "'dataset push' or 'example update'.",
+            file=sys.stderr,
+        )
 
     if args.dry_run:
         print(f"Would pull {len(examples)} examples from '{args.remote}' to {local}.")
@@ -317,6 +353,11 @@ def cmd_dataset_pull(args: argparse.Namespace) -> None:
     print(f"Pulled {len(examples)} examples from '{args.remote}' to {local}.")
 
 
+# TODO: the example record ({"metadata": ..., "inputs": ..., "outputs": ...}) and its
+# metadata dict are passed around as plain dicts everywhere in this module. Consider
+# giving them the same treatment as ScenarioId below: a small class each, so the shape
+# and the metadata schema's required keys are enforced by the type rather than by
+# convention at every call site.
 def _load_examples(
     ref: str | Path,
     client: Client,
@@ -333,44 +374,179 @@ def _load_examples(
     ]
 
 
-_NO_DEFAULT: Any = object()
+_T = TypeVar("_T")
 
 
-def _scenario_id(example: dict, default: Any = _NO_DEFAULT) -> Any:
-    """Return the example's scenario_id, or default when it carries none.
+class ScenarioId(int):
+    """The stable key used to diff, merge, and pull/push examples between the
+    local JSONL file and the remote LangSmith dataset.
 
-    With no default a missing scenario_id is an error, which is what the local
-    JSONL path wants: those records are schema-validated and must always have one.
-    Examples authored by hand in the LangSmith web UI frequently do not, so
-    callers reading a remote dataset should pass a default and handle the
-    unlabeled examples explicitly rather than crashing on the first one.
+    Wraps a plain int so callers stop re-deriving "is this actually a valid
+    scenario_id" by hand: metadata is free-form JSON until schema-validated, so
+    a scenario_id read off an example may be a string, a bool, or missing
+    entirely. Construct it only through `parse`/`from_metadata`/`from_example`,
+    which fold all of those into `None` ("unlabeled") instead of a value that
+    looks numeric but isn't.
     """
-    sc_id = (example.get("metadata") or {}).get("scenario_id")
-    if sc_id is None:
-        if default is _NO_DEFAULT:
-            raise ValueError(f"Example is missing scenario_id in metadata: {example}")
-        return default
-    return sc_id
 
+    def __new__(cls, value: int) -> "ScenarioId":
+        if type(value) is not int:
+            raise TypeError(
+                f"ScenarioId must be constructed from a plain int, not "
+                f"{type(value).__name__} ({value!r}); use ScenarioId.parse() to "
+                "convert an untrusted value instead."
+            )
+        return super().__new__(cls, value)
 
-def _partition_by_scenario_id(
-    examples: list[dict],
-) -> tuple[dict[int, dict], list[dict]]:
-    """Split examples into a {scenario_id: example} map plus the unlabeled ones."""
-    by_id: dict[int, dict] = {}
-    unlabeled: list[dict] = []
-    for ex in examples:
-        sc_id = _scenario_id(ex, default=None)
+    @classmethod
+    def parse(cls, value: Any) -> "ScenarioId | None":
+        """Return a ScenarioId for an int or whole-number float, else None.
+
+        The metadata schema's "integer" type accepts a JSON number with no
+        fractional part (e.g. 5.0), so this must too or a schema-valid
+        scenario_id would be silently treated as unlabeled. bool doesn't count,
+        even though it's an int subclass in Python.
+        """
+        if isinstance(value, cls):
+            # Idempotent: parse(already-a-ScenarioId) returns it unchanged instead of
+            # raising, since ScenarioId's own __new__ rejects non-plain-int values
+            # (including ScenarioId itself, since type(value) is not int for it).
+            return value
+        if isinstance(value, bool):
+            return None
+        if isinstance(value, int):
+            # Narrow to a plain int first. ScenarioId.__new__ rejects int subclasses
+            # such as IntEnum members, and parse's contract is to return None for
+            # anything unusable rather than to raise. The float branch below narrows
+            # for the same reason.
+            return cls(int(value))
+        if isinstance(value, float) and value.is_integer():
+            return cls(int(value))
+        return None
+
+    # TODO: this reaches into a metadata dict rather than a raw value (unlike
+    # parse above). If Metadata (the other half of the ExampleRecord TODO on
+    # _load_examples) is ever built, this belongs there as `.scenario_id`, not
+    # here.
+    @classmethod
+    def from_metadata(cls, metadata: dict | None) -> "ScenarioId | None":
+        """Extract and parse scenario_id out of an example's metadata dict."""
+        return cls.parse((metadata or {}).get("scenario_id"))
+
+    # TODO: this reaches into a whole example dict rather than just a metadata
+    # dict (unlike parse/from_metadata above). If ExampleRecord (see the TODO on
+    # _load_examples) is ever built, this belongs there as `.scenario_id`/
+    # `.scenario_id_or(default)`, not here — along with partition and sort_key
+    # below, which have the same problem.
+    @classmethod
+    def from_example(cls, example: dict) -> "ScenarioId":
+        """Return the example's scenario_id, raising if it carries none.
+
+        This is what the local JSONL path wants: those records are schema-validated
+        and must always have one. Examples authored by hand in the LangSmith web UI
+        frequently do not — callers reading a remote dataset should use
+        `from_example_or` instead and handle the unlabeled examples explicitly rather
+        than crashing on the first one.
+        """
+        sc_id = cls.from_metadata(example.get("metadata"))
         if sc_id is None:
-            unlabeled.append(ex)
-        else:
-            by_id[sc_id] = ex
-    return by_id, unlabeled
+            raise ValueError(
+                f"Example is missing scenario_id in metadata: {_unlabeled_label(example)}"
+            )
+        return sc_id
+
+    @classmethod
+    def from_example_or(cls, example: dict, default: _T) -> "ScenarioId | _T":
+        """Return the example's scenario_id, or default when it carries none.
+
+        Examples authored by hand in the LangSmith web UI frequently lack a
+        scenario_id, so callers reading a remote dataset should use this and handle
+        the unlabeled examples explicitly, rather than `from_example` crashing on the
+        first one.
+        """
+        sc_id = cls.from_metadata(example.get("metadata"))
+        return default if sc_id is None else sc_id
+
+    # TODO: same as from_example above — this operates on whole example dicts, not
+    # just ScenarioId's own metadata/value inputs. It'd move to ExampleRecord too,
+    # if that's ever built.
+    @classmethod
+    def partition(
+        cls, examples: list[dict]
+    ) -> "tuple[dict[ScenarioId, dict], list[dict]]":
+        """Split examples into a {scenario_id: example} map plus the unlabeled ones.
+
+        A duplicate scenario_id silently keeps only the last example that has it.
+        """
+        by_id: dict[ScenarioId, dict] = {}
+        unlabeled: list[dict] = []
+        for ex in examples:
+            sc_id = cls.from_metadata(ex.get("metadata"))
+            if sc_id is None:
+                unlabeled.append(ex)
+            else:
+                by_id[sc_id] = ex
+        return by_id, unlabeled
+
+    @classmethod
+    def existing_ids(cls, examples: Iterable[Any]) -> "set[ScenarioId]":
+        """Return the labeled ScenarioIds across a collection of examples.
+
+        Each example need only expose a `.metadata` attribute (e.g. LangSmith SDK
+        Example objects), unlike from_example/partition which expect dicts.
+        """
+        return {
+            sc_id
+            for ex in examples
+            if (sc_id := cls.from_metadata(ex.metadata)) is not None
+        }
+
+    # TODO: same as from_example/partition above — this reaches into a whole
+    # example object rather than just metadata (here a LangSmith SDK Example,
+    # attribute access rather than a dict). Move to ExampleRecord alongside them
+    # if that's ever built.
+    @classmethod
+    def sort_key(cls, e: Any) -> "tuple[int, int | str]":
+        """Sort key: labeled examples by scenario_id, unlabeled by example id."""
+        sc_id = cls.from_metadata(e.metadata)
+        if sc_id is not None:
+            return (0, sc_id)
+        return (1, str(e.id))
+
+    # TODO: same as sort_key above - this reaches into a whole example object
+    # rather than just metadata. Move to ExampleRecord alongside them if that is
+    # ever built.
+    @classmethod
+    def is_unlabeled(cls, e: Any) -> bool:
+        """Return True when e carries no integer scenario_id.
+
+        Callers used to infer this from the leading element of sort_key's tuple,
+        which coupled them to an encoding that is private to sort_key.
+        """
+        return cls.from_metadata(e.metadata) is None
+
+
+def _query_text(example: dict) -> str:
+    """Return example's inputs.query coerced to a stripped string.
+
+    inputs.query is schema-required to be a string, but adopt and diff both run on
+    UI-authored examples before anything has schema-validated them. A non-string
+    value therefore has to degrade into something displayable rather than crash,
+    so it is stringified. A falsy value becomes the empty string so that callers
+    can test emptiness without separately handling None.
+    """
+    raw_query = (example.get("inputs") or {}).get("query")
+    return raw_query.strip() if isinstance(raw_query, str) else str(raw_query or "")
 
 
 def _query_preview(example: dict) -> str:
-    """Return a short single-line preview of an example's question."""
-    query = ((example.get("inputs") or {}).get("query") or "").strip()
+    """Return a short single-line preview of an example's question.
+
+    inputs.query is schema-required to be a string, but adopt/diff run on
+    UI-authored examples before they're schema-validated, so a non-string
+    value here must produce a garbled preview, not a crash.
+    """
+    query = _query_text(example)
     if not query:
         return "<empty query>"
     return query[:60] + "..." if len(query) > 60 else query
@@ -381,47 +557,72 @@ def _unlabeled_label(example: dict) -> str:
     return f"(no scenario_id) {_query_preview(example)}"
 
 
-def _next_scenario_id(examples: list[dict]) -> int:
-    """Return one past the highest scenario_id in use, or 0 if none are labeled."""
-    by_id, _ = _partition_by_scenario_id(examples)
-    return max(by_id) + 1 if by_id else 0
-
-
 def _adopt_metadata(example: dict, scenario_id: int) -> dict:
     """Build the metadata block for an unlabeled example, keyed off its inputs.
 
     city and state come from the example's own inputs so that the metadata and the
-    inputs cannot disagree; dataset_split is preserved when the UI already set one.
+    inputs cannot disagree — this overwrites any city/state the UI already set on
+    metadata. Any other key the UI already set (dataset_split included) is
+    preserved, not dropped.
     """
     inputs = example.get("inputs") or {}
     city = inputs.get("city")
     state = inputs.get("state")
-    return {
-        "city": city,
-        "tags": [f"city-{city if city else 'None'}", f"state-{state}"],
-        "state": state,
-        "scenario_id": scenario_id,
-        "dataset_split": (example.get("metadata") or {}).get("dataset_split")
-        or ["base"],
-    }
+    metadata = dict(example.get("metadata") or {})
+    metadata["dataset_split"] = metadata.get("dataset_split") or ["base"]
+    metadata["city"] = city
+    metadata["tags"] = [f"city-{city if city else 'None'}", f"state-{state}"]
+    metadata["state"] = state
+    metadata["scenario_id"] = scenario_id
+    return metadata
 
 
-def _adopt_warnings(example: dict) -> list[str]:
+def _adopt_warnings(
+    example: dict,
+    validator: "jsonschema.Draft7Validator | None" = None,
+    metadata: dict | None = None,
+) -> list[str]:
     """Flag content problems common in UI-authored examples, for a human to review.
 
     Adoption only assigns metadata; it never edits inputs or outputs, because
     repairing them is a judgement call.  These warnings say where to look.
+
+    validator defaults to a fresh one built from the metadata schema; callers
+    checking many examples (e.g. cmd_example_adopt) should build it once and
+    pass it in instead of re-parsing the schema per example.
     """
     warnings: list[str] = []
-    if not ((example.get("inputs") or {}).get("query") or "").strip():
+    query = _query_text(example)
+    if not query:
         warnings.append("inputs.query is empty")
+    reference_conversation = (example.get("outputs") or {}).get(
+        "reference_conversation"
+    )
+    if reference_conversation is not None and not isinstance(
+        reference_conversation, list
+    ):
+        warnings.append("outputs.reference_conversation is not a list")
+        reference_conversation = []
     blank = sum(
         1
-        for msg in (example.get("outputs") or {}).get("reference_conversation") or []
-        if not (msg.get("content") or "").strip()
+        for msg in reference_conversation or []
+        if isinstance(msg, dict) and not _message_text(msg.get("content")).strip()
     )
     if blank:
         warnings.append(f"{blank} reference_conversation message(s) have empty content")
+
+    if metadata is None:
+        # Fall back to a placeholder id. Callers that have not assigned one yet
+        # cannot supply the real metadata, and validating against a placeholder is
+        # still worth more than skipping the schema check entirely. Callers that
+        # have the real object should pass it so that any rule keyed on
+        # scenario_id is checked against the value actually uploaded.
+        metadata = _adopt_metadata(example, scenario_id=0)
+    if validator is None:
+        validator = jsonschema.Draft7Validator(_load_metadata_schema())
+    for error in validator.iter_errors(metadata):
+        warnings.append(f"adopted metadata would be schema-invalid: {error.message}")
+
     return warnings
 
 
@@ -463,8 +664,8 @@ def cmd_dataset_diff(args: argparse.Namespace) -> None:
         print(str(exc), file=sys.stderr)
         sys.exit(1)
 
-    left_by_id, left_unlabeled = _partition_by_scenario_id(left)
-    right_by_id, right_unlabeled = _partition_by_scenario_id(right)
+    left_by_id, left_unlabeled = ScenarioId.partition(left)
+    right_by_id, right_unlabeled = ScenarioId.partition(right)
 
     only_left = sorted(left_by_id.keys() - right_by_id.keys())
     only_right = sorted(right_by_id.keys() - left_by_id.keys())
@@ -508,11 +709,26 @@ def cmd_dataset_merge(args: argparse.Namespace) -> None:
     target_ds = client.read_dataset(dataset_name=args.target)
     _apply_dataset_schemas(client, target_ds.id)
     existing = list(client.list_examples(dataset_id=target_ds.id))
-    existing_ids = {
-        _scenario_id({"metadata": ex.metadata}, default=None) for ex in existing
-    } - {None}
+    existing_ids = ScenarioId.existing_ids(existing)
 
-    to_add = [ex for ex in source_examples if _scenario_id(ex) not in existing_ids]
+    # _load_examples doesn't schema-validate a remote source, so it may contain
+    # examples with no scenario_id (e.g. authored in the LangSmith UI); from_example
+    # with no default would raise ValueError on those instead of merging cleanly.
+    scenario_ids = [ScenarioId.from_example_or(ex, None) for ex in source_examples]
+    unlabeled = sum(1 for sc_id in scenario_ids if sc_id is None)
+    if unlabeled:
+        print(
+            f"warning: {unlabeled} source example(s) have no integer scenario_id and "
+            "will be merged unconditionally; run 'example adopt' on the source first "
+            "to avoid duplicates.",
+            file=sys.stderr,
+        )
+
+    to_add = [
+        ex
+        for ex, sc_id in zip(source_examples, scenario_ids)
+        if sc_id not in existing_ids
+    ]
     for ex in to_add:
         client.create_example(
             inputs=ex["inputs"],
@@ -541,9 +757,11 @@ def cmd_example_list(args: argparse.Namespace) -> None:
     client = make_client()
     ds = client.read_dataset(dataset_name=args.dataset)
     examples = list(client.list_examples(dataset_id=ds.id))
+
     rows = []
-    for ex in sorted(examples, key=lambda e: (e.metadata or {}).get("scenario_id", 0)):
-        sid = str((ex.metadata or {}).get("scenario_id", "?")).rjust(4)
+    for ex in sorted(examples, key=ScenarioId.sort_key):
+        sc_id = ScenarioId.from_metadata(ex.metadata)
+        sid = str(sc_id if sc_id is not None else "?").rjust(4)
         tags = str((ex.metadata or {}).get("tags", []))
         query = (ex.inputs or {}).get("query", "")[:80]
         rows.append((sid, tags, query))
@@ -559,7 +777,9 @@ def cmd_example_show(args: argparse.Namespace) -> None:
         examples = _load_examples(ref, make_client())
 
     matches = [
-        ex for ex in examples if _scenario_id(ex, default=None) == args.scenario_id
+        ex
+        for ex in examples
+        if ScenarioId.from_example_or(ex, None) == args.scenario_id
     ]
     if not matches:
         print(f"Example {args.scenario_id} not found.", file=sys.stderr)
@@ -594,7 +814,7 @@ def cmd_example_remove(args: argparse.Namespace) -> None:
     matches = [
         ex
         for ex in examples
-        if (ex.metadata or {}).get("scenario_id") == args.scenario_id
+        if ScenarioId.from_metadata(ex.metadata) == args.scenario_id
     ]
     if not matches:
         print(f"Example {args.scenario_id} not found.", file=sys.stderr)
@@ -622,17 +842,32 @@ def cmd_example_adopt(args: argparse.Namespace) -> None:
         for ex in remote
     ]
 
-    next_id = args.start_id if args.start_id is not None else _next_scenario_id(records)
+    by_id, unlabeled = ScenarioId.partition(records)
+    next_id = (
+        args.start_id if args.start_id is not None else (max(by_id) + 1 if by_id else 0)
+    )
+
+    if unlabeled:
+        conflicts = sorted(set(range(next_id, next_id + len(unlabeled))) & by_id.keys())
+        if conflicts:
+            print(
+                f"error: scenario_id(s) {conflicts} starting from --start-id={next_id} "
+                f"would collide with existing examples in '{args.dataset}'.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
     verb = "Would assign" if args.dry_run else "Assigned"
+    validator = jsonschema.Draft7Validator(_load_metadata_schema())
 
     adopted = 0
     for ex, record in zip(remote, records):
-        if _scenario_id(record, default=None) is not None:
+        if ScenarioId.from_metadata(record.get("metadata")) is not None:
             continue
         metadata = _adopt_metadata(record, next_id + adopted)
         adopted += 1
         print(f"{verb} scenario_id={metadata['scenario_id']}: {_query_preview(record)}")
-        for warning in _adopt_warnings(record):
+        for warning in _adopt_warnings(record, validator, metadata):
             print(
                 f"  warning: scenario_id={metadata['scenario_id']}: {warning}",
                 file=sys.stderr,
@@ -652,7 +887,7 @@ def cmd_example_update(args: argparse.Namespace) -> None:
     local_examples = {
         sid: ex
         for ex in _read_jsonl(args.file, validate=_Validate("warn"))
-        if (sid := _scenario_id(ex, default=None)) is not None
+        if (sid := ScenarioId.from_example_or(ex, None)) is not None
     }
     if args.scenario_id not in local_examples:
         print(f"Example {args.scenario_id} not found in {args.file}.", file=sys.stderr)
@@ -663,9 +898,7 @@ def cmd_example_update(args: argparse.Namespace) -> None:
     ds = client.read_dataset(dataset_name=args.dataset)
     remote = list(client.list_examples(dataset_id=ds.id))
     matches = [
-        ex
-        for ex in remote
-        if (ex.metadata or {}).get("scenario_id") == args.scenario_id
+        ex for ex in remote if ScenarioId.from_metadata(ex.metadata) == args.scenario_id
     ]
     if not matches:
         print(
@@ -879,9 +1112,15 @@ def _index_feedback_by_run(client: Any, run_ids: list) -> dict[str, list]:
 def _index_scenario_ids(
     client: Any, example_ids: list, default: int = -1
 ) -> dict[str, int]:
-    """Return {str(example_id): scenario_id} fetched from example metadata."""
+    """Return {str(example_id): scenario_id} fetched from example metadata.
+
+    default is used both when scenario_id is absent and when it's present but
+    unparseable (e.g. an explicit null, the shape the LangSmith UI produces).
+    """
     return {
-        str(ex.id): (ex.metadata or {}).get("scenario_id", default)
+        str(ex.id): sc_id
+        if (sc_id := ScenarioId.from_metadata(ex.metadata)) is not None
+        else default
         for ex in client.list_examples(example_ids=example_ids)
     }
 
