@@ -299,6 +299,20 @@ class NoticeServiceMethod(StrEnum):
     termination notice (ORS 90.155(5))."""
 
 
+def _labeled_block(label: str, items: list[str]) -> list[str]:
+    """Render `items` one per line under `label`, or nothing when empty.
+
+    Joining these with "; " is not safe: an entry may contain a semicolon of its
+    own, which leaves a reader unable to tell an entry boundary from punctuation
+    inside an entry. One entry per line makes the boundaries unambiguous no
+    matter how many entries there are or what punctuation they hold.
+    """
+    if not items:
+        return []
+    heading = f"{label}s:" if len(items) > 1 else f"{label}:"
+    return [heading] + [f"  - {item}." for item in items]
+
+
 class NoticeDeadlineInputSchema(BaseModel):
     """Input schema for the calculate_ors_90_160_notice_deadline tool."""
 
@@ -447,10 +461,18 @@ def calculate_ors_90_160_notice_deadline(
         else:
             if service_time is None:
                 return (
-                    "MISSING INPUT, NO DEADLINE COMPUTED: service_time is required for "
-                    "an hour-based notice period unless it terminates the tenancy and "
-                    "was served by mail_and_attach or email_and_mail. Ask the tenant "
-                    "what time the notice was served, then call this tool again."
+                    "MISSING INPUT, NO DEADLINE COMPUTED: an hour-based period served "
+                    "this way starts running at the moment of service under ORS "
+                    "90.160(2)(a), which for first-class mail is the moment the "
+                    "landlord mailed the notice, not the moment the tenant received "
+                    "it. Do NOT guess that time and do NOT substitute the delivery "
+                    "time. Instead, ask the tenant what termination date and time the "
+                    "notice itself states: ORS 90.396(1), 90.398(1), 90.403(1) and "
+                    "90.445(1) each require the notice to state them, and ORS "
+                    "90.155(2) requires the landlord to have already included the "
+                    "three-day mail extension in that stated period. If the tenant "
+                    "can supply the exact time of service, call this tool again with "
+                    "service_time set."
                 )
             # ORS 90.160(2)(a): clock starts immediately upon service.
             clock_start = datetime.combine(service_date, service_time)
@@ -481,8 +503,14 @@ def calculate_ors_90_160_notice_deadline(
         caveats.append(
             "e-mail service is only valid if a signed ORS 90.155(1)(d) addendum authorizes it"
         )
+    # Deliberately not a caveat. The other two entries are conditions on whether
+    # service was valid at all ("only valid if ..."), while this one explains why
+    # the e-mail copy leaves the deadline alone. Under a shared "Caveat:" label a
+    # reader carries the "only valid if" framing into this sentence and concludes
+    # the e-mail copy is what carried the notice, which is backwards.
+    notes = []
     if email_and_mail_as_mail_alternative:
-        caveats.append(
+        notes.append(
             "this notice was served by first-class mail under ORS 90.155(1)(b); the "
             "e-mail copy is an ORS 90.155(3) alternative method that neither adds "
             "nor removes time from the deadline"
@@ -515,8 +543,8 @@ def calculate_ors_90_160_notice_deadline(
             else ""
         ),
     ]
-    if caveats:
-        tenant_lines.append("Caveat: " + "; ".join(caveats) + ".")
+    tenant_lines += _labeled_block("Caveat", caveats)
+    tenant_lines += _labeled_block("Note", notes)
     tenant_lines += [
         "",
         f"DEADLINE: {deadline.strftime('%A, %B %d, %Y at %I:%M %p')}. This deadline is "

@@ -1,5 +1,6 @@
 """Tests for evaluate/langsmith_dataset.py."""
 
+import enum
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -29,6 +30,7 @@ from evaluate.langsmith_dataset import (
     _load_metadata_schema,
     _message_text,
     _query_preview,
+    _query_text,
     _read_jsonl,
     _render_transcript,
     _scan_pii,
@@ -3169,3 +3171,45 @@ def test_cmd_experiment_markdown_no_pii_warning_when_clean(tmp_path, capsys):
         cmd_experiment_markdown(_md_args(out))
 
     assert "may contain PII" not in capsys.readouterr().err
+
+
+def test_scenario_id_parse_accepts_int_enum_member():
+    """An IntEnum member parses to a ScenarioId rather than raising, honoring parse's contract that it never raises for an unusable value."""
+
+    class _Scenario(enum.IntEnum):
+        EVICTION = 7
+
+    parsed = ScenarioId.parse(_Scenario.EVICTION)
+    assert parsed == 7
+    assert type(parsed) is ScenarioId
+
+
+def test_adopt_warnings_validates_supplied_metadata():
+    """_adopt_warnings accepts a caller-supplied metadata object so the schema check runs against the id actually uploaded, and still works when the argument is omitted."""
+    example = {"inputs": {"query": "Can my landlord raise rent mid-lease?"}}
+
+    supplied = _adopt_warnings(example, None, {"scenario_id": 42})
+    assert isinstance(supplied, list)
+
+    fallback = _adopt_warnings(example)
+    assert isinstance(fallback, list)
+
+
+def test_scenario_id_is_unlabeled():
+    """is_unlabeled reports whether an example carries an integer scenario_id without callers decoding sort_key's private tuple encoding."""
+
+    class _Example:
+        def __init__(self, metadata):
+            self.metadata = metadata
+
+    assert ScenarioId.is_unlabeled(_Example({})) is True
+    assert ScenarioId.is_unlabeled(_Example(None)) is True
+    assert ScenarioId.is_unlabeled(_Example({"scenario_id": 3})) is False
+
+
+def test_query_text_coerces_non_string_and_missing_values():
+    """_query_text stringifies a non-string inputs.query and returns the empty string for a falsy or absent one, so callers can test emptiness without handling None."""
+    assert _query_text({"inputs": {"query": "  spaced  "}}) == "spaced"
+    assert _query_text({"inputs": {"query": 42}}) == "42"
+    assert _query_text({"inputs": {"query": None}}) == ""
+    assert _query_text({}) == ""

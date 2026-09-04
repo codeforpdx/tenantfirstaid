@@ -1309,3 +1309,79 @@ def test_notice_deadline_rejects_non_positive_period_value(period_value):
                 "is_termination_notice": False,
             }
         )
+
+
+def test_notice_deadline_missing_service_time_refusal_points_to_notice_text():
+    """The missing-service-time refusal for an hour-based first-class-mail notice must direct the agent to the termination date and time the notice itself states under ORS 90.396(1), 90.398(1), 90.403(1) and 90.445(1), rather than asking the agent to guess or substitute a delivery time."""
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-03-02",
+            "period_value": 72,
+            "period_unit": "hours",
+            "service_method": "first_class_mail",
+            "is_termination_notice": False,
+        }
+    )
+    assert result.startswith("MISSING INPUT, NO DEADLINE COMPUTED:")
+    assert "90.396(1)" in result
+    assert "Do NOT guess" in result
+    assert "landlord mailed the notice" in result
+    assert "11:59" not in result
+
+
+def test_notice_deadline_caveat_and_note_render_on_separate_lines():
+    """For a non-termination email_and_mail notice, the validity caveat and the first-class-mail note must render as separate labeled sections — the note must not sit under the "Caveat:" label where its "only valid if" framing would be misread as applying to the e-mail copy."""
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-03-02",
+            "period_value": 30,
+            "period_unit": "days",
+            "service_method": "email_and_mail",
+            "is_termination_notice": False,
+        }
+    )
+    lines = result.splitlines()
+    assert "Caveat:" in lines
+    assert "Note:" in lines
+    assert lines.index("Caveat:") < lines.index("Note:")
+    assert (
+        sum(
+            1
+            for line in lines
+            if line.startswith("  - e-mail service is only valid if")
+        )
+        == 1
+    )
+    assert (
+        sum(
+            1
+            for line in lines
+            if line.startswith("  - this notice was served by first-class mail")
+        )
+        == 1
+    )
+    assert "addendum authorizes it; this notice" not in result
+
+
+def test_notice_deadline_single_caveat_has_no_note_section():
+    """A mail_and_attach notice with a single caveat and no note must render only the "Caveat:" section, with no empty "Note:" section."""
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-03-02",
+            "period_value": 30,
+            "period_unit": "days",
+            "service_method": "mail_and_attach",
+            "is_termination_notice": False,
+        }
+    )
+    lines = result.splitlines()
+    assert "Caveat:" in lines
+    assert "Note:" not in lines
+    assert (
+        sum(
+            1
+            for line in lines
+            if line.startswith("  - mail-and-attach service is only valid if")
+        )
+        == 1
+    )

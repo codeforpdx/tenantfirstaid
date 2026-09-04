@@ -34,7 +34,7 @@ import re
 import statistics
 import subprocess
 import sys
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -159,22 +159,31 @@ def _git_is_clean(path: Path) -> bool:
 
 
 @functools.lru_cache(maxsize=1)
-def _load_schema_properties() -> dict:
+def _load_schema_properties() -> Mapping[str, Any]:
     """Return DEFAULT_SCHEMA's top-level "properties" object, cached.
 
     Both _load_dataset_schemas and _load_metadata_schema read the same file; this
     collapses them to one read+parse instead of one per call.
+
+    The Mapping return type marks the cached object read-only: every consumer here
+    only reads it, and a shared cache that anyone could edit in place would leak
+    one caller's edit into the next caller's read. Two limits are worth naming.
+    The protection is static-only -- a type checker rejects an in-place edit, but
+    nothing stops one at runtime -- and it is shallow, since the values are Any and
+    a nested dict inside is still mutable. At runtime the object remains a plain
+    dict, so json.dumps, jsonschema, and the LangSmith SDK keep working unchanged
+    and no caller needs to unwrap it.
     """
     return json.loads(DEFAULT_SCHEMA.read_text()).get("properties", {})
 
 
-def _load_dataset_schemas() -> tuple[dict, dict]:
+def _load_dataset_schemas() -> tuple[Mapping[str, Any], Mapping[str, Any]]:
     """Return (inputs_schema, outputs_schema) extracted from DEFAULT_SCHEMA."""
     props = _load_schema_properties()
     return props["inputs"], props["outputs"]
 
 
-def _load_metadata_schema() -> dict:
+def _load_metadata_schema() -> Mapping[str, Any]:
     """Return the metadata schema extracted from DEFAULT_SCHEMA."""
     return _load_schema_properties()["metadata"]
 
@@ -241,8 +250,10 @@ def cmd_dataset_create(args: argparse.Namespace) -> None:
         inputs_schema, outputs_schema = _load_dataset_schemas()
         ds = client.create_dataset(
             dataset_name=args.name,
-            inputs_schema=inputs_schema,
-            outputs_schema=outputs_schema,
+            # Copy on the way out. The loaders hand back a read-only view of a
+            # cached object, while the SDK's signature asks for a dict it owns.
+            inputs_schema=dict(inputs_schema),
+            outputs_schema=dict(outputs_schema),
         )
         print(f"Created '{args.name}' (uuid: {ds.id}).")
 
@@ -274,8 +285,9 @@ def cmd_dataset_push(args: argparse.Namespace) -> None:
         inputs_schema, outputs_schema = _load_dataset_schemas()
         ds = client.create_dataset(
             dataset_name=args.remote,
-            inputs_schema=inputs_schema,
-            outputs_schema=outputs_schema,
+            # Copy on the way out, as in cmd_dataset_create above.
+            inputs_schema=dict(inputs_schema),
+            outputs_schema=dict(outputs_schema),
         )
     _apply_dataset_schemas(client, ds.id)
 
@@ -312,7 +324,7 @@ def cmd_dataset_pull(args: argparse.Namespace) -> None:
     keyed.sort(key=lambda pair: pair[0])
     examples = [e for _, e in keyed]
 
-    unlabeled = sum(1 for key, _ in keyed if key[0] == 1)
+    unlabeled = sum(1 for _, e in keyed if ScenarioId.is_unlabeled(e))
     if unlabeled:
         print(
             f"warning: {unlabeled} example(s) have no integer scenario_id; they will "
@@ -403,7 +415,11 @@ class ScenarioId(int):
         if isinstance(value, bool):
             return None
         if isinstance(value, int):
-            return cls(value)
+            # Narrow to a plain int first. ScenarioId.__new__ rejects int subclasses
+            # such as IntEnum members, and parse's contract is to return None for
+            # anything unusable rather than to raise. The float branch below narrows
+            # for the same reason.
+            return cls(int(value))
         if isinstance(value, float) and value.is_integer():
             return cls(int(value))
         return None
@@ -497,6 +513,31 @@ class ScenarioId(int):
             return (0, sc_id)
         return (1, str(e.id))
 
+    # TODO: same as sort_key above - this reaches into a whole example object
+    # rather than just metadata. Move to ExampleRecord alongside them if that is
+    # ever built.
+    @classmethod
+    def is_unlabeled(cls, e: Any) -> bool:
+        """Return True when e carries no integer scenario_id.
+
+        Callers used to infer this from the leading element of sort_key's tuple,
+        which coupled them to an encoding that is private to sort_key.
+        """
+        return cls.from_metadata(e.metadata) is None
+
+
+def _query_text(example: dict) -> str:
+    """Return example's inputs.query coerced to a stripped string.
+
+    inputs.query is schema-required to be a string, but adopt and diff both run on
+    UI-authored examples before anything has schema-validated them. A non-string
+    value therefore has to degrade into something displayable rather than crash,
+    so it is stringified. A falsy value becomes the empty string so that callers
+    can test emptiness without separately handling None.
+    """
+    raw_query = (example.get("inputs") or {}).get("query")
+    return raw_query.strip() if isinstance(raw_query, str) else str(raw_query or "")
+
 
 def _query_preview(example: dict) -> str:
     """Return a short single-line preview of an example's question.
@@ -505,8 +546,7 @@ def _query_preview(example: dict) -> str:
     UI-authored examples before they're schema-validated, so a non-string
     value here must produce a garbled preview, not a crash.
     """
-    raw_query = (example.get("inputs") or {}).get("query")
-    query = raw_query.strip() if isinstance(raw_query, str) else str(raw_query or "")
+    query = _query_text(example)
     if not query:
         return "<empty query>"
     return query[:60] + "..." if len(query) > 60 else query
@@ -538,7 +578,9 @@ def _adopt_metadata(example: dict, scenario_id: int) -> dict:
 
 
 def _adopt_warnings(
-    example: dict, validator: "jsonschema.Draft7Validator | None" = None
+    example: dict,
+    validator: "jsonschema.Draft7Validator | None" = None,
+    metadata: dict | None = None,
 ) -> list[str]:
     """Flag content problems common in UI-authored examples, for a human to review.
 
@@ -550,8 +592,7 @@ def _adopt_warnings(
     pass it in instead of re-parsing the schema per example.
     """
     warnings: list[str] = []
-    raw_query = (example.get("inputs") or {}).get("query")
-    query = raw_query.strip() if isinstance(raw_query, str) else str(raw_query or "")
+    query = _query_text(example)
     if not query:
         warnings.append("inputs.query is empty")
     reference_conversation = (example.get("outputs") or {}).get(
@@ -570,7 +611,13 @@ def _adopt_warnings(
     if blank:
         warnings.append(f"{blank} reference_conversation message(s) have empty content")
 
-    metadata = _adopt_metadata(example, scenario_id=0)
+    if metadata is None:
+        # Fall back to a placeholder id. Callers that have not assigned one yet
+        # cannot supply the real metadata, and validating against a placeholder is
+        # still worth more than skipping the schema check entirely. Callers that
+        # have the real object should pass it so that any rule keyed on
+        # scenario_id is checked against the value actually uploaded.
+        metadata = _adopt_metadata(example, scenario_id=0)
     if validator is None:
         validator = jsonschema.Draft7Validator(_load_metadata_schema())
     for error in validator.iter_errors(metadata):
@@ -820,7 +867,7 @@ def cmd_example_adopt(args: argparse.Namespace) -> None:
         metadata = _adopt_metadata(record, next_id + adopted)
         adopted += 1
         print(f"{verb} scenario_id={metadata['scenario_id']}: {_query_preview(record)}")
-        for warning in _adopt_warnings(record, validator):
+        for warning in _adopt_warnings(record, validator, metadata):
             print(
                 f"  warning: scenario_id={metadata['scenario_id']}: {warning}",
                 file=sys.stderr,
