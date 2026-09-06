@@ -13,6 +13,21 @@ from tenantfirstaid.location import OregonCity, UsaState
 
 
 @pytest.fixture(autouse=True)
+def _no_langsmith_tracing(monkeypatch: pytest.MonkeyPatch):
+    """Keep the suite from shipping spans to the hosted LangSmith project.
+
+    The tests exercise real LangChain/LangGraph objects, so with a live
+    LANGSMITH_API_KEY present every run uploads hundreds of spans - polluting the
+    real traces and consuming the tenant's monthly trace quota. Exporting the
+    variable outside pytest is not enough on its own: backend/.env is loaded with
+    override=True when a config object is created (tenantfirstaid/constants.py),
+    which clobbers the caller's value mid-test, so it is re-asserted here per test.
+    """
+    for var in ("LANGSMITH_TRACING", "LANGCHAIN_TRACING_V2"):
+        monkeypatch.setenv(var, "false")
+
+
+@pytest.fixture(autouse=True)
 def _no_eval_history_writes(request: pytest.FixtureRequest):
     """Prevent tests from writing to the real eval_history directory."""
     if request.node.get_closest_marker("allow_eval_history_writes"):
