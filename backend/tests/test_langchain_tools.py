@@ -1319,14 +1319,52 @@ def test_notice_deadline_missing_service_time_refusal_points_to_notice_text():
             "period_value": 72,
             "period_unit": "hours",
             "service_method": "first_class_mail",
-            "is_termination_notice": False,
+            "is_termination_notice": True,
         }
     )
     assert result.startswith("MISSING INPUT, NO DEADLINE COMPUTED:")
     assert "90.396(1)" in result
     assert "Do NOT guess" in result
     assert "landlord mailed the notice" in result
+    assert "90.155(2)" in result
     assert "11:59" not in result
+
+
+def test_notice_deadline_missing_service_time_refusal_omits_mail_clauses_on_personal_delivery():
+    """Personal delivery is ORS 90.155(1)(a): no mailing happened and no extension applies, so the refusal must carry neither the mailing sentence nor the ORS 90.155(2) sentence."""
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-03-02",
+            "period_value": 72,
+            "period_unit": "hours",
+            "service_method": "personal_delivery",
+            "is_termination_notice": True,
+        }
+    )
+    assert result.startswith("MISSING INPUT, NO DEADLINE COMPUTED:")
+    assert "landlord mailed" not in result
+    assert "90.155(2)" not in result
+    assert "90.396(1)" in result
+
+
+def test_notice_deadline_missing_service_time_refusal_mail_and_attach_non_termination():
+    """Mail-and-attach is ORS 90.155(1)(c): a mailing occurred, so the mailing sentence belongs, but 90.155(2) reaches only (1)(b) and the termination statutes do not apply to a non-termination notice."""
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-03-02",
+            "period_value": 72,
+            "period_unit": "hours",
+            "service_method": "mail_and_attach",
+            "is_termination_notice": False,
+        }
+    )
+    assert result.startswith("MISSING INPUT, NO DEADLINE COMPUTED:")
+    assert "landlord mailed" in result
+    assert "90.155(2)" not in result
+    assert "90.396" not in result
+    # The mailing clause must not name a method this service did not use.
+    assert "first-class mail" not in result
+    assert "first class mail" not in result
 
 
 def test_notice_deadline_caveat_and_note_render_on_separate_lines():

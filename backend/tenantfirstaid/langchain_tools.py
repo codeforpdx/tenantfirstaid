@@ -328,8 +328,19 @@ class NoticeDeadlineInputSchema(BaseModel):
         email_and_mail — those start the clock at 11:59 PM regardless of what time
         service actually happened.""",
     )
+    # le=1000 sits above the longest real ORS 90 period (365 days for a park
+    # closure, 72 hours for the shortest termination notices) yet below any
+    # date-shaped value. Without it, 20260101 raises OverflowError in the days
+    # branch and, worse, silently returns a fully formatted tenant-facing
+    # deadline in the year 4337 in the hours branch — so the bound must be
+    # tight, not merely below the overflow threshold. A Pydantic bound rather
+    # than an in-body guard because LangGraph wraps a ValidationError on tool
+    # args as a ToolInvocationError and hands it back to the model as a readable
+    # ToolMessage it can correct, while anything raised inside the tool body
+    # escapes the graph.
     period_value: int = Field(
         gt=0,
+        le=1000,
         description="""The number IN period_unit's UNIT — e.g. 72 for a "72-hour"
         notice, 30 for a "30-day" notice. Copy this directly off the statute governing
         the notice. Do not convert it to the other unit yourself; pass it as written and
@@ -384,6 +395,60 @@ class NoticeDeadlineInputSchema(BaseModel):
         return v
 
 
+def _missing_service_time_refusal(
+    *,
+    mailing_occurred: bool,
+    is_termination_notice: bool,
+    mail_extension_applies: bool,
+) -> str:
+    """Refusal text for an hour-based period served with no service_time.
+
+    The message is an unconditional stem plus three clauses that gate on three
+    different conditions, so it is composed rather than branched. The stem is
+    true on every path that reaches here. The mailing clause needs only that a
+    mailing occurred. The next-step clause cites ORS 90.396(1), 90.398(1),
+    90.403(1) and 90.445(1), all of which are termination statutes, so it gates
+    on is_termination_notice. The extension clause gates on
+    mail_extension_applies, which is narrower than mailing_occurred because ORS
+    90.155(2) reaches only subsection (1)(b) service.
+    """
+    parts = [
+        "MISSING INPUT, NO DEADLINE COMPUTED: an hour-based period served this "
+        "way starts running at the moment of service under ORS 90.160(2)(a)"
+    ]
+    if mailing_occurred:
+        # Deliberately method-neutral: this branch is also reached by
+        # mail_and_attach (ORS 90.155(1)(c)) and email_and_mail, so naming
+        # first class mail here would miscite the method actually used.
+        parts.append(
+            ", which for service by mail is the moment the landlord mailed the "
+            "notice, not the moment the tenant received it"
+        )
+    parts.append(
+        ". Do NOT guess that time and do NOT substitute the delivery time. Instead, "
+    )
+    if is_termination_notice:
+        parts.append(
+            "ask the tenant what termination date and time the notice itself "
+            "states: ORS 90.396(1), 90.398(1), 90.403(1) and 90.445(1) each "
+            "require the notice to state them."
+        )
+    else:
+        parts.append(
+            "ask the tenant for the exact date and time the notice was served."
+        )
+    if mail_extension_applies:
+        parts.append(
+            " ORS 90.155(2) also requires the landlord to have already included "
+            "the three-day mail extension in the period the notice provides."
+        )
+    parts.append(
+        " If the tenant can supply the exact time of service, call this tool "
+        "again with service_time set."
+    )
+    return "".join(parts)
+
+
 @tool(args_schema=NoticeDeadlineInputSchema, response_format="content")
 def calculate_ors_90_160_notice_deadline(
     service_date: date,
@@ -435,10 +500,36 @@ def calculate_ors_90_160_notice_deadline(
         service_method == NoticeServiceMethod.EMAIL_AND_MAIL
         and not is_termination_notice
     )
+    # A mailing having happened is NOT the same condition as the extension
+    # applying, which is why these are two variables rather than one. ORS
+    # 90.155(1) makes first class mail (1)(b) and mail-and-attach (1)(c)
+    # separate methods, and 90.155(2) reaches only "a notice ... served by mail
+    # under subsection (1)(b)".
+    mailing_occurred = service_method in (
+        NoticeServiceMethod.FIRST_CLASS_MAIL,
+        NoticeServiceMethod.MAIL_AND_ATTACH,
+        NoticeServiceMethod.EMAIL_AND_MAIL,
+    )
+    # ORS 90.155(2) grants the three-day extension only "If a notice is served by
+    # mail under subsection (1)(b) of this section" — first class mail
+    # specifically. first_class_mail is (1)(b), so it qualifies. mail_and_attach
+    # is the distinct method of subsection (1)(c), so it is excluded even though
+    # a mailing occurred. email_and_mail on a non-termination notice is included
+    # for the opposite reason: its mail leg IS (1)(b) service, and ORS 90.155(3)
+    # permits the e-mail copy alongside it — a party "may utilize alternative
+    # methods of notifying the other so long as the alternative method is in
+    # addition to one of the service methods described in subsection (1)."
     mail_extension_applies = (
         service_method == NoticeServiceMethod.FIRST_CLASS_MAIL
         or email_and_mail_as_mail_alternative
     )
+    # ORS 90.160(2) is not termination-only: it opens "For references in this
+    # chapter to periods or notices based on a number of hours", which is
+    # chapter-wide, so citing (2)(a) for an ordinary hour-based period is right.
+    # The termination limit sits inside paragraph (b), which begins "For notices
+    # to terminate a tenancy" before naming the 90.155(1)(c) mailed-and-attached
+    # case and the 90.155(5) mailed-and-e-mailed case — so gating (2)(b) on
+    # is_termination_notice as well as service_method is right too.
     special_hour_start = is_termination_notice and service_method in (
         NoticeServiceMethod.MAIL_AND_ATTACH,
         NoticeServiceMethod.EMAIL_AND_MAIL,
@@ -459,20 +550,19 @@ def calculate_ors_90_160_notice_deadline(
             clock_start = datetime.combine(service_date, time(23, 59))
             basis = "ORS 90.160(2)(b)"
         else:
+            # The non-termination hour-based case that flows through here appears
+            # unreachable in practice: no ORS 90 written notice served under
+            # 90.155 is both hour-based and non-terminating. 90.322(1)(f)'s
+            # 24-hour entry notice is "actual notice" under the separate ORS
+            # 90.150 service statute, and 90.365(2)'s 48-hour essential-services
+            # notice conditionally terminates. The branch stays because
+            # 90.160(2)(a) is written as the general rule, but the coverage hole
+            # is documented rather than silent.
             if service_time is None:
-                return (
-                    "MISSING INPUT, NO DEADLINE COMPUTED: an hour-based period served "
-                    "this way starts running at the moment of service under ORS "
-                    "90.160(2)(a), which for first-class mail is the moment the "
-                    "landlord mailed the notice, not the moment the tenant received "
-                    "it. Do NOT guess that time and do NOT substitute the delivery "
-                    "time. Instead, ask the tenant what termination date and time the "
-                    "notice itself states: ORS 90.396(1), 90.398(1), 90.403(1) and "
-                    "90.445(1) each require the notice to state them, and ORS "
-                    "90.155(2) requires the landlord to have already included the "
-                    "three-day mail extension in that stated period. If the tenant "
-                    "can supply the exact time of service, call this tool again with "
-                    "service_time set."
+                return _missing_service_time_refusal(
+                    mailing_occurred=mailing_occurred,
+                    is_termination_notice=is_termination_notice,
+                    mail_extension_applies=mail_extension_applies,
                 )
             # ORS 90.160(2)(a): clock starts immediately upon service.
             clock_start = datetime.combine(service_date, service_time)
