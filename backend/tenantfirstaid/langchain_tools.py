@@ -316,9 +316,21 @@ def _labeled_block(label: str, items: list[str]) -> list[str]:
 class NoticeDeadlineInputSchema(BaseModel):
     """Input schema for the calculate_ors_90_160_notice_deadline tool."""
 
+    # These bounds close the same overflow hole period_value's le=1000 closes,
+    # from the other operand: date(9999, 12, 31) plus any period overflows the
+    # date arithmetic in the tool body. date(1973, 1, 1) predates the Oregon
+    # Residential Landlord and Tenant Act, so no real notice can fall below it.
+    # date(2100, 1, 1) is far past any plausible service date and still leaves
+    # headroom above it for the longest accepted period (1000 days) plus the
+    # three-day mail extension. A Pydantic bound rather than an in-body check
+    # for the same reason period_value's are: a ValidationError on tool args
+    # comes back to the model as a correctable ToolMessage, whereas an
+    # OverflowError raised inside the tool body escapes the graph.
     service_date: date = Field(
+        ge=date(1973, 1, 1),
+        le=date(2100, 1, 1),
         description="""The date the notice was served. For mail_and_attach or
-        email_and_mail, this is the date BOTH methods were completed."""
+        email_and_mail, this is the date BOTH methods were completed.""",
     )
     service_time: Optional[time] = Field(
         default=None,
@@ -479,9 +491,11 @@ def calculate_ors_90_160_notice_deadline(
             ORS 90.160(2)(b) special start applies (see is_termination_notice).
 
     Returns:
-        A formatted result with an AGENT NOTES section (accuracy-checking scaffolding
-        for you, never relay it) and a TENANT-FACING ANSWER section (relay this part
-        to the tenant as given, don't recompute it).
+        A formatted result with a single section header, the AGENT NOTES fence:
+        everything from the fence down to and including the relay marker is
+        accuracy-checking scaffolding for you, never relay it; everything after
+        the marker is the tenant-facing answer, which you relay to the tenant
+        as given, don't recompute it.
     """
     if service_method == NoticeServiceMethod.EMAIL_ONLY and is_termination_notice:
         return (
@@ -600,13 +614,27 @@ def calculate_ors_90_160_notice_deadline(
     # the e-mail copy is what carried the notice, which is backwards.
     notes = []
     if email_and_mail_as_mail_alternative:
+        # This hedge is in the returned output rather than only in source
+        # comments because of the failure direction. If the reading that the
+        # mail leg is the operative service is wrong, the tenant is told their
+        # deadline is three days later than it really is and may act after it
+        # has already passed.
         notes.append(
             "this notice was served by first-class mail under ORS 90.155(1)(b); the "
             "e-mail copy is an ORS 90.155(3) alternative method that neither adds "
-            "nor removes time from the deadline"
+            "nor removes time from the deadline. That reading rests on treating "
+            "the mail leg as the operative service. Whether a signed ORS "
+            "90.155(1)(d) e-mail addendum instead makes the e-mail leg "
+            "independently sufficient — which would mean no three-day extension "
+            "is owed — is not settled. If you are relying on the last three days "
+            "of this deadline, confirm it with a lawyer or legal aid before acting"
         )
 
     other_unit = "days" if period_unit == "hours" else "hours"
+    # The relay marker sits on the scaffolding side of the boundary: the old
+    # "=== TENANT-FACING ANSWER ===" header lived inside the tenant-facing
+    # region, so a model relaying that region verbatim would have leaked the
+    # agent-directed instruction into the tenant's chat.
     agent_notes = [
         "=== AGENT NOTES — accuracy-checking scaffolding, NEVER relay this section to the tenant ===",
         "",
@@ -621,10 +649,11 @@ def calculate_ors_90_160_notice_deadline(
         f"UNIT CHECK: this is a {period_value}-{period_unit[:-1]} period. It is "
         f"{period_value} {period_unit.upper()}, NOT {period_value} {other_unit.upper()} "
         f'— never restate it using the word "{other_unit}".',
+        "",
+        "--- relay everything below this line to the tenant, verbatim; do not recompute it ---",
     ]
 
     tenant_lines = [
-        "=== TENANT-FACING ANSWER — relay this section to the tenant as given, do not recompute it ===",
         "",
         f"Legal basis: {basis}."
         + (
@@ -640,7 +669,7 @@ def calculate_ors_90_160_notice_deadline(
         f"DEADLINE: {deadline.strftime('%A, %B %d, %Y at %I:%M %p')}. This deadline is "
         "NOT extended for weekends or holidays — ORS 90.160 overrides ORCP 10.",
     ]
-    return "\n".join(agent_notes + [""] + tenant_lines)
+    return "\n".join(agent_notes + tenant_lines)
 
 
 class QueryOnlyInputSchema(BaseModel):

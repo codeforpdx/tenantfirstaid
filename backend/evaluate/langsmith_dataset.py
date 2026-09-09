@@ -274,10 +274,27 @@ def cmd_dataset_push(args: argparse.Namespace) -> None:
     client = make_client()
 
     try:
-        examples = _read_jsonl(local, validate=_Validate("error"))
+        numbered = _read_jsonl(
+            local,
+            with_line_numbers=True,
+            validate=_Validate("error"),
+        )
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         sys.exit(1)
+
+    # A duplicate scenario_id is fatal rather than resolved. The id is the key
+    # the whole module uses to diff, merge, pull and push, so pushing both
+    # records would leave the remote dataset with two examples sharing one id
+    # and corrupt it from that point on. Silently keeping one copy would hide
+    # a malformed local file the operator needs to fix, so the push is refused
+    # instead.
+    duplicates = _duplicate_scenario_id_lines(numbered)
+    if duplicates:
+        print("\n".join(duplicates), file=sys.stderr)
+        sys.exit(1)
+
+    examples = [record for _, record in numbered]
 
     try:
         ds = client.read_dataset(dataset_name=args.remote)
@@ -741,12 +758,50 @@ def cmd_dataset_merge(args: argparse.Namespace) -> None:
     )
 
 
+def _duplicate_scenario_id_lines(
+    numbered: list[tuple[int, dict]],
+) -> list[str]:
+    """Return one report line per duplicated scenario_id in numbered records.
+
+    A duplicate scenario_id is an error, not a warning: ScenarioId.partition and
+    ScenarioId.existing_ids both collapse it silently, and JSON Schema cannot
+    express uniqueness across records, which is why the check lives here rather
+    than in the schema. Records with an absent or unparseable scenario_id are
+    skipped, exactly as everywhere else in this module, so two unlabeled records
+    are not duplicates of each other.
+    """
+    first_seen: dict[ScenarioId, int] = {}
+    duplicates: list[str] = []
+    for line_no, record in numbered:
+        sc_id = ScenarioId.from_metadata(record.get("metadata"))
+        if sc_id is None:
+            continue
+        if sc_id in first_seen:
+            duplicates.append(
+                f"Line {line_no}: duplicate scenario_id {sc_id} "
+                f"(also on line {first_seen[sc_id]})"
+            )
+        else:
+            first_seen[sc_id] = line_no
+    return duplicates
+
+
 def cmd_dataset_validate(args: argparse.Namespace) -> None:
     try:
-        _read_jsonl(args.file, validate=_Validate("error", schema=args.schema))
+        numbered = _read_jsonl(
+            args.file,
+            with_line_numbers=True,
+            validate=_Validate("error", schema=args.schema),
+        )
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         sys.exit(1)
+
+    duplicates = _duplicate_scenario_id_lines(numbered)
+    if duplicates:
+        print("\n".join(duplicates), file=sys.stderr)
+        sys.exit(1)
+
     print(f"All records in {args.file} are valid.")
 
 

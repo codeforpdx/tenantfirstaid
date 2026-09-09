@@ -20,11 +20,21 @@ def _no_langsmith_tracing(monkeypatch: pytest.MonkeyPatch):
     LANGSMITH_API_KEY present every run uploads hundreds of spans - polluting the
     real traces and consuming the tenant's monthly trace quota. Exporting the
     variable outside pytest is not enough on its own: backend/.env is loaded with
-    override=True when a config object is created (tenantfirstaid/constants.py),
-    which clobbers the caller's value mid-test, so it is re-asserted here per test.
+    override=True inside _GoogEnvAndPolicy.__init__, which production code runs
+    exactly once, at import time, when tenantfirstaid.constants builds its
+    SINGLETON. So whether an exported value survives depends on when that module
+    is first imported relative to the exporter. Re-asserting the variables here
+    per test makes the guarantee independent of import ordering and of any future
+    code path that constructs a second config object.
+
+    LANGSMITH_API_KEY is deleted alongside them as belt-and-braces: with no key in
+    the environment the LangSmith client cannot authenticate even if some code
+    path re-enables tracing. A test that needs the key sets it itself, and its own
+    monkeypatch wins inside its body.
     """
     for var in ("LANGSMITH_TRACING", "LANGCHAIN_TRACING_V2"):
         monkeypatch.setenv(var, "false")
+    monkeypatch.delenv("LANGSMITH_API_KEY", raising=False)
 
 
 @pytest.fixture(autouse=True)

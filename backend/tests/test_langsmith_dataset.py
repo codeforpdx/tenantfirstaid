@@ -752,6 +752,79 @@ def test_cmd_dataset_push_validation_failure_exits(tmp_path, capsys):
     assert "Line 1" in capsys.readouterr().err
 
 
+def test_cmd_dataset_push_duplicate_scenario_id_exits(tmp_path, capsys):
+    f = tmp_path / "data.jsonl"
+    f.write_text(
+        json.dumps(_make_valid_record(1))
+        + "\n"
+        + json.dumps(_make_valid_record(1))
+        + "\n"
+    )
+
+    mock_client = MagicMock()
+    args = MagicMock()
+    args.file = f
+    args.remote = "my-ds"
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        with pytest.raises(SystemExit) as exc:
+            cmd_dataset_push(args)
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "Line 2: duplicate scenario_id 1 (also on line 1)" in err
+    mock_client.create_example.assert_not_called()
+
+
+def test_cmd_dataset_push_distinct_scenario_ids_push_normally(tmp_path, capsys):
+    f = tmp_path / "data.jsonl"
+    f.write_text(
+        json.dumps(_make_valid_record(1))
+        + "\n"
+        + json.dumps(_make_valid_record(2))
+        + "\n"
+    )
+
+    mock_client = MagicMock()
+    mock_ds = MagicMock(id=uuid4())
+    mock_client.read_dataset.return_value = mock_ds
+    mock_client.list_examples.return_value = []
+    mock_client._headers = {}
+    mock_client.request_with_retries.return_value = MagicMock()
+
+    args = MagicMock()
+    args.file = f
+    args.remote = "my-ds"
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        with patch("evaluate.langsmith_dataset.langsmith_utils"):
+            cmd_dataset_push(args)
+
+    assert mock_client.create_example.call_count == 2
+    assert "Pushed 2" in capsys.readouterr().out
+
+
+def test_cmd_dataset_push_unlabeled_records_are_not_duplicates(tmp_path, capsys):
+    """Two records that both lack a parseable scenario_id are not duplicates of
+    each other; the push reports a schema violation, not a duplicate."""
+    f = tmp_path / "data.jsonl"
+    unlabeled = {"metadata": {}, "inputs": {}, "outputs": {}}
+    f.write_text(json.dumps(unlabeled) + "\n" + json.dumps(unlabeled) + "\n")
+
+    mock_client = MagicMock()
+    args = MagicMock()
+    args.file = f
+    args.remote = "my-ds"
+
+    with patch("evaluate.langsmith_dataset.make_client", return_value=mock_client):
+        with pytest.raises(SystemExit) as exc:
+            cmd_dataset_push(args)
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "scenario_id" in err
+    assert "duplicate" not in err
+    mock_client.create_example.assert_not_called()
+
+
 # ── cmd_dataset_pull ───────────────────────────────────────────────────────────
 
 
@@ -3185,14 +3258,27 @@ def test_scenario_id_parse_accepts_int_enum_member():
 
 
 def test_adopt_warnings_validates_supplied_metadata():
-    """_adopt_warnings accepts a caller-supplied metadata object so the schema check runs against the id actually uploaded, and still works when the argument is omitted."""
+    """_adopt_warnings validates the caller-supplied metadata object, not the fallback.
+
+    The previous version asserted only isinstance(..., list), which an empty list
+    satisfies - so it passed whether or not the schema check ran at all.
+    """
     example = {"inputs": {"query": "Can my landlord raise rent mid-lease?"}}
 
+    # {"scenario_id": 42} is missing city, state, tags and dataset_split, all of
+    # which langsmith_example_schema.json marks required, so the schema pass must
+    # produce warnings naming them.
     supplied = _adopt_warnings(example, None, {"scenario_id": 42})
-    assert isinstance(supplied, list)
+    assert any("schema-invalid" in w for w in supplied)
+    for missing in ("city", "state", "tags", "dataset_split"):
+        assert any(missing in w for w in supplied), missing
 
+    # Omitting the argument falls back to _adopt_metadata(example, scenario_id=0),
+    # which builds a different metadata object - so the two calls must not produce
+    # the same warnings. That difference is what proves the supplied object is the
+    # one being validated.
     fallback = _adopt_warnings(example)
-    assert isinstance(fallback, list)
+    assert supplied != fallback
 
 
 def test_scenario_id_is_unlabeled():
@@ -3213,3 +3299,80 @@ def test_query_text_coerces_non_string_and_missing_values():
     assert _query_text({"inputs": {"query": 42}}) == "42"
     assert _query_text({"inputs": {"query": None}}) == ""
     assert _query_text({}) == ""
+
+
+def test_cmd_dataset_validate_rejects_duplicate_scenario_ids(tmp_path, capsys):
+    """Two records sharing a scenario_id fail validation, naming both line numbers."""
+    from evaluate.langsmith_dataset import DEFAULT_SCHEMA
+
+    f = tmp_path / "data.jsonl"
+    f.write_text(
+        "\n".join(
+            json.dumps(r)
+            for r in (
+                _make_valid_record(scenario_id=1),
+                _make_valid_record(scenario_id=2),
+                _make_valid_record(scenario_id=1),
+            )
+        )
+        + "\n"
+    )
+
+    args = MagicMock()
+    args.file = f
+    args.schema = DEFAULT_SCHEMA
+
+    with pytest.raises(SystemExit) as exc:
+        cmd_dataset_validate(args)
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "duplicate scenario_id 1" in err
+    assert "Line 3" in err
+    assert "line 1" in err
+
+
+def test_cmd_dataset_validate_accepts_distinct_scenario_ids(tmp_path, capsys):
+    """The duplicate check must not fire on the happy path."""
+    from evaluate.langsmith_dataset import DEFAULT_SCHEMA
+
+    f = tmp_path / "data.jsonl"
+    f.write_text(
+        "\n".join(
+            json.dumps(r)
+            for r in (
+                _make_valid_record(scenario_id=1),
+                _make_valid_record(scenario_id=2),
+            )
+        )
+        + "\n"
+    )
+
+    args = MagicMock()
+    args.file = f
+    args.schema = DEFAULT_SCHEMA
+
+    cmd_dataset_validate(args)
+    assert "valid" in capsys.readouterr().out
+
+
+def test_cmd_dataset_validate_ignores_records_without_a_scenario_id(tmp_path, capsys):
+    """Two records that both lack a parseable scenario_id are not duplicates of each other."""
+    from evaluate.langsmith_dataset import DEFAULT_SCHEMA
+
+    unlabeled = _make_valid_record(scenario_id=1)
+    del unlabeled["metadata"]["scenario_id"]
+
+    f = tmp_path / "data.jsonl"
+    f.write_text("\n".join(json.dumps(r) for r in (unlabeled, dict(unlabeled))) + "\n")
+
+    args = MagicMock()
+    args.file = f
+    args.schema = DEFAULT_SCHEMA
+
+    try:
+        cmd_dataset_validate(args)
+    except SystemExit:
+        # The records may fail the JSON schema's required-property check; what must NOT
+        # happen is a duplicate-scenario_id report.
+        pass
+    assert "duplicate scenario_id" not in capsys.readouterr().err

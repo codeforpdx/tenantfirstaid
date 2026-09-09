@@ -746,9 +746,9 @@ def test_notice_deadline_is_termination_notice_is_required():
 
 
 def test_notice_deadline_output_separates_agent_notes_from_tenant_answer():
-    """The AGENT NOTES section (UNIT CHECK, echoed inputs) must be clearly separated
-    from the TENANT-FACING ANSWER section, so relaying "the output" verbatim can't
-    leak agent-directed scaffolding to the tenant."""
+    """The AGENT NOTES scaffolding (UNIT CHECK, echoed inputs) must be clearly
+    separated from the tenant-facing answer by the relay marker, so relaying
+    "the output" verbatim can't leak agent-directed scaffolding to the tenant."""
     result = calculate_ors_90_160_notice_deadline.invoke(
         {
             "service_date": "2026-01-01",
@@ -759,8 +759,10 @@ def test_notice_deadline_output_separates_agent_notes_from_tenant_answer():
         }
     )
     assert "=== AGENT NOTES" in result
-    assert "=== TENANT-FACING ANSWER" in result
-    agent_section, tenant_section = result.split("=== TENANT-FACING ANSWER", 1)
+    assert "=== TENANT-FACING ANSWER" not in result
+    marker = "--- relay everything below this line to the tenant, verbatim; do not recompute it ---"
+    assert marker in result
+    agent_section, tenant_section = result.split(marker, 1)
     assert "UNIT CHECK" in agent_section
     assert "UNIT CHECK" not in tenant_section
     assert "DEADLINE:" in tenant_section
@@ -1423,3 +1425,24 @@ def test_notice_deadline_single_caveat_has_no_note_section():
         )
         == 1
     )
+
+
+def test_notice_deadline_email_and_mail_non_termination_discloses_unsettled_reading():
+    """The non-termination email_and_mail path still grants the ORS 90.155(2)
+    three-day extension, and the tenant-facing note now discloses that the
+    reading under which the extension is owed is not settled — a tenant
+    relying on the last three days should confirm the deadline with a lawyer
+    or legal aid before acting."""
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-01-01",
+            "period_value": 30,
+            "period_unit": "days",
+            "service_method": NoticeServiceMethod.EMAIL_AND_MAIL,
+            "is_termination_notice": False,
+        }
+    )
+    assert f"DEADLINE: {_fmt(datetime(2026, 2, 3, 23, 59))}" in result
+    assert "ORS 90.160(1) and ORS 90.155(2)" in result
+    assert "not settled" in result
+    assert "legal aid" in result
