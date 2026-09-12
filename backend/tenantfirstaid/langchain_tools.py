@@ -407,11 +407,11 @@ class NoticeDeadlineInputSchema(BaseModel):
         return v
 
 
-_AGENT_NOTES_FENCE : Final = (
+_AGENT_NOTES_FENCE: Final = (
     "=== AGENT NOTES — accuracy-checking scaffolding, NEVER relay this "
     "section to the tenant ==="
 )
-_RELAY_MARKER : Final = (
+_RELAY_MARKER: Final = (
     "--- relay everything below this line to the tenant, verbatim; "
     "do not recompute it ---"
 )
