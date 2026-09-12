@@ -1324,7 +1324,7 @@ def test_notice_deadline_missing_service_time_refusal_points_to_notice_text():
             "is_termination_notice": True,
         }
     )
-    assert result.startswith("MISSING INPUT, NO DEADLINE COMPUTED:")
+    assert "MISSING INPUT, NO DEADLINE COMPUTED:" in result
     assert "90.396(1)" in result
     assert "Do NOT guess" in result
     assert "landlord mailed the notice" in result
@@ -1343,7 +1343,7 @@ def test_notice_deadline_missing_service_time_refusal_omits_mail_clauses_on_pers
             "is_termination_notice": True,
         }
     )
-    assert result.startswith("MISSING INPUT, NO DEADLINE COMPUTED:")
+    assert "MISSING INPUT, NO DEADLINE COMPUTED:" in result
     assert "landlord mailed" not in result
     assert "90.155(2)" not in result
     assert "90.396(1)" in result
@@ -1360,13 +1360,65 @@ def test_notice_deadline_missing_service_time_refusal_mail_and_attach_non_termin
             "is_termination_notice": False,
         }
     )
-    assert result.startswith("MISSING INPUT, NO DEADLINE COMPUTED:")
+    assert "MISSING INPUT, NO DEADLINE COMPUTED:" in result
     assert "landlord mailed" in result
     assert "90.155(2)" not in result
     assert "90.396" not in result
     # The mailing clause must not name a method this service did not use.
     assert "first-class mail" not in result
     assert "first class mail" not in result
+
+
+# --- AGENT NOTES / relay marker contract on the early-return paths ---
+#
+# 2026-09 review (github.com/codeforpdx/tenantfirstaid/pull/391): the SERVICE
+# INVALID and MISSING INPUT early returns predate the AGENT NOTES fence/relay
+# marker convention the main computed path uses (see the docstring's Returns
+# section and system_prompt.md), so a model told "everything is divided by
+# the marker" had no marker to find on these two paths and could plausibly
+# relay agent-directed instructions — e.g. "call this tool again with
+# service_time set" — straight to the tenant. These two tests pin the fix:
+# both early returns must carry the fence and marker, and nothing agent-
+# directed may appear after the marker.
+
+_RELAY_MARKER = (
+    "--- relay everything below this line to the tenant, verbatim; "
+    "do not recompute it ---"
+)
+
+
+def test_notice_deadline_email_only_termination_has_relay_marker():
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-01-01",
+            "period_value": 30,
+            "period_unit": "days",
+            "service_method": NoticeServiceMethod.EMAIL_ONLY,
+            "is_termination_notice": True,
+        }
+    )
+    assert "=== AGENT NOTES" in result
+    assert _RELAY_MARKER in result
+    tenant_facing = result.split(_RELAY_MARKER, 1)[1]
+    assert "call this tool again" not in tenant_facing
+    assert "SERVICE INVALID" in tenant_facing
+
+
+def test_notice_deadline_missing_service_time_has_relay_marker():
+    result = calculate_ors_90_160_notice_deadline.invoke(
+        {
+            "service_date": "2026-01-01",
+            "period_value": 72,
+            "period_unit": "hours",
+            "service_method": NoticeServiceMethod.PERSONAL_DELIVERY,
+            "is_termination_notice": False,
+        }
+    )
+    assert "=== AGENT NOTES" in result
+    assert _RELAY_MARKER in result
+    tenant_facing = result.split(_RELAY_MARKER, 1)[1]
+    assert "call this tool again" not in tenant_facing
+    assert "ask the tenant" not in tenant_facing
 
 
 def test_notice_deadline_caveat_and_note_render_on_separate_lines():

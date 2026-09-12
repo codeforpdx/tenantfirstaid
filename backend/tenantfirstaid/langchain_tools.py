@@ -6,7 +6,7 @@ import json
 import logging
 from datetime import date, datetime, time, timedelta
 from enum import StrEnum
-from typing import Callable, Literal, Optional, Type, cast
+from typing import Callable, Final, Literal, Optional, Type, cast
 
 import httpx
 from google.api_core import exceptions as google_exceptions
@@ -407,6 +407,26 @@ class NoticeDeadlineInputSchema(BaseModel):
         return v
 
 
+_AGENT_NOTES_FENCE : Final = (
+    "=== AGENT NOTES — accuracy-checking scaffolding, NEVER relay this "
+    "section to the tenant ==="
+)
+_RELAY_MARKER : Final = (
+    "--- relay everything below this line to the tenant, verbatim; "
+    "do not recompute it ---"
+)
+
+
+def _agent_notes_relay(agent_notes: list[str], tenant_lines: list[str]) -> str:
+    """Join agent-only scaffolding and a tenant-facing answer behind the
+    shared AGENT NOTES fence and relay marker, so every return path uses one
+    literal copy of both instead of a drift-prone duplicate.
+    """
+    return "\n".join(
+        [_AGENT_NOTES_FENCE, "", *agent_notes, "", _RELAY_MARKER, *tenant_lines]
+    )
+
+
 def _missing_service_time_refusal(
     *,
     mailing_occurred: bool,
@@ -458,7 +478,14 @@ def _missing_service_time_refusal(
         " If the tenant can supply the exact time of service, call this tool "
         "again with service_time set."
     )
-    return "".join(parts)
+    return _agent_notes_relay(
+        agent_notes=["".join(parts)],
+        tenant_lines=[
+            "",
+            "I need a bit more detail before I can calculate an exact "
+            "deadline for this notice — let me follow up on that.",
+        ],
+    )
 
 
 @tool(args_schema=NoticeDeadlineInputSchema, response_format="content")
@@ -498,13 +525,21 @@ def calculate_ors_90_160_notice_deadline(
         as given, don't recompute it.
     """
     if service_method == NoticeServiceMethod.EMAIL_ONLY and is_termination_notice:
-        return (
-            "SERVICE INVALID, NO DEADLINE COMPUTED: e-mail alone can never validly "
-            "serve a notice terminating the tenancy — ORS 90.155(5) requires BOTH "
-            "first-class mail AND e-mail for a termination notice sent by e-mail. Tell "
-            "the tenant this service was defective; do not compute or state a deadline "
-            "for it. If the notice was also sent by first-class mail, call this tool "
-            "again with service_method=email_and_mail."
+        return _agent_notes_relay(
+            agent_notes=[
+                "SERVICE INVALID, NO DEADLINE COMPUTED: e-mail alone can never "
+                "validly serve a notice terminating the tenancy — ORS 90.155(5) "
+                "requires BOTH first-class mail AND e-mail for a termination "
+                "notice sent by e-mail. Do not compute or state a deadline for "
+                "it. If the notice was also sent by first-class mail, call this "
+                "tool again with service_method=email_and_mail.",
+            ],
+            tenant_lines=[
+                "",
+                "SERVICE INVALID: this notice was served by e-mail only. Under "
+                "ORS 90.155(5), e-mail alone cannot validly serve a notice "
+                "ending your tenancy, so no deadline applies to it as served.",
+            ],
         )
     # email_and_mail + non-termination isn't ORS 90.155(5) (that's termination-only) —
     # it's ordinary ORS 90.155(1)(b) mail service with the e-mail copy as an ORS
@@ -636,7 +671,7 @@ def calculate_ors_90_160_notice_deadline(
     # region, so a model relaying that region verbatim would have leaked the
     # agent-directed instruction into the tenant's chat.
     agent_notes = [
-        "=== AGENT NOTES — accuracy-checking scaffolding, NEVER relay this section to the tenant ===",
+        _AGENT_NOTES_FENCE,
         "",
         f"Inputs: {period_value} {period_unit}, served {service_date.isoformat()}"
         + (
@@ -650,7 +685,7 @@ def calculate_ors_90_160_notice_deadline(
         f"{period_value} {period_unit.upper()}, NOT {period_value} {other_unit.upper()} "
         f'— never restate it using the word "{other_unit}".',
         "",
-        "--- relay everything below this line to the tenant, verbatim; do not recompute it ---",
+        _RELAY_MARKER,
     ]
 
     tenant_lines = [
