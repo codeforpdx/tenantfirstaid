@@ -415,6 +415,9 @@ _RELAY_MARKER: Final = (
     "--- relay everything below this line to the tenant, verbatim; "
     "do not recompute it ---"
 )
+# A blank list entry renders as a blank output line once joined with "\n" —
+# named so it reads as a deliberate spacer, not a stray empty string.
+_BLANK_LINE: Final = ""
 
 
 def _agent_notes_relay(agent_notes: list[str], tenant_lines: list[str]) -> str:
@@ -423,7 +426,14 @@ def _agent_notes_relay(agent_notes: list[str], tenant_lines: list[str]) -> str:
     literal copy of both instead of a drift-prone duplicate.
     """
     return "\n".join(
-        [_AGENT_NOTES_FENCE, "", *agent_notes, "", _RELAY_MARKER, *tenant_lines]
+        [
+            _AGENT_NOTES_FENCE,
+            _BLANK_LINE,
+            *agent_notes,
+            _BLANK_LINE,
+            _RELAY_MARKER,
+            *tenant_lines,
+        ]
     )
 
 
@@ -478,13 +488,13 @@ def _missing_service_time_refusal(
         " If the tenant can supply the exact time of service, call this tool "
         "again with service_time set."
     )
+    tenant_facing = (
+        "I need a bit more detail before I can calculate an exact "
+        "deadline for this notice — let me follow up on that."
+    )
     return _agent_notes_relay(
         agent_notes=["".join(parts)],
-        tenant_lines=[
-            "",
-            "I need a bit more detail before I can calculate an exact "
-            "deadline for this notice — let me follow up on that.",
-        ],
+        tenant_lines=[_BLANK_LINE, tenant_facing],
     )
 
 
@@ -525,6 +535,11 @@ def calculate_ors_90_160_notice_deadline(
         as given, don't recompute it.
     """
     if service_method == NoticeServiceMethod.EMAIL_ONLY and is_termination_notice:
+        tenant_facing = (
+            "SERVICE INVALID: this notice was served by e-mail only. Under "
+            "ORS 90.155(5), e-mail alone cannot validly serve a notice "
+            "ending your tenancy, so no deadline applies to it as served."
+        )
         return _agent_notes_relay(
             agent_notes=[
                 "SERVICE INVALID, NO DEADLINE COMPUTED: e-mail alone can never "
@@ -534,12 +549,7 @@ def calculate_ors_90_160_notice_deadline(
                 "it. If the notice was also sent by first-class mail, call this "
                 "tool again with service_method=email_and_mail.",
             ],
-            tenant_lines=[
-                "",
-                "SERVICE INVALID: this notice was served by e-mail only. Under "
-                "ORS 90.155(5), e-mail alone cannot validly serve a notice "
-                "ending your tenancy, so no deadline applies to it as served.",
-            ],
+            tenant_lines=[_BLANK_LINE, tenant_facing],
         )
     # email_and_mail + non-termination isn't ORS 90.155(5) (that's termination-only) —
     # it's ordinary ORS 90.155(1)(b) mail service with the e-mail copy as an ORS
@@ -672,7 +682,6 @@ def calculate_ors_90_160_notice_deadline(
     # agent-directed instruction into the tenant's chat.
     agent_notes = [
         _AGENT_NOTES_FENCE,
-        "",
         f"Inputs: {period_value} {period_unit}, served {service_date.isoformat()}"
         + (
             f" at {service_time.strftime('%H:%M')}"
@@ -680,16 +689,14 @@ def calculate_ors_90_160_notice_deadline(
             else ""
         )
         + f", method={service_method.value}, termination notice={is_termination_notice}.",
-        "",
         f"UNIT CHECK: this is a {period_value}-{period_unit[:-1]} period. It is "
         f"{period_value} {period_unit.upper()}, NOT {period_value} {other_unit.upper()} "
         f'— never restate it using the word "{other_unit}".',
-        "",
         _RELAY_MARKER,
     ]
 
     tenant_lines = [
-        "",
+        _BLANK_LINE,
         f"Legal basis: {basis}."
         + (
             " The ORS 90.155(2) mail extension adds 3 days because the notice was served by first-class mail."
@@ -700,7 +707,7 @@ def calculate_ors_90_160_notice_deadline(
     tenant_lines += _labeled_block("Caveat", caveats)
     tenant_lines += _labeled_block("Note", notes)
     tenant_lines += [
-        "",
+        _BLANK_LINE,
         f"DEADLINE: {deadline.strftime('%A, %B %d, %Y at %I:%M %p')}. This deadline is "
         "NOT extended for weekends or holidays — ORS 90.160 overrides ORCP 10.",
     ]
