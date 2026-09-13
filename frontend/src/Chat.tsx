@@ -15,7 +15,6 @@ import {
 } from "./shared/utils/jurisdiction";
 import { DEFAULT_JURISDICTION } from "./shared/constants/jurisdictions";
 import clsx from "clsx";
-import { useDevicePrivacy } from "./contexts/DevicePrivacyContext";
 import { useEffect, useRef } from "react";
 
 /**
@@ -25,7 +24,7 @@ import { useEffect, useRef } from "react";
  * states render ChatView.
  */
 export default function Chat() {
-  const { state: stateParam, city: cityParam } = useParams();
+  const { state: stateParam } = useParams();
   const kind = classifyStateSegment(stateParam);
 
   if (kind === "out-of-state") {
@@ -42,19 +41,15 @@ export default function Chat() {
     return <Navigate to={pathFor("chat", DEFAULT_JURISDICTION)} replace />;
   }
 
-  const jurisdiction = resolveJurisdiction(stateParam, cityParam);
-  return <ChatView key={jurisdiction.key} />;
+  return <ChatView />;
 }
 
 function ChatView() {
   useSyncJurisdiction();
   const { state, city } = useParams();
   const jurisdiction = resolveJurisdiction(state, city);
-  const devicePrivacy = useDevicePrivacy();
   const { addMessage, messages, setMessages, clearMessages } = useMessages(
-    devicePrivacy === "private"
-      ? `${CHAT_MESSAGES_STORAGE_PREFIX}${jurisdiction.key}`
-      : undefined,
+    `${CHAT_MESSAGES_STORAGE_PREFIX}${jurisdiction.key}`,
   );
   const isOngoing = messages.length > 0;
   const { letterContent } = useLetterContent(messages);

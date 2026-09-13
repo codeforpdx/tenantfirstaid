@@ -19,7 +19,7 @@ export default function PrivacyPolicy() {
           <div className="flex flex-col">
             <span>Privacy Policy</span>
             <em className="text-base font-normal">
-              Last Updated: September 12, 2026
+              Last Updated: August 16, 2026
             </em>
           </div>
         }
@@ -60,19 +60,15 @@ export default function PrivacyPolicy() {
       >
         <p>
           Tenant First Aid does not save conversation transcripts to our servers
-          during normal usage. If you identify the device as private, chat and
-          letter messages are stored in your browser's session storage so
-          refreshing can restore your conversation. On public devices, messages
-          are kept only in memory and are lost when you refresh or leave the
-          conversation page. Any previously saved chat and letter messages are
-          removed from session storage when the public-device choice is applied.
-          Your device choice is saved for this tab. On public devices, five
-          minutes of inactivity starts a two-minute warning. If the warning
-          expires, Tenant First Aid clears its session storage and closes the
-          page or redirects it to the home page. We do not encourage you to
-          provide your name, address, or other sensitive information, and
-          generally do not need it to answer the type of general questions that
-          Tenant First Aid is meant for.
+          during normal usage. To preserve your conversation when you refresh
+          the page, chat and letter messages are stored temporarily in your
+          browser's session storage. If you identify the device as public,
+          five minutes of inactivity starts a two-minute warning. If the warning
+          expires, Tenant First Aid removes its message history from session
+          storage and closes the page or redirects it to the home page. We do
+          not encourage you to provide your name, address, or other sensitive
+          information, and generally do not need it to answer the type of
+          general questions that Tenant First Aid is meant for.
         </p>
         <p>
           However, if you choose to submit feedback through the feedback

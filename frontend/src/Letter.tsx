@@ -31,7 +31,6 @@ import MobilePanel from "./shared/components/MobilePanel";
 import clsx from "clsx";
 import { buildLocationPrefix } from "./shared/utils/buildLocationPrefix";
 import { reloadPage } from "./shared/utils/reloadPage";
-import { useDevicePrivacy } from "./contexts/DevicePrivacyContext";
 
 /**
  * Routes /letter requests by classifying the leading segment: an out-of-state
@@ -85,11 +84,8 @@ interface LetterViewProps {
 }
 
 function LetterView({ jurisdiction, org }: LetterViewProps) {
-  const devicePrivacy = useDevicePrivacy();
   const { addMessage, messages, setMessages, clearMessages } = useMessages(
-    devicePrivacy === "private"
-      ? `${LETTER_MESSAGES_STORAGE_PREFIX}${jurisdiction.key},${org ?? ""}`
-      : undefined,
+    `${LETTER_MESSAGES_STORAGE_PREFIX}${jurisdiction.key},${org ?? ""}`,
   );
   const isOngoing = messages.length > 0;
   const { letterContent } = useLetterContent(messages);

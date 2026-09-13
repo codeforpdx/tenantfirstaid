@@ -14,12 +14,6 @@ import DevicePrivacyGuard, {
   PUBLIC_DEVICE_IDLE_MS,
   SHUTDOWN_SECONDS,
 } from "../../shared/components/DevicePrivacyGuard";
-import { useDevicePrivacy } from "../../contexts/DevicePrivacyContext";
-
-function PrivacyProbe() {
-  const privacy = useDevicePrivacy();
-  return <div data-testid="privacy">{privacy ?? "unknown"}</div>;
-}
 
 function renderGuard(path = "/chat") {
   const router = createMemoryRouter(
@@ -29,7 +23,6 @@ function renderGuard(path = "/chat") {
         element: (
           <DevicePrivacyGuard>
             <div>Sensitive page</div>
-            <PrivacyProbe />
           </DevicePrivacyGuard>
         ),
       },
@@ -73,67 +66,6 @@ describe("DevicePrivacyGuard", () => {
 
     expect(sessionStorage.getItem(DEVICE_PRIVACY_STORAGE_KEY)).toBe("private");
     expect(screen.getByText("Sensitive page")).toBeInTheDocument();
-    expect(screen.getByTestId("privacy")).toHaveTextContent("private");
-  });
-
-  it.each(["selected", "restored"])(
-    "removes old transcripts when a public choice is %s",
-    (source) => {
-      sessionStorage.setItem("chat_messages:or-portland", "old chat");
-      sessionStorage.setItem("chat_messages:or-eugene", "another chat");
-      sessionStorage.setItem("letter_messages:or-portland,org", "old letter");
-      sessionStorage.setItem("unrelated", "keep me");
-      if (source === "restored") {
-        sessionStorage.setItem(DEVICE_PRIVACY_STORAGE_KEY, "public");
-      }
-      renderGuard();
-      if (source === "selected") {
-        fireEvent.click(screen.getByRole("button", { name: "Public device" }));
-      }
-
-      expect(sessionStorage.getItem("chat_messages:or-portland")).toBeNull();
-      expect(sessionStorage.getItem("chat_messages:or-eugene")).toBeNull();
-      expect(
-        sessionStorage.getItem("letter_messages:or-portland,org"),
-      ).toBeNull();
-      expect(sessionStorage.getItem("unrelated")).toBe("keep me");
-      expect(sessionStorage.getItem(DEVICE_PRIVACY_STORAGE_KEY)).toBe("public");
-      expect(screen.getByTestId("privacy")).toHaveTextContent("public");
-    },
-  );
-
-  it.each(["Public device", "Private device"])(
-    "shares the %s choice even when storage is blocked",
-    (button) => {
-      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-        throw new DOMException("Access denied", "SecurityError");
-      });
-      vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-        throw new DOMException("Access denied", "SecurityError");
-      });
-      renderGuard();
-      fireEvent.click(screen.getByRole("button", { name: button }));
-
-      expect(screen.getByTestId("privacy")).toHaveTextContent(
-        button === "Public device" ? "public" : "private",
-      );
-      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    },
-  );
-
-  it("preserves stored transcripts and never starts idle clearing for private devices", () => {
-    vi.useFakeTimers();
-    sessionStorage.setItem(DEVICE_PRIVACY_STORAGE_KEY, "private");
-    sessionStorage.setItem("chat_messages:or-portland", "private chat");
-    renderGuard();
-
-    act(() => vi.advanceTimersByTime(PUBLIC_DEVICE_IDLE_MS));
-    act(() => vi.advanceTimersByTime(SHUTDOWN_SECONDS * 1000));
-
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(sessionStorage.getItem("chat_messages:or-portland")).toBe(
-      "private chat",
-    );
   });
 
   it.each([
@@ -286,10 +218,6 @@ describe("DevicePrivacyGuard", () => {
     sessionStorage.setItem("letter_messages:portland", "letter history");
     sessionStorage.setItem("unrelated", "keep me");
     renderGuard();
-
-    // Seed again after public-device cleanup to verify expiry also removes history.
-    sessionStorage.setItem("chat_messages:portland", "chat history");
-    sessionStorage.setItem("letter_messages:portland", "letter history");
 
     act(() => vi.advanceTimersByTime(PUBLIC_DEVICE_IDLE_MS));
     act(() => vi.advanceTimersByTime(SHUTDOWN_SECONDS * 1000));

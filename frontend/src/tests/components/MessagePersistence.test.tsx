@@ -1,10 +1,4 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
@@ -15,10 +9,6 @@ import type { ChatMessage } from "../../shared/types/messages";
 import Chat from "../../Chat";
 import Letter from "../../Letter";
 import HousingContextProvider from "../../contexts/HousingContext";
-import {
-  DevicePrivacyContext,
-  type DevicePrivacy,
-} from "../../contexts/DevicePrivacyContext";
 
 // Complete generation without a network request while using the real message hook.
 vi.mock("../../pages/Chat/utils/streamHelper", () => ({
@@ -64,7 +54,7 @@ vi.mock("../../pages/Chat/components/MessageWindow", () => ({
   ),
 }));
 
-async function renderConversation(path: string, privacy: DevicePrivacy | null) {
+async function renderConversation(path: string) {
   const router = createMemoryRouter(
     [
       { path: "/chat/:state?/:city?", element: <Chat /> },
@@ -77,9 +67,7 @@ async function renderConversation(path: string, privacy: DevicePrivacy | null) {
     <StrictMode>
       <QueryClientProvider client={new QueryClient()}>
         <HousingContextProvider>
-          <DevicePrivacyContext.Provider value={privacy}>
-            <RouterProvider router={router} />
-          </DevicePrivacyContext.Provider>
+          <RouterProvider router={router} />
         </HousingContextProvider>
       </QueryClientProvider>
     </StrictMode>,
@@ -107,7 +95,7 @@ describe("chat response interruption notice", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
       body: null,
     } as Response);
-    const view = await renderConversation("/chat/or/portland", "private");
+    const view = await renderConversation("/chat/or/portland");
 
     expect(screen.getByTestId("messages").textContent).toBe(
       `Old message|${notice}`,
@@ -123,7 +111,7 @@ describe("chat response interruption notice", () => {
     ]);
 
     view.unmount();
-    await renderConversation("/chat/or/portland", "private");
+    await renderConversation("/chat/or/portland");
     expect(screen.getByTestId("messages").textContent).toBe(
       `Old message|${notice}`,
     );
@@ -137,109 +125,13 @@ describe("chat response interruption notice", () => {
         { type: "ai", content: "Answer", id: "answer", complete: true },
       ]),
     );
-    await renderConversation("/chat/or/portland", "private");
+    await renderConversation("/chat/or/portland");
     expect(screen.getByTestId("messages")).not.toHaveTextContent(notice);
   });
 
   it("does not treat a newly submitted message as interrupted", async () => {
-    await renderConversation("/chat/or/portland", "private");
+    await renderConversation("/chat/or/portland");
     fireEvent.click(screen.getByRole("button", { name: "Add message" }));
     expect(screen.getByTestId("messages").textContent).toBe("New message");
-  });
-});
-
-describe.each([
-  { page: "chat", path: "/chat/or/portland", key: "chat_messages:portland" },
-  {
-    page: "letter",
-    path: "/letter/or/portland?org=partner",
-    key: "letter_messages:portland,partner",
-  },
-])("$page message persistence", ({ path, key }) => {
-  it.each(["public", null] as const)(
-    "keeps messages in memory with choice %s",
-    async (privacy) => {
-      const oldHistory = JSON.stringify([
-        { type: "human", content: "Old message", id: "old" },
-      ]);
-      sessionStorage.setItem(key, oldHistory);
-      const writeSpy = vi.spyOn(Storage.prototype, "setItem");
-      const view = await renderConversation(path, privacy);
-
-      expect(screen.getByTestId("messages")).not.toHaveTextContent(
-        "Old message",
-      );
-      expect(
-        await screen.findByTestId("messages", {}, { timeout: 2000 }),
-      ).not.toHaveTextContent("New message");
-      fireEvent.click(screen.getByRole("button", { name: "Add message" }));
-      expect(screen.getByTestId("messages")).toHaveTextContent("New message");
-      expect(writeSpy).not.toHaveBeenCalled();
-      expect(sessionStorage.getItem(key)).toBe(oldHistory);
-
-      view.unmount();
-      await renderConversation(path, privacy);
-      expect(
-        await screen.findByTestId("messages", {}, { timeout: 2000 }),
-      ).not.toHaveTextContent("New message");
-    },
-  );
-
-  it("restores and persists messages on private devices", async () => {
-    sessionStorage.setItem(
-      key,
-      JSON.stringify([{ type: "human", content: "Old message", id: "old" }]),
-    );
-    const view = await renderConversation(path, "private");
-    expect(screen.getByTestId("messages")).toHaveTextContent("Old message");
-    fireEvent.click(screen.getByRole("button", { name: "Add message" }));
-    expect(JSON.parse(sessionStorage.getItem(key) ?? "[]")).toEqual([
-      { type: "human", content: "Old message", id: "old" },
-      { type: "human", content: "New message", id: "new" },
-    ]);
-
-    view.unmount();
-    await renderConversation(path, "private");
-    expect(screen.getByTestId("messages")).toHaveTextContent(
-      "Old message|New message",
-    );
-  });
-
-  it("drops public messages after leaving and returning to the page", async () => {
-    const { router } = await renderConversation(path, "public");
-    fireEvent.click(screen.getByRole("button", { name: "Add message" }));
-    await act(async () => {
-      await router.navigate("/about");
-    });
-    await act(async () => {
-      await router.navigate(path);
-    });
-    expect(
-      await screen.findByTestId("messages", {}, { timeout: 2000 }),
-    ).not.toHaveTextContent("New message");
-  });
-
-  it("clears public messages and aborts the old request when jurisdiction changes", async () => {
-    let signal: AbortSignal | null | undefined;
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      .mockImplementation((_url, init) => {
-        signal = init?.signal;
-        return new Promise<Response>(() => {});
-      });
-    const { router } = await renderConversation(path, "public");
-    fireEvent.click(screen.getByRole("button", { name: "Add message" }));
-    fireEvent.click(screen.getByRole("button", { name: "Send request" }));
-    await waitFor(() => expect(fetchSpy).toHaveBeenCalledOnce());
-    expect(signal?.aborted).toBe(false);
-
-    await act(async () => {
-      await router.navigate(path.replace("portland", "eugene"));
-    });
-
-    expect(
-      await screen.findByTestId("messages", {}, { timeout: 2000 }),
-    ).not.toHaveTextContent("New message");
-    expect(signal?.aborted).toBe(true);
   });
 });
