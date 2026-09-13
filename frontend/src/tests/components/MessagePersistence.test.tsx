@@ -10,6 +10,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { HumanMessage } from "@langchain/core/messages";
 import type { Dispatch, SetStateAction } from "react";
+import { StrictMode } from "react";
 import type { ChatMessage } from "../../shared/types/messages";
 import Chat from "../../Chat";
 import Letter from "../../Letter";
@@ -73,13 +74,15 @@ async function renderConversation(path: string, privacy: DevicePrivacy | null) {
     { initialEntries: [path] },
   );
   const view = render(
-    <QueryClientProvider client={new QueryClient()}>
-      <HousingContextProvider>
-        <DevicePrivacyContext.Provider value={privacy}>
-          <RouterProvider router={router} />
-        </DevicePrivacyContext.Provider>
-      </HousingContextProvider>
-    </QueryClientProvider>,
+    <StrictMode>
+      <QueryClientProvider client={new QueryClient()}>
+        <HousingContextProvider>
+          <DevicePrivacyContext.Provider value={privacy}>
+            <RouterProvider router={router} />
+          </DevicePrivacyContext.Provider>
+        </HousingContextProvider>
+      </QueryClientProvider>
+    </StrictMode>,
   );
   await screen.findByTestId("messages", {}, { timeout: 2000 });
   return { ...view, router };
@@ -91,6 +94,58 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+describe("chat response interruption notice", () => {
+  const notice =
+    "The response was interrupted. Please send your question again.";
+  const key = "chat_messages:portland";
+
+  it("adds one UI-only notice for a restored unanswered question", async () => {
+    const history = [{ type: "human", content: "Old question", id: "old" }];
+    sessionStorage.setItem(key, JSON.stringify(history));
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      body: null,
+    } as Response);
+    const view = await renderConversation("/chat/or/portland", "private");
+
+    expect(screen.getByTestId("messages").textContent).toBe(
+      `Old question|${notice}`,
+    );
+    expect(JSON.parse(sessionStorage.getItem(key) ?? "[]")).toEqual(history);
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Send request" }));
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledOnce());
+    const request = JSON.parse(String(fetchSpy.mock.calls[0][1]?.body));
+    expect(request.messages).toEqual([
+      { role: "human", content: "Old question", id: "old" },
+    ]);
+
+    view.unmount();
+    await renderConversation("/chat/or/portland", "private");
+    expect(screen.getByTestId("messages").textContent).toBe(
+      `Old question|${notice}`,
+    );
+  });
+
+  it("does not show a notice for a completed restored response", async () => {
+    sessionStorage.setItem(
+      key,
+      JSON.stringify([
+        { type: "human", content: "Old question", id: "old" },
+        { type: "ai", content: "Answer", id: "answer", complete: true },
+      ]),
+    );
+    await renderConversation("/chat/or/portland", "private");
+    expect(screen.getByTestId("messages")).not.toHaveTextContent(notice);
+  });
+
+  it("does not treat a newly submitted question as interrupted", async () => {
+    await renderConversation("/chat/or/portland", "private");
+    fireEvent.click(screen.getByRole("button", { name: "Add message" }));
+    expect(screen.getByTestId("messages").textContent).toBe("New question");
+  });
 });
 
 describe.each([

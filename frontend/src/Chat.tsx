@@ -16,6 +16,7 @@ import {
 import { DEFAULT_JURISDICTION } from "./shared/constants/jurisdictions";
 import clsx from "clsx";
 import { useDevicePrivacy } from "./contexts/DevicePrivacyContext";
+import { useEffect, useRef } from "react";
 
 /**
  * Routes /chat requests by classifying the :state segment: an out-of-state
@@ -57,6 +58,24 @@ function ChatView() {
   );
   const isOngoing = messages.length > 0;
   const { letterContent } = useLetterContent(messages);
+  const hasCheckedRestoredMessages = useRef(false);
+
+  useEffect(() => {
+    if (hasCheckedRestoredMessages.current) return;
+    hasCheckedRestoredMessages.current = true;
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.type !== "human") return;
+
+    // Incomplete AI responses are not stored, leaving an unanswered question.
+    setMessages((previous) => [
+      ...previous,
+      {
+        type: "ui",
+        text: "The response was interrupted. Please try resending.",
+        id: `interrupted-response:${lastMessage.id}`,
+      },
+    ]);
+  }, [messages, setMessages]);
 
   return (
     <div className="min-h-full lg:h-full w-full flex flex-col lg:flex-row transition-all duration-300 lg:relative lg:bg-paper-background">
