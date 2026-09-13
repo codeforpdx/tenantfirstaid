@@ -131,6 +131,64 @@ describe("useMessages", () => {
     ]);
   });
 
+  it("writes only when persistable history changes during streaming", () => {
+    const { result } = renderHook(() => useMessages("test_key"), { wrapper });
+    const writeSpy = vi.spyOn(Storage.prototype, "setItem");
+    const human = new HumanMessage({ content: "hi", id: "1" });
+    act(() => result.current.setMessages([human]));
+    expect(writeSpy).toHaveBeenCalledTimes(1);
+    writeSpy.mockClear();
+
+    for (const content of ["", "partial", "partial answer"]) {
+      act(() => {
+        result.current.setMessages([
+          human,
+          new AIMessage({
+            content,
+            id: "2",
+            additional_kwargs: { complete: false },
+          }),
+          { type: "ui", text: "Still working", id: "status" },
+        ]);
+      });
+    }
+    expect(writeSpy).not.toHaveBeenCalled();
+
+    const complete = new AIMessage({
+      content: "partial answer",
+      id: "2",
+      additional_kwargs: { complete: true },
+    });
+    act(() => result.current.setMessages([human, complete]));
+    expect(writeSpy).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(sessionStorage.getItem("test_key") ?? "[]")).toEqual([
+      { type: "human", content: "hi", id: "1" },
+      { type: "ai", content: "partial answer", id: "2", complete: true },
+    ]);
+
+    act(() => {
+      result.current.setMessages([
+        new HumanMessage({ content: "edited question", id: "1" }),
+        complete,
+      ]);
+    });
+    expect(writeSpy).toHaveBeenCalledTimes(2);
+    expect(
+      JSON.parse(sessionStorage.getItem("test_key") ?? "[]")[0].content,
+    ).toBe("edited question");
+  });
+
+  it("does not repeatedly remove storage while only incomplete messages change", () => {
+    const { result } = renderHook(() => useMessages("test_key"), { wrapper });
+    const removeSpy = vi.spyOn(Storage.prototype, "removeItem");
+    for (const content of ["partial", "partial answer"]) {
+      act(() => {
+        result.current.setMessages([new AIMessage({ content, id: "1" })]);
+      });
+    }
+    expect(removeSpy).not.toHaveBeenCalled();
+  });
+
   it("persists and restores a complete AI message", () => {
     const { result } = renderHook(() => useMessages("test_key"), { wrapper });
 

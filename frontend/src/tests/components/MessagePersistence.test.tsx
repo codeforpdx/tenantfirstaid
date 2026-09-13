@@ -19,9 +19,13 @@ import {
   type DevicePrivacy,
 } from "../../contexts/DevicePrivacyContext";
 
-// Keep letter generation out of these tests while using the real message hook.
-vi.mock("../../hooks/useLetterContent", () => ({
-  useLetterContent: () => ({ letterContent: "Draft letter" }),
+// Complete generation without a network request while using the real message hook.
+vi.mock("../../pages/Chat/utils/streamHelper", () => ({
+  streamText: async ({ onDone }: { onDone?: () => void }) => onDone?.(),
+}));
+
+vi.mock("../../pages/Letter/components/LetterGenerationDialog", () => ({
+  default: () => null,
 }));
 
 vi.mock("../../pages/Chat/components/MessageWindow", () => ({
@@ -59,7 +63,7 @@ vi.mock("../../pages/Chat/components/MessageWindow", () => ({
   ),
 }));
 
-function renderConversation(path: string, privacy: DevicePrivacy | null) {
+async function renderConversation(path: string, privacy: DevicePrivacy | null) {
   const router = createMemoryRouter(
     [
       { path: "/chat/:state?/:city?", element: <Chat /> },
@@ -77,6 +81,7 @@ function renderConversation(path: string, privacy: DevicePrivacy | null) {
       </HousingContextProvider>
     </QueryClientProvider>,
   );
+  await screen.findByTestId("messages", {}, { timeout: 2000 });
   return { ...view, router };
 }
 
@@ -98,32 +103,39 @@ describe.each([
 ])("$page message persistence", ({ path, key }) => {
   it.each(["public", null] as const)(
     "keeps messages in memory with choice %s",
-    (privacy) => {
+    async (privacy) => {
       const oldHistory = JSON.stringify([
         { type: "human", content: "Old question", id: "old" },
       ]);
       sessionStorage.setItem(key, oldHistory);
       const writeSpy = vi.spyOn(Storage.prototype, "setItem");
-      const view = renderConversation(path, privacy);
+      const view = await renderConversation(path, privacy);
 
-      expect(screen.getByTestId("messages")).toBeEmptyDOMElement();
+      expect(screen.getByTestId("messages")).not.toHaveTextContent(
+        "Old question",
+      );
+      expect(
+        await screen.findByTestId("messages", {}, { timeout: 2000 }),
+      ).not.toHaveTextContent("New question");
       fireEvent.click(screen.getByRole("button", { name: "Add message" }));
       expect(screen.getByTestId("messages")).toHaveTextContent("New question");
       expect(writeSpy).not.toHaveBeenCalled();
       expect(sessionStorage.getItem(key)).toBe(oldHistory);
 
       view.unmount();
-      renderConversation(path, privacy);
-      expect(screen.getByTestId("messages")).toBeEmptyDOMElement();
+      await renderConversation(path, privacy);
+      expect(
+        await screen.findByTestId("messages", {}, { timeout: 2000 }),
+      ).not.toHaveTextContent("New question");
     },
   );
 
-  it("restores and persists messages on private devices", () => {
+  it("restores and persists messages on private devices", async () => {
     sessionStorage.setItem(
       key,
       JSON.stringify([{ type: "human", content: "Old question", id: "old" }]),
     );
-    const view = renderConversation(path, "private");
+    const view = await renderConversation(path, "private");
     expect(screen.getByTestId("messages")).toHaveTextContent("Old question");
     fireEvent.click(screen.getByRole("button", { name: "Add message" }));
     expect(JSON.parse(sessionStorage.getItem(key) ?? "[]")).toEqual([
@@ -132,14 +144,14 @@ describe.each([
     ]);
 
     view.unmount();
-    renderConversation(path, "private");
+    await renderConversation(path, "private");
     expect(screen.getByTestId("messages")).toHaveTextContent(
       "Old question|New question",
     );
   });
 
   it("drops public messages after leaving and returning to the page", async () => {
-    const { router } = renderConversation(path, "public");
+    const { router } = await renderConversation(path, "public");
     fireEvent.click(screen.getByRole("button", { name: "Add message" }));
     await act(async () => {
       await router.navigate("/about");
@@ -147,7 +159,9 @@ describe.each([
     await act(async () => {
       await router.navigate(path);
     });
-    expect(screen.getByTestId("messages")).toBeEmptyDOMElement();
+    expect(
+      await screen.findByTestId("messages", {}, { timeout: 2000 }),
+    ).not.toHaveTextContent("New question");
   });
 
   it("clears public messages and aborts the old request when jurisdiction changes", async () => {
@@ -158,7 +172,7 @@ describe.each([
         signal = init?.signal;
         return new Promise<Response>(() => {});
       });
-    const { router } = renderConversation(path, "public");
+    const { router } = await renderConversation(path, "public");
     fireEvent.click(screen.getByRole("button", { name: "Add message" }));
     fireEvent.click(screen.getByRole("button", { name: "Send request" }));
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledOnce());
@@ -168,7 +182,9 @@ describe.each([
       await router.navigate(path.replace("portland", "eugene"));
     });
 
-    expect(screen.getByTestId("messages")).toBeEmptyDOMElement();
+    expect(
+      await screen.findByTestId("messages", {}, { timeout: 2000 }),
+    ).not.toHaveTextContent("New question");
     expect(signal?.aborted).toBe(true);
   });
 });

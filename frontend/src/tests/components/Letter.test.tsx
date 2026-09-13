@@ -181,6 +181,7 @@ describe("Letter component - effect orchestration", () => {
         new AIMessage({
           content: '{"type":"letter","content":"Dear Landlord,"}\n',
           id: "2",
+          additional_kwargs: { complete: true },
         }),
       ],
       setMessages: mockSetMessages,
@@ -197,6 +198,31 @@ describe("Letter component - effect orchestration", () => {
     });
 
     expect(screen.queryByText("Generating Letter...")).toBeNull();
+    expect(mockSetMessages).not.toHaveBeenCalled();
+    expect(mockStreamText).not.toHaveBeenCalled();
+  });
+
+  it("restores a completed response without a letter without generating again", async () => {
+    const mockSetMessages = vi.fn();
+    mockUseMessages.mockReturnValue({
+      addMessage: vi.fn(),
+      messages: [
+        new HumanMessage({ content: "Generate my letter", id: "1" }),
+        new AIMessage({
+          content: '{"type":"text","content":"Please describe the issue."}\n',
+          id: "2",
+          additional_kwargs: { complete: true },
+        }),
+      ],
+      setMessages: mockSetMessages,
+      clearMessages: vi.fn(),
+    });
+
+    await renderLetter();
+
+    expect(screen.getByTestId("message-window")).not.toBeNull();
+    expect(screen.queryByText("Generating Letter...")).toBeNull();
+    expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
     expect(mockSetMessages).not.toHaveBeenCalled();
     expect(mockStreamText).not.toHaveBeenCalled();
   });
@@ -246,6 +272,7 @@ describe("Letter component - effect orchestration", () => {
         new AIMessage({
           content: '{"type":"letter","content":"Dear Landlord,"}\n',
           id: "2",
+          additional_kwargs: { complete: true },
         }),
       ],
       setMessages: vi.fn(),

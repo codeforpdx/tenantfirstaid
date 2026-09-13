@@ -90,6 +90,25 @@ export default function useMessages(storageKey?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
     storageKey ? loadFromStorage(storageKey) : [],
   );
+  const nextPersistableMessages = messages.filter(
+    (msg): msg is Exclude<ChatMessage, UiMessage> =>
+      msg.type !== "ui" &&
+      msg.text.trim() !== "" &&
+      Boolean(msg.id) &&
+      (msg.type !== "ai" || msg.additional_kwargs.complete === true),
+  );
+  const [persistableMessages, setPersistableMessages] = useState(
+    nextPersistableMessages,
+  );
+  // Keep the effect dependency stable while only incomplete or UI messages change.
+  if (
+    nextPersistableMessages.length !== persistableMessages.length ||
+    nextPersistableMessages.some(
+      (msg, index) => msg !== persistableMessages[index],
+    )
+  ) {
+    setPersistableMessages(nextPersistableMessages);
+  }
   // Track the storageKey a load was applied for, so a change in key reloads
   // from the new key instead of persisting the previous conversation over it.
   const loadedStorageKeyRef = useRef(storageKey);
@@ -116,26 +135,18 @@ export default function useMessages(storageKey?: string) {
       return;
     }
     if (!storageKey) return;
-    const toStore: StoredMessage[] = messages
-      .filter(
-        (msg): msg is Exclude<ChatMessage, UiMessage> =>
-          msg.type !== "ui" &&
-          msg.text.trim() !== "" &&
-          Boolean(msg.id) &&
-          (msg.type !== "ai" || msg.additional_kwargs.complete === true),
-      )
-      .map((msg) => ({
-        type: msg.type,
-        content: typeof msg.content === "string" ? msg.content : msg.text,
-        id: msg.id as string,
-        ...(msg.type === "ai" ? { complete: true } : {}),
-      }));
+    const toStore: StoredMessage[] = persistableMessages.map((msg) => ({
+      type: msg.type,
+      content: typeof msg.content === "string" ? msg.content : msg.text,
+      id: msg.id as string,
+      ...(msg.type === "ai" ? { complete: true } : {}),
+    }));
     if (toStore.length === 0) {
       removeSessionStorage(storageKey);
       return;
     }
     writeSessionStorage(storageKey, JSON.stringify(toStore));
-  }, [messages, storageKey]);
+  }, [persistableMessages, storageKey]);
 
   const addMessage = useMutation({
     mutationFn: async ({ city, state }: Location) => {

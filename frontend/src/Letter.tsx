@@ -93,13 +93,17 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
   );
   const isOngoing = messages.length > 0;
   const { letterContent } = useLetterContent(messages);
+  const hasCompletedResponse = messages.some(
+    (message) =>
+      message.type === "ai" && message.additional_kwargs.complete === true,
+  );
   const [startStreaming, setStartStreaming] = useState(false);
   const streamLocationRef = useRef<Location | null>(null);
-  const [isGenerating, setIsGenerating] = useState(letterContent === "");
+  const [isGenerating, setIsGenerating] = useState(!hasCompletedResponse);
   const dialogRef = useRef<HTMLDialogElement>(null);
-  // Captured once at mount: a restored, already-complete letter shouldn't
+  // Captured once at mount: a restored, already-complete response shouldn't
   // re-show the "generating" dialog.
-  const shouldShowGenerationDialog = useRef(letterContent === "");
+  const shouldShowGenerationDialog = useRef(!hasCompletedResponse);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasInitialized = useRef(false);
   const LOADING_DISPLAY_DELAY_MS = 1000;
@@ -114,12 +118,12 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
   }, [jurisdiction, handleHousingLocation, handleCityChange]);
 
   // Adds the initial user message once and triggers streaming. Skips
-  // regeneration when a restored session already has a completed letter.
+  // regeneration when a restored session already has a completed response.
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
-    if (letterContent !== "") {
+    if (hasCompletedResponse) {
       setIsGenerating(false);
       return;
     }
@@ -148,7 +152,7 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
     org,
     setMessages,
     issueDescription,
-    letterContent,
+    hasCompletedResponse,
     messages.length,
   ]);
 
