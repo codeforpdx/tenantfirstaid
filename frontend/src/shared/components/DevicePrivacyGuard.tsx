@@ -1,4 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
+import {
+  DevicePrivacyContext,
+  type DevicePrivacy,
+} from "../../contexts/DevicePrivacyContext";
 import {
   readSessionStorage,
   removeSessionStorage,
@@ -14,8 +19,6 @@ export const DEVICE_PRIVACY_STORAGE_KEY = "device_privacy";
 export const PUBLIC_DEVICE_IDLE_MS = 5 * 60 * 1000;
 export const SHUTDOWN_SECONDS = 120;
 const IDLE_CHECK_INTERVAL_MS = 1000;
-
-type DevicePrivacy = "private" | "public";
 
 function readDevicePrivacy(): DevicePrivacy | null {
   const stored = readSessionStorage(DEVICE_PRIVACY_STORAGE_KEY);
@@ -41,12 +44,21 @@ interface Props {
  * public device, clears the session after an inactivity warning expires.
  */
 export default function DevicePrivacyGuard({ children }: Props) {
+  const { pathname } = useLocation();
+  const requiresPrivacyChoice = /^\/(chat|letter)(\/|$)/i.test(pathname);
   const [devicePrivacy, setDevicePrivacy] = useState<DevicePrivacy | null>(
     readDevicePrivacy,
   );
   const [shutdownDeadline, setShutdownDeadline] = useState<number | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState(SHUTDOWN_SECONDS);
   const lastActivityRef = useRef(Date.now());
+
+  useEffect(() => {
+    if (devicePrivacy !== "public") return;
+
+    removeSessionStorageByPrefix(CHAT_MESSAGES_STORAGE_PREFIX);
+    removeSessionStorageByPrefix(LETTER_MESSAGES_STORAGE_PREFIX);
+  }, [devicePrivacy]);
 
   useEffect(() => {
     if (devicePrivacy !== "public" || shutdownDeadline !== null) return;
@@ -117,12 +129,14 @@ export default function DevicePrivacyGuard({ children }: Props) {
     setSecondsRemaining(SHUTDOWN_SECONDS);
   }
 
-  if (devicePrivacy === null) {
+  if (devicePrivacy === null && requiresPrivacyChoice) {
     return (
       <Modal title="Is this a public or private device?" dismissible={false}>
         <p className="mb-5 text-gray-dark">
-          Choose public if other people can access this device. We will use your
-          answer to help protect your conversation history.
+          Choose public if other people can access this device. On public
+          devices, your conversation is kept only in memory and is lost when you
+          refresh or leave the conversation page. On private devices, it is
+          saved in this tab so refreshing can restore it.
         </p>
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
           <button
@@ -145,7 +159,7 @@ export default function DevicePrivacyGuard({ children }: Props) {
   }
 
   return (
-    <>
+    <DevicePrivacyContext.Provider value={devicePrivacy}>
       <div className="contents" inert={shutdownDeadline !== null}>
         {children}
       </div>
@@ -167,7 +181,7 @@ export default function DevicePrivacyGuard({ children }: Props) {
           </div>
         </Modal>
       )}
-    </>
+    </DevicePrivacyContext.Provider>
   );
 }
 
@@ -178,7 +192,6 @@ interface ModalProps {
   dismissible?: boolean;
   onClose?: () => void;
 }
-
 
 function Modal({ children, title, dismissible = true, onClose }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);

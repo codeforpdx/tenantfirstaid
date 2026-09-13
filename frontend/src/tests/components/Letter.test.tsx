@@ -68,6 +68,7 @@ import useMessages from "../../hooks/useMessages";
 import { useLetterContent } from "../../hooks/useLetterContent";
 import { reloadPage } from "../../shared/utils/reloadPage";
 import HousingContextProvider from "../../contexts/HousingContext";
+import { DevicePrivacyContext } from "../../contexts/DevicePrivacyContext";
 
 let mockStreamText: ReturnType<typeof vi.fn>;
 let mockUseMessages: ReturnType<typeof vi.fn>;
@@ -80,11 +81,13 @@ const renderLetter = async (initialEntry = "/letter/or/portland?org=org") => {
   return render(
     <QueryClientProvider client={queryClient}>
       <HousingContextProvider>
-        <MemoryRouter initialEntries={[initialEntry]}>
-          <Routes>
-            <Route path="/letter/:state?/:city?" element={<Letter />} />
-          </Routes>
-        </MemoryRouter>
+        <DevicePrivacyContext.Provider value="private">
+          <MemoryRouter initialEntries={[initialEntry]}>
+            <Routes>
+              <Route path="/letter/:state?/:city?" element={<Letter />} />
+            </Routes>
+          </MemoryRouter>
+        </DevicePrivacyContext.Provider>
       </HousingContextProvider>
     </QueryClientProvider>,
   );
