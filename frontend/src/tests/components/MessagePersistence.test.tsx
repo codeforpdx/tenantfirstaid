@@ -47,7 +47,7 @@ vi.mock("../../pages/Chat/components/MessageWindow", () => ({
         onClick={() =>
           setMessages((previous) => [
             ...previous,
-            new HumanMessage({ content: "New question", id: "new" }),
+            new HumanMessage({ content: "New message", id: "new" }),
           ])
         }
       >
@@ -98,11 +98,11 @@ afterEach(() => {
 
 describe("chat response interruption notice", () => {
   const notice =
-    "The response was interrupted. Please send your question again.";
+    "The response was interrupted. Please send your message again.";
   const key = "chat_messages:portland";
 
-  it("adds one UI-only notice for a restored unanswered question", async () => {
-    const history = [{ type: "human", content: "Old question", id: "old" }];
+  it("adds one UI-only notice for a restored unanswered message", async () => {
+    const history = [{ type: "human", content: "Old message", id: "old" }];
     sessionStorage.setItem(key, JSON.stringify(history));
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
       body: null,
@@ -110,7 +110,7 @@ describe("chat response interruption notice", () => {
     const view = await renderConversation("/chat/or/portland", "private");
 
     expect(screen.getByTestId("messages").textContent).toBe(
-      `Old question|${notice}`,
+      `Old message|${notice}`,
     );
     expect(JSON.parse(sessionStorage.getItem(key) ?? "[]")).toEqual(history);
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -119,13 +119,13 @@ describe("chat response interruption notice", () => {
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledOnce());
     const request = JSON.parse(String(fetchSpy.mock.calls[0][1]?.body));
     expect(request.messages).toEqual([
-      { role: "human", content: "Old question", id: "old" },
+      { role: "human", content: "Old message", id: "old" },
     ]);
 
     view.unmount();
     await renderConversation("/chat/or/portland", "private");
     expect(screen.getByTestId("messages").textContent).toBe(
-      `Old question|${notice}`,
+      `Old message|${notice}`,
     );
   });
 
@@ -133,7 +133,7 @@ describe("chat response interruption notice", () => {
     sessionStorage.setItem(
       key,
       JSON.stringify([
-        { type: "human", content: "Old question", id: "old" },
+        { type: "human", content: "Old message", id: "old" },
         { type: "ai", content: "Answer", id: "answer", complete: true },
       ]),
     );
@@ -141,10 +141,10 @@ describe("chat response interruption notice", () => {
     expect(screen.getByTestId("messages")).not.toHaveTextContent(notice);
   });
 
-  it("does not treat a newly submitted question as interrupted", async () => {
+  it("does not treat a newly submitted message as interrupted", async () => {
     await renderConversation("/chat/or/portland", "private");
     fireEvent.click(screen.getByRole("button", { name: "Add message" }));
-    expect(screen.getByTestId("messages").textContent).toBe("New question");
+    expect(screen.getByTestId("messages").textContent).toBe("New message");
   });
 });
 
@@ -160,20 +160,20 @@ describe.each([
     "keeps messages in memory with choice %s",
     async (privacy) => {
       const oldHistory = JSON.stringify([
-        { type: "human", content: "Old question", id: "old" },
+        { type: "human", content: "Old message", id: "old" },
       ]);
       sessionStorage.setItem(key, oldHistory);
       const writeSpy = vi.spyOn(Storage.prototype, "setItem");
       const view = await renderConversation(path, privacy);
 
       expect(screen.getByTestId("messages")).not.toHaveTextContent(
-        "Old question",
+        "Old message",
       );
       expect(
         await screen.findByTestId("messages", {}, { timeout: 2000 }),
-      ).not.toHaveTextContent("New question");
+      ).not.toHaveTextContent("New message");
       fireEvent.click(screen.getByRole("button", { name: "Add message" }));
-      expect(screen.getByTestId("messages")).toHaveTextContent("New question");
+      expect(screen.getByTestId("messages")).toHaveTextContent("New message");
       expect(writeSpy).not.toHaveBeenCalled();
       expect(sessionStorage.getItem(key)).toBe(oldHistory);
 
@@ -181,27 +181,27 @@ describe.each([
       await renderConversation(path, privacy);
       expect(
         await screen.findByTestId("messages", {}, { timeout: 2000 }),
-      ).not.toHaveTextContent("New question");
+      ).not.toHaveTextContent("New message");
     },
   );
 
   it("restores and persists messages on private devices", async () => {
     sessionStorage.setItem(
       key,
-      JSON.stringify([{ type: "human", content: "Old question", id: "old" }]),
+      JSON.stringify([{ type: "human", content: "Old message", id: "old" }]),
     );
     const view = await renderConversation(path, "private");
-    expect(screen.getByTestId("messages")).toHaveTextContent("Old question");
+    expect(screen.getByTestId("messages")).toHaveTextContent("Old message");
     fireEvent.click(screen.getByRole("button", { name: "Add message" }));
     expect(JSON.parse(sessionStorage.getItem(key) ?? "[]")).toEqual([
-      { type: "human", content: "Old question", id: "old" },
-      { type: "human", content: "New question", id: "new" },
+      { type: "human", content: "Old message", id: "old" },
+      { type: "human", content: "New message", id: "new" },
     ]);
 
     view.unmount();
     await renderConversation(path, "private");
     expect(screen.getByTestId("messages")).toHaveTextContent(
-      "Old question|New question",
+      "Old message|New message",
     );
   });
 
@@ -216,7 +216,7 @@ describe.each([
     });
     expect(
       await screen.findByTestId("messages", {}, { timeout: 2000 }),
-    ).not.toHaveTextContent("New question");
+    ).not.toHaveTextContent("New message");
   });
 
   it("clears public messages and aborts the old request when jurisdiction changes", async () => {
@@ -239,7 +239,7 @@ describe.each([
 
     expect(
       await screen.findByTestId("messages", {}, { timeout: 2000 }),
-    ).not.toHaveTextContent("New question");
+    ).not.toHaveTextContent("New message");
     expect(signal?.aborted).toBe(true);
   });
 });
