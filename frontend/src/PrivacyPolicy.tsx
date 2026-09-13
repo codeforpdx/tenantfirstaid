@@ -62,8 +62,8 @@ export default function PrivacyPolicy() {
           Tenant First Aid does not save conversation transcripts to our servers
           during normal usage. To preserve your conversation when you refresh
           the page, chat and letter messages are stored temporarily in your
-          browser's session storage. If you identify the device as public,
-          five minutes of inactivity starts a two-minute warning. If the warning
+          browser's session storage. If you identify the device as public, five
+          minutes of inactivity starts a two-minute warning. If the warning
           expires, Tenant First Aid removes its message history from session
           storage and closes the page or redirects it to the home page. We do
           not encourage you to provide your name, address, or other sensitive
