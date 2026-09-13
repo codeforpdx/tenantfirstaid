@@ -71,7 +71,7 @@ function ChatView() {
       ...previous,
       {
         type: "ui",
-        text: "The response was interrupted. Please try resending.",
+        text: "The response was interrupted. Please send your message again.",
         id: `interrupted-response:${lastMessage.id}`,
       },
     ]);
