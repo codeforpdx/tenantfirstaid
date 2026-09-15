@@ -61,7 +61,7 @@ describe("streamText", () => {
       city: "portland",
       state: "or",
     });
-    expect(mockSetMessages).toHaveBeenCalledTimes(3); // 1 initial + 2 chunk updates
+    expect(mockSetMessages).toHaveBeenCalledTimes(4); // Initial + 2 chunks + completion.
     expect(mockSetIsLoading).toHaveBeenCalledWith(true);
     expect(mockSetIsLoading).toHaveBeenCalledWith(false);
     expect(mockSetIsLoading).toHaveBeenCalledTimes(2);
@@ -83,7 +83,7 @@ describe("streamText", () => {
     } as StreamTextOptions);
 
     const calls = mockSetMessages.mock.calls;
-    const updateCall = calls[calls.length - 1][0];
+    const updateCall = calls[calls.length - 2][0];
     const existingMessages = [
       new HumanMessage({ content: "User message", id: "999" }),
       new AIMessage({ content: "First", id: "1000001" }),
@@ -121,6 +121,24 @@ describe("streamText", () => {
     expect(result[1].text).toContain("Sorry, I encountered an error");
   });
 
+  it("should silently stop without an error message when the request is aborted", async () => {
+    mockAddMessage.mockRejectedValue(
+      new DOMException("The user aborted a request.", "AbortError"),
+    );
+
+    await streamText({
+      addMessage: mockAddMessage,
+      setMessages: mockSetMessages,
+      housingLocation: { city: "portland", state: "or" },
+      setIsLoading: mockSetIsLoading,
+    } as StreamTextOptions);
+
+    expect(mockSetIsLoading).toHaveBeenCalledWith(false);
+    expect(console.error).not.toHaveBeenCalled();
+    // Only the initial empty placeholder was added — no error message patched in.
+    expect(mockSetMessages).toHaveBeenCalledTimes(1);
+  });
+
   it("should accumulate reasoning and text chunks in order", async () => {
     const mockReader = createMockReader([
       '{"type":"reasoning","content":"Let me think."}\n',
@@ -136,11 +154,11 @@ describe("streamText", () => {
       setIsLoading: mockSetIsLoading,
     } as StreamTextOptions);
 
-    // 1 initial + 2 chunk updates (done chunk does not trigger setMessages)
-    expect(mockSetMessages).toHaveBeenCalledTimes(3);
+    // The done chunk marks the accumulated AI message complete.
+    expect(mockSetMessages).toHaveBeenCalledTimes(4);
 
     const lastCalls = mockSetMessages.mock.calls;
-    const lastUpdateCall = lastCalls[lastCalls.length - 1][0];
+    const lastUpdateCall = lastCalls[lastCalls.length - 2][0];
     const updated = lastUpdateCall([
       new AIMessage({ content: "", id: "1000001" }),
     ]);
@@ -217,6 +235,16 @@ describe("streamText", () => {
     } as StreamTextOptions);
 
     expect(mockOnDone).toHaveBeenCalledTimes(1);
+    const completionUpdate =
+      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0];
+    const completed = completionUpdate([
+      new AIMessage({
+        content: "answer",
+        id: "1000001",
+        additional_kwargs: { complete: false },
+      }),
+    ]);
+    expect(completed[0].additional_kwargs.complete).toBe(true);
   });
 
   it("should not call onDone when stream ends without a done chunk", async () => {
@@ -255,7 +283,7 @@ describe("streamText", () => {
     } as StreamTextOptions);
 
     const lastUpdateCall =
-      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0];
+      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 2][0];
     const updated = lastUpdateCall([
       new AIMessage({ content: "", id: "1000001" }),
     ]);
@@ -278,7 +306,7 @@ describe("streamText", () => {
     } as StreamTextOptions);
 
     const lastUpdateCall =
-      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 1][0];
+      mockSetMessages.mock.calls[mockSetMessages.mock.calls.length - 2][0];
     const updated = lastUpdateCall([
       new AIMessage({ content: "", id: "1000001" }),
     ]);
@@ -287,7 +315,7 @@ describe("streamText", () => {
     );
   });
 
-  it("should not call setMessages for the done chunk line", async () => {
+  it("should mark the bot message complete for the done chunk line", async () => {
     const mockReader = createMockReader([
       '{"type":"text","content":"Hello"}\n',
       '{"type":"end_of_stream"}\n',
@@ -300,7 +328,7 @@ describe("streamText", () => {
       housingLocation: { city: "portland", state: "or" },
     } as StreamTextOptions);
 
-    // 1 initial + 1 text chunk = 2 calls; done chunk adds no call.
-    expect(mockSetMessages).toHaveBeenCalledTimes(2);
+    // One initial message, one text update, and one completion update.
+    expect(mockSetMessages).toHaveBeenCalledTimes(3);
   });
 });

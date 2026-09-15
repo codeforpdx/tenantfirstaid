@@ -1,5 +1,5 @@
 import MessageWindow from "./pages/Chat/components/MessageWindow";
-import useMessages from "./hooks/useMessages";
+import useMessages, { CHAT_MESSAGES_STORAGE_PREFIX } from "./hooks/useMessages";
 import useSyncJurisdiction from "./hooks/useSyncJurisdiction";
 import { useLetterContent } from "./hooks/useLetterContent";
 import ChatDisclaimer from "./pages/Chat/components/ChatDisclaimer";
@@ -8,9 +8,14 @@ import MessageContainer from "./shared/components/MessageContainer";
 import FeaturesPanel from "./shared/components/FeaturesPanel";
 import MobilePanel from "./shared/components/MobilePanel";
 import { Navigate, useParams } from "react-router-dom";
-import { classifyStateSegment, pathFor } from "./shared/utils/jurisdiction";
+import {
+  classifyStateSegment,
+  pathFor,
+  resolveJurisdiction,
+} from "./shared/utils/jurisdiction";
 import { DEFAULT_JURISDICTION } from "./shared/constants/jurisdictions";
 import clsx from "clsx";
+import { useEffect, useRef } from "react";
 
 /**
  * Routes /chat requests by classifying the :state segment: an out-of-state
@@ -41,9 +46,31 @@ export default function Chat() {
 
 function ChatView() {
   useSyncJurisdiction();
-  const { addMessage, messages, setMessages } = useMessages();
+  const { state, city } = useParams();
+  const jurisdiction = resolveJurisdiction(state, city);
+  const { addMessage, messages, setMessages, clearMessages } = useMessages(
+    `${CHAT_MESSAGES_STORAGE_PREFIX}${jurisdiction.key}`,
+  );
   const isOngoing = messages.length > 0;
   const { letterContent } = useLetterContent(messages);
+  const hasCheckedRestoredMessages = useRef(false);
+
+  useEffect(() => {
+    if (hasCheckedRestoredMessages.current) return;
+    hasCheckedRestoredMessages.current = true;
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.type !== "human") return;
+
+    // Incomplete AI responses are not stored, leaving an unanswered question.
+    setMessages((previous) => [
+      ...previous,
+      {
+        type: "ui",
+        text: "The response was interrupted. Please send your message again.",
+        id: `interrupted-response:${lastMessage.id}`,
+      },
+    ]);
+  }, [messages, setMessages]);
 
   return (
     <div className="min-h-full lg:h-full w-full flex flex-col lg:flex-row transition-all duration-300 lg:relative lg:bg-paper-background">
@@ -57,10 +84,12 @@ function ChatView() {
             )}
           >
             <MessageWindow
+              mode="chat"
               messages={messages}
               addMessage={addMessage}
               setMessages={setMessages}
               isOngoing={isOngoing}
+              clearMessages={clearMessages}
             />
           </div>
         </MessageContainer>
