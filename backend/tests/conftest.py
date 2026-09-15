@@ -4,12 +4,40 @@ from unittest.mock import MagicMock, patch
 import pytest
 from flask import Flask
 
+import evaluate.langsmith_dataset  # noqa: F401
+
 # Imported for side effects: the autouse fixture below patches attributes on
 # these submodules by string path, which requires them to be importable as
 # attributes of the `evaluate` package.
 import evaluate.measure_evaluator_variance  # noqa: F401
 import evaluate.run_langsmith_evaluation  # noqa: F401
 from tenantfirstaid.location import OregonCity, UsaState
+
+
+@pytest.fixture(autouse=True)
+def _no_langsmith_tracing(monkeypatch: pytest.MonkeyPatch, mocker):
+    """Keep the suite from shipping spans to the hosted LangSmith project.
+
+    Tracing is disabled by patching `tracing_is_enabled` directly because
+    `get_env_var` is lru_cached and `tracing_is_enabled()` checks
+    `LANGCHAIN_TRACING_V2` before `LANGSMITH_TRACING`. The env vars are kept
+    as cheap defense-in-depth, not the actual guarantee.
+
+    `LANGSMITH_API_KEY` is bound at import time into three consuming modules,
+    so `delenv` alone cannot protect a real `Client()` construction there;
+    the fixture patches each module's own binding instead, following the
+    pattern in `test_langsmith_dataset.py`.
+
+    A test that wants real tracing back on will need to override this
+    fixture's `tracing_is_enabled` patch itself, not just set env vars.
+    """
+    for var in ("LANGSMITH_TRACING", "LANGCHAIN_TRACING_V2"):
+        monkeypatch.setenv(var, "false")
+    mocker.patch("langsmith.utils.tracing_is_enabled", return_value=False)
+    monkeypatch.delenv("LANGSMITH_API_KEY", raising=False)
+    mocker.patch("evaluate.langsmith_dataset.LANGSMITH_API_KEY", None)
+    mocker.patch("evaluate.run_langsmith_evaluation.LANGSMITH_API_KEY", None)
+    mocker.patch("evaluate.measure_evaluator_variance.LANGSMITH_API_KEY", None)
 
 
 @pytest.fixture(autouse=True)

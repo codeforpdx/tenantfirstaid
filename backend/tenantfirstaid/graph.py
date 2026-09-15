@@ -25,6 +25,7 @@ from langgraph.graph.state import CompiledStateGraph
 from .constants import DEFAULT_INSTRUCTIONS, SINGLETON
 from .google_auth import load_gcp_credentials
 from .langchain_tools import (
+    calculate_ors_90_160_notice_deadline,
     generate_letter,
     get_active_rag_tools,
     get_legal_aid_referrals,
@@ -80,8 +81,10 @@ tools: List[BaseTool] = [
     get_letter_template,
     generate_letter,
     get_legal_aid_referrals,
+    calculate_ors_90_160_notice_deadline,
 ]
-"""Tools available to the agent: active RAG retrievers, letter generation, and legal aid referrals."""
+"""Tools available to the agent: active RAG retrievers, letter generation, legal aid
+referrals, and notice-deadline calculation."""
 
 
 @dataclass
