@@ -23,12 +23,8 @@ from tenacity import (
     wait_exponential,
 )
 
-from .constants import (
-    LETTER_TEMPLATE,
-    SINGLETON,
-    DatastoreKey,
-)
-from .google_auth import load_gcp_credentials
+from .constants import LETTER_TEMPLATE
+from .datastores import DatastoreKey, corpus_env
 from .location import OregonCity, UsaState
 from .referrals import REFERRALS
 
@@ -37,6 +33,12 @@ _LEGAL_AID_REFERRALS_JSON: str = json.dumps(
 )
 
 logger = logging.getLogger(__name__)
+
+# Retrieval needs a project and a set of datastores, and never a model. Reading
+# the corpus half directly rather than through the application singleton is what
+# lets `scripts.vertex_ai_search`, which imports this module, run without
+# MODEL_NAME set.
+_CORPUS: Final = corpus_env()
 
 
 def repair_mojibake(text: str) -> str:
@@ -87,7 +89,7 @@ class RagBuilder:
     """
 
     __credentials: Credentials | service_account.Credentials
-    """GCP credentials loaded from SINGLETON."""
+    """GCP credentials loaded from the corpus configuration."""
     rag: VertexAISearchRetriever
     """Configured Vertex AI Search retriever."""
 
@@ -113,18 +115,13 @@ class RagBuilder:
             max_extractive_answer_count: Max extractive answers per document.
             max_extractive_segment_count: Max extractive segments per document.
         """
-        if SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is None:
-            raise ValueError("GOOGLE_APPLICATION_CREDENTIALS is not set")
-
-        self.__credentials = load_gcp_credentials(
-            SINGLETON.GOOGLE_APPLICATION_CREDENTIALS
-        )
+        self.__credentials = _CORPUS.gcp.load_credentials()
 
         self.rag = VertexAISearchRetriever(
             beta=True,  # required for this implementation
             credentials=self.__credentials,
-            project_id=SINGLETON.GOOGLE_CLOUD_PROJECT,
-            location_id=SINGLETON.GOOGLE_CLOUD_LOCATION,
+            project_id=_CORPUS.gcp.project,
+            location_id=_CORPUS.gcp.location,
             data_store_id=data_store_id,
             engine_data_type=0,  # 0 = unstructured; all TFA datastores are unstructured docs
             # Default to extractive segments rather than answers. Extractive answers
@@ -819,7 +816,7 @@ def _make_rag_tool(
     """Factory that creates a RAG retrieval tool for a specific Vertex AI datastore.
 
     Args:
-        datastore_key: Enum key to look up the datastore ID in SINGLETON.
+        datastore_key: Enum key to look up the datastore ID in the corpus config.
         tool_name: Name of the tool (shown to the model).
         description: Tool description for the model.
         args_schema: Pydantic model defining tool parameters and validation.
@@ -851,7 +848,7 @@ def _make_rag_tool(
             if k in validated
         }
         helper = RagBuilder(
-            data_store_id=SINGLETON.VERTEX_AI_DATASTORES[datastore_key],
+            data_store_id=_CORPUS.datastores[datastore_key],
             name=tool_name,
             filter=rag_filter,
             max_documents=validated["max_documents"],
@@ -906,4 +903,4 @@ def get_active_rag_tools() -> list[BaseTool]:
     Returns:
         List of active RAG tools to be added to the agent.
     """
-    return [t for key, t in RAG_TOOL_REGISTRY if key in SINGLETON.VERTEX_AI_DATASTORES]
+    return [t for key, t in RAG_TOOL_REGISTRY if key in _CORPUS.datastores]

@@ -58,7 +58,7 @@ from evaluate.eval_history import (
     parse_frontmatter,
 )
 from evaluate.results_display import ScenarioResult, print_consistency_stats
-from tenantfirstaid.constants import LANGSMITH_API_KEY
+from evaluate.tracing import LANGSMITH_API_KEY
 
 EVALUATE_DIR = Path(__file__).parent
 DEFAULT_SCHEMA = EVALUATE_DIR / "langsmith_example_schema.json"
@@ -1566,21 +1566,19 @@ def _datastore_last_update_time() -> datetime | None:
     try:
         from google.cloud import discoveryengine_v1beta as discoveryengine
 
-        from tenantfirstaid.constants import SINGLETON, DatastoreKey
-        from tenantfirstaid.google_auth import (
-            discoveryengine_client_options,
-            load_gcp_credentials,
-        )
+        from tenantfirstaid.datastores import DatastoreKey, corpus_env
+        from tenantfirstaid.google_auth import discoveryengine_client_options
 
-        credentials = load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
-        location = SINGLETON.GOOGLE_CLOUD_LOCATION
+        corpus = corpus_env()
+        credentials = corpus.gcp.load_credentials()
+        location = corpus.gcp.location
         client = discoveryengine.DataStoreServiceClient(
             credentials=credentials,
             client_options=discoveryengine_client_options(location),
         )
-        datastore = SINGLETON.VERTEX_AI_DATASTORES[DatastoreKey.LAWS]
+        datastore = corpus.datastores[DatastoreKey.LAWS]
         name = (
-            f"projects/{SINGLETON.GOOGLE_CLOUD_PROJECT}"
+            f"projects/{corpus.gcp.project}"
             f"/locations/{location}"
             f"/collections/default_collection"
             f"/dataStores/{datastore}"

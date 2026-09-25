@@ -33,9 +33,57 @@ run = "uv sync"
 description = "Run the Flask backend locally."
 run = "uv run python -m tenantfirstaid.app"
 
+[tasks.credentials-check]
+description = "Verify GOOGLE_APPLICATION_CREDENTIALS loads and still refreshes. No API call, no cost."
+depends = ["sync"]
+run = '''
+set -eu
+# A prerequisite verifier narrow enough to be a dependency, which gcloud-login-check is
+# not. That task answers "can I retrieve?", which bundles four conditions -- credentials,
+# a non-placeholder VERTEX_AI_DATASTORE_LAWS, a datastore that still exists, and
+# servingConfigs.search. Three of those are irrelevant to the corpus lifecycle commands,
+# so as a `depends` it would fail runs that would have worked, including the case where
+# the datastore is gone and list-artifacts is exactly the tool that would say so.
+#
+# This checks only what every command here genuinely cannot proceed without: that the
+# value in .env resolves to a credential and that the credential still refreshes. A
+# refresh is an OAuth round trip against Google's token endpoint, not a call to any
+# project API, so it is free and attributable to no quota -- cheap enough to run before
+# every command rather than being a thing you remember to run.
+uv run python - <<'PY'
+import sys
+
+import google.auth.exceptions
+import google.auth.transport.requests
+
+from tenantfirstaid.google_auth import gcp_env
+
+try:
+    credentials = gcp_env().load_credentials()
+except ValueError as exc:
+    sys.exit(f"{exc}")
+
+# Loading only parses. An authorization file whose refresh token has been revoked or has
+# aged out parses perfectly and fails at the first API call -- as an unhandled
+# RefreshError traceback, several layers below anything the reader recognises. Forcing
+# the refresh here turns that into one sentence at the point where it is actionable.
+try:
+    credentials.refresh(google.auth.transport.requests.Request())
+except google.auth.exceptions.RefreshError as exc:
+    sys.exit(
+        f"credentials loaded but no longer refresh: {exc}\n\n"
+        "They have most likely expired or been revoked. Re-authenticate with:\n"
+        "    mise run //:gcloud-login"
+    )
+
+print("credentials OK -- loaded and refreshed.")
+PY
+'''
+
+
 [tasks.gcloud-login-check]
 description = "Smoke-test GOOGLE_APPLICATION_CREDENTIALS by querying the Vertex AI Search datastore directly, the same way the app does."
-depends = ["sync"]
+depends = ["sync", "credentials-check"]
 usage = '''
 arg "<options>" var=#true required=#false help="Extra vertex_ai_search args, e.g. --city portland."
 '''
@@ -264,8 +312,14 @@ description = "Regenerate all frontend build-time assets (types + referral catal
 run = "mise run //frontend:generate-frontend-assets"
 
 [tasks.docs]
-description = "Build the API docs site with great-docs (into great-docs/_site). Needs Quarto: on the host install it yourself; --container uses the Dockerfile ci image, which ships Quarto."
+description = "Build the API docs site with great-docs (into great-docs/_site). Quarto is provisioned automatically; --container builds in the Dockerfile docs image instead."
 depends = ["sync"]
+# Task-scoped rather than a [tools] entry, following the same reasoning as
+# //:gcloud-login: Quarto is a ~250MB download that only doc builds need, so
+# provisioning it on demand keeps it out of every `mise install` and `mise run setup`,
+# including for frontend-only contributors. Held at the version backend/Dockerfile
+# installs (QUARTO_VERSION), so a host build and a --container build render identically.
+tools = { "aqua:quarto-dev/quarto-cli" = "1.9.38" }
 usage = '''
 flag "--container" help="Build in the Dockerfile ci image (which has Quarto) instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
@@ -383,8 +437,12 @@ uv run great-docs check-links $ignore ${usage_options:-}
 '''
 
 [tasks.docs-proofread]
-description = "Spell/grammar-check docs with great-docs (needs harper-cli; use --container)."
+description = "Spell/grammar-check docs with great-docs. harper-cli is provisioned automatically; --container runs in the Dockerfile docs image instead."
 depends = ["sync"]
+# Task-scoped for the same reason as Quarto on `docs`: only this task needs it.
+# Held at the version backend/Dockerfile installs (HARPER_VERSION), so a host run and
+# a --container run flag the same words.
+tools = { harper-cli = "2.6.0" }
 usage = '''
 flag "--container" help="Run in the Dockerfile docs image (which ships harper-cli)."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"

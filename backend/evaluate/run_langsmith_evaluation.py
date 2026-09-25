@@ -21,7 +21,8 @@ from evaluate.langsmith_evaluators import (
     # tool_usage_evaluator,
 )
 from evaluate.results_display import ScenarioResult, print_consistency_stats
-from tenantfirstaid.constants import LANGSMITH_API_KEY, SINGLETON
+from evaluate.tracing import LANGSMITH_API_KEY
+from tenantfirstaid.config import SINGLETON
 from tenantfirstaid.langchain_chat_manager import LangChainChatManager
 from tenantfirstaid.location import OregonCity, UsaState
 from tenantfirstaid.logger import configure_logging

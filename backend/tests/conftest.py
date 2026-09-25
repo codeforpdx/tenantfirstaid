@@ -11,6 +11,7 @@ import evaluate.langsmith_dataset  # noqa: F401
 # attributes of the `evaluate` package.
 import evaluate.measure_evaluator_variance  # noqa: F401
 import evaluate.run_langsmith_evaluation  # noqa: F401
+from tenantfirstaid.google_auth import load_env_file
 from tenantfirstaid.location import OregonCity, UsaState
 
 
@@ -97,3 +98,16 @@ def mock_chat_manager(mocker):
         [{"type": "text", "text": "Mocked legal advice."}]
     )
     return instance
+
+
+@pytest.fixture(autouse=True)
+def _fresh_env_file_snapshot():
+    """Reset the one-time ``.env`` snapshot between tests.
+
+    :func:`~tenantfirstaid.google_auth.load_env_file` is cached so a process reads
+    the file once. Tests need the opposite -- one that patches the file away must
+    not be decided by whether an earlier test already loaded it.
+    """
+    load_env_file.cache_clear()
+    yield
+    load_env_file.cache_clear()

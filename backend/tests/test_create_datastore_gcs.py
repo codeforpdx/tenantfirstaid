@@ -4,7 +4,7 @@ import contextlib
 from unittest.mock import MagicMock, patch
 
 import pytest
-from gcs_helpers import patch_singleton
+from gcs_helpers import patch_gcp_env
 from google.api_core import exceptions as gcp_exceptions
 from google.cloud import discoveryengine_v1 as discoveryengine
 
@@ -198,8 +198,8 @@ class TestMain:
         "my-ds",
     ]
 
-    def _patch_singleton(self):
-        return patch_singleton("scripts.create_datastore_gcs.SINGLETON")
+    def _patch_gcp_env(self):
+        return patch_gcp_env("scripts.create_datastore_gcs.gcp_env")
 
     def _patch_storage_client(self, bucket_location: str = "US"):
         storage_client = MagicMock()
@@ -220,10 +220,9 @@ class TestMain:
         bucket_location: str = "US",
         argv: list[str] | None = None,
     ):
-        """Patch SINGLETON, credentials, storage, both Discovery Engine clients, and argv around a main() call."""
+        """Patch the GCP environment, storage, both Discovery Engine clients, and argv around a main() call."""
         with (
-            self._patch_singleton(),
-            patch("scripts.create_datastore_gcs.load_gcp_credentials"),
+            self._patch_gcp_env(),
             self._patch_storage_client(bucket_location=bucket_location),
             patch(
                 "scripts.create_datastore_gcs.discoveryengine.DataStoreServiceClient",
@@ -239,7 +238,7 @@ class TestMain:
 
     def test_dry_run_does_not_call_api(self, capsys):
         with (
-            self._patch_singleton(),
+            self._patch_gcp_env(),
             patch(
                 "scripts.create_datastore_gcs.discoveryengine.DataStoreServiceClient"
             ) as ds_cls,

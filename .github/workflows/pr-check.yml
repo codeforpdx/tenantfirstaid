@@ -55,7 +55,9 @@ jobs:
       GOOGLE_CLOUD_LOCATION: global
       MODEL_NAME: gemini-2.5-pro
       SHOW_MODEL_THINKING: true
-      VERTEX_AI_DATASTORE_LAWS: city-state-law-data-2025-edition_1771660760568
+      # Any non-empty value satisfies the config singleton; the suite mocks every
+      # GCP call, so this is deliberately not a real datastore ID.
+      VERTEX_AI_DATASTORE_LAWS: ci-placeholder-not-a-real-datastore
       # detect if this is a PR from a forked repo
       PR_FROM_FORK: ${{ github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name }}
 

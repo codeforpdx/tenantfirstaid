@@ -16,7 +16,7 @@ from hypothesis import example, given
 from hypothesis import strategies as st
 from langchain_core.tools import StructuredTool
 
-from tenantfirstaid.constants import DatastoreKey
+from tenantfirstaid.datastores import DatastoreKey
 from tenantfirstaid.google_auth import load_gcp_credentials
 from tenantfirstaid.langchain_tools import (
     CityStateLawsInputSchema,
@@ -271,7 +271,7 @@ def test_retrieve_oregon_law_help_uses_correct_datastore(mock_rag_class):
     mock_rag_class.return_value.search.return_value = "Some legal guidance"
 
     with patch.dict(
-        "tenantfirstaid.langchain_tools.SINGLETON.VERTEX_AI_DATASTORES",
+        "tenantfirstaid.langchain_tools._CORPUS.datastores",
         {DatastoreKey.OREGON_LAW_HELP: "fake-olh-datastore-id"},
     ):
         _func = getattr(retrieve_oregon_law_help, "func")
@@ -289,7 +289,7 @@ def test_retrieve_oregon_law_help_uses_correct_datastore(mock_rag_class):
 def test_get_active_rag_tools_filters_by_configured_datastores():
     """Tools whose datastore key is absent from env are excluded."""
     with patch.dict(
-        "tenantfirstaid.langchain_tools.SINGLETON.VERTEX_AI_DATASTORES",
+        "tenantfirstaid.langchain_tools._CORPUS.datastores",
         {DatastoreKey.LAWS: "fake-laws-id"},
         clear=True,
     ):
@@ -313,7 +313,7 @@ def test_make_rag_tool_custom_filter_builder(mock_rag_class):
     )
 
     with patch.dict(
-        "tenantfirstaid.langchain_tools.SINGLETON.VERTEX_AI_DATASTORES",
+        "tenantfirstaid.langchain_tools._CORPUS.datastores",
         {DatastoreKey.LAWS: "fake-id"},
     ):
         _func = getattr(custom_tool, "func")
@@ -364,11 +364,9 @@ def test_generate_letter_empty_string(mock_get_stream_writer):
 # --- RagBuilder.search retry tests ---
 
 
-@patch("tenantfirstaid.langchain_tools.load_gcp_credentials")
 @patch("tenantfirstaid.langchain_tools.VertexAISearchRetriever")
-def test_rag_search_retries_on_httpx_read_error(mock_retriever_class, mock_creds):
+def test_rag_search_retries_on_httpx_read_error(mock_retriever_class):
     """Transient httpx.ReadError is retried and succeeds on second attempt."""
-    mock_creds.return_value = MagicMock()
     mock_doc = MagicMock()
     mock_doc.page_content = "result text"
 
@@ -388,11 +386,9 @@ def test_rag_search_retries_on_httpx_read_error(mock_retriever_class, mock_creds
     assert mock_instance.invoke.call_count == 2
 
 
-@patch("tenantfirstaid.langchain_tools.load_gcp_credentials")
 @patch("tenantfirstaid.langchain_tools.VertexAISearchRetriever")
-def test_rag_search_gives_up_after_three_attempts(mock_retriever_class, mock_creds):
+def test_rag_search_gives_up_after_three_attempts(mock_retriever_class):
     """After 3 failed attempts the error is reraised."""
-    mock_creds.return_value = MagicMock()
 
     mock_instance = mock_retriever_class.return_value
     mock_instance.invoke.side_effect = httpx.ReadError("Connection reset by peer")

@@ -15,11 +15,8 @@ from google.cloud import discoveryengine_v1 as discoveryengine
 from google.cloud import storage
 
 from scripts.shared import collection_path, datastore_path, validate_resource_name
-from tenantfirstaid.constants import DEFAULT_VERTEX_AI_SEARCH_LOCATION, SINGLETON
-from tenantfirstaid.google_auth import (
-    discoveryengine_client_options,
-    load_gcp_credentials,
-)
+from tenantfirstaid.datastores import DEFAULT_VERTEX_AI_SEARCH_LOCATION
+from tenantfirstaid.google_auth import discoveryengine_client_options, gcp_env
 
 METADATA_OBJECT_NAME = "metadata.jsonl"
 # Upper bound for the rollback delete-datastore LRO. If the same conditions
@@ -213,7 +210,10 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    project = SINGLETON.GOOGLE_CLOUD_PROJECT
+    # Only the GCP identity, not the whole application configuration: this script
+    # names a project and authenticates, and calls no model.
+    env = gcp_env()
+    project = env.project
     display_name = args.display_name or args.datastore_id
 
     print(
@@ -226,7 +226,7 @@ def main() -> None:
         print("[dry-run] no Discovery Engine API calls made.")
         return
 
-    credentials = load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
+    credentials = env.load_credentials()
 
     storage_client = storage.Client(credentials=credentials, project=project)
     check_bucket_location_compat(storage_client, args.bucket, args.location)

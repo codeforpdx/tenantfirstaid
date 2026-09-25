@@ -35,7 +35,7 @@ from evaluate.langsmith_evaluators import (
     tone_evaluator,
 )
 from evaluate.results_display import ScenarioResult, print_consistency_stats
-from tenantfirstaid.constants import LANGSMITH_API_KEY
+from evaluate.tracing import LANGSMITH_API_KEY
 
 # How many progress lines to emit during the thread-pool run.
 _PROGRESS_INTERVALS = 20

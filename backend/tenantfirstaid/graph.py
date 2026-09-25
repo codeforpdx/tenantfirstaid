@@ -22,8 +22,9 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
-from .constants import DEFAULT_INSTRUCTIONS, SINGLETON
-from .google_auth import load_gcp_credentials
+from .config import SINGLETON
+from .constants import DEFAULT_INSTRUCTIONS
+from .google_auth import gcp_env
 from .langchain_tools import (
     calculate_ors_90_160_notice_deadline,
     generate_letter,
@@ -51,15 +52,12 @@ def _get_llm() -> ChatGoogleGenerativeAI:
         ChatGoogleGenerativeAI instance configured with project, model, and safety settings.
 
     Raises:
-        AssertionError: If GOOGLE_APPLICATION_CREDENTIALS is not set.
+        ValueError: If the configured credentials cannot be loaded.
     """
     global _llm
     with _llm_lock:
         if _llm is None:
-            assert SINGLETON.GOOGLE_APPLICATION_CREDENTIALS is not None, (
-                "GOOGLE_APPLICATION_CREDENTIALS is not set"
-            )
-            creds = load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
+            creds = gcp_env().load_credentials()
             _llm = ChatGoogleGenerativeAI(
                 model=SINGLETON.MODEL_NAME,
                 max_tokens=SINGLETON.MAX_TOKENS,
