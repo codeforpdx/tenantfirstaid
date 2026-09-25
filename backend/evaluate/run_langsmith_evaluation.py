@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 from langchain_core.messages import HumanMessage
 from langsmith import Client, evaluate
 
+from evaluate import tracing
 from evaluate.eval_history import write_run_entry
 from evaluate.langsmith_evaluators import (
     # citation_accuracy_evaluator,
@@ -21,7 +22,6 @@ from evaluate.langsmith_evaluators import (
     # tool_usage_evaluator,
 )
 from evaluate.results_display import ScenarioResult, print_consistency_stats
-from evaluate.tracing import LANGSMITH_API_KEY
 from tenantfirstaid.config import SINGLETON
 from tenantfirstaid.langchain_chat_manager import LangChainChatManager
 from tenantfirstaid.location import OregonCity, UsaState
@@ -139,7 +139,7 @@ def run_evaluation(
     Returns:
         Evaluation results object
     """
-    ls_client = Client(api_key=LANGSMITH_API_KEY)
+    ls_client = Client(api_key=tracing.LangsmithConfig.from_env().api_key)
 
     # Get dataset.
     dataset = ls_client.read_dataset(dataset_name=dataset_name)

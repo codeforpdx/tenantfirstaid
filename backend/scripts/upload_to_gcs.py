@@ -17,7 +17,7 @@ from google.cloud.discoveryengine_v1.types import Document
 from google.protobuf.json_format import ParseError
 
 from scripts.enforce_ascii import validate_and_rewrite_tree
-from tenantfirstaid.google_auth import gcp_env
+from tenantfirstaid.google_auth import GcpEnvironment
 
 DOCUMENTS_DIR = Path(__file__).parent / "documents" / "or"
 DEFAULT_METADATA_FILE = DOCUMENTS_DIR / "metadata.jsonl"
@@ -195,7 +195,7 @@ def main() -> None:
 
     # Only the GCP identity, not the whole application configuration: this script
     # uploads documents and calls no model.
-    env = gcp_env()
+    env = GcpEnvironment.from_env()
     client = storage.Client(credentials=env.load_credentials(), project=env.project)
     bucket_obj = create_bucket(client, args.bucket, args.location)
     print(f"Created bucket gs://{args.bucket} in {args.location}.")

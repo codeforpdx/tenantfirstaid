@@ -24,7 +24,7 @@ from tenacity import (
 )
 
 from .constants import LETTER_TEMPLATE
-from .datastores import DatastoreKey, corpus_env
+from .datastores import CorpusConfig, DatastoreKey
 from .location import OregonCity, UsaState
 from .referrals import REFERRALS
 
@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 # the corpus half directly rather than through the application singleton is what
 # lets `scripts.vertex_ai_search`, which imports this module, run without
 # MODEL_NAME set.
-_CORPUS: Final = corpus_env()
+_CORPUS: Final = CorpusConfig.from_env()
 
 
 def repair_mojibake(text: str) -> str:

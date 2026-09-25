@@ -12,9 +12,9 @@ respectively. Only something that needs the whole application belongs here.
 import logging
 from typing import Final
 
-from .datastores import DATASTORE_PREFIX, DatastoreKey, corpus_env
-from .google_auth import gcp_env
-from .google_models import model_env
+from .datastores import DATASTORE_PREFIX, CorpusConfig, DatastoreKey
+from .google_auth import GcpEnvironment
+from .google_models import Gemini25ModelConfig, ModelConfig
 from .logger import temporary_formatted_handler
 
 logger = logging.getLogger(__name__)
@@ -85,13 +85,22 @@ class _AppConfig:
         """
         # Read once and passed in, so that the identity this object exposes is
         # the same one the corpus was resolved against rather than a second read
-        # that could disagree with it. gcp_env loads .env as a side effect.
-        _gcp = gcp_env()
-        _corpus = corpus_env(_gcp)
+        # that could disagree with it. GcpEnvironment loads .env as a side effect.
+        _gcp = GcpEnvironment.from_env()
+        _corpus = CorpusConfig.from_env(_gcp)
         # No identity argument: the model settings involve no project. The
         # identity a model call is made under is applied in graph.py, from the
         # flattened values below.
-        _model = model_env()
+        _model = ModelConfig.from_env()
+        # Narrowed because the flattened attributes below include THINKING_BUDGET,
+        # which is 2.5-shaped and so lives on the family rather than the base.
+        # from_env already refuses every family this code does not implement; this
+        # restates that where a type checker can use it.
+        if not isinstance(_model, Gemini25ModelConfig):
+            raise NotImplementedError(
+                f"[MODEL_NAME] {_model.model_name!r} names a family this "
+                "application cannot flatten."
+            )
 
         # Flattened rather than exposed as `.corpus` and `.model`. The layering
         # governs what a caller is required to *have*, not how it reads what it
@@ -105,7 +114,7 @@ class _AppConfig:
         self.GOOGLE_APPLICATION_CREDENTIALS: Final[str] = _gcp.credentials_source
 
         self.VERTEX_AI_DATASTORES: Final[dict[str, str]] = dict(_corpus.datastores)
-        # Required here rather than in corpus_env, because it is a fact about this
+        # Required here rather than in CorpusConfig, because it is a fact about this
         # application and not about the corpus configuration. `vertex_ai_search
         # --datastore <id>` reads the same configuration and needs no LAWS entry.
         if DatastoreKey.LAWS not in self.VERTEX_AI_DATASTORES:

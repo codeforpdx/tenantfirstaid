@@ -8,13 +8,12 @@ without needing the app's runtime configuration, and the reaper in particular
 runs as a Cloud Function that has no reason to carry it.
 """
 
-import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum, auto
 from typing import Final
 
-from .google_auth import GcpEnvironment, gcp_env
+from .google_auth import GcpEnvironment, load_env_file
 
 DATASTORE_PREFIX: Final = "VERTEX_AI_DATASTORE_"
 """Environment variable prefix for Vertex AI Search datastore IDs."""
@@ -117,20 +116,20 @@ class CorpusConfig:
     datastores: Mapping[str, str]
     """Datastore name -> id, parsed from every ``VERTEX_AI_DATASTORE_*`` variable."""
 
+    @classmethod
+    def from_env(cls, gcp: GcpEnvironment | None = None) -> "CorpusConfig":
+        """Read the corpus configuration from the environment.
 
-def corpus_env(gcp: GcpEnvironment | None = None) -> CorpusConfig:
-    """Read the corpus configuration from the environment.
+        Args:
+            gcp: An already-read identity to reuse. The application reads one and
+                passes it to both siblings, so that the two halves of its
+                configuration cannot disagree about which project they address.
 
-    Args:
-        gcp: An already-read identity to reuse. The application reads one and
-            passes it to both siblings, so that the two halves of its
-            configuration cannot disagree about which project they address.
-
-    Raises:
-        ValueError: If a GCP identity variable is unset, or a datastore variable is
-            set but empty. Never for a missing model setting, which is the point.
-    """
-    return CorpusConfig(
-        gcp=gcp if gcp is not None else gcp_env(),
-        datastores=parse_datastores(os.environ),
-    )
+        Raises:
+            ValueError: If a GCP identity variable is unset, or a datastore variable
+                is set but empty. Never for a missing model setting, which is the point.
+        """
+        return cls(
+            gcp=gcp if gcp is not None else GcpEnvironment.from_env(),
+            datastores=parse_datastores(load_env_file()),
+        )

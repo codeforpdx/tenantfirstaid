@@ -1,8 +1,8 @@
 """Establishing a Google Cloud identity: the environment, and the credentials it names.
 
-Two halves of one job. :func:`gcp_env` reads the project, location and
-credentials variables; :func:`load_gcp_credentials` turns the third of those
-into a usable credential, accepting either a file path (local development) or
+Two halves of one job. :meth:`GcpEnvironment.from_env` reads the project,
+location and credentials variables; :func:`load_gcp_credentials` turns the third
+of those into a usable credential, accepting either a file path (local development) or
 inline JSON (LangSmith Cloud, where secrets are injected as variable values).
 
 Deliberately independent of :mod:`tenantfirstaid.config`, which additionally
@@ -22,7 +22,8 @@ import os
 from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
-from typing import cast
+from types import MappingProxyType
+from typing import Mapping, cast
 
 from dotenv import load_dotenv
 from google.api_core.client_options import ClientOptions
@@ -156,8 +157,8 @@ def load_gcp_credentials(
 
 
 @cache
-def load_env_file() -> None:
-    """Load ``backend/.env`` into the process environment once, if it exists.
+def load_env_file() -> Mapping[str, str]:
+    """Load ``backend/.env`` once, if it exists, and return the resulting environment.
 
     Safe to call from either entry point: the corpus scripts reach GCP without ever
     building the application configuration, so neither module can assume the other
@@ -175,10 +176,22 @@ def load_env_file() -> None:
     - A ``.env`` edited while the process runs would otherwise take effect
       part-way through it, so two reads of the same variable could disagree.
 
-    Caching the *load* is safe where caching :func:`gcp_env` was not. This memoizes
-    "has the file been read", a fact about the process; ``gcp_env`` reads
-    :data:`os.environ`, which tests and callers legitimately change. Tests that
-    need a fresh load call ``load_env_file.cache_clear()``.
+    The returned mapping is that snapshot: the ambient environment with the file
+    applied over it. Every ``from_env`` reads from it rather than calling
+    :func:`os.getenv`, so a group of related settings is read from one consistent
+    view, and the environment is reached in exactly one place in the codebase.
+    Tests that need a fresh load call ``load_env_file.cache_clear()``; the suite
+    does so between every test.
+
+    The process environment is still mutated, because third-party libraries read
+    it directly and cannot be handed the mapping -- ``langsmith`` picks up
+    ``LANGSMITH_TRACING`` and ``LANGCHAIN_TRACING_V2`` itself. So this returns a
+    view *in addition to* loading, not instead of it.
+
+    Returns:
+        A read-only view of the environment as of the load. Read-only because a
+        caller mutating it would change what every other reader sees while
+        leaving :data:`os.environ` untouched, so the two would disagree.
     """
     if _ENV_PATH.exists():
         load_dotenv(dotenv_path=_ENV_PATH, override=True)
@@ -187,6 +200,7 @@ def load_env_file() -> None:
             "No .env file found at %s, proceeding with existing environment variables.",
             _ENV_PATH,
         )
+    return MappingProxyType(dict(os.environ))
 
 
 @dataclass(frozen=True)
@@ -214,44 +228,39 @@ class GcpEnvironment:
         """
         return load_gcp_credentials(self.credentials_source)
 
+    @classmethod
+    def from_env(cls) -> "GcpEnvironment":
+        """Read and validate the GCP identity variables.
 
-def gcp_env() -> GcpEnvironment:
-    """Read and validate the GCP identity variables.
-
-    Deliberately uncached. Reading three variables is free, and a cache here
-    would make the value depend on which caller ran first -- invisible in a
-    long-lived process and actively wrong in a test that sets the environment
-    per case.
-
-    Raises:
-        ValueError: If any of the three variables is unset or empty.
-    """
-    load_env_file()
-    values = {
-        name: os.getenv(name)
-        for name in (
-            "GOOGLE_CLOUD_PROJECT",
-            "GOOGLE_CLOUD_LOCATION",
-            "GOOGLE_APPLICATION_CREDENTIALS",
-        )
-    }
-    # Catches both unset (None) and explicitly empty. Reported together rather
-    # than one at a time, so a fresh checkout needs one round trip instead of three.
-    missing = sorted(name for name, value in values.items() if not value)
-    if missing:
-        raise ValueError(
-            " ".join(
-                f"[{name}] environment variable is not set or is empty."
-                for name in missing
+        Raises:
+            ValueError: If any of the three variables is unset or empty.
+        """
+        env = load_env_file()
+        values = {
+            name: env.get(name)
+            for name in (
+                "GOOGLE_CLOUD_PROJECT",
+                "GOOGLE_CLOUD_LOCATION",
+                "GOOGLE_APPLICATION_CREDENTIALS",
             )
+        }
+        # Catches both unset (None) and explicitly empty. Reported together rather
+        # than one at a time, so a fresh checkout needs one round trip instead of three.
+        missing = sorted(name for name, value in values.items() if not value)
+        if missing:
+            raise ValueError(
+                " ".join(
+                    f"[{name}] environment variable is not set or is empty."
+                    for name in missing
+                )
+            )
+        # The check above rejected every None and every empty string, so the values
+        # are str -- but that is a fact about `missing`, which a type checker cannot
+        # carry back to `values`. One cast naming the whole dict states it once,
+        # where the proof is visible, rather than three suppressions at the point of use.
+        present = cast(dict[str, str], values)
+        return cls(
+            project=present["GOOGLE_CLOUD_PROJECT"],
+            location=present["GOOGLE_CLOUD_LOCATION"],
+            credentials_source=present["GOOGLE_APPLICATION_CREDENTIALS"],
         )
-    # The check above rejected every None and every empty string, so the values are
-    # str -- but that is a fact about `missing`, which a type checker cannot carry
-    # back to `values`. One cast naming the whole dict states it once, where the
-    # proof is visible, rather than three suppressions at the point of use.
-    present = cast(dict[str, str], values)
-    return GcpEnvironment(
-        project=present["GOOGLE_CLOUD_PROJECT"],
-        location=present["GOOGLE_CLOUD_LOCATION"],
-        credentials_source=present["GOOGLE_APPLICATION_CREDENTIALS"],
-    )

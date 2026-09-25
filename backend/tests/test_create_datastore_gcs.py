@@ -199,7 +199,7 @@ class TestMain:
     ]
 
     def _patch_gcp_env(self):
-        return patch_gcp_env("scripts.create_datastore_gcs.gcp_env")
+        return patch_gcp_env()
 
     def _patch_storage_client(self, bucket_location: str = "US"):
         storage_client = MagicMock()

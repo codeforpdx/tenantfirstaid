@@ -6,15 +6,15 @@ for automated evaluation.
 
 import argparse
 import ast
-import os
 from pathlib import Path
 from typing import List, TypedDict
 
 import polars as pd
-from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, AnyMessage, HumanMessage
 from langsmith import Client
 from langsmith.schemas import Dataset
+
+from evaluate import tracing
 
 
 class ExampleInput(TypedDict):
@@ -39,7 +39,7 @@ def create_langsmith_dataset(
     input_csv: Path, limit_examples: int, dataset_name: str, overwrite_dataset=False
 ) -> Dataset:
     """Upload test scenarios to LangSmith for automated evaluation."""
-    client = Client(api_key=os.getenv("LANGSMITH_API_KEY"))
+    client = Client(api_key=tracing.LangsmithConfig.from_env().api_key)
 
     # print(client.info)
 
@@ -158,13 +158,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--overwrite", action="store_true", help="Overwrite existing dataset"
     )
-
-    # Load environment variables from .env file if it exists.
-    env_path = Path(__file__).parent / "../.env"
-    if env_path.exists():
-        load_dotenv(override=True)
-    else:
-        raise FileNotFoundError(f"[{env_path}] file not found.")
 
     args = parser.parse_args()
 

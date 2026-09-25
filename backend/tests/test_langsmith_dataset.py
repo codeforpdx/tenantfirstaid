@@ -63,6 +63,7 @@ from evaluate.langsmith_dataset import (
     local_or_remote,
     make_client,
 )
+from evaluate.tracing import LangsmithConfig
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -529,7 +530,10 @@ def test_apply_dataset_schemas_sends_patch():
 
 
 def test_make_client_raises_without_api_key():
-    with patch("evaluate.langsmith_dataset.LANGSMITH_API_KEY", None):
+    with patch(
+        "evaluate.tracing.LangsmithConfig.from_env",
+        return_value=LangsmithConfig(api_key=None),
+    ):
         with pytest.raises(RuntimeError, match="LANGSMITH_API_KEY"):
             make_client()
 

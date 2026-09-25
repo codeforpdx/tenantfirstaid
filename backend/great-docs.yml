@@ -248,7 +248,6 @@ reference:
     - title: "Config · GCP identity"
       desc: The project, region and credentials every other half is read through.
       contents:
-        - google_auth.gcp_env
         - name: google_auth.GcpEnvironment
           include_inherited: true
         - google_auth.load_gcp_credentials
@@ -260,13 +259,13 @@ reference:
         The two halves of the configuration, each readable without the other. Only
         the application needs both.
       contents:
-        - datastores.corpus_env
         - name: datastores.CorpusConfig
           include_inherited: true
         - datastores.parse_datastores
         - datastores.DatastoreKey
         - datastores.DEFAULT_VERTEX_AI_SEARCH_LOCATION
-        - google_models.model_env
+        - name: google_models.ModelConfig
+          include_inherited: true
         - name: google_models.Gemini25ModelConfig
           include_inherited: true
 

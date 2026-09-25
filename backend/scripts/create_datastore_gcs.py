@@ -16,7 +16,7 @@ from google.cloud import storage
 
 from scripts.shared import collection_path, datastore_path, validate_resource_name
 from tenantfirstaid.datastores import DEFAULT_VERTEX_AI_SEARCH_LOCATION
-from tenantfirstaid.google_auth import discoveryengine_client_options, gcp_env
+from tenantfirstaid.google_auth import GcpEnvironment, discoveryengine_client_options
 
 METADATA_OBJECT_NAME = "metadata.jsonl"
 # Upper bound for the rollback delete-datastore LRO. If the same conditions
@@ -212,7 +212,7 @@ def main() -> None:
     args = parse_args()
     # Only the GCP identity, not the whole application configuration: this script
     # names a project and authenticates, and calls no model.
-    env = gcp_env()
+    env = GcpEnvironment.from_env()
     project = env.project
     display_name = args.display_name or args.datastore_id
 

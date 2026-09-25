@@ -251,7 +251,7 @@ class TestMain:
         bucket_obj.blob.return_value = blob
 
         with (
-            patch_gcp_env("scripts.upload_to_gcs.gcp_env"),
+            patch_gcp_env(),
             patch("scripts.upload_to_gcs.storage.Client") as client_cls,
             patch(
                 "sys.argv",

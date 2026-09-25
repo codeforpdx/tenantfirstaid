@@ -71,7 +71,7 @@ class TestMain:
     _ARGV_BASE = ["create_app_gcs", "--datastore-id", "my-ds", "--app-id", "my-app"]
 
     def _patch_gcp_env(self):
-        return patch_gcp_env("scripts.create_app_gcs.gcp_env")
+        return patch_gcp_env()
 
     def test_dry_run_does_not_call_api(self, capsys):
         with (

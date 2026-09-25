@@ -13,12 +13,17 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_mailman import Mail
 
-# .chat → constants loads .env via an absolute path; do not re-load here.
 from .chat import ChatView
 from .feedback import send_feedback
+from .google_auth import load_env_file
 from .logger import configure_logging
 
-# Configure logging after .chat (→ constants → .env load) so ENV from .env is honored.
+# Take the .env snapshot explicitly rather than inheriting it from whatever .chat
+# happens to import. The reads below (ENV, the MAIL_* settings) need it, and the
+# load is cached, so this is the same one-time snapshot every other reader gets.
+load_env_file()
+
+# Configure logging after the load so ENV from .env is honored.
 configure_logging()
 
 app = Flask(__name__)

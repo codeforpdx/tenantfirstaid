@@ -11,6 +11,7 @@ import evaluate.langsmith_dataset  # noqa: F401
 # attributes of the `evaluate` package.
 import evaluate.measure_evaluator_variance  # noqa: F401
 import evaluate.run_langsmith_evaluation  # noqa: F401
+from evaluate.tracing import LangsmithConfig
 from tenantfirstaid.google_auth import load_env_file
 from tenantfirstaid.location import OregonCity, UsaState
 
@@ -24,10 +25,10 @@ def _no_langsmith_tracing(monkeypatch: pytest.MonkeyPatch, mocker):
     `LANGCHAIN_TRACING_V2` before `LANGSMITH_TRACING`. The env vars are kept
     as cheap defense-in-depth, not the actual guarantee.
 
-    `LANGSMITH_API_KEY` is bound at import time into three consuming modules,
-    so `delenv` alone cannot protect a real `Client()` construction there;
-    the fixture patches each module's own binding instead, following the
-    pattern in `test_langsmith_dataset.py`.
+    `delenv` alone cannot protect a real `Client()` construction, because
+    `LangsmithConfig.from_env()` reloads `.env` over the ambient environment; the
+    substitutes the reader itself. One patch covers every caller, since they
+    reach it through the `tracing` module rather than binding its result.
 
     A test that wants real tracing back on will need to override this
     fixture's `tracing_is_enabled` patch itself, not just set env vars.
@@ -36,9 +37,10 @@ def _no_langsmith_tracing(monkeypatch: pytest.MonkeyPatch, mocker):
         monkeypatch.setenv(var, "false")
     mocker.patch("langsmith.utils.tracing_is_enabled", return_value=False)
     monkeypatch.delenv("LANGSMITH_API_KEY", raising=False)
-    mocker.patch("evaluate.langsmith_dataset.LANGSMITH_API_KEY", None)
-    mocker.patch("evaluate.run_langsmith_evaluation.LANGSMITH_API_KEY", None)
-    mocker.patch("evaluate.measure_evaluator_variance.LANGSMITH_API_KEY", None)
+    mocker.patch(
+        "evaluate.tracing.LangsmithConfig.from_env",
+        return_value=LangsmithConfig(api_key=None),
+    )
 
 
 @pytest.fixture(autouse=True)

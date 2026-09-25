@@ -12,11 +12,12 @@ the family-specific work described on :class:`Gemini25ModelConfig` has somewhere
 to go.
 """
 
-import os
 from dataclasses import dataclass
-from typing import ClassVar, Optional
+from typing import ClassVar, Mapping, Optional
 
 from langchain_google_genai import HarmBlockThreshold, HarmCategory
+
+from .google_auth import load_env_file
 
 
 def _strtobool(val: Optional[str]) -> bool:
@@ -48,8 +49,8 @@ def _strtobool(val: Optional[str]) -> bool:
 
 
 @dataclass(frozen=True)
-class Gemini25ModelConfig:
-    """Which Gemini model to call and how to call it: everything generation needs.
+class ModelConfig:
+    """What every Gemini family needs in order to be called.
 
     The sibling of :class:`~tenantfirstaid.datastores.CorpusConfig`. Only the
     application composes both, because only it both retrieves and generates.
@@ -62,26 +63,13 @@ class Gemini25ModelConfig:
     supplied by whoever builds the client. Carrying one anyway would be symmetry
     with no reader, which is the thing this split was meant to stop doing.
 
-    Every field below the model name is fixed in code rather than read from the
-    environment, so the tuning is reproducible across deployments. ``MODEL_NAME``
-    is the exception, and the pairing is uneasy: the model is a variable while its
-    settings are constants, and nothing checks that the two agree.
-
-    The name says 2.5 because the shape is 2.5's, not merely the values: a later
-    family does not want different numbers here, it wants different fields.
-    :attr:`thinking_budget` is the clearest case: ``ThinkingConfig`` in the pinned
-    SDK carries both a ``thinking_budget`` token count and a discrete
-    ``thinking_level``, and 3.x expects the latter, so the field itself does not
-    survive the transition. :attr:`temperature` is the subtler one, fixed low here
-    for citation consistency against a 2.5 default of 0.7, where 3.x defaults to
-    1.0 and is not meant to be lowered.
-
-    Pointing ``MODEL_NAME`` at a later family therefore silently keeps 2.5-shaped
-    settings. No base class is extracted yet, because there is nothing to share it
-    with and the shape of the split is better decided against a real second family
-    than guessed at now. What the name buys in the meantime is that the mismatch is
-    visible at the point of use rather than only in this docstring.
+    Only the settings that survive a change of family live here. A setting whose
+    *field* a later family would not want belongs on that family's class instead,
+    which is why :attr:`Gemini25ModelConfig.thinking_budget` is not here.
     """
+
+    MODEL_NAME_PREFIX: ClassVar[str]
+    """The ``MODEL_NAME`` prefix this family answers to; see :meth:`from_env`."""
 
     model_name: str
     """Gemini model identifier (env ``MODEL_NAME``, required)."""
@@ -95,6 +83,82 @@ class Gemini25ModelConfig:
     """Nucleus-sampling top-p, fixed low alongside the temperature."""
     max_tokens: int
     """Maximum output tokens per response."""
+
+    @classmethod
+    def _for_model_name(cls, model_name: str, env: Mapping[str, str]) -> "ModelConfig":
+        """Build this family's settings for ``model_name``, reading ``env`` for any rest.
+
+        Each family supplies its own values, because they are the family's
+        knowledge rather than the reader's. ``env`` is the snapshot
+        :meth:`from_env` already took, passed on so a family reads the same view.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def from_env(cls) -> "ModelConfig":
+        """Read the model configuration from the environment.
+
+        On the base rather than on a family, because choosing which family
+        ``MODEL_NAME`` denotes is the part that survives a second family
+        arriving. Dispatches over :data:`_FAMILIES` and refuses anything no
+        family claims, so pointing ``MODEL_NAME`` at an unsupported model fails
+        at startup rather than silently running it on another family's settings.
+
+        Takes no identity argument, unlike
+        :meth:`~tenantfirstaid.datastores.CorpusConfig.from_env`: reading the
+        model settings involves no project, so requiring one would make a caller
+        prove an environment it does not need.
+
+        Raises:
+            ValueError: If ``MODEL_NAME`` is unset or empty, or
+                ``SHOW_MODEL_THINKING`` is not a recognized truth value. Never for
+                a missing datastore.
+            NotImplementedError: If ``MODEL_NAME`` names a family this code does
+                not implement.
+        """
+        env = load_env_file()
+        model_name = env.get("MODEL_NAME")
+        # Catches both unset (None) and explicitly empty (e.g. VAR="").
+        # Does not catch whitespace-only values.
+        if not model_name:
+            raise ValueError(
+                "[MODEL_NAME] environment variable is not set or is empty."
+            )
+
+        for family in _FAMILIES:
+            if model_name.startswith(family.MODEL_NAME_PREFIX):
+                return family._for_model_name(model_name, env)
+        supported = ", ".join(f.MODEL_NAME_PREFIX for f in _FAMILIES)
+        raise NotImplementedError(
+            f"[MODEL_NAME] {model_name!r} is not a supported model family. "
+            f"Supported: {supported}."
+        )
+
+
+@dataclass(frozen=True)
+class Gemini25ModelConfig(ModelConfig):
+    """The Gemini 2.5 family: settings whose *shape*, not merely whose values, is 2.5's.
+
+    Every field here and on the base is fixed in code rather than read from the
+    environment, so the tuning is reproducible across deployments. ``MODEL_NAME``
+    is the exception, and the pairing is uneasy: the model is a variable while its
+    settings are constants, and nothing checks that the two agree beyond the
+    prefix :meth:`~ModelConfig.from_env` dispatches on.
+
+    A later family does not want different numbers, it wants different fields.
+    :attr:`thinking_budget` is the clearest case: ``ThinkingConfig`` in the pinned
+    SDK carries both a ``thinking_budget`` token count and a discrete
+    ``thinking_level``, and 3.x expects the latter, so the field itself does not
+    survive the transition -- which is why it is here and not on the base.
+    :attr:`~ModelConfig.temperature` is the subtler one, fixed low for citation
+    consistency against a 2.5 default of 0.7, where 3.x defaults to 1.0 and is not
+    meant to be lowered. It stays on the base because the field survives even
+    though this value does not.
+    """
+
+    MODEL_NAME_PREFIX: ClassVar[str] = "gemini-2.5"
+    """Matches ``gemini-2.5-pro``, ``gemini-2.5-flash`` and the rest of the family."""
+
     THINKING_BUDGET_DYNAMIC: ClassVar[int] = -1
     """Sentinel for :attr:`thinking_budget`: let Gemini size it by query complexity.
 
@@ -107,45 +171,33 @@ class Gemini25ModelConfig:
     thinking_budget: int
     """Gemini thinking-token budget; see :attr:`THINKING_BUDGET_DYNAMIC`."""
 
+    @classmethod
+    def _for_model_name(
+        cls, model_name: str, env: Mapping[str, str]
+    ) -> "Gemini25ModelConfig":
+        return cls(
+            model_name=model_name,
+            show_thinking=_strtobool(env.get("SHOW_MODEL_THINKING", "false")),
+            safety_settings={
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.OFF,
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.OFF,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.OFF,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.OFF,
+                HarmCategory.HARM_CATEGORY_UNSPECIFIED: HarmBlockThreshold.OFF,
+            },
+            # Low temperature for consistent legal citation output.
+            # Gemini 2.5 default is 0.7; Gemini 3+ defaults to 1.0.
+            # https://reference.langchain.com/python/integrations/langchain_google_genai/ChatGoogleGenerativeAI/#langchain_google_genai.ChatGoogleGenerativeAI.temperature
+            temperature=float(0.1),
+            top_p=float(0.1),
+            max_tokens=65535,
+            thinking_budget=cls.THINKING_BUDGET_DYNAMIC,
+        )
 
-def model_env() -> Gemini25ModelConfig:
-    """Read the model configuration from the environment.
 
-    Deliberately not named for a family, unlike the class it returns. Choosing
-    which family ``MODEL_NAME`` denotes is this function's job, so it is the one
-    thing here that survives a second family arriving -- at which point its return
-    type becomes a shared base and this dispatches between the children.
+_FAMILIES: tuple[type[ModelConfig], ...] = (Gemini25ModelConfig,)
+"""Every family this code implements, in the order ``from_env`` tries them.
 
-    Takes no identity argument, unlike
-    :func:`~tenantfirstaid.datastores.corpus_env`: reading the model settings
-    involves no project, so requiring one would make a caller prove an
-    environment it does not need.
-
-    Raises:
-        ValueError: If ``MODEL_NAME`` is unset or empty, or ``SHOW_MODEL_THINKING``
-            is not a recognized truth value. Never for a missing datastore.
-    """
-    model_name = os.getenv("MODEL_NAME")
-    # Catches both unset (None) and explicitly empty (e.g. VAR="").
-    # Does not catch whitespace-only values.
-    if not model_name:
-        raise ValueError("[MODEL_NAME] environment variable is not set or is empty.")
-
-    return Gemini25ModelConfig(
-        model_name=model_name,
-        show_thinking=_strtobool(os.getenv("SHOW_MODEL_THINKING", "false")),
-        safety_settings={
-            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.OFF,
-            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.OFF,
-            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.OFF,
-            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.OFF,
-            HarmCategory.HARM_CATEGORY_UNSPECIFIED: HarmBlockThreshold.OFF,
-        },
-        # Low temperature for consistent legal citation output.
-        # Gemini 2.5 default is 0.7; Gemini 3+ defaults to 1.0.
-        # https://reference.langchain.com/python/integrations/langchain_google_genai/ChatGoogleGenerativeAI/#langchain_google_genai.ChatGoogleGenerativeAI.temperature
-        temperature=float(0.1),
-        top_p=float(0.1),
-        max_tokens=65535,
-        thinking_budget=Gemini25ModelConfig.THINKING_BUDGET_DYNAMIC,
-    )
+A list rather than ``ModelConfig.__subclasses__()``, so that what is supported is
+stated rather than inferred from which modules happen to have been imported.
+"""

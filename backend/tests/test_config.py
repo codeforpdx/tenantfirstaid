@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 
 from tenantfirstaid.config import _AppConfig
+from tenantfirstaid.google_models import Gemini25ModelConfig, ModelConfig
 
 
 class TestAppConfig:
@@ -90,3 +91,39 @@ def test_model_config_values():
     assert SINGLETON.MAX_TOKENS == 65535
     assert isinstance(SINGLETON.SAFETY_SETTINGS, dict)
     assert len(SINGLETON.SAFETY_SETTINGS) == 5
+
+
+class TestModelFamilyDispatch:
+    """`MODEL_NAME` selects a family, and an unknown one must not run on 2.5's settings."""
+
+    @pytest.fixture(autouse=True)
+    def no_env_file(self, caplog):
+        caplog.set_level(logging.CRITICAL, logger="tenantfirstaid.google_auth")
+        with patch("tenantfirstaid.google_auth.Path.exists", return_value=False):
+            yield
+
+    @pytest.mark.parametrize("model_name", ["gemini-2.5-pro", "gemini-2.5-flash"])
+    def test_gemini_25_names_resolve_to_the_25_family(self, model_name):
+        with patch.dict("os.environ", {"MODEL_NAME": model_name}, clear=True):
+            config = ModelConfig.from_env()
+        assert isinstance(config, Gemini25ModelConfig)
+        assert config.model_name == model_name
+        assert config.thinking_budget == Gemini25ModelConfig.THINKING_BUDGET_DYNAMIC
+
+    @pytest.mark.parametrize(
+        "model_name", ["gemini-3-pro", "gemini-2.0-flash", "gpt-4", "gemini"]
+    )
+    def test_unimplemented_family_raises(self, model_name):
+        # Refused rather than silently given 2.5-shaped settings: a 3.x model
+        # expects a discrete thinking level, so thinking_budget would not apply.
+        with patch.dict("os.environ", {"MODEL_NAME": model_name}, clear=True):
+            with pytest.raises(
+                NotImplementedError, match="not a supported model family"
+            ):
+                ModelConfig.from_env()
+
+    def test_missing_model_name_raises_value_error_not_notimplemented(self):
+        # An unset variable is a configuration error, not an unsupported family.
+        with patch.dict("os.environ", {}, clear=True):
+            with pytest.raises(ValueError, match="MODEL_NAME"):
+                ModelConfig.from_env()
