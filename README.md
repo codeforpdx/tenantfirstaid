@@ -126,7 +126,7 @@ Live at https://tenantfirstaid.com/
   ```
   | 💡 On MacOS `docs-serve` will open Safari but can't access the local URL.  Open the URL on a Chrome/Chromium-based browser. |
 
-  `docs-lint`, `docs-check-links`, and `docs-proofread` (or `docs-check` for all three) catch missing docstrings, broken links, and spelling/grammar issues; see the [Command Reference](backend/developer_guide/08-command-reference.qmd) chapter.
+  `docs-lint`, `docs-check-links`, and `docs-proofread` (or `docs-check` for all three) catch missing docstrings, broken links, and spelling/grammar issues; see the [Command Reference](backend/developer_guide/09-command-reference.qmd) chapter.
 
 | 💡 Using Claude Code? Type `/backend` in the Claude Code UI for backend workflow reference (including docs). |
 |---|
