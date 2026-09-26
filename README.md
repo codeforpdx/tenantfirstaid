@@ -190,6 +190,14 @@ Separately, every backend and frontend check task accepts `--container` (plus `-
 - **Lint and type errors will match CI even when your local packages don't.** For `mise run lint --container` and `mise run typecheck --container`, the eslint, TypeScript and plugin versions come from the image rather than your `node_modules`. If CI reports an error you can't reproduce — or your editor is happy but the build isn't — this is the thing to reach for.
 - **`--container` doesn't cascade.** It applies only to the command you type, not to any step that command triggers. Add it to each thing you want containerized.
 
+The backend's `test` and `check` tasks take a second, narrower reproduce-CI flag, `--no-env`. Where `--container` changes *where* a check runs, `--no-env` changes *what environment it sees*: it ignores your `backend/.env` and substitutes the placeholder values `.github/workflows/pr-check.yml` uses, including a `GOOGLE_APPLICATION_CREDENTIALS` path that deliberately does not exist. That matters because a developer's `.env` points at real credentials, so a test that forgets to mock a credential load passes on your machine and fails only in CI. Reach for it before pushing if a test touches configuration or Google Cloud:
+
+```sh
+% mise run //backend:check --no-env
+```
+
+The two flags can't be combined — the container lane bind-mounts `backend/.env`, which is the file `--no-env` exists to hide.
+
 The project has separate Dockerfiles for backend and frontend, each with multiple build stages, if you need to build an image directly. Use `--target` to pick a stage:
 
 ```sh

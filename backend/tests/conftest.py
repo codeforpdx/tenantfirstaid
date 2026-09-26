@@ -12,7 +12,7 @@ import evaluate.langsmith_dataset  # noqa: F401
 import evaluate.measure_evaluator_variance  # noqa: F401
 import evaluate.run_langsmith_evaluation  # noqa: F401
 from evaluate.tracing import LangsmithConfig
-from tenantfirstaid.google_auth import load_env_file
+from tenantfirstaid.google_auth import GcpEnvironment, load_env_file
 from tenantfirstaid.location import OregonCity, UsaState
 
 
@@ -27,7 +27,7 @@ def _no_langsmith_tracing(monkeypatch: pytest.MonkeyPatch, mocker):
 
     `delenv` alone cannot protect a real `Client()` construction, because
     `LangsmithConfig.from_env()` reloads `.env` over the ambient environment; the
-    substitutes the reader itself. One patch covers every caller, since they
+    fixture substitutes the reader itself. One patch covers every caller, since they
     reach it through the `tracing` module rather than binding its result.
 
     A test that wants real tracing back on will need to override this
@@ -41,6 +41,24 @@ def _no_langsmith_tracing(monkeypatch: pytest.MonkeyPatch, mocker):
         "evaluate.tracing.LangsmithConfig.from_env",
         return_value=LangsmithConfig(api_key=None),
     )
+
+
+@pytest.fixture(autouse=True)
+def _no_real_gcp_credentials(mocker):
+    """Keep the suite from loading real credentials off the machine it runs on.
+
+    `RagBuilder` loads credentials while constructing, through
+    `GcpEnvironment.load_credentials()`. On a developer machine `.env` points
+    `GOOGLE_APPLICATION_CREDENTIALS` at a real file, so that succeeds and the test
+    passes; CI has no `.env` and points the variable at a path that deliberately
+    does not exist, so the same test fails there. Substituting the loader makes the
+    suite behave identically either way, and keeps a unit test from depending on
+    whether whoever ran it has authenticated.
+
+    Tests of the loader itself call `load_gcp_credentials` directly, which this
+    does not touch.
+    """
+    mocker.patch.object(GcpEnvironment, "load_credentials", return_value=MagicMock())
 
 
 @pytest.fixture(autouse=True)
