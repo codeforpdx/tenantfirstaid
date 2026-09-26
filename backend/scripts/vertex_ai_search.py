@@ -164,7 +164,7 @@ def search(
         client_options=discoveryengine_client_options(location),
     )
 
-    datastore = datastore_override or corpus.datastores[DatastoreKey.LAWS]
+    datastore = datastore_override or corpus.require(DatastoreKey.LAWS)
     serving_config = (
         f"projects/{corpus.gcp.project}"
         f"/locations/{location}"
@@ -372,7 +372,7 @@ def main() -> None:
     # Resolved once here rather than inside each search, so every request in a
     # run is addressed through the same configuration.
     corpus = CorpusConfig.from_env()
-    datastore = args.datastore or corpus.datastores[DatastoreKey.LAWS]
+    datastore = args.datastore or corpus.require(DatastoreKey.LAWS)
 
     if args.command == "shmoo":
         _shmoo(

@@ -48,6 +48,30 @@ class TestAppConfig:
             with pytest.raises(ValueError, match="environment variable is not set"):
                 _AppConfig()
 
+    @pytest.mark.parametrize(
+        "identity_var",
+        [
+            "GOOGLE_CLOUD_PROJECT",
+            "GOOGLE_CLOUD_LOCATION",
+            "GOOGLE_APPLICATION_CREDENTIALS",
+        ],
+    )
+    def test_whitespace_only_identity_var_is_treated_as_unset(
+        self, identity_var, no_env_file, silence_missing_env_warning
+    ):
+        """Otherwise it is carried into a resource path and fails much later."""
+        env = {**self.REQUIRED_ENV, identity_var: "   "}
+        with patch.dict("os.environ", env, clear=True):
+            with pytest.raises(ValueError, match=f"\\[{identity_var}\\]"):
+                _AppConfig()
+
+    def test_surrounding_whitespace_is_stripped(
+        self, no_env_file, silence_missing_env_warning
+    ):
+        env = {**self.REQUIRED_ENV, "GOOGLE_CLOUD_PROJECT": "  test-project\n"}
+        with patch.dict("os.environ", env, clear=True):
+            assert _AppConfig().GOOGLE_CLOUD_PROJECT == "test-project"
+
     def test_missing_env_file_emits_warning_with_resolved_path(
         self, no_env_file, caplog
     ):

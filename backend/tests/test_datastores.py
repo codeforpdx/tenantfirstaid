@@ -1,8 +1,10 @@
 """Tests for the env-free datastore module: parsing and the corpus configuration."""
 
+from unittest.mock import MagicMock
+
 import pytest
 
-from tenantfirstaid.datastores import parse_datastores
+from tenantfirstaid.datastores import CorpusConfig, DatastoreKey, parse_datastores
 
 
 class TestParseDatastores:
@@ -57,3 +59,33 @@ class TestParseDatastores:
     def test_no_datastore_vars_returns_empty(self):
         result = parse_datastores({"MODEL_NAME": "gemini-2.5-pro"})
         assert result == {}
+
+
+class TestRequire:
+    """A missing datastore is a misconfiguration, so it must read like one."""
+
+    @staticmethod
+    def _corpus(datastores):
+        return CorpusConfig(gcp=MagicMock(), datastores=datastores)
+
+    def test_returns_the_configured_id(self):
+        corpus = self._corpus({DatastoreKey.LAWS: "my-store"})
+        assert corpus.require(DatastoreKey.LAWS) == "my-store"
+
+    def test_missing_names_the_variable_to_set(self):
+        """A bare ``KeyError: 'laws'`` says neither that the missing thing is an
+        environment variable nor what it is called.
+        """
+        corpus = self._corpus({})
+        with pytest.raises(ValueError) as excinfo:
+            corpus.require(DatastoreKey.LAWS)
+
+        message = str(excinfo.value)
+        assert "VERTEX_AI_DATASTORE_LAWS" in message
+        assert "Currently configured: none." in message
+
+    def test_missing_lists_what_is_configured(self):
+        """So that a typo in one variable's name is visible from the message."""
+        corpus = self._corpus({"oregon_law_help": "other-store"})
+        with pytest.raises(ValueError, match="Currently configured: oregon_law_help."):
+            corpus.require(DatastoreKey.LAWS)

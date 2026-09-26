@@ -56,10 +56,10 @@ import sys
 import google.auth.exceptions
 import google.auth.transport.requests
 
-from tenantfirstaid.google_auth import gcp_env
+from tenantfirstaid.google_auth import GcpEnvironment
 
 try:
-    credentials = gcp_env().load_credentials()
+    credentials = GcpEnvironment.from_env().load_credentials()
 except ValueError as exc:
     sys.exit(f"{exc}")
 

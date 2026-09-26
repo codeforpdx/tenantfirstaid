@@ -23,9 +23,8 @@ DEFAULT_VERTEX_AI_SEARCH_LOCATION: Final = "us"
 
 Distinct from the LLM compute region. It lives here rather than in
 :mod:`tenantfirstaid.config` because every corpus tool uses it as an argparse
-default, and reaching into ``constants`` for it would build the configuration
-singleton -- which the scheduled reaper, running as a Cloud Function with no app
-environment at all, cannot do."""
+default, and importing it from there would build the configuration singleton --
+which a tool that only names a datastore has no environment to satisfy."""
 
 
 class DatastoreKey(StrEnum):
@@ -133,3 +132,24 @@ class CorpusConfig:
             gcp=gcp if gcp is not None else GcpEnvironment.from_env(),
             datastores=parse_datastores(load_env_file()),
         )
+
+    def require(self, key: str) -> str:
+        """Look up one datastore id, naming the variable to set when it is absent.
+
+        A plain subscript raises ``KeyError: 'laws'``, which does not say that
+        the missing thing is an environment variable or what it should be
+        called. Only datastores an environment configures are present, so the
+        lookup failing is an ordinary misconfiguration rather than a bug.
+
+        Raises:
+            ValueError: If no such datastore is configured.
+        """
+        try:
+            return self.datastores[key]
+        except KeyError:
+            configured = ", ".join(sorted(self.datastores)) or "none"
+            raise ValueError(
+                f"No {key!r} datastore is configured. Set "
+                f"[{DATASTORE_PREFIX}{key.upper()}] in backend/.env. "
+                f"Currently configured: {configured}."
+            ) from None

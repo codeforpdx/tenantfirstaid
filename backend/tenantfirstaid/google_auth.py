@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
 from types import MappingProxyType
-from typing import Mapping, cast
+from typing import Final, Mapping
 
 from dotenv import load_dotenv
 from google.api_core.client_options import ClientOptions
@@ -82,6 +82,22 @@ def _parse_inline_json(raw: str) -> dict:
         ) from e
 
 
+_MAX_ECHOED_PATH_CHARS: Final = 200
+"""Longest value :func:`_shorten` will quote in full.
+
+A path long enough to exceed this is not a path anyone typed, so the cost of
+truncating it is nil -- and the bound is what keeps an unforeseen encoding of a
+secret from reaching the logs whole, rather than the shape tests alone.
+"""
+
+
+def _shorten(raw: str) -> str:
+    """Bound how much of ``raw`` an error message may quote."""
+    if len(raw) <= _MAX_ECHOED_PATH_CHARS:
+        return raw
+    return f"{raw[:40]}... ({len(raw)} characters)"
+
+
 def _reject_missing_credentials_file(raw: str) -> None:
     """Fail plainly when the value names a file that is not there.
 
@@ -102,9 +118,16 @@ def _reject_missing_credentials_file(raw: str) -> None:
     # have one, and that is precisely the value that must not be echoed.
     if any(c.isspace() or c == '"' for c in raw) or not raw:
         return
+    # A base64-encoded service-account key, which some secret stores inject,
+    # passes the test above: its alphabet holds neither whitespace nor quotes.
+    # So require something positively path-shaped as well. The base64 alphabet
+    # contains no "." at all, and padded output ends in "=", so a key satisfies
+    # neither clause.
+    if "/" not in raw and "\\" not in raw and not raw.endswith(".json"):
+        return
     raise ValueError(
-        f"GOOGLE_APPLICATION_CREDENTIALS points at {raw!r}, which does not exist. "
-        "If you have not authenticated on this machine yet, run: "
+        f"GOOGLE_APPLICATION_CREDENTIALS points at {_shorten(raw)!r}, which does "
+        "not exist. If you have not authenticated on this machine yet, run: "
         "mise run //:gcloud-login"
     )
 
@@ -236,16 +259,18 @@ class GcpEnvironment:
             ValueError: If any of the three variables is unset or empty.
         """
         env = load_env_file()
+        # Stripped so that a value of "  " is treated as unset rather than carried
+        # into a resource path, and so a path with a stray trailing newline works.
         values = {
-            name: env.get(name)
+            name: (env.get(name) or "").strip()
             for name in (
                 "GOOGLE_CLOUD_PROJECT",
                 "GOOGLE_CLOUD_LOCATION",
                 "GOOGLE_APPLICATION_CREDENTIALS",
             )
         }
-        # Catches both unset (None) and explicitly empty. Reported together rather
-        # than one at a time, so a fresh checkout needs one round trip instead of three.
+        # Reported together rather than one at a time, so a fresh checkout needs one
+        # round trip instead of three.
         missing = sorted(name for name, value in values.items() if not value)
         if missing:
             raise ValueError(
@@ -254,13 +279,8 @@ class GcpEnvironment:
                     for name in missing
                 )
             )
-        # The check above rejected every None and every empty string, so the values
-        # are str -- but that is a fact about `missing`, which a type checker cannot
-        # carry back to `values`. One cast naming the whole dict states it once,
-        # where the proof is visible, rather than three suppressions at the point of use.
-        present = cast(dict[str, str], values)
         return cls(
-            project=present["GOOGLE_CLOUD_PROJECT"],
-            location=present["GOOGLE_CLOUD_LOCATION"],
-            credentials_source=present["GOOGLE_APPLICATION_CREDENTIALS"],
+            project=values["GOOGLE_CLOUD_PROJECT"],
+            location=values["GOOGLE_CLOUD_LOCATION"],
+            credentials_source=values["GOOGLE_APPLICATION_CREDENTIALS"],
         )

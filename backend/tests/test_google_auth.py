@@ -7,6 +7,9 @@ something actionable when the value cannot be a credential, and say nothing
 about it when it might be.
 """
 
+import base64
+import json
+
 import pytest
 
 from tenantfirstaid.google_auth import load_gcp_credentials
@@ -51,6 +54,39 @@ class TestMissingCredentialsFile:
         assert "private_key" not in message
         assert "BEGIN PRIVATE KEY" not in message
         assert "does not exist" not in message
+
+    def test_a_base64_encoded_key_is_never_echoed(self):
+        """Base64 has neither whitespace nor quotes, so the test above passes it.
+
+        Some secret stores inject service-account keys that way, and the value
+        would otherwise have been quoted into the exception in full.
+        """
+        encoded = base64.b64encode(
+            json.dumps({"type": "service_account", "private_key": "s3cret"}).encode()
+        ).decode()
+
+        with pytest.raises(ValueError) as excinfo:
+            load_gcp_credentials(encoded)
+
+        message = str(excinfo.value)
+        assert "does not exist" not in message
+        assert encoded not in message
+
+    def test_an_absurdly_long_path_is_truncated(self):
+        """The shape tests are heuristics; the length bound is not.
+
+        It is what keeps an encoding nobody anticipated from reaching the logs
+        whole, so a value that looks like a path is still bounded.
+        """
+        raw = "/nonexistent/" + "a" * 500 + ".json"
+
+        with pytest.raises(ValueError) as excinfo:
+            load_gcp_credentials(raw)
+
+        message = str(excinfo.value)
+        assert "does not exist" in message
+        assert raw not in message
+        assert f"({len(raw)} characters)" in message
 
     def test_well_formed_json_is_still_judged_on_its_type(self):
         """The path branch must not swallow a value the parser can explain."""

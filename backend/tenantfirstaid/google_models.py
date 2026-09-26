@@ -2,14 +2,8 @@
 
 Apart from :mod:`tenantfirstaid.config` for the same reason
 :class:`~tenantfirstaid.datastores.CorpusConfig` is: importing that module builds
-the application singleton, so anything living there is unreachable without a
-complete app environment. A sibling that can only be had by taking the whole
-configuration is not a sibling.
-
-Nothing consumes this half alone today -- every model caller also retrieves. It
-lives here so that the two halves are addressable on the same terms, and so that
-the family-specific work described on :class:`Gemini25ModelConfig` has somewhere
-to go.
+the application singleton, so anything living there needs a complete app
+environment to reach.
 """
 
 from dataclasses import dataclass
@@ -52,20 +46,14 @@ def _strtobool(val: Optional[str]) -> bool:
 class ModelConfig:
     """What every Gemini family needs in order to be called.
 
-    The sibling of :class:`~tenantfirstaid.datastores.CorpusConfig`. Only the
-    application composes both, because only it both retrieves and generates.
+    The sibling of :class:`~tenantfirstaid.datastores.CorpusConfig`, which only
+    the application composes with. It carries no
+    :class:`~tenantfirstaid.google_auth.GcpEnvironment` because a model call's
+    identity comes from whoever builds the client, where a datastore's is part of
+    its resource path.
 
-    The two siblings are not the same shape, and the difference is not an
-    oversight. ``CorpusConfig`` carries a :class:`~tenantfirstaid.google_auth.GcpEnvironment`
-    because a datastore is addressed *through* an identity -- the project and
-    region are part of its resource path. Nothing here is: these are the
-    arguments to a model call, and the identity that call is made under is
-    supplied by whoever builds the client. Carrying one anyway would be symmetry
-    with no reader, which is the thing this split was meant to stop doing.
-
-    Only the settings that survive a change of family live here. A setting whose
-    *field* a later family would not want belongs on that family's class instead,
-    which is why :attr:`Gemini25ModelConfig.thinking_budget` is not here.
+    Only settings that survive a change of family belong here; one whose *field* a
+    later family would not want goes on that family's class instead.
     """
 
     MODEL_NAME_PREFIX: ClassVar[str]
@@ -88,9 +76,8 @@ class ModelConfig:
     def _for_model_name(cls, model_name: str, env: Mapping[str, str]) -> "ModelConfig":
         """Build this family's settings for ``model_name``, reading ``env`` for any rest.
 
-        Each family supplies its own values, because they are the family's
-        knowledge rather than the reader's. ``env`` is the snapshot
-        :meth:`from_env` already took, passed on so a family reads the same view.
+        ``env`` is the snapshot :meth:`from_env` already took, passed on so that a
+        family reads the same view the dispatch did.
         """
         raise NotImplementedError
 
@@ -98,16 +85,9 @@ class ModelConfig:
     def from_env(cls) -> "ModelConfig":
         """Read the model configuration from the environment.
 
-        On the base rather than on a family, because choosing which family
-        ``MODEL_NAME`` denotes is the part that survives a second family
-        arriving. Dispatches over :data:`_FAMILIES` and refuses anything no
-        family claims, so pointing ``MODEL_NAME`` at an unsupported model fails
-        at startup rather than silently running it on another family's settings.
-
-        Takes no identity argument, unlike
-        :meth:`~tenantfirstaid.datastores.CorpusConfig.from_env`: reading the
-        model settings involves no project, so requiring one would make a caller
-        prove an environment it does not need.
+        Dispatches over :data:`_FAMILIES` and refuses anything no family claims,
+        so an unsupported ``MODEL_NAME`` fails at startup rather than silently
+        running on another family's settings.
 
         Raises:
             ValueError: If ``MODEL_NAME`` is unset or empty, or
@@ -139,21 +119,12 @@ class ModelConfig:
 class Gemini25ModelConfig(ModelConfig):
     """The Gemini 2.5 family: settings whose *shape*, not merely whose values, is 2.5's.
 
-    Every field here and on the base is fixed in code rather than read from the
-    environment, so the tuning is reproducible across deployments. ``MODEL_NAME``
-    is the exception, and the pairing is uneasy: the model is a variable while its
-    settings are constants, and nothing checks that the two agree beyond the
-    prefix :meth:`~ModelConfig.from_env` dispatches on.
+    Every value apart from ``MODEL_NAME`` is fixed in code, so the tuning is
+    reproducible across deployments.
 
-    A later family does not want different numbers, it wants different fields.
-    :attr:`thinking_budget` is the clearest case: ``ThinkingConfig`` in the pinned
-    SDK carries both a ``thinking_budget`` token count and a discrete
-    ``thinking_level``, and 3.x expects the latter, so the field itself does not
-    survive the transition -- which is why it is here and not on the base.
-    :attr:`~ModelConfig.temperature` is the subtler one, fixed low for citation
-    consistency against a 2.5 default of 0.7, where 3.x defaults to 1.0 and is not
-    meant to be lowered. It stays on the base because the field survives even
-    though this value does not.
+    :attr:`thinking_budget` is here rather than on the base because 3.x expresses
+    thinking as a discrete ``thinking_level``, so the field itself does not
+    survive the transition.
     """
 
     MODEL_NAME_PREFIX: ClassVar[str] = "gemini-2.5"
@@ -162,10 +133,8 @@ class Gemini25ModelConfig(ModelConfig):
     THINKING_BUDGET_DYNAMIC: ClassVar[int] = -1
     """Sentinel for :attr:`thinking_budget`: let Gemini size it by query complexity.
 
-    A class attribute rather than a module constant because it is meaningless
-    apart from the field it qualifies, and because it is 2.5-shaped -- a
-    family that expresses thinking as a discrete level has no use for it, and
-    would simply not inherit it.
+    On the class rather than at module level because it is meaningless apart from
+    the 2.5-shaped field it qualifies.
     """
 
     thinking_budget: int
@@ -198,6 +167,6 @@ class Gemini25ModelConfig(ModelConfig):
 _FAMILIES: tuple[type[ModelConfig], ...] = (Gemini25ModelConfig,)
 """Every family this code implements, in the order ``from_env`` tries them.
 
-A list rather than ``ModelConfig.__subclasses__()``, so that what is supported is
-stated rather than inferred from which modules happen to have been imported.
+Explicit rather than ``ModelConfig.__subclasses__()``, so support is stated rather
+than inferred from which modules happen to have been imported.
 """

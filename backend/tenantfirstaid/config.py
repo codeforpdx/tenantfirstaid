@@ -73,39 +73,32 @@ class _AppConfig:
     def __init__(self) -> None:
         """Compose the corpus and model configurations into the application's settings.
 
-        Reads the GCP identity the corpus is addressed through, and the model
-        settings, then flattens both onto this object so callers need not know
-        which half a setting came from. Adds the one requirement neither half
-        can state on its own: the
-        application cannot answer a question without primary law, so
-        :attr:`~tenantfirstaid.datastores.DatastoreKey.LAWS` must be configured.
+        Flattens both onto this object so callers need not know which half a
+        setting came from, and adds the one requirement neither half states on
+        its own: :attr:`~tenantfirstaid.datastores.DatastoreKey.LAWS` must be
+        configured, since the application cannot answer a question without
+        primary law.
 
         Raises:
             ValueError: If any required environment variable is missing, empty, or invalid.
         """
-        # Read once and passed in, so that the identity this object exposes is
-        # the same one the corpus was resolved against rather than a second read
-        # that could disagree with it. GcpEnvironment loads .env as a side effect.
+        # Read once and passed in, so the identity this object exposes is the one
+        # the corpus was resolved against. GcpEnvironment loads .env as a side effect.
         _gcp = GcpEnvironment.from_env()
         _corpus = CorpusConfig.from_env(_gcp)
-        # No identity argument: the model settings involve no project. The
-        # identity a model call is made under is applied in graph.py, from the
-        # flattened values below.
+        # No identity argument: the model settings involve no project.
         _model = ModelConfig.from_env()
-        # Narrowed because the flattened attributes below include THINKING_BUDGET,
-        # which is 2.5-shaped and so lives on the family rather than the base.
-        # from_env already refuses every family this code does not implement; this
-        # restates that where a type checker can use it.
+        # from_env already refuses every unimplemented family; this restates it
+        # where a type checker can use it, since THINKING_BUDGET below is 2.5-only.
         if not isinstance(_model, Gemini25ModelConfig):
             raise NotImplementedError(
                 f"[MODEL_NAME] {_model.model_name!r} names a family this "
                 "application cannot flatten."
             )
 
-        # Flattened rather than exposed as `.corpus` and `.model`. The layering
-        # governs what a caller is required to *have*, not how it reads what it
-        # has, and every caller of this object wants both halves anyway -- so
-        # nesting would expose a structure they have no decision to make about.
+        # Flattened rather than exposed as `.corpus` and `.model`: every caller of
+        # this object wants both halves, so nesting would expose a structure they
+        # have no decision to make about.
         #
         # Note: assign explicitly since typecheckers do not understand slotted
         #       attributes that are assigned by __setattr__()

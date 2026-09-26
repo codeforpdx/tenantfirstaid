@@ -1,10 +1,8 @@
 """LangSmith tracing credentials.
 
-Here rather than in :mod:`tenantfirstaid.config` because nothing in the
-application package reads it -- only the evaluation harness does. It stayed in
-the app's configuration module long enough to make three evaluation modules
-require a configured project, credentials and model in order to learn whether
-tracing was available.
+Here rather than in :mod:`tenantfirstaid.config` because only the evaluation
+harness reads it, and reaching it through the app's configuration would make an
+evaluation module require a project, credentials and a model it never uses.
 """
 
 from dataclasses import dataclass
@@ -20,25 +18,16 @@ class LangsmithConfig:
     api_key: Optional[str]
     """LangSmith API key (env ``LANGSMITH_API_KEY``), or ``None`` when unset.
 
-    Unvalidated on purpose. An absent key is a legitimate state that each caller
-    reports in its own terms, so this is a plain read rather than a setting that
-    refuses to load.
+    Unvalidated: an absent key is a legitimate state each caller reports in its
+    own terms.
     """
 
     @classmethod
     def from_env(cls) -> "LangsmithConfig":
-        """Read the LangSmith settings from the environment.
+        """Read the LangSmith settings from the same snapshot its siblings read.
 
-        The sibling of :meth:`~tenantfirstaid.google_auth.GcpEnvironment.from_env`,
-        :meth:`~tenantfirstaid.datastores.CorpusConfig.from_env` and
-        :meth:`~tenantfirstaid.google_models.ModelConfig.from_env`, and reads the
-        same snapshot each of those does.
-
-        Callers reach this through the module rather than binding the value at
-        import, so the environment is read when a client is built. Two things
-        follow. Importing an evaluation module requires no configuration at all,
-        which is what lets the dataset CLI do offline JSONL work on a bare
-        checkout; and the suite has a single place to substitute, instead of one
-        patch per module that happened to bind the constant.
+        Call this where a client is built rather than binding the result at
+        import, so that importing an evaluation module needs no configuration --
+        which is what lets the dataset CLI do offline work on a bare checkout.
         """
         return cls(api_key=load_env_file().get("LANGSMITH_API_KEY"))
