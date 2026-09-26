@@ -24,7 +24,6 @@ from langgraph.graph.state import CompiledStateGraph
 
 from .config import SINGLETON
 from .constants import DEFAULT_INSTRUCTIONS
-from .google_auth import load_gcp_credentials
 from .langchain_tools import (
     calculate_ors_90_160_notice_deadline,
     generate_letter,
@@ -57,11 +56,10 @@ def _get_llm() -> ChatGoogleGenerativeAI:
     global _llm
     with _llm_lock:
         if _llm is None:
-            # From SINGLETON rather than a fresh GcpEnvironment.from_env(), so
-            # that the credentials, project and location below all come from one
-            # read of the environment. Two reads agree only while load_env_file's
-            # cache holds, and the test suite clears it between every test.
-            creds = load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
+            # Through SINGLETON.load_credentials() rather than a fresh
+            # GcpEnvironment.from_env(), so the credentials, project and location
+            # below all come from the one identity SINGLETON was built from.
+            creds = SINGLETON.load_credentials()
             _llm = ChatGoogleGenerativeAI(
                 model=SINGLETON.MODEL_NAME,
                 max_tokens=SINGLETON.MAX_TOKENS,

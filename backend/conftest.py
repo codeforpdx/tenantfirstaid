@@ -21,8 +21,10 @@ if os.environ.get("TFA_TEST_IGNORE_ENV_FILE") == "1":
     # it holds, which is why this is module-level code in the earliest conftest
     # rather than a fixture in the one next to the tests.
     #
-    # Rebinds the module's path rather than patching ``Path.exists``, which
-    # :func:`~tenantfirstaid.google_auth.load_gcp_credentials` also depends on.
+    # Rebinds the module's path rather than patching ``Path.exists`` for the
+    # whole session. That patches the class, so it would affect every path in
+    # every test -- including ``tests/test_config.py``'s own per-test patch of
+    # the same attribute -- rather than just this one lookup.
     from tenantfirstaid import google_auth
 
     google_auth._ENV_PATH = Path("/nonexistent/backend/.env")

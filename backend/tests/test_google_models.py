@@ -44,9 +44,13 @@ def test_strtobool_falsy_any_case(data, word):
 @settings(
     deadline=None
 )  # _strtobool is trivial; deadline only catches cold-start noise.
-@given(st.text().filter(lambda s: s.lower() not in _RECOGNIZED))
+@given(st.text().filter(lambda s: s.strip().lower() not in _RECOGNIZED))
 def test_strtobool_unrecognized_raises(s):
-    """Any string outside the recognized set should raise ValueError."""
+    """Any string outside the recognized set should raise ValueError.
+
+    Filters on the stripped, lowercased form -- _strtobool strips before
+    matching, so e.g. " true " is recognized and must not land here.
+    """
     with pytest.raises(ValueError):
         _strtobool(s)
 
@@ -58,3 +62,10 @@ class TestStrtobool:
     def test_invalid_value_raises(self):
         with pytest.raises(ValueError, match="Invalid truth value"):
             _strtobool("maybe")
+
+    def test_surrounding_whitespace_is_stripped(self):
+        """SHOW_MODEL_THINKING=" true" should not raise, matching the treatment
+        GcpEnvironment.from_env and ModelConfig.from_env give their variables.
+        """
+        assert _strtobool(" true\n") is True
+        assert _strtobool("  false  ") is False

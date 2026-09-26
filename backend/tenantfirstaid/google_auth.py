@@ -212,9 +212,11 @@ def load_env_file() -> Mapping[str, str]:
     The returned mapping is that snapshot: the ambient environment with the file
     applied over it. Every ``from_env`` reads from it rather than calling
     :func:`os.getenv`, so a group of related settings is read from one consistent
-    view, and the environment is reached in exactly one place in the codebase.
-    Tests that need a fresh load call ``load_env_file.cache_clear()``; the suite
-    does so between every test.
+    view. A few call sites still read :data:`os.environ` directly (``app.py``'s
+    mail config and ``ENV`` check, ``feedback.py``, ``logger.py``'s log level) --
+    this is where *those* readers would read from too, not a guarantee that none
+    remain. Tests that need a fresh load call ``load_env_file.cache_clear()``;
+    the suite does so between every test.
 
     The process environment is still mutated, because third-party libraries read
     it directly and cannot be handed the mapping -- ``langsmith`` picks up

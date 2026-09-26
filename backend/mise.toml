@@ -264,8 +264,8 @@ if [ -n "${usage_no_env:-}" ]; then
   for _var in $(env | sed -n 's/^\(VERTEX_AI_DATASTORE_[A-Za-z0-9_]*\)=.*/\1/p'); do
     unset "$_var"
   done
-  # Read by tests/conftest.py, which hides the file itself: load_dotenv(override=True)
-  # would otherwise beat every export below.
+  # Read by the root backend/conftest.py, which hides the file itself:
+  # load_dotenv(override=True) would otherwise beat every export below.
   export TFA_TEST_IGNORE_ENV_FILE=1
   export GOOGLE_CLOUD_LOCATION=global
   export GOOGLE_CLOUD_PROJECT=no-env-fake-google-cloud-project

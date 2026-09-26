@@ -19,6 +19,7 @@ def _strtobool(val: Optional[str]) -> bool:
 
     True values are 'y', 'yes', 't', 'true', 'on', and '1';
     False values are 'n', 'no', 'f', 'false', 'off', and '0', or None.
+    Surrounding whitespace is stripped before matching.
 
     Args:
         val: String value to parse as boolean, or None.
@@ -34,7 +35,7 @@ def _strtobool(val: Optional[str]) -> bool:
         return False
 
     # credit to SO: https://stackoverflow.com/a/79879247
-    val = val.lower()
+    val = val.strip().lower()
     if val in ("y", "yes", "t", "true", "on", "1"):
         return True
     if val in ("n", "no", "f", "false", "off", "0"):

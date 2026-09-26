@@ -10,12 +10,16 @@ respectively. Only something that needs the whole application belongs here.
 """
 
 import logging
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 from .datastores import DATASTORE_PREFIX, CorpusConfig, DatastoreKey
 from .google_auth import GcpEnvironment
 from .google_models import Gemini25ModelConfig, ModelConfig
 from .logger import temporary_formatted_handler
+
+if TYPE_CHECKING:
+    from google.oauth2 import service_account
+    from google.oauth2.credentials import Credentials
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +38,7 @@ class _AppConfig:
     # __init__). The bare annotations below carry their types and docs for the
     # API reference without creating class-level values (which __slots__ forbids).
     __slots__ = (
+        "_gcp",
         "MODEL_NAME",
         "VERTEX_AI_DATASTORES",
         "GOOGLE_CLOUD_PROJECT",
@@ -87,6 +92,9 @@ class _AppConfig:
         # Read once and passed in, so the identity this object exposes is the one
         # the corpus was resolved against. GcpEnvironment loads .env as a side effect.
         _gcp = GcpEnvironment.from_env()
+        self._gcp: Final[GcpEnvironment] = _gcp
+        """Kept so :meth:`load_credentials` reuses the identity already read here,
+        rather than a caller reading a fresh one -- see that method."""
         _corpus = CorpusConfig.from_env(_gcp)
         # No identity argument: the model settings involve no project.
         _model = ModelConfig.from_env()
@@ -124,6 +132,21 @@ class _AppConfig:
         self.TOP_P: Final[float] = _model.top_p
         self.MAX_TOKENS: Final[int] = _model.max_tokens
         self.THINKING_BUDGET: Final[int] = _model.thinking_budget
+
+    def load_credentials(self) -> "Credentials | service_account.Credentials":
+        """Load the credentials this configuration's identity names.
+
+        Delegates to the ``GcpEnvironment`` read in ``__init__`` rather than
+        rereading ``GOOGLE_APPLICATION_CREDENTIALS`` from the environment, so a
+        caller going through ``SINGLETON`` gets the identity this object actually
+        exposes -- and so the test suite's autouse fixture, which patches
+        ``GcpEnvironment.load_credentials``, covers this path too.
+
+        Raises:
+            ValueError: If the value is neither a readable credentials file nor
+                parseable inline JSON.
+        """
+        return self._gcp.load_credentials()
 
 
 with temporary_formatted_handler(logger):

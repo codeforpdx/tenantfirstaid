@@ -12,6 +12,7 @@ environment at all, and needs this module to stay reachable without one.
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum, auto
+from types import MappingProxyType
 from typing import Final
 
 from .google_auth import GcpEnvironment, load_env_file
@@ -131,7 +132,10 @@ class CorpusConfig:
         """
         return cls(
             gcp=gcp if gcp is not None else GcpEnvironment.from_env(),
-            datastores=parse_datastores(load_env_file()),
+            # Read-only: this class is frozen, but a plain dict handed out by
+            # reference would still be mutable through it, same as
+            # load_env_file's own snapshot.
+            datastores=MappingProxyType(parse_datastores(load_env_file())),
         )
 
     def require(self, key: str) -> str:

@@ -4,6 +4,8 @@ Test location sanitization and other methods
 
 import json
 import re
+from contextlib import contextmanager
+from dataclasses import replace
 from datetime import date, datetime, time, timedelta
 from typing import Dict, cast
 from unittest.mock import MagicMock, patch
@@ -16,6 +18,7 @@ from hypothesis import example, given
 from hypothesis import strategies as st
 from langchain_core.tools import StructuredTool
 
+from tenantfirstaid import langchain_tools
 from tenantfirstaid.datastores import DatastoreKey
 from tenantfirstaid.google_auth import load_gcp_credentials
 from tenantfirstaid.langchain_tools import (
@@ -35,6 +38,22 @@ from tenantfirstaid.langchain_tools import (
 from tenantfirstaid.location import OregonCity, UsaState
 
 pytestmark = pytest.mark.langchain
+
+
+@contextmanager
+def _with_datastores(datastores: dict):
+    """Substitute the module's ``_CORPUS`` with one exposing only ``datastores``.
+
+    ``_CORPUS.datastores`` is a read-only ``MappingProxyType`` (CorpusConfig is
+    frozen and so is its contents), so tests swap the whole module-level value
+    instead of mutating the mapping in place the way ``patch.dict`` would.
+    """
+    with patch.object(
+        langchain_tools,
+        "_CORPUS",
+        replace(langchain_tools._CORPUS, datastores=datastores),
+    ):
+        yield
 
 
 def test_only_oregon_json_serialization():
@@ -270,10 +289,7 @@ def test_retrieve_oregon_law_help_uses_correct_datastore(mock_rag_class):
     """Test that retrieve_oregon_law_help uses the oregon_law_help datastore without filtering."""
     mock_rag_class.return_value.search.return_value = "Some legal guidance"
 
-    with patch.dict(
-        "tenantfirstaid.langchain_tools._CORPUS.datastores",
-        {DatastoreKey.OREGON_LAW_HELP: "fake-olh-datastore-id"},
-    ):
+    with _with_datastores({DatastoreKey.OREGON_LAW_HELP: "fake-olh-datastore-id"}):
         _func = getattr(retrieve_oregon_law_help, "func")
         result = _func(query="eviction notice")
 
@@ -288,11 +304,7 @@ def test_retrieve_oregon_law_help_uses_correct_datastore(mock_rag_class):
 
 def test_get_active_rag_tools_filters_by_configured_datastores():
     """Tools whose datastore key is absent from env are excluded."""
-    with patch.dict(
-        "tenantfirstaid.langchain_tools._CORPUS.datastores",
-        {DatastoreKey.LAWS: "fake-laws-id"},
-        clear=True,
-    ):
+    with _with_datastores({DatastoreKey.LAWS: "fake-laws-id"}):
         active = get_active_rag_tools()
     assert len(active) == 1
     assert active[0].name == "retrieve_city_state_laws"
@@ -312,10 +324,7 @@ def test_make_rag_tool_custom_filter_builder(mock_rag_class):
         filter_builder=custom_filter,
     )
 
-    with patch.dict(
-        "tenantfirstaid.langchain_tools._CORPUS.datastores",
-        {DatastoreKey.LAWS: "fake-id"},
-    ):
+    with _with_datastores({DatastoreKey.LAWS: "fake-id"}):
         _func = getattr(custom_tool, "func")
         _func(query="test query", state=UsaState("or"))
 
