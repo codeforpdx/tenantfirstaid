@@ -176,7 +176,7 @@ a broad predefined one. Ask in the Discord channel, as before. Once `admin/` is 
     mise run //deployment:grant user:someone@gmail.com                     # tfaContributor
     mise run //deployment:grant user:someone@gmail.com --role corpus-maintainer
     mise run //deployment:grant user:someone@gmail.com --expires 90        # lapses on its own
-    mise run //deployment:grant user:someone@gmail.com --revoke            # offboarding
+    mise run //deployment:grant user:someone@gmail.com --revoke            # removes tfaContributor only
     mise run //deployment:list-access                                      # who holds what
 
 The roles are layers, so the maintainer line above grants `tfaContributor` alongside
@@ -186,6 +186,11 @@ layer named:
 
     mise run //deployment:grant user:someone@gmail.com --role corpus-admin --expires 1
     mise run //deployment:grant user:someone@gmail.com --role corpus-admin --revoke
+
+Because a revoke removes only the layer named by `--role` (contributor, if omitted), fully
+offboarding someone holding a higher layer takes one revoke per layer they were granted,
+highest first — `--role corpus-maintainer --revoke` before the bare `--revoke` above — not
+the single bare `--revoke` alone, which would leave `tfaCorpusMaintainer` still bound.
 
 The contributor reports their own identity rather than the admin being told an address:
 it proves control of the credential GCP will authenticate, and removes the chance to
