@@ -44,7 +44,7 @@ Google Gemini and Vertex AI RAG to produce grounded, jurisdiction-aware answers.
 ::: {.callout-note}
 Two sibling trees round out the backend: `evaluate/` (LangSmith evaluation
 tooling) and `scripts/` (corpus ingestion and utilities). See
-[Corpus Ingestion](07-corpus-ingestion.qmd) for the latter.
+[Corpus Ingestion](08-corpus-ingestion.qmd) for the latter.
 :::
 
 ## API endpoints
@@ -89,4 +89,4 @@ full list of variables and how loading and logging are set up.
 ## Where to go next
 
 - [RAG & Document Retrieval](03-rag-and-retrieval.qmd) — how the agent retrieves law.
-- [Command Reference](08-command-reference.qmd) — running and checking the backend.
+- [Command Reference](09-command-reference.qmd) — running and checking the backend.

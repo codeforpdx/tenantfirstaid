@@ -73,6 +73,7 @@ sections:
       - section: Operations
         contents:
           - configuration.qmd
+          - access-and-roles.qmd
           - corpus-ingestion.qmd
           - command-reference.qmd
   - title: Evaluation Guide

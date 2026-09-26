@@ -35,14 +35,19 @@ You are changing Python — the agent, the tools, the streaming, or the API.
 4. [Streaming Responses](04-streaming.qmd) — how chunks reach the browser
 5. [Conversation Management](05-conversation-management.qmd) — multi-turn state
 
+Everything you run locally talks to Google Cloud as you, so if a command comes
+back with a `403`, [Access & Roles](07-access-and-roles.qmd) is the chapter that
+explains why and what to ask for.
+
 ### Operations contributor
 
 You are managing the corpus, running ingestion pipelines, or configuring the
 deployment.
 
 1. [Configuration & Logging](06-configuration.qmd) — env vars and log setup
-2. [Corpus Ingestion](07-corpus-ingestion.qmd) — how documents become a datastore
-3. [Command Reference](08-command-reference.qmd) — every `mise run` task, in order
+2. [Access & Roles](07-access-and-roles.qmd) — what your role lets you do
+3. [Corpus Ingestion](08-corpus-ingestion.qmd) — how documents become a datastore
+4. [Command Reference](09-command-reference.qmd) — every `mise run` task, in order
 
 ## Chapters at a glance
 
@@ -57,5 +62,6 @@ deployment.
 **Operations**
 
 - [Configuration & Logging](06-configuration.qmd)
-- [Corpus Ingestion](07-corpus-ingestion.qmd)
-- [Command Reference](08-command-reference.qmd)
+- [Access & Roles](07-access-and-roles.qmd)
+- [Corpus Ingestion](08-corpus-ingestion.qmd)
+- [Command Reference](09-command-reference.qmd)

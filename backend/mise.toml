@@ -119,6 +119,60 @@ else
 fi
 '''
 
+[tasks.whoami]
+description = "Print the exact Google identity your credentials present to GCP."
+depends = ["sync"]
+run = '''
+set -eu
+# Onboarding hands this string to a project admin, who pastes it into
+# `mise run //deployment:grant`. That is the whole reason it exists, and why it prints a
+# ready-to-paste IAM principal rather than a friendly sentence.
+#
+# It replaces what would otherwise be an invite system -- mail a secret, have the person
+# return it -- and is stronger than one on both counts that motivates the idea. An emailed
+# secret proves someone can read mail at an address; this proves they hold working
+# credentials for the account, which is the thing GCP will actually authenticate. And it
+# does not detect address typos, it eliminates them: nobody types the address, because it
+# comes out of a token Google just issued. A mistyped address in an invite flow delivers a
+# redeemable credential to a stranger; here there is nothing to intercept, and a bad paste
+# fails closed.
+uv run python - <<'PY'
+import sys
+
+import google.auth
+from google.auth.transport.requests import AuthorizedSession
+
+try:
+    credentials, project = google.auth.default(
+        scopes=["https://www.googleapis.com/auth/cloud-platform"]
+    )
+except google.auth.exceptions.DefaultCredentialsError as exc:
+    sys.exit(f"no credentials found: {exc}\n\nRun: mise run //:gcloud-login")
+
+# A service account knows its own name; a user credential does not, and has to ask.
+email = getattr(credentials, "service_account_email", None)
+if email:
+    principal = f"serviceAccount:{email}"
+else:
+    # The quota project must be stripped: user ADC attaches x-goog-user-project, and the
+    # userinfo endpoint is not part of a project, so leaving it on fails for exactly the
+    # people this task is for -- those not yet granted anything on the project.
+    session = AuthorizedSession(credentials.with_quota_project(None))
+    response = session.get("https://openidconnect.googleapis.com/v1/userinfo")
+    if response.status_code != 200:
+        sys.exit(f"could not read the identity: HTTP {response.status_code} {response.text[:200]}")
+    principal = f"user:{response.json()['email']}"
+
+print(principal)
+print(f"\nquota project: {project or '(none)'}", file=sys.stderr)
+print(
+    "\nSend the line above to a project admin, exactly as printed. They will run:\n"
+    f"    mise run //deployment:grant {principal}",
+    file=sys.stderr,
+)
+PY
+'''
+
 [tasks.clean]
 description = "Remove __pycache__ and build artifacts."
 run = '''

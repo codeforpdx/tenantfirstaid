@@ -80,5 +80,5 @@ for the duration of a `with` block.
 
 ## Where to go next
 
-- [Corpus Ingestion](07-corpus-ingestion.qmd) — build the datastore these
+- [Corpus Ingestion](08-corpus-ingestion.qmd) — build the datastore these
   variables point at.
