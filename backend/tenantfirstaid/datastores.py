@@ -1,11 +1,12 @@
-"""Datastore keys and locations, kept free of any environment dependency.
+"""Datastore keys and the corpus configuration, apart from the app's full singleton.
 
-These live apart from :mod:`tenantfirstaid.config` because importing that
-module builds the validated configuration singleton, which requires a populated
-environment. The corpus tooling -- the import guardrail, the pointer reader and
-the scheduled reaper -- needs to know which datastore keys are legitimate
-without needing the app's runtime configuration, and the reaper in particular
-runs as a Cloud Function that has no reason to carry it.
+:class:`CorpusConfig` reads its own environment rather than borrowing
+:mod:`tenantfirstaid.config`'s, because importing that module builds the
+validated configuration singleton, which also requires the model settings the
+*chatbot* needs. Corpus tooling that only names datastores was previously
+forced to satisfy a contract belonging to something else -- planned tooling
+such as an import guardrail and a scheduled reaper (#318) will run with no app
+environment at all, and needs this module to stay reachable without one.
 """
 
 from collections.abc import Mapping

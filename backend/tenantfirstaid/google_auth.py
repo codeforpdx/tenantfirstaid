@@ -8,12 +8,11 @@ inline JSON (LangSmith Cloud, where secrets are injected as variable values).
 Deliberately independent of :mod:`tenantfirstaid.config`, which additionally
 requires the model and datastore settings the *chatbot* needs and validates the
 whole set together. Code wanting only an identity was previously forced to
-satisfy a contract belonging to something else, and for the corpus tooling that
-was circular: ``list-artifacts`` is the command that tells you which datastores
-exist, and it refused to run until ``VERTEX_AI_DATASTORE_LAWS`` already named
-one. Whoever most needs the inventory is precisely whoever cannot yet satisfy
-the precondition. :mod:`tenantfirstaid.config` composes this module, so each
-variable still has exactly one definition.
+satisfy a contract belonging to something else -- planned corpus tooling (#318)
+that only lists or manages datastores needs the same escape: it should not have
+to first supply ``VERTEX_AI_DATASTORE_LAWS``, since knowing what exists is
+exactly what a tool without one is trying to establish. :mod:`tenantfirstaid.config`
+composes this module, so each variable still has exactly one definition.
 """
 
 import json
@@ -98,6 +97,19 @@ def _shorten(raw: str) -> str:
     return f"{raw[:40]}... ({len(raw)} characters)"
 
 
+def _looks_like_a_path(raw: str) -> bool:
+    """Whether ``raw`` has the shape of a filesystem path rather than a secret.
+
+    A separator alone does not qualify: standard base64's alphabet includes
+    "/", so a base64-encoded key can contain one. Base64 never contains ".",
+    so this requires one alongside a separator -- or a ".json" suffix on its
+    own, the common case for a credentials file.
+    """
+    if raw.endswith(".json"):
+        return True
+    return "." in raw and ("/" in raw or "\\" in raw)
+
+
 def _reject_missing_credentials_file(raw: str) -> None:
     """Fail plainly when the value names a file that is not there.
 
@@ -119,11 +131,9 @@ def _reject_missing_credentials_file(raw: str) -> None:
     if any(c.isspace() or c == '"' for c in raw) or not raw:
         return
     # A base64-encoded service-account key, which some secret stores inject,
-    # passes the test above: its alphabet holds neither whitespace nor quotes.
-    # So require something positively path-shaped as well. The base64 alphabet
-    # contains no "." at all, and padded output ends in "=", so a key satisfies
-    # neither clause.
-    if "/" not in raw and "\\" not in raw and not raw.endswith(".json"):
+    # passes the test above: its alphabet holds neither whitespace nor quotes,
+    # and can contain "/" -- so a separator alone does not prove this is a path.
+    if not _looks_like_a_path(raw):
         return
     raise ValueError(
         f"GOOGLE_APPLICATION_CREDENTIALS points at {_shorten(raw)!r}, which does "

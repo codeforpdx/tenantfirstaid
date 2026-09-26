@@ -44,7 +44,7 @@ def _no_langsmith_tracing(monkeypatch: pytest.MonkeyPatch, mocker):
 
 
 @pytest.fixture(autouse=True)
-def _no_real_gcp_credentials(mocker):
+def _no_real_gcp_credentials(request: pytest.FixtureRequest, mocker):
     """Keep the suite from loading real credentials off the machine it runs on.
 
     `RagBuilder` loads credentials while constructing, through
@@ -55,9 +55,15 @@ def _no_real_gcp_credentials(mocker):
     suite behave identically either way, and keeps a unit test from depending on
     whether whoever ran it has authenticated.
 
+    Skipped for `require_repo_secrets` tests, the one group meant to reach GCP for
+    real -- patching there would silently hand a live test a `MagicMock` instead
+    of a credential, rather than the real failure that group exists to surface.
+
     Tests of the loader itself call `load_gcp_credentials` directly, which this
     does not touch.
     """
+    if request.node.get_closest_marker("require_repo_secrets"):
+        return
     mocker.patch.object(GcpEnvironment, "load_credentials", return_value=MagicMock())
 
 

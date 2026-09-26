@@ -97,9 +97,10 @@ class ModelConfig:
                 not implement.
         """
         env = load_env_file()
-        model_name = env.get("MODEL_NAME")
-        # Catches both unset (None) and explicitly empty (e.g. VAR="").
-        # Does not catch whitespace-only values.
+        # Stripped so a value like " gemini-2.5-pro" resolves rather than failing
+        # the prefix match below with a confusing "unsupported family" error --
+        # the same treatment GcpEnvironment.from_env gives its variables.
+        model_name = (env.get("MODEL_NAME") or "").strip()
         if not model_name:
             raise ValueError(
                 "[MODEL_NAME] environment variable is not set or is empty."

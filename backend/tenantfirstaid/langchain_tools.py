@@ -38,6 +38,12 @@ logger = logging.getLogger(__name__)
 # the corpus half directly rather than through the application singleton is what
 # lets `scripts.vertex_ai_search`, which imports this module, run without
 # MODEL_NAME set.
+#
+# A second, independent read: `config.py`'s SINGLETON also builds a CorpusConfig.
+# The two agree only because `load_env_file()` is cached -- they would diverge if
+# the cache were cleared between building this module-level value and building
+# SINGLETON, which is exactly what the test suite's autouse fixture does between
+# tests. See the same note on the credentials read in `graph.py`.
 _CORPUS: Final = CorpusConfig.from_env()
 
 

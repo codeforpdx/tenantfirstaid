@@ -81,6 +81,8 @@ class _AppConfig:
 
         Raises:
             ValueError: If any required environment variable is missing, empty, or invalid.
+            NotImplementedError: If ``MODEL_NAME`` names a Gemini family this
+                application cannot flatten.
         """
         # Read once and passed in, so the identity this object exposes is the one
         # the corpus was resolved against. GcpEnvironment loads .env as a side effect.

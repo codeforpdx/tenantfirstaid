@@ -43,7 +43,8 @@ set -eu
 # a non-placeholder VERTEX_AI_DATASTORE_LAWS, a datastore that still exists, and
 # servingConfigs.search. Three of those are irrelevant to the corpus lifecycle commands,
 # so as a `depends` it would fail runs that would have worked, including the case where
-# the datastore is gone and list-artifacts is exactly the tool that would say so.
+# the datastore is gone and a planned datastore-listing command (#318) is exactly the
+# tool that would say so.
 #
 # This checks only what every command here genuinely cannot proceed without: that the
 # value in .env resolves to a credential and that the credential still refreshes. A

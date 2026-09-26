@@ -24,14 +24,17 @@ Google Gemini and Vertex AI RAG to produce grounded, jurisdiction-aware answers.
 ├── app.py                     # Flask app setup and route registration
 ├── chat.py                    # ChatView — the streaming /api/query endpoint
 ├── schema.py                  # Pydantic response-chunk types (shared with frontend)
-├── constants.py               # Env-var singleton, system prompt, letter template
+├── constants.py               # System prompt, letter template — no env reads
+├── config.py                  # Env-var singleton (SINGLETON), composed from the three below
+├── google_auth.py             # GCP identity: credential loading, load_env_file()
+├── datastores.py              # Corpus configuration: which datastores are configured
+├── google_models.py           # Model configuration: which Gemini family, and its settings
 ├── location.py                # City/state enums, normalization, agent state schema
 ├── graph.py                   # Shared LLM + tools + graph factory (create_graph)
 ├── langchain_chat_manager.py  # Per-session agent wrapper with streaming
 ├── langchain_tools.py         # RAG retriever, letter, and referral tools
 ├── referrals.py               # Pydantic-validated legal-aid referral catalog
 ├── referrals_data.json        # Referral catalog data (editable without Python knowledge)
-├── google_auth.py             # GCP credential loading (file path or inline JSON)
 ├── logger.py                  # Centralized logging setup
 ├── feedback.py                # Feedback email + PDF transcript
 ├── system_prompt.md           # System prompt (editable without Python knowledge)
@@ -79,8 +82,9 @@ The primary chat route is served by
 ## Configuration
 
 All environment configuration is read once, at import time, through
-`constants.py`. See [Configuration & Logging](06-configuration.qmd) for the full
-list of variables and how loading and logging are set up.
+`config.py`'s `SINGLETON`, composed from `google_auth.py`, `datastores.py` and
+`google_models.py`. See [Configuration & Logging](06-configuration.qmd) for the
+full list of variables and how loading and logging are set up.
 
 ## Where to go next
 

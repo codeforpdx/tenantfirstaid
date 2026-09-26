@@ -151,3 +151,17 @@ class TestModelFamilyDispatch:
         with patch.dict("os.environ", {}, clear=True):
             with pytest.raises(ValueError, match="MODEL_NAME"):
                 ModelConfig.from_env()
+
+    def test_surrounding_whitespace_is_stripped(self):
+        """The same treatment GcpEnvironment.from_env gives its variables --
+        otherwise a value like " gemini-2.5-pro" fails the prefix match below
+        with a confusing "unsupported family" error instead of resolving.
+        """
+        with patch.dict("os.environ", {"MODEL_NAME": " gemini-2.5-pro\n"}, clear=True):
+            config = ModelConfig.from_env()
+        assert config.model_name == "gemini-2.5-pro"
+
+    def test_whitespace_only_is_treated_as_unset(self):
+        with patch.dict("os.environ", {"MODEL_NAME": "   "}, clear=True):
+            with pytest.raises(ValueError, match="MODEL_NAME"):
+                ModelConfig.from_env()

@@ -59,11 +59,18 @@ class TestMissingCredentialsFile:
         """Base64 has neither whitespace nor quotes, so the test above passes it.
 
         Some secret stores inject service-account keys that way, and the value
-        would otherwise have been quoted into the exception in full.
+        would otherwise have been quoted into the exception in full. The base64
+        alphabet includes "/", so the fixture is chosen to contain one -- a
+        separator alone must not be read as a path.
         """
         encoded = base64.b64encode(
-            json.dumps({"type": "service_account", "private_key": "s3cret"}).encode()
+            json.dumps(
+                {"type": "service_account", "private_key": "s3cret", "pad": "??"}
+            ).encode()
         ).decode()
+        assert "/" in encoded and "." not in encoded, (
+            "fixture must contain '/' but not '.'"
+        )
 
         with pytest.raises(ValueError) as excinfo:
             load_gcp_credentials(encoded)
