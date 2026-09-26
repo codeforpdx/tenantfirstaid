@@ -12,7 +12,7 @@ variable "project_id" {
 }
 
 # ---------------------------------------------------------------------------
-# Human principals are optional, and by default this module binds none of them
+# Human principals are optional, and by default this module binds none of them.
 # ---------------------------------------------------------------------------
 #
 # The roles are the durable, reviewable artifact; who holds them is not. Membership is

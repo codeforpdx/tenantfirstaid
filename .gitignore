@@ -101,4 +101,7 @@ crash.log
 tfplan
 *.tfplan
 # Per-operator inputs, which hold identities such as the reaper's service-account email.
-terraform.tfvars
+# Any name, not just the conventional terraform.tfvars: --var-file accepts an arbitrary
+# path, and a PII-bearing var file under a different name must not become committable
+# just because it wasn't spelled the usual way.
+*.tfvars

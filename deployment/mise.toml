@@ -46,7 +46,7 @@ description = "Apply admin/ (service account, custom roles, bindings), elevating
 # should pull the full Cloud SDK for it.
 tools = { gcloud = "586.0.0" }
 usage = '''
-flag "--var-file <path>" help="Optional. Only needed to bind a group; the module applies without it. Never committed: this repository is public."
+flag "--var-file <path>" help="Optional. Only needed to bind a group; the module applies without it. A bare filename is looked for under admin/; a path containing a slash, or an absolute path, is used as given. Never committed: this repository is public."
 flag "--minutes <minutes>" help="Lifetime of the temporary grant. Long enough for a slow apply, short enough that forgetting to revoke is not a standing privilege."
 flag "--plan-only" help="Stop after the plan, without applying it."
 flag "--elevate" help="Grant the three roles this module needs for the duration, then drop them. For a projectIamAdmin holder; an Owner already holds everything."
@@ -120,12 +120,15 @@ revoke() {
 }
 
 if [ -n "${usage_elevate:-}" ]; then
-  # The identity is read from the ADC token rather than `gcloud config get-value account`,
-  # because ADC is what OpenTofu's google provider authenticates as. The two are usually
-  # the same person and elevating the wrong one fails confusingly.
-  member="user:$(gcloud auth application-default print-access-token \
-    | xargs -I{} curl -sf "https://oauth2.googleapis.com/tokeninfo?access_token={}" \
-    | jq -er .email)"
+  # //backend:whoami is the single source of truth for "who does ADC say I am" -- it reads
+  # the same ADC that OpenTofu's google provider authenticates as, and, unlike reading an
+  # access token's tokeninfo directly, it also handles a service-account credential
+  # correctly (the serviceAccount: prefix), which a hardcoded user: prefix here got wrong.
+  member="$(mise run //backend:whoami 2>/dev/null)"
+  [ -n "$member" ] || {
+    echo "could not determine your Google identity. Run: mise run //backend:whoami" >&2
+    exit 1
+  }
   # Not `date -u -d`, which is GNU-only: BSD date on macOS spells it -v, and a
   # maintainer laptop is exactly where this runs. python3 is already a dependency of the
   # tasks in this file.
@@ -136,40 +139,72 @@ print((datetime.datetime.now(datetime.timezone.utc)
 
   # Armed before the first grant, not after the last: a failure partway through would
   # otherwise leave a role bound with nothing to clean it up.
+  #
+  # INT and TERM are trapped separately from EXIT and explicitly exit, rather than relying
+  # on EXIT alone: under dash (mise's default shell), registering a trap for a signal
+  # overrides its default terminate-the-process behaviour, so a script that traps INT but
+  # never exits from that handler keeps running after a Ctrl-C instead of stopping. The
+  # explicit `exit` is what actually ends the run; it triggers the EXIT trap in turn, so
+  # revoke still runs exactly once.
   trap revoke EXIT
+  trap 'exit 1' INT TERM
 
   # curl against the REST API, not `gcloud projects test-iam-permissions`, which does not
-  # exist -- there is no such subcommand. Calling it with stderr discarded produced an
-  # empty answer that read as "holds nothing", so every role was granted whether or not it
-  # was needed, and the poll below could never go true. A probe that cannot succeed is
-  # worse than no probe: this one burned the full 300s timeout on every run.
+  # exist -- there is no such subcommand.
+  #
+  # The curl's own failure is checked directly, not through the pipe into jq: piping a
+  # failed curl into jq let jq succeed on empty input and report "holds nothing" either
+  # way, which silently granted redundant roles and, worse, registered them for the --all
+  # revoke below -- stripping a pre-existing standing grant the caller actually held. A
+  # transient failure here must stop the task, not be read as an answer.
   held_permissions() {
-    curl -sf -X POST \
+    response=$(curl -sf -X POST \
       "https://cloudresourcemanager.googleapis.com/v1/projects/$project:testIamPermissions" \
       -H "Authorization: Bearer $CLOUDSDK_AUTH_ACCESS_TOKEN" \
       -H "Content-Type: application/json" \
-      -d '{"permissions":["iam.roles.create","iam.serviceAccounts.create"]}' \
-      | jq -r '.permissions // [] | join(" ")'
+      -d '{"permissions":["iam.roles.create","iam.serviceAccounts.create"]}') || {
+      echo "could not reach the Cloud Resource Manager API to check held permissions." >&2
+      return 1
+    }
+    echo "$response" | jq -r '.permissions // [] | join(" ")'
   }
-  held=$(held_permissions || true)
+  held=$(held_permissions)
   # Probed by reading the bucket rather than by asking test-iam-permissions, which answers
   # for project-level permissions and does not reliably report a resource-scoped one. A
   # real read cannot lie, and this is the exact operation `tofu init` performs.
   gcloud storage buckets describe "gs://$state_bucket" >/dev/null 2>&1 \
     && held="$held storage.buckets.get"
+  # `tofu init` only reads the bucket, but a real apply also writes and deletes the lock
+  # object, which tfaCorpusMaintainer deliberately does not grant (see roles.tf) -- so a
+  # caller who only fails the buckets.get probe above still cannot release the lock.
+  # Probed the same way, with a real write-then-delete of a throwaway object: the exact
+  # pair `tofu` performs when it takes and releases the state lock.
+  probe_object="gs://$state_bucket/.apply-admin-probe-$$"
+  if printf '' | gcloud storage cp - "$probe_object" >/dev/null 2>&1; then
+    held="$held storage.objects.create"
+    gcloud storage rm "$probe_object" >/dev/null 2>&1 && held="$held storage.objects.delete"
+  fi
 
-  # Each role is granted only if the permission it carries is missing. That keeps the
+  # Each role is granted only if every permission it carries is missing. That keeps the
   # grant minimal, and it is also what makes the `--all` revoke below safe: a caller who
   # legitimately holds roleAdmin already must not have it stripped on the way out.
   time_bound="request.time < timestamp(\"$expiry\")"
   for pair in "roles/iam.roleAdmin:iam.roles.create" \
               "roles/iam.serviceAccountAdmin:iam.serviceAccounts.create" \
-              "roles/storage.admin:storage.buckets.get"; do
+              "roles/storage.admin:storage.buckets.get storage.objects.create storage.objects.delete"; do
     role="${pair%%:*}"
-    permission="${pair##*:}"
-    case " $held " in
-      *" $permission "*) echo "  = $role (already held)"; continue ;;
-    esac
+    permissions="${pair#*:}"
+    missing=""
+    for permission in $permissions; do
+      case " $held " in
+        *" $permission "*) ;;
+        *) missing="$missing $permission" ;;
+      esac
+    done
+    if [ -z "$missing" ]; then
+      echo "  = $role (already held)"
+      continue
+    fi
     # storage.admin is the one role here broad enough to matter if it leaked past the
     # window, so it carries a second, independent limit: the resource. The prefix covers
     # the state bucket and its objects -- state and the lock -- and nothing else in the
@@ -200,7 +235,10 @@ print((datetime.datetime.now(datetime.timezone.utc)
       for role in $elevated_roles; do
         case "$role" in
           roles/storage.admin)
-            gcloud storage buckets describe "gs://$state_bucket" >/dev/null 2>&1 || return 1 ;;
+            gcloud storage buckets describe "gs://$state_bucket" >/dev/null 2>&1 || return 1
+            probe_object="gs://$state_bucket/.apply-admin-probe-$$"
+            printf '' | gcloud storage cp - "$probe_object" >/dev/null 2>&1 || return 1
+            gcloud storage rm "$probe_object" >/dev/null 2>&1 || return 1 ;;
           roles/iam.roleAdmin)
             case " $(held_permissions) " in *" iam.roles.create "*) ;; *) return 1 ;; esac ;;
           roles/iam.serviceAccountAdmin)
@@ -223,12 +261,23 @@ fi
 # defaults to this project, so the module applies with no inputs at all -- creating the
 # roles and the reaper, binding no humans. A var file is only needed to bind a group, and
 # demanding one otherwise would invent a bootstrap step that does nothing.
-if [ -f "admin/$var_file" ]; then
-  var_file_arg="-var-file=$var_file"
-  echo "using admin/$var_file"
+#
+# A bare filename (the common case, "terraform.tfvars") is resolved under admin/, the
+# conventional location. Anything containing a slash, or an absolute path, is taken as
+# given rather than silently prefixed with admin/ -- prefixing an already-relative or
+# absolute path the caller typed produced a path that never existed, so the module
+# applied with defaults and the caller's group bindings were dropped with no error.
+case "$var_file" in
+  /*|*/*) var_file_path="$var_file" ;;
+  *)      var_file_path="admin/$var_file" ;;
+esac
+
+if [ -f "$var_file_path" ]; then
+  var_file_arg="-var-file=$var_file_path"
+  echo "using $var_file_path"
 else
   var_file_arg=""
-  echo "no admin/$var_file; applying with defaults (roles and reaper only, no human bindings)."
+  echo "no $var_file_path; applying with defaults (roles and reaper only, no human bindings)."
 fi
 
 # No -backend-config: the bucket and prefix are committed in admin/versions.tf, so
@@ -242,8 +291,10 @@ if [ -n "${usage_plan_only:-}" ]; then
   exit 0
 fi
 
-# No -auto-approve: this creates the roles that govern every other permission in the
-# project, and prevent_destroy means a mistake here is awkward to undo.
+# This creates the roles that govern every other permission in the project, and
+# prevent_destroy means a mistake here is awkward to undo. Applying a saved plan file
+# never prompts for confirmation regardless of -auto-approve, so the plan printed above
+# is the only review this gets -- read it.
 tofu -chdir=admin/ apply tfplan
 '''
 
@@ -277,7 +328,7 @@ set -eu
 project="tenantfirstaid"
 
 # ---------------------------------------------------------------------------
-# Drive gcloud with the credentials this repository actually documents
+# Drive gcloud with the credentials this repository actually documents.
 # ---------------------------------------------------------------------------
 #
 # gcloud keeps its own credential store, and it is not application default credentials.

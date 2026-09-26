@@ -48,7 +48,7 @@ resource "google_project_iam_member" "corpus_admin" {
 }
 
 # ---------------------------------------------------------------------------
-# What the reaper needs in order to be *invoked*, as opposed to what it does
+# This is what the reaper needs in order to be *invoked*, as opposed to what it does.
 # ---------------------------------------------------------------------------
 #
 # The custom role above covers the deletes. These two are about the plumbing that gets

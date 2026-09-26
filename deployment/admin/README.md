@@ -191,10 +191,14 @@ roles for the length of the apply and dropping them afterwards — see the root
 
 **The consequence for everything else in `deployment/` is the point of this separation.**
 Because every `setIamPolicy` call in the project lives in this one rarely-applied module,
-`reaper/` and later `envs/<name>/` need no IAM privileges at all: they take the reaper's
-service-account email as an input rather than creating it. So a compromised maintainer
-laptop, or a bad plan in an operational module, cannot escalate privileges. The worst it
-can do is break the environment it already governs.
+applying `reaper/` and later `envs/<name>/` needs no privilege *this* module grants: they
+take the reaper's service-account email as an input rather than creating it. So a
+compromised maintainer laptop, or a bad plan in an operational module, cannot escalate
+privileges — the worst it can do is break the environment it already governs. That is
+narrower than "needs no privileges at all": a maintainer applying `reaper/` still needs
+whatever Cloud Functions, Eventarc, Pub/Sub and Cloud Scheduler deploy-time permissions
+that module requires, none of which are modeled as a role here yet, because nobody has
+run that apply and read the 403s.
 
 That is why the reaper's Eventarc and Cloud Run bindings are *here* rather than next to
 the function they serve. They are platform wiring rather than a persona, and they would be
