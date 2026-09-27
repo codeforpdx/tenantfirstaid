@@ -227,16 +227,33 @@ The layering is there for `tfaCorpusAdmin`, which is meant to be held briefly an
 back. Peeling off one layer returns someone to ordinary access; revoking a self-contained
 superset would strip their day-to-day permissions with it, and a revoke that breaks
 somebody's laptop is a revoke that gets postponed. So `--revoke` removes only the layer
-named, and `--expires` time-bounds only that layer, leaving the base permanent. Full
-offboarding is a separate `--role contributor --revoke`.
+named, and `--expires` time-bounds only that layer, leaving the base permanent. That also
+means a bare `--role contributor --revoke` is not full offboarding on its own for someone
+who was also granted a higher layer — it leaves that layer bound. Fully offboarding them
+takes one revoke per layer they hold, highest first (see the root
+[README](../README.md#3-nothing-role-assignment-stays-manual-on-purpose)).
 
 `tfaReaper` is the exception and is complete on its own. It belongs to a service account
 holding nothing else, and it must not inherit permissions shaped for people.
 
 **The split is drawn at destruction, not at convenience.** A corpus maintainer can create
-anything and promote artifacts but cannot delete, so the only identity that can routinely
-remove a live corpus is a scheduled job whose behaviour is in this repository and gated by
-the reference veto. That is worth more than the convenience of a single role.
+anything and promote artifacts but cannot delete directly — no role here grants
+`storage.objects.delete` or `storage.buckets.delete` to a human. So the only identity that
+can routinely remove a live corpus is a scheduled job whose behaviour is in this repository
+and gated by the reference veto. That is worth more than the convenience of a single role.
+
+**That line is narrower than it sounds.** `tfaCorpusMaintainer` and `tfaReaper` both hold
+`storage.buckets.update` at project scope, which can add a bucket lifecycle rule that
+deletes its objects immediately — functionally equivalent to the delete permission each
+role deliberately withholds, and not limited to the corpus buckets either role is meant to
+touch (a maintainer's `storage.objects.get` has the same project-wide reach, and would
+read OpenTofu state). Scoping either by resource is not yet done: this project's custom
+roles mix `storage.*` with `discoveryengine.*` permissions, and applying a resource
+condition to the whole binding would also gate the `discoveryengine.*` calls unless
+those permissions are confirmed to support IAM Conditions — unverified against the live
+API — and there is no existing bucket-naming convention that distinguishes "corpus" from
+"state" to scope to even if they did. Documented here as accepted risk rather than fixed
+in code; see the matching comments in `roles.tf`.
 
 `tfaCorpusAdmin` is consequently **the most dangerous role in the project — more dangerous
 than the reaper's.** That inverts the usual assumption and is worth stating plainly: the
