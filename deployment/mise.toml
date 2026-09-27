@@ -149,69 +149,40 @@ print((datetime.datetime.now(datetime.timezone.utc)
   trap revoke EXIT
   trap 'exit 1' INT TERM
 
-  # curl against the REST API, not `gcloud projects test-iam-permissions`, which does not
-  # exist -- there is no such subcommand.
-  #
-  # The curl's own failure is checked directly, not through the pipe into jq: piping a
-  # failed curl into jq let jq succeed on empty input and report "holds nothing" either
-  # way, which silently granted redundant roles and, worse, registered them for the --all
-  # revoke below -- stripping a pre-existing standing grant the caller actually held. A
-  # transient failure here must stop the task, not be read as an answer.
-  held_permissions() {
-    response=$(curl -sf -X POST \
-      "https://cloudresourcemanager.googleapis.com/v1/projects/$project:testIamPermissions" \
-      -H "Authorization: Bearer $CLOUDSDK_AUTH_ACCESS_TOKEN" \
-      -H "Content-Type: application/json" \
-      -d '{"permissions":["iam.roles.create","iam.serviceAccounts.create"]}') || {
-      echo "could not reach the Cloud Resource Manager API to check held permissions." >&2
-      return 1
-    }
-    echo "$response" | jq -r '.permissions // [] | join(" ")'
+  # Whether (member, role) is already bound, in any condition, is the authoritative check
+  # for both "does elevation still need to grant this role" and "is it safe to register
+  # this role for the --all revoke below". A permission probe cannot tell "holds this
+  # permission via some broader, unrelated role" apart from "holds this exact role" --
+  # and a caller who holds tfaCorpusMaintainer, say, would pass a storage.buckets.get
+  # probe without holding roles/storage.admin at all, so the probe answers the wrong
+  # question either way. --all removes whatever binding matches (member, role) regardless
+  # of its condition, so granting based on a probe and revoking based on "did we grant it"
+  # is safe only if the probe never says "already held" for a role that in fact is not.
+  role_bound() {
+    gcloud projects get-iam-policy "$project" \
+      --flatten="bindings[].members" \
+      --filter="bindings.role=$1 AND bindings.members=$member" \
+      --format="value(bindings.role)" | grep -q .
   }
-  held=$(held_permissions)
-  # Probed by reading the bucket rather than by asking test-iam-permissions, which answers
-  # for project-level permissions and does not reliably report a resource-scoped one. A
-  # real read cannot lie, and this is the exact operation `tofu init` performs.
-  gcloud storage buckets describe "gs://$state_bucket" >/dev/null 2>&1 \
-    && held="$held storage.buckets.get"
-  # `tofu init` only reads the bucket, but a real apply also writes and deletes the lock
-  # object, which tfaCorpusMaintainer deliberately does not grant (see roles.tf) -- so a
-  # caller who only fails the buckets.get probe above still cannot release the lock.
-  # Probed the same way, with a real write-then-delete of a throwaway object: the exact
-  # pair `tofu` performs when it takes and releases the state lock.
-  probe_object="gs://$state_bucket/.apply-admin-probe-$$"
-  if printf '' | gcloud storage cp - "$probe_object" >/dev/null 2>&1; then
-    held="$held storage.objects.create"
-    gcloud storage rm "$probe_object" >/dev/null 2>&1 && held="$held storage.objects.delete"
-  fi
 
-  # Each role is granted only if every permission it carries is missing. That keeps the
-  # grant minimal, and it is also what makes the `--all` revoke below safe: a caller who
-  # legitimately holds roleAdmin already must not have it stripped on the way out.
+  # Each role is skipped only if this exact role is already bound to the caller, in any
+  # condition; otherwise it is granted. A caller who already holds it is never registered
+  # for revoke, so the exit trap cannot strip access they came in with.
   time_bound="request.time < timestamp(\"$expiry\")"
-  for pair in "roles/iam.roleAdmin:iam.roles.create" \
-              "roles/iam.serviceAccountAdmin:iam.serviceAccounts.create" \
-              "roles/storage.admin:storage.buckets.get storage.objects.create storage.objects.delete"; do
-    role="${pair%%:*}"
-    permissions="${pair#*:}"
-    missing=""
-    for permission in $permissions; do
-      case " $held " in
-        *" $permission "*) ;;
-        *) missing="$missing $permission" ;;
-      esac
-    done
-    if [ -z "$missing" ]; then
+  for role in roles/iam.roleAdmin roles/iam.serviceAccountAdmin roles/storage.admin; do
+    if role_bound "$role"; then
       echo "  = $role (already held)"
       continue
     fi
     # storage.admin is the one role here broad enough to matter if it leaked past the
-    # window, so it carries a second, independent limit: the resource. The prefix covers
-    # the state bucket and its objects -- state and the lock -- and nothing else in the
-    # project. No commas in the expression; gcloud splits --condition on them.
+    # window, so it carries a second, independent limit: the resource. Matching the
+    # bucket itself and everything under it, not merely a name prefix -- a bare
+    # startsWith(bucket) would also match a differently-owned bucket that happens to
+    # share the prefix, e.g. a future "tenantfirstaid-tofu-state-2". No commas in the
+    # expression; gcloud splits --condition on them.
     condition="$time_bound"
     if [ "$role" = "roles/storage.admin" ]; then
-      condition="$condition && resource.name.startsWith(\"projects/_/buckets/$state_bucket\")"
+      condition="$condition && (resource.name == \"projects/_/buckets/$state_bucket\" || resource.name.startsWith(\"projects/_/buckets/$state_bucket/\"))"
     fi
     gcloud projects add-iam-policy-binding "$project" \
       --member="$member" --role="$role" \
@@ -222,6 +193,28 @@ print((datetime.datetime.now(datetime.timezone.utc)
   done
 
   if [ -n "$elevated_roles" ]; then
+    # curl against the REST API, not `gcloud projects test-iam-permissions`, which does
+    # not exist -- there is no such subcommand. Used only here, to poll for propagation
+    # of a grant already made; role_bound() above is the authoritative check for whether
+    # to grant or revoke, since a permission can be held through a role other than the
+    # one this task binds.
+    #
+    # The curl's own failure is checked directly, not through the pipe into jq: piping a
+    # failed curl into jq lets jq succeed on empty input and report "holds nothing"
+    # either way, which would make a transient network blip look identical to
+    # propagation still being in progress -- burning the full timeout below on a poll
+    # that could never succeed. A transient failure here must stop the task.
+    held_permissions() {
+      response=$(curl -sf -X POST \
+        "https://cloudresourcemanager.googleapis.com/v1/projects/$project:testIamPermissions" \
+        -H "Authorization: Bearer $CLOUDSDK_AUTH_ACCESS_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d '{"permissions":["iam.roles.create","iam.serviceAccounts.create"]}') || {
+        echo "could not reach the Cloud Resource Manager API to check propagation." >&2
+        return 1
+      }
+      echo "$response" | jq -r '.permissions // [] | join(" ")'
+    }
     # Poll rather than sleeping a fixed interval: propagation in this project has been
     # observed between 75 and 105 seconds, so any short fixed wait fails routinely.
     # Named rather than dotted: a poll that stalls should say what it is stalled on. The
@@ -235,10 +228,9 @@ print((datetime.datetime.now(datetime.timezone.utc)
       for role in $elevated_roles; do
         case "$role" in
           roles/storage.admin)
-            gcloud storage buckets describe "gs://$state_bucket" >/dev/null 2>&1 || return 1
-            probe_object="gs://$state_bucket/.apply-admin-probe-$$"
-            printf '' | gcloud storage cp - "$probe_object" >/dev/null 2>&1 || return 1
-            gcloud storage rm "$probe_object" >/dev/null 2>&1 || return 1 ;;
+            # tofu init only reads the bucket, but this is a real read against the exact
+            # resource-scoped condition just granted, and a real read cannot lie.
+            gcloud storage buckets describe "gs://$state_bucket" >/dev/null 2>&1 || return 1 ;;
           roles/iam.roleAdmin)
             case " $(held_permissions) " in *" iam.roles.create "*) ;; *) return 1 ;; esac ;;
           roles/iam.serviceAccountAdmin)
@@ -367,8 +359,10 @@ named_role_id="${role_ids##* }"
 
 # A revoke peels off only the layer named, leaving the base intact. Removing
 # tfaCorpusAdmin should return someone to ordinary contributor access, not lock them out
-# -- that is what makes handing a break-glass role back cheap. Full offboarding is a
-# separate `--role contributor --revoke`.
+# -- that is what makes handing a break-glass role back cheap. It also means a bare
+# `--role contributor --revoke` is not full offboarding by itself for someone who also
+# holds a higher layer: it leaves that layer bound, and offboarding them needs one revoke
+# per layer they were granted, highest first.
 if [ -n "${usage_revoke:-}" ]; then
   target_role_ids="$named_role_id"
 else

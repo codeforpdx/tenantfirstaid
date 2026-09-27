@@ -92,6 +92,16 @@ resource "google_project_iam_custom_role" "corpus_maintainer" {
     "storage.buckets.create",
     "storage.buckets.get",
     "storage.objects.create",
+    # Known gap: at project level this also reads OpenTofu state, including the state
+    # for deployment/envs/* once those land, which is likely to record provider-recorded
+    # secrets. A custom role cannot scope a single permission to "corpus buckets only" --
+    # there is no naming convention that distinguishes them from the state bucket today,
+    # and this project's roles mix storage.* with discoveryengine.* permissions in one
+    # role, so a resource condition on the binding would also gate the discoveryengine
+    # calls unless discoveryengine permissions are confirmed to support IAM Conditions,
+    # which has not been checked against the live API. Until one of those is resolved,
+    # this is accepted risk, not an oversight -- see roles.tf and README.md's "where the
+    # line is drawn" for the matching caveat on storage.buckets.update below.
     "storage.objects.get",
     "storage.objects.list",
     # storage.objects.delete is deliberately absent, and its absence does more than
@@ -118,7 +128,17 @@ resource "google_project_iam_custom_role" "corpus_maintainer" {
     # observed 93 times in a single create-datastore/create-app run.
     "discoveryengine.operations.get",
     # Record the artifact's manifest, and clear its TTL lease on promotion. Promotion
-    # is the one mutation this role has, and it only ever makes things live longer.
+    # is meant to be the one mutation this role has, and the intent is that it only
+    # ever makes things live longer -- but the permission is project-wide and GCS
+    # bucket updates are not limited to labels. storage.buckets.update is also what
+    # lets a bucket's lifecycle rules, soft-delete policy, versioning and retention be
+    # changed, so it can be used to add an immediate-delete lifecycle rule to any
+    # bucket in the project, including a promoted production corpus or the OpenTofu
+    # state bucket -- functionally equivalent to the delete this role deliberately
+    # withholds. Same known gap as storage.objects.get above: no clean way to scope
+    # this to "corpus buckets, never the state bucket" without either an unverified
+    # assumption about discoveryengine's IAM Conditions support or inventing a bucket
+    # naming convention this project does not otherwise have. Accepted risk for now.
     "storage.buckets.update",
   ]
 
@@ -133,6 +153,14 @@ resource "google_project_iam_custom_role" "reaper" {
   description = "Collect expired, unreferenced corpus artifacts. Held by a service account, never a person, and complete on its own rather than layered."
   stage       = "GA"
 
+  # Known gap, same root cause as tfaCorpusMaintainer's above: storage.buckets.delete and
+  # storage.objects.delete are project-wide, so nothing here stops the reaper's own
+  # service account from being used (by a bug or a compromised trigger) to delete the
+  # OpenTofu state bucket or an unrelated bucket, not only an expired scratch artifact.
+  # The reference veto that makes the reaper safe lives entirely in its reviewed code,
+  # not in IAM -- see README.md's "The roles, and where the line is drawn". Scoping this
+  # by resource would need the same unverified discoveryengine-conditions assumption or
+  # bucket-naming convention noted above, so it is accepted risk rather than enforced.
   permissions = [
     # Find candidates and read their leases and manifests.
     "storage.buckets.list",
