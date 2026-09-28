@@ -6,5 +6,5 @@
 resource "google_service_account" "reaper" {
   account_id   = "tfa-corpus-reaper"
   display_name = "Tenant First Aid corpus reaper"
-  description  = "Collects expired, unreferenced corpus artifacts. See backend/scripts/reaper.py."
+  description  = "Collects expired, unreferenced corpus artifacts. Planned collection code, not yet in this repository; see tfaReaper in roles.tf for what it will hold."
 }

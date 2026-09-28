@@ -31,17 +31,23 @@
 # environment-pointer files land (see the plan) and a promoted bucket's name is a value
 # this module can read.
 #
-# Unverified: whether GCP accepts a condition at all on a binding whose role carries
-# discoveryengine.* permissions. If it does not, `tofu apply` or `mise run
-# //deployment:grant` fails loudly on the first attempt naming the unsupported
-# permission -- a safe failure, not a silent one -- rather than the condition being
-# quietly ignored.
+# The expression leads with `resource.service != "storage.googleapis.com" ||`, checked
+# before the resource.name comparisons. setIamPolicy accepts a condition on a custom role
+# regardless of what permissions it carries -- there is nothing to reject at apply time --
+# so the risk was never an apply-time failure. It was that a discoveryengine request might
+# not populate resource.name the way a GCS request does, leaving `resource.name != "..."`
+# to evaluate against an empty or absent field. Whether that evaluates to true, to false or
+# to an error was unconfirmed, and each of those is a different silent failure mode: a
+# maintainer discovering a runtime 403 on create-datastore-gcs or documents.import despite
+# the grant looking correct, in the worst case. The resource.service guard makes the
+# question moot: every discoveryengine.* permission short-circuits on the left side of the
+# `||` and never reaches a resource.name comparison at all, storage-request-shaped or not.
 locals {
   state_bucket = "tenantfirstaid-tofu-state"
   exclude_state_bucket_condition = {
     title       = "tfa exclude state bucket"
-    description = "Withholds this role's storage permissions from the OpenTofu state bucket. Its discoveryengine permissions are unaffected: their resource names never match a GCS bucket path."
-    expression  = "resource.name != \"projects/_/buckets/${local.state_bucket}\" && !resource.name.startsWith(\"projects/_/buckets/${local.state_bucket}/\")"
+    description = "Withholds this role's storage permissions from the OpenTofu state bucket. Its discoveryengine permissions are unaffected: the condition short-circuits before evaluating resource.name for any non-storage request."
+    expression  = "resource.service != \"storage.googleapis.com\" || (resource.name != \"projects/_/buckets/${local.state_bucket}\" && !resource.name.startsWith(\"projects/_/buckets/${local.state_bucket}/\"))"
   }
 }
 
