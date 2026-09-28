@@ -271,10 +271,22 @@ hitting a runtime 403 on `create-datastore-gcs` or `documents.import` despite th
 looking correct — a silent failure, not the loud one this document claimed. The expression
 now leads with `resource.service != "storage.googleapis.com" ||`, so every
 `discoveryengine.*` permission short-circuits before a `resource.name` comparison is ever
-evaluated, and the question is moot rather than merely answered. This has not been checked
-against live GCP; before relying on it for a real onboarding, grant `tfaCorpusMaintainer`
-to a test principal and run `create-datastore-gcs --dry-run` or `vertex_ai_search` against
-it to confirm end to end.
+evaluated. That narrows the question to whether Discovery Engine populates
+`resource.service` in the first place — CEL's `||` only absorbs an error on the right side
+if the left side itself resolves to `true` without erroring, so an unpopulated
+`resource.service` would make the guard itself error rather than settle anything. This has
+not been checked against live GCP.
+
+**TODO (@lee-coates):** verify the `tfaCorpusMaintainer` exclude condition end to end —
+grant the role to a test principal (`mise run //deployment:grant <test-principal>
+--role corpus-maintainer`) and run `uv run python -m scripts.vertex_ai_list_datastores`
+against it. That command needs `discoveryengine.dataStores.list`, which only
+`tfaCorpusMaintainer` carries (`roles.tf:134`), so it only succeeds if the conditional
+binding truly grants discoveryengine access — unlike `create-datastore-gcs --dry-run`
+(returns before any API call, `create_datastore_gcs.py:225-227`) or `vertex_ai_search`
+(needs only `discoveryengine.servingConfigs.search`, already unconditional in
+`tfaContributor`), neither of which exercises the condition at all. This is a one-time
+check blocked on holding grant-capable permissions; revoke the test grant afterward.
 
 What remains open is a *promoted production* corpus bucket: no such bucket has a name
 committed anywhere in this repository yet, so there is nothing yet to name in an exclude

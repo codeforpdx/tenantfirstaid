@@ -39,9 +39,11 @@
 # to evaluate against an empty or absent field. Whether that evaluates to true, to false or
 # to an error was unconfirmed, and each of those is a different silent failure mode: a
 # maintainer discovering a runtime 403 on create-datastore-gcs or documents.import despite
-# the grant looking correct, in the worst case. The resource.service guard makes the
-# question moot: every discoveryengine.* permission short-circuits on the left side of the
-# `||` and never reaches a resource.name comparison at all, storage-request-shaped or not.
+# the grant looking correct, in the worst case. The resource.service guard narrows the
+# question to whether Discovery Engine populates resource.service in the first place: CEL's
+# || only absorbs an error on the right side if the left side itself resolves to true
+# without erroring, so an unpopulated resource.service would make this guard error rather
+# than settle anything. Unverified against live GCP -- see the TODO in README.md.
 locals {
   state_bucket = "tenantfirstaid-tofu-state"
   exclude_state_bucket_condition = {
