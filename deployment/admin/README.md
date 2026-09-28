@@ -259,10 +259,22 @@ three roles carries a condition that *excludes* that one named bucket rather tha
 `deployment/mise.toml`'s `grant` task). An exclude condition evaluates true — permission
 granted — for anything that is not literally that bucket, including every
 `discoveryengine.*` call, so it narrows storage access without the positive form's risk of
-silently gating discoveryengine permissions. (Unverified: whether GCP accepts a condition
-at all on a binding whose role carries `discoveryengine.*` permissions. If it does not,
-`grant` or `apply-admin` fails loudly on the first attempt, naming the unsupported
-permission, rather than the condition being silently ignored.)
+silently gating discoveryengine permissions.
+
+That last claim carried a caveat this document previously got wrong. `setIamPolicy`
+accepts a condition on a custom role regardless of what permissions it carries — there is
+nothing for `grant` or `apply-admin` to reject at apply time. The condition is evaluated
+per request instead, and the real open question was whether a `discoveryengine.*` request
+populates `resource.name` the way a GCS request does; if it doesn't, `resource.name !=
+"..."` could evaluate to true, to false, or to an error, and any of those is a maintainer
+hitting a runtime 403 on `create-datastore-gcs` or `documents.import` despite the grant
+looking correct — a silent failure, not the loud one this document claimed. The expression
+now leads with `resource.service != "storage.googleapis.com" ||`, so every
+`discoveryengine.*` permission short-circuits before a `resource.name` comparison is ever
+evaluated, and the question is moot rather than merely answered. This has not been checked
+against live GCP; before relying on it for a real onboarding, grant `tfaCorpusMaintainer`
+to a test principal and run `create-datastore-gcs --dry-run` or `vertex_ai_search` against
+it to confirm end to end.
 
 What remains open is a *promoted production* corpus bucket: no such bucket has a name
 committed anywhere in this repository yet, so there is nothing yet to name in an exclude

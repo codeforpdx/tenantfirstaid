@@ -30,15 +30,22 @@ holding the second role adds."
 | Run an evaluation with `uv run run-langsmith-evaluation` | ✅ | | |
 | Query a datastore directly with `vertex_ai_search search`, to see what retrieval actually returns | ✅ | | |
 | Point your `.env` at a candidate corpus somebody built for you, and evaluate it against the promoted one | ✅ | | |
-| See which corpus artifacts exist, who owns each, and which leases have lapsed | ✅ | | |
-| See which datastores each artifact produced, and which datastores belong to no artifact at all | | ✅ | |
+| See which corpus artifacts exist, who owns each, and which leases have lapsed *(planned)* | ✅ | | |
+| See which datastores each artifact produced, and which datastores belong to no artifact at all *(planned)* | | ✅ | |
 | Build a candidate corpus: upload a document tree, create a datastore, create a search app | | ✅ | |
 | Hand a contributor the datastore ID of a candidate you built for them | | ✅ | |
-| Promote a candidate, clearing its lease so it stops being disposable | | ✅ | |
+| Promote a candidate, clearing its lease so it stops being disposable *(planned)* | | ✅ | |
 | Delete a corpus artifact the reaper will not touch — promoted, unleased, corrupt or orphaned | | | ✅ |
 | Restore a bucket that was deleted by mistake | | | ✅ |
 
 : What each role lets you do {#tbl-role-capabilities}
+
+Rows marked *(planned)* describe tooling that does not exist in this repository
+yet — an artifact listing command, TTL leases and bucket manifests, and a
+promotion step that clears one. The role already grants the permissions those
+rows need; only the commands are missing. Until they land, provisioning and
+handing off a corpus artifact happens by the maintainer reading the create
+scripts' output directly rather than through a listing command.
 
 Two things are deliberately absent from every column.
 
@@ -111,15 +118,16 @@ nothing. The same is true of `--revoke`, which removes only the layer you name.
 
 ## What to do when something is denied
 
-A missing permission surfaces as a `403`, and the commands in this repository
-catch it and print the role you need rather than the raw API error. If you hit
-one:
+A missing permission surfaces as a raw `403` from the Google API — nothing in
+this repository catches it yet and translates it into a role name, so you will
+see the underlying `PermissionDenied` error rather than a hint. If you hit one:
 
 1. **Check you are hitting the right corpus first.** A `403` on a datastore you
    were handed the ID for usually means the ID is wrong or the artifact has been
    collected, not that your role is.
-2. **Read what the command printed.** Each one names the permissions it needs and
-   the role that contains them.
+2. **Read the permission the error names**, and find which role in
+   `deployment/admin/roles.tf` includes it (@tbl-role-capabilities above maps
+   the common cases).
 3. **Ask for the layer, not for more.** The roles are narrow on purpose; the
    answer to "I could not delete it" is almost never "grant me delete."
 

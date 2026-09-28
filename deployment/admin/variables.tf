@@ -88,4 +88,9 @@ variable "corpus_admin_members" {
   EOT
   type        = list(string)
   default     = []
+
+  validation {
+    condition     = alltrue([for m in var.corpus_admin_members : can(regex("^(user|group|serviceAccount):.+@", m))])
+    error_message = "Each entry must be a user:, group: or serviceAccount: principal with an email address, e.g. user:you@example.com. This role can delete a promoted corpus, so a typo or a bare allUsers/allAuthenticatedUsers value must fail here rather than either erroring deep in a provider call or granting public access."
+  }
 }

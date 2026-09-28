@@ -41,11 +41,13 @@ resource "google_project_iam_custom_role" "contributor" {
     #
     # dataStores.list is deliberately absent. This role holds no create permission,
     # so every corpus a contributor can use is one somebody else made, and there are
-    # only two: the promoted one an environment serves, named in
-    # deployment/envs/<env>/datastore_ids.auto.tfvars.json and readable from a clone
-    # with no GCP access at all; or a scratch generation a maintainer provisioned, in
-    # which case the maintainer passes on the ID that create-datastore-gcs printed.
-    # Neither route enumerates. Listing would also be worse than useless here: the
+    # only two: the promoted one an environment serves, named today in a
+    # VERTEX_AI_DATASTORE_* variable in backend/.env.example (a committed
+    # deployment/envs/<env>/datastore_ids.auto.tfvars.json pointer, readable from a clone
+    # with no GCP access at all, is planned but not in this repository yet); or a scratch
+    # generation a maintainer provisioned, in which case the maintainer passes on the ID
+    # that create-datastore-gcs printed. Neither route enumerates. Listing would also be
+    # worse than useless here: the
     # project holds several obsolete datastores and the listing marks none of them, so
     # it invites a contributor to evaluate against the wrong corpus -- wrong in the
     # silent direction.

@@ -209,11 +209,19 @@ print((datetime.datetime.now(datetime.timezone.utc)
     # to grant or revoke, since a permission can be held through a role other than the
     # one this task binds.
     #
-    # The curl's own failure is checked directly, not through the pipe into jq: piping a
-    # failed curl into jq lets jq succeed on empty input and report "holds nothing"
-    # either way, which would make a transient network blip look identical to
+    # The curl's own failure is checked directly, not through a pipe into a JSON parser:
+    # piping a failed curl onward lets the parser succeed on empty input and report "holds
+    # nothing" either way, which would make a transient network blip look identical to
     # propagation still being in progress -- burning the full timeout below on a poll
-    # that could never succeed. A transient failure here must stop the task.
+    # that could never succeed. A transient failure here must stop the task, so it is
+    # checked as `perms=$(held_permissions) || exit 1` below rather than inside a `case`
+    # word, where a nonzero exit from a command substitution is invisible: `case` only
+    # sees the (empty) stdout, and would read a curl failure as "propagation still
+    # pending" and burn the timeout instead of stopping.
+    #
+    # python3 rather than jq: jq is not declared in this task's tools and is not
+    # guaranteed present on a maintainer laptop, while python3 is already a dependency of
+    # the date parsing elsewhere in this file.
     held_permissions() {
       response=$(curl -sf -X POST \
         "https://cloudresourcemanager.googleapis.com/v1/projects/$project:testIamPermissions" \
@@ -223,7 +231,7 @@ print((datetime.datetime.now(datetime.timezone.utc)
         echo "could not reach the Cloud Resource Manager API to check propagation." >&2
         return 1
       }
-      echo "$response" | jq -r '.permissions // [] | join(" ")'
+      echo "$response" | python3 -c "import json, sys; print(' '.join(json.load(sys.stdin).get('permissions', [])))"
     }
     # Poll rather than sleeping a fixed interval: propagation in this project has been
     # observed between 75 and 105 seconds, so any short fixed wait fails routinely.
@@ -235,6 +243,14 @@ print((datetime.datetime.now(datetime.timezone.utc)
     # Waits on every role that was actually granted, not just the last one: a partial
     # wait lets the apply start against a grant that has not landed.
     landed() {
+      # Called once per iteration, as its own statement, and its exit status checked
+      # directly -- not inline as a `case` word, where the earlier bug lived: `case
+      # " $(held_permissions) " in` swallows a nonzero exit from the substitution, so a
+      # curl failure read as an empty string and the `*) return 1` branch made it look
+      # exactly like propagation still in progress. exit here (not return) deliberately
+      # stops the whole task, since a transient API failure mid-poll is not something the
+      # 300s timeout should silently absorb.
+      perms=$(held_permissions) || exit 1
       for role in $elevated_roles; do
         case "$role" in
           roles/storage.admin)
@@ -242,9 +258,9 @@ print((datetime.datetime.now(datetime.timezone.utc)
             # resource-scoped condition just granted, and a real read cannot lie.
             gcloud storage buckets describe "gs://$state_bucket" >/dev/null 2>&1 || return 1 ;;
           roles/iam.roleAdmin)
-            case " $(held_permissions) " in *" iam.roles.create "*) ;; *) return 1 ;; esac ;;
+            case " $perms " in *" iam.roles.create "*) ;; *) return 1 ;; esac ;;
           roles/iam.serviceAccountAdmin)
-            case " $(held_permissions) " in *" iam.serviceAccounts.create "*) ;; *) return 1 ;; esac ;;
+            case " $perms " in *" iam.serviceAccounts.create "*) ;; *) return 1 ;; esac ;;
           *)
             return 1 ;;
         esac
@@ -335,7 +351,9 @@ project="tenantfirstaid"
 # admin/bindings.tf's locals block, which this mirrors, for why the exclude form is safe
 # on a mixed role and the allow form is not.
 state_bucket="tenantfirstaid-tofu-state"
-exclude_state_bucket="resource.name != \"projects/_/buckets/$state_bucket\" && !resource.name.startsWith(\"projects/_/buckets/$state_bucket/\")"
+# Leads with the resource.service check so a discoveryengine request never reaches the
+# resource.name comparisons at all -- see admin/bindings.tf's locals block for why.
+exclude_state_bucket="resource.service != \"storage.googleapis.com\" || (resource.name != \"projects/_/buckets/$state_bucket\" && !resource.name.startsWith(\"projects/_/buckets/$state_bucket/\"))"
 
 # ---------------------------------------------------------------------------
 # Drive gcloud with the credentials this repository actually documents.
