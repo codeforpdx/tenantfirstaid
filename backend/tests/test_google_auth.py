@@ -11,6 +11,7 @@ import base64
 import json
 
 import pytest
+from google.oauth2.credentials import Credentials
 
 from tenantfirstaid.google_auth import load_gcp_credentials
 
@@ -99,3 +100,32 @@ class TestMissingCredentialsFile:
         """The path branch must not swallow a value the parser can explain."""
         with pytest.raises(ValueError, match="Unsupported credential type: bogus"):
             load_gcp_credentials('{"type": "bogus"}')
+
+
+class TestTildeExpansion:
+    def test_a_tilde_prefixed_path_is_expanded(self, tmp_path, monkeypatch):
+        """Neither `python-dotenv` nor `Path.is_file()` expand `~`, so a real
+        file named that way previously fell through to the missing-file
+        error even though it existed.
+        """
+        monkeypatch.setenv("HOME", str(tmp_path))
+        creds_dir = tmp_path / ".config" / "gcloud"
+        creds_dir.mkdir(parents=True)
+        creds_file = creds_dir / "application_default_credentials.json"
+        creds_file.write_text(
+            json.dumps(
+                {
+                    "type": "authorized_user",
+                    "client_id": "id",
+                    "client_secret": "secret",
+                    "refresh_token": "token",
+                }
+            )
+        )
+
+        credentials = load_gcp_credentials(
+            "~/.config/gcloud/application_default_credentials.json"
+        )
+
+        assert isinstance(credentials, Credentials)
+        assert credentials.refresh_token == "token"

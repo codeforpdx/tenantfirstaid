@@ -9,19 +9,15 @@ in :mod:`~tenantfirstaid.google_auth`, :mod:`~tenantfirstaid.datastores`,
 respectively. Only something that needs the whole application belongs here.
 """
 
-import logging
 from typing import TYPE_CHECKING, Final
 
 from .datastores import DATASTORE_PREFIX, CorpusConfig, DatastoreKey
 from .google_auth import GcpEnvironment
 from .google_models import Gemini25ModelConfig, ModelConfig
-from .logger import temporary_formatted_handler
 
 if TYPE_CHECKING:
     from google.oauth2 import service_account
     from google.oauth2.credentials import Credentials
-
-logger = logging.getLogger(__name__)
 
 
 class _AppConfig:
@@ -149,6 +145,5 @@ class _AppConfig:
         return self._gcp.load_credentials()
 
 
-with temporary_formatted_handler(logger):
-    SINGLETON: Final = _AppConfig()
-    """Module singleton: validated Google Cloud configuration loaded at import time."""
+SINGLETON: Final = _AppConfig()
+"""Module singleton: validated Google Cloud configuration loaded at import time."""

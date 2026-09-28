@@ -1577,7 +1577,7 @@ def _datastore_last_update_time() -> datetime | None:
             credentials=credentials,
             client_options=discoveryengine_client_options(location),
         )
-        datastore = corpus.datastores[DatastoreKey.LAWS]
+        datastore = corpus.require(DatastoreKey.LAWS)
         name = (
             f"projects/{corpus.gcp.project}"
             f"/locations/{location}"

@@ -43,7 +43,8 @@ logger = logging.getLogger(__name__)
 # The two agree only because `load_env_file()` is cached -- they would diverge if
 # the cache were cleared between building this module-level value and building
 # SINGLETON, which is exactly what the test suite's autouse fixture does between
-# tests. See the same note on the credentials read in `graph.py`.
+# tests. See `config._AppConfig.load_credentials`, which reads through the same
+# cache for the LLM's credentials.
 _CORPUS: Final = CorpusConfig.from_env()
 
 

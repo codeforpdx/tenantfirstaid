@@ -29,6 +29,8 @@ from google.api_core.client_options import ClientOptions
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 
+from .logger import temporary_formatted_handler
+
 logger = logging.getLogger(__name__)
 
 _ENV_PATH = Path(__file__).parent.parent / ".env"
@@ -163,7 +165,7 @@ def load_gcp_credentials(
     # Try as a file path first. Guard against OSError for strings that are
     # too long or otherwise invalid as paths (e.g. inline JSON blobs).
     try:
-        cred_path = Path(raw)
+        cred_path = Path(raw).expanduser()
         if cred_path.is_file():
             with cred_path.open("r") as f:
                 info = json.load(f)
@@ -231,10 +233,11 @@ def load_env_file() -> Mapping[str, str]:
     if _ENV_PATH.exists():
         load_dotenv(dotenv_path=_ENV_PATH, override=True)
     else:
-        logger.warning(
-            "No .env file found at %s, proceeding with existing environment variables.",
-            _ENV_PATH,
-        )
+        with temporary_formatted_handler(logger):
+            logger.warning(
+                "No .env file found at %s, proceeding with existing environment variables.",
+                _ENV_PATH,
+            )
     return MappingProxyType(dict(os.environ))
 
 

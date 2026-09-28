@@ -73,20 +73,24 @@ class TestAppConfig:
             assert _AppConfig().GOOGLE_CLOUD_PROJECT == "test-project"
 
     def test_missing_env_file_emits_warning_with_resolved_path(
-        self, no_env_file, caplog
+        self, no_env_file, capsys
     ):
-        caplog.set_level(logging.WARNING, logger="tenantfirstaid.google_auth")
+        # The warning goes out through `temporary_formatted_handler`, which
+        # suspends propagation to the root logger for the call's duration (so
+        # the message isn't also printed via Python's `lastResort` handler).
+        # `caplog` only attaches its capturing handler to loggers that are
+        # already non-propagating when the test starts, so it can't see this
+        # one; reading the formatted stderr output exercises the actual
+        # behavior instead.
         with patch.dict("os.environ", self.REQUIRED_ENV, clear=False):
             _AppConfig()
-        warnings = [r for r in caplog.records if r.name == "tenantfirstaid.google_auth"]
-        assert warnings, "expected a warning when .env is missing"
-        msg = warnings[-1].getMessage()
-        assert "No .env file found" in msg
+        stderr = capsys.readouterr().err
+        assert "No .env file found" in stderr
         # The resolved path is absolute and ends at the package's sibling .env.
         # Assert the suffix only, not the parent directory name, so the test holds
         # regardless of where the app is installed (e.g. backend/ on the host vs
         # /app in the ci container image).
-        assert re.search(r"/\.env, proceeding\b", msg)
+        assert re.search(r"/\.env, proceeding\b", stderr)
 
     def test_missing_laws_datastore_raises(
         self, no_env_file, silence_missing_env_warning

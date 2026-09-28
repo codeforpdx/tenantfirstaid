@@ -38,7 +38,7 @@ Live at https://tenantfirstaid.com/
 - The `tenantfirstaid` Google project admin will need to manually assign a role to you (gmail account).  Reach out in the Discord channel #[tenantfirstaid-general](https://discord.com/channels/1068260532806766733/1367177752792531115) to arrange this.
 - You need to authenticate with the gcloud CLI to develop. `gcloud` is pinned as a per-task tool in the root `mise.toml`, so it's provisioned on first use — no separate install:
     1. `mise run //:gcloud-login` (root-qualified) — runs `gcloud auth application-default login` + `set-quota-project`, then prints the resulting [application default credentials](https://cloud.google.com/docs/authentication/application-default-credentials) file path
-    1. add the printed path as `GOOGLE_APPLICATION_CREDENTIALS=<PATH_TO_CREDS>` to your `backend/.env` file (HINT: don't use path shortcuts like `~` for home, python won't be able to find it).
+    1. add the printed path as `GOOGLE_APPLICATION_CREDENTIALS=<PATH_TO_CREDS>` to your `backend/.env` file
 </details>
 
 <details>
