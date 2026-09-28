@@ -124,11 +124,21 @@ if [ -n "${usage_elevate:-}" ]; then
   # the same ADC that OpenTofu's google provider authenticates as, and, unlike reading an
   # access token's tokeninfo directly, it also handles a service-account credential
   # correctly (the serviceAccount: prefix), which a hardcoded user: prefix here got wrong.
-  member="$(mise run //backend:whoami 2>/dev/null)"
-  [ -n "$member" ] || {
-    echo "could not determine your Google identity. Run: mise run //backend:whoami" >&2
-    exit 1
-  }
+  #
+  # --output interleave, not mise's default: whoami depends on sync, so this runs two
+  # tasks, and mise's default output mode can prefix each line with "[//backend:whoami] "
+  # once more than one task is involved -- which would land in $member and make every
+  # gcloud call below fail on a member string gcloud has never seen the shape of.
+  # `tail -n1` additionally drops anything sync itself writes to stdout ahead of the
+  # identity line, and the prefix check below is what actually catches either case rather
+  # than trusting the output mode never changes.
+  member="$(mise run --output interleave //backend:whoami 2>/dev/null | tail -n1)"
+  case "$member" in
+    user:*|serviceAccount:*) ;;
+    *)
+      echo "could not determine your Google identity (got '$member'). Run: mise run //backend:whoami" >&2
+      exit 1 ;;
+  esac
   # Not `date -u -d`, which is GNU-only: BSD date on macOS spells it -v, and a
   # maintainer laptop is exactly where this runs. python3 is already a dependency of the
   # tasks in this file.
@@ -318,6 +328,14 @@ set -eu
 # an Admin Activity write, always on and undisableable, so every grant and revoke here is
 # permanently logged with who did it. A tfvars file would be a worse record.
 project="tenantfirstaid"
+# Must match state_bucket in the apply-admin task above and the bucket in
+# admin/versions.tf. tfaCorpusMaintainer and tfaCorpusAdmin mix storage.* with
+# discoveryengine.* permissions, so every binding of either below carries a condition
+# that *excludes* this one named bucket rather than *allowing* a class of them -- see
+# admin/bindings.tf's locals block, which this mirrors, for why the exclude form is safe
+# on a mixed role and the allow form is not.
+state_bucket="tenantfirstaid-tofu-state"
+exclude_state_bucket="resource.name != \"projects/_/buckets/$state_bucket\" && !resource.name.startsWith(\"projects/_/buckets/$state_bucket/\")"
 
 # ---------------------------------------------------------------------------
 # Drive gcloud with the credentials this repository actually documents.
@@ -448,21 +466,69 @@ if [ "$named_role_id" = "tfaCorpusAdmin" ] && [ -z "${usage_revoke:-}" ]; then
   echo ""
   echo "tfaCorpusAdmin can permanently delete the corpus production is serving."
   echo "Prefer fixing the reaper to granting this. Type 'grant' to continue:"
-  read -r confirm
+  # Not plain `read -r confirm`: mise does not connect a task's stdin to the terminal
+  # unless the task is `raw = true`, which this one is not (raw disables the concurrent,
+  # prefixed output every other task in this file relies on). Without a real stdin, read
+  # hits EOF, fails, and -- under `set -e` -- exits before the "aborted." line ever
+  # prints, so granting tfaCorpusAdmin looks like it fails for no reason. Reading directly
+  # from the controlling terminal sidesteps that regardless of how mise wired stdin, and
+  # failing closed here is the safe direction: no confirmation is not a confirmation.
+  if [ ! -r /dev/tty ]; then
+    echo "no interactive terminal to confirm from -- refusing to grant tfaCorpusAdmin unattended." >&2
+    exit 1
+  fi
+  read -r confirm < /dev/tty
   [ "$confirm" = "grant" ] || { echo "aborted."; exit 1; }
 fi
+
+# Whether a base layer is already bound, in any condition -- used below to avoid adding a
+# second, unconditional binding for a role the caller holds only conditionally.
+role_bound() {
+  gcloud projects get-iam-policy "$project" \
+    --flatten="bindings[].members" \
+    --filter="bindings.role=projects/$project/roles/$1 AND bindings.members=$member" \
+    --format="value(bindings.role)" | grep -q .
+}
 
 # Granting needs resourcemanager.projects.setIamPolicy, which a projectIamAdmin or Owner
 # already holds -- no elevation, unlike apply-admin. Anyone who cannot run this should not
 # be onboarding people.
 for role_id in $target_role_ids; do
+  # A base layer already held is left exactly as it is, rather than re-added with
+  # --condition=None. Without this, someone granted `--role contributor --expires 30` and
+  # later `--role corpus-maintainer` (no --expires) ends up holding tfaContributor twice --
+  # once expiring, once not -- and IAM policies are additive, so the unconditional copy
+  # makes the expiry meaningless. This only runs on the add path: a revoke's
+  # target_role_ids is the named layer alone, so it never touches a base layer.
+  if [ -z "${usage_revoke:-}" ] && [ "$role_id" != "$named_role_id" ] && role_bound "$role_id"; then
+    echo "  = $role_id (already held; left as-is)"
+    continue
+  fi
   # The expiry goes on the named layer alone. A break-glass grant should lapse back to
   # ordinary access, so time-bounding the contributor base underneath it would expire the
   # very thing the layering exists to preserve.
+  #
+  # tfaCorpusMaintainer and tfaCorpusAdmin additionally always carry the exclude-state-
+  # bucket condition, expiry or not -- these are the two roles that mix storage.* with
+  # discoveryengine.* permissions and can otherwise read or destroy OpenTofu state. See
+  # the note above $exclude_state_bucket for why an exclude, rather than an allow, is the
+  # safe shape here.
   role_condition_arg="$condition_arg"
-  if [ -n "$expiry" ] && [ "$role_id" = "$named_role_id" ]; then
-    # No commas in the expression: gcloud splits --condition on them.
-    role_condition_arg="--condition=title=tfa grant expiry,description=Lapses unless renewed,expression=request.time < timestamp(\"$expiry\")"
+  if [ -z "${usage_revoke:-}" ]; then
+    case "$role_id" in
+      tfaCorpusMaintainer|tfaCorpusAdmin) storage_condition="$exclude_state_bucket" ;;
+      *)                                  storage_condition="" ;;
+    esac
+    if [ -n "$expiry" ] && [ "$role_id" = "$named_role_id" ]; then
+      # No commas in the expression: gcloud splits --condition on them.
+      if [ -n "$storage_condition" ]; then
+        role_condition_arg="--condition=title=tfa grant expiry,description=Lapses unless renewed; also withholds storage permissions from the OpenTofu state bucket.,expression=($storage_condition) && (request.time < timestamp(\"$expiry\"))"
+      else
+        role_condition_arg="--condition=title=tfa grant expiry,description=Lapses unless renewed,expression=request.time < timestamp(\"$expiry\")"
+      fi
+    elif [ -n "$storage_condition" ]; then
+      role_condition_arg="--condition=title=tfa exclude state bucket,description=Withholds this role's storage permissions from the OpenTofu state bucket. Its discoveryengine permissions are unaffected.,expression=$storage_condition"
+    fi
   fi
   gcloud projects "${verb}-iam-policy-binding" "$project" \
     --member="$member" --role="projects/$project/roles/$role_id" \
@@ -514,7 +580,10 @@ rows=$(gcloud projects get-iam-policy tenantfirstaid \
 # custom role, which before admin/ has been applied is because none of them exist.
 if [ -z "$rows" ]; then
   echo "No principals hold a Tenant First Aid custom role."
-  echo "If that is unexpected, check the roles exist: mise run //deployment:apply-admin --plan-only"
+  # Not `apply-admin --plan-only`: that still runs `tofu init`, which reads the state
+  # bucket and fails for a projectIamAdmin holder without --elevate. This is read-only
+  # and needs only iam.roles.list, which most admins already hold.
+  echo "If that is unexpected, check the roles exist: gcloud iam roles list --project=tenantfirstaid --filter=name:tfa"
 else
   echo "$rows"
 fi
