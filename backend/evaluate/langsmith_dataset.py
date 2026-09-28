@@ -50,6 +50,7 @@ from langchain_core.runnables import RunnableSequence
 from langsmith import Client
 from langsmith import utils as langsmith_utils
 
+from evaluate import tracing
 from evaluate.eval_history import (
     HISTORY_DIR,  # used in cmd_history_baseline for the full entry listing
     append_section,
@@ -58,7 +59,6 @@ from evaluate.eval_history import (
     parse_frontmatter,
 )
 from evaluate.results_display import ScenarioResult, print_consistency_stats
-from tenantfirstaid.constants import LANGSMITH_API_KEY
 
 EVALUATE_DIR = Path(__file__).parent
 DEFAULT_SCHEMA = EVALUATE_DIR / "langsmith_example_schema.json"
@@ -209,11 +209,12 @@ def make_client() -> Client:
     # The Client targets the workspace associated with LANGSMITH_API_KEY.
     # To target a different workspace, pass its UUID via the workspace_id
     # parameter — there is no name-based workspace resolution in the SDK.
-    if LANGSMITH_API_KEY is None:
+    api_key = tracing.LangsmithConfig.from_env().api_key
+    if api_key is None:
         raise RuntimeError(
             "LANGSMITH_API_KEY environment variable not set. Cannot create LangSmith Client."
         )
-    return Client(api_key=LANGSMITH_API_KEY)
+    return Client(api_key=api_key)
 
 
 _UUID_RE = re.compile(
@@ -1566,21 +1567,19 @@ def _datastore_last_update_time() -> datetime | None:
     try:
         from google.cloud import discoveryengine_v1beta as discoveryengine
 
-        from tenantfirstaid.constants import SINGLETON, DatastoreKey
-        from tenantfirstaid.google_auth import (
-            discoveryengine_client_options,
-            load_gcp_credentials,
-        )
+        from tenantfirstaid.datastores import CorpusConfig, DatastoreKey
+        from tenantfirstaid.google_auth import discoveryengine_client_options
 
-        credentials = load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
-        location = SINGLETON.GOOGLE_CLOUD_LOCATION
+        corpus = CorpusConfig.from_env()
+        credentials = corpus.gcp.load_credentials()
+        location = corpus.gcp.location
         client = discoveryengine.DataStoreServiceClient(
             credentials=credentials,
             client_options=discoveryengine_client_options(location),
         )
-        datastore = SINGLETON.VERTEX_AI_DATASTORES[DatastoreKey.LAWS]
+        datastore = corpus.require(DatastoreKey.LAWS)
         name = (
-            f"projects/{SINGLETON.GOOGLE_CLOUD_PROJECT}"
+            f"projects/{corpus.gcp.project}"
             f"/locations/{location}"
             f"/collections/default_collection"
             f"/dataStores/{datastore}"

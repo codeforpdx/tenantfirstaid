@@ -29,13 +29,13 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from langsmith import Client
 
+from evaluate import tracing
 from evaluate.eval_history import write_variance_entry
 from evaluate.langsmith_evaluators import (
     legal_correctness_evaluator,
     tone_evaluator,
 )
 from evaluate.results_display import ScenarioResult, print_consistency_stats
-from tenantfirstaid.constants import LANGSMITH_API_KEY
 
 # How many progress lines to emit during the thread-pool run.
 _PROGRESS_INTERVALS = 20
@@ -155,7 +155,7 @@ def measure_evaluator_variance(
     else:
         selected_names = list(_ALL_EVALUATORS)
 
-    client = Client(api_key=LANGSMITH_API_KEY)
+    client = Client(api_key=tracing.LangsmithConfig.from_env().api_key)
 
     print(f"Fetching runs from experiment: {experiment_name}")
     pairs = _fetch_runs_and_examples(client, experiment_name)

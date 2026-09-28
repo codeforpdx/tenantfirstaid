@@ -3,7 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from gcs_helpers import patch_singleton
+from gcs_helpers import patch_gcp_env
 from google.api_core import exceptions as gcp_exceptions
 
 from scripts.create_app_gcs import (
@@ -70,12 +70,12 @@ class TestVerifyDatastoreExists:
 class TestMain:
     _ARGV_BASE = ["create_app_gcs", "--datastore-id", "my-ds", "--app-id", "my-app"]
 
-    def _patch_singleton(self):
-        return patch_singleton("scripts.create_app_gcs.SINGLETON")
+    def _patch_gcp_env(self):
+        return patch_gcp_env()
 
     def test_dry_run_does_not_call_api(self, capsys):
         with (
-            self._patch_singleton(),
+            self._patch_gcp_env(),
             patch(
                 "scripts.create_app_gcs.discoveryengine.EngineServiceClient"
             ) as eng_cls,
@@ -98,8 +98,7 @@ class TestMain:
         engine_client.create_engine.return_value = operation
 
         with (
-            self._patch_singleton(),
-            patch("scripts.create_app_gcs.load_gcp_credentials"),
+            self._patch_gcp_env(),
             patch("scripts.create_app_gcs.discoveryengine.DataStoreServiceClient"),
             patch(
                 "scripts.create_app_gcs.discoveryengine.EngineServiceClient",
@@ -119,8 +118,7 @@ class TestMain:
         engine_client.create_engine.side_effect = gcp_exceptions.AlreadyExists("exists")
 
         with (
-            self._patch_singleton(),
-            patch("scripts.create_app_gcs.load_gcp_credentials"),
+            self._patch_gcp_env(),
             patch("scripts.create_app_gcs.discoveryengine.DataStoreServiceClient"),
             patch(
                 "scripts.create_app_gcs.discoveryengine.EngineServiceClient",
@@ -137,8 +135,7 @@ class TestMain:
         engine_client = MagicMock()
 
         with (
-            self._patch_singleton(),
-            patch("scripts.create_app_gcs.load_gcp_credentials"),
+            self._patch_gcp_env(),
             patch(
                 "scripts.create_app_gcs.discoveryengine.DataStoreServiceClient",
                 return_value=datastore_client,

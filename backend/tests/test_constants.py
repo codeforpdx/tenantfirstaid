@@ -1,68 +1,12 @@
-"""
-ensure that only keys that should exist are readable
-ensure that symbols are read-only
-"""
+"""Tests for the authored text the agent serves."""
 
-import logging
 import re
-from unittest.mock import patch
-
-import pytest
-from hypothesis import given, settings
-from hypothesis import strategies as st
 
 from tenantfirstaid.constants import (
     DEFAULT_INSTRUCTIONS,
     LETTER_TEMPLATE,
     OREGON_LAW_CENTER_PHONE_NUMBER,
-    _GoogEnvAndPolicy,
-    _parse_datastores,
-    _strtobool,
 )
-
-# ── _strtobool property-based tests ───────────────────────────────────────────
-
-_TRUTHY = ["y", "yes", "t", "true", "on", "1"]
-_FALSY = ["n", "no", "f", "false", "off", "0"]
-_RECOGNIZED = frozenset(_TRUTHY + _FALSY)
-
-
-def _arbitrary_case(s: str) -> st.SearchStrategy[str]:
-    """Strategy that generates arbitrary upper/lower casings of a fixed string."""
-    return st.lists(st.booleans(), min_size=len(s), max_size=len(s)).map(
-        lambda mask: "".join(c.upper() if up else c.lower() for c, up in zip(s, mask))
-    )
-
-
-@pytest.mark.property
-@settings(
-    deadline=None
-)  # _strtobool is trivial; deadline only catches cold-start noise.
-@given(data=st.data(), word=st.sampled_from(_TRUTHY))
-def test_strtobool_truthy_any_case(data, word):
-    """All recognized truthy strings should return True in any casing."""
-    assert _strtobool(data.draw(_arbitrary_case(word))) is True
-
-
-@pytest.mark.property
-@settings(
-    deadline=None
-)  # _strtobool is trivial; deadline only catches cold-start noise.
-@given(data=st.data(), word=st.sampled_from(_FALSY))
-def test_strtobool_falsy_any_case(data, word):
-    """All recognized falsy strings should return False in any casing."""
-    assert _strtobool(data.draw(_arbitrary_case(word))) is False
-
-
-@pytest.mark.property
-@settings(
-    deadline=None
-)  # _strtobool is trivial; deadline only catches cold-start noise.
-@given(st.text().filter(lambda s: s.lower() not in _RECOGNIZED))
-def test_strtobool_unrecognized_raises(s):
-    """Any string outside the recognized set should raise ValueError."""
-    with pytest.raises(ValueError):
-        _strtobool(s)
 
 
 def test_default_instructions_contains_oregon_law_center_phone():
@@ -79,152 +23,6 @@ def test_letter_template_contains_placeholders():
     assert "ORS 90.320" in LETTER_TEMPLATE
 
 
-class TestStrtobool:
-    def test_none_returns_false(self):
-        assert _strtobool(None) is False
-
-    def test_invalid_value_raises(self):
-        with pytest.raises(ValueError, match="Invalid truth value"):
-            _strtobool("maybe")
-
-
-class TestGoogEnvAndPolicy:
-    @pytest.fixture
-    def no_env_file(self):
-        # Force the "no .env" code path so the test relies purely on the
-        # ambient os.environ injected by patch.dict.
-        with patch("tenantfirstaid.constants.Path.exists", return_value=False):
-            yield
-
-    @pytest.fixture
-    def silence_missing_env_warning(self, caplog):
-        # The "no .env" path emits a warning; tests that don't want to assert
-        # on it can opt into this fixture to keep test output clean.
-        caplog.set_level(logging.CRITICAL, logger="tenantfirstaid.constants")
-
-    REQUIRED_ENV = {
-        "MODEL_NAME": "gemini-2.5-pro",
-        "VERTEX_AI_DATASTORE_LAWS": "test-datastore",
-        "GOOGLE_CLOUD_PROJECT": "test-project",
-        "GOOGLE_CLOUD_LOCATION": "us-central1",
-        "GOOGLE_APPLICATION_CREDENTIALS": "/tmp/creds.json",
-    }
-
-    @patch.dict("os.environ", REQUIRED_ENV, clear=False)
-    def test_init_with_all_vars(self, no_env_file, silence_missing_env_warning):
-        singleton = _GoogEnvAndPolicy()
-        assert singleton.MODEL_NAME == "gemini-2.5-pro"
-        assert singleton.GOOGLE_CLOUD_PROJECT == "test-project"
-        assert singleton.VERTEX_AI_DATASTORES["laws"] == "test-datastore"
-
-    @pytest.mark.parametrize("missing_var", REQUIRED_ENV.keys())
-    def test_missing_required_var_raises(
-        self, missing_var, no_env_file, silence_missing_env_warning
-    ):
-        env = {k: v for k, v in self.REQUIRED_ENV.items() if k != missing_var}
-        with patch.dict("os.environ", env, clear=True):
-            with pytest.raises(ValueError, match="environment variable is not set"):
-                _GoogEnvAndPolicy()
-
-    def test_missing_env_file_emits_warning_with_resolved_path(
-        self, no_env_file, caplog
-    ):
-        caplog.set_level(logging.WARNING, logger="tenantfirstaid.constants")
-        with patch.dict("os.environ", self.REQUIRED_ENV, clear=False):
-            _GoogEnvAndPolicy()
-        warnings = [r for r in caplog.records if r.name == "tenantfirstaid.constants"]
-        assert warnings, "expected a warning when .env is missing"
-        msg = warnings[-1].getMessage()
-        assert "No .env file found" in msg
-        # The resolved path is absolute and ends at the package's sibling .env.
-        # Assert the suffix only, not the parent directory name, so the test holds
-        # regardless of where the app is installed (e.g. backend/ on the host vs
-        # /app in the ci container image).
-        assert re.search(r"/\.env, proceeding\b", msg)
-
-    def test_missing_laws_datastore_raises(
-        self, no_env_file, silence_missing_env_warning
-    ):
-        env = {
-            **self.REQUIRED_ENV,
-            "VERTEX_AI_DATASTORE_OREGONLAWHELP": "store-1",
-        }
-        del env["VERTEX_AI_DATASTORE_LAWS"]
-        with patch.dict("os.environ", env, clear=True):
-            with pytest.raises(ValueError, match="VERTEX_AI_DATASTORE_LAWS"):
-                _GoogEnvAndPolicy()
-
-
-class TestParseDatastores:
-    def test_bare_id(self):
-        result = _parse_datastores({"VERTEX_AI_DATASTORE_LAWS": "my-store"})
-        assert result["laws"] == "my-store"
-
-    def test_full_uri_extraction(self):
-        result = _parse_datastores(
-            {"VERTEX_AI_DATASTORE_LAWS": "projects/p/locations/l/dataStores/my-ds"}
-        )
-        assert result["laws"] == "my-ds"
-
-    def test_full_uri_with_trailing_slash(self):
-        result = _parse_datastores(
-            {"VERTEX_AI_DATASTORE_LAWS": "projects/p/locations/l/dataStores/my-ds/"}
-        )
-        assert result["laws"] == "my-ds"
-
-    def test_multiple_stores(self):
-        result = _parse_datastores(
-            {
-                "VERTEX_AI_DATASTORE_LAWS": "store-1",
-                "VERTEX_AI_DATASTORE_LETTERS": "store-2",
-            }
-        )
-        assert result["laws"] == "store-1"
-        assert result["letters"] == "store-2"
-
-    def test_name_is_lowercased(self):
-        result = _parse_datastores({"VERTEX_AI_DATASTORE_OREGON_LAW_HELP": "store-1"})
-        assert result["oregon_law_help"] == "store-1"
-
-    def test_whitespace_trimmed(self):
-        result = _parse_datastores({"VERTEX_AI_DATASTORE_LAWS": "  my-store  "})
-        assert result["laws"] == "my-store"
-
-    def test_empty_value_raises(self):
-        with pytest.raises(ValueError, match="set but empty"):
-            _parse_datastores({"VERTEX_AI_DATASTORE_LAWS": ""})
-
-    def test_non_prefixed_vars_ignored(self):
-        result = _parse_datastores(
-            {"VERTEX_AI_DATASTORE_LAWS": "store-1", "MODEL_NAME": "gemini-2.5-pro"}
-        )
-        assert set(result.keys()) == {"laws"}
-
-    def test_empty_name_raises(self):
-        with pytest.raises(ValueError, match="has no name after the prefix"):
-            _parse_datastores({"VERTEX_AI_DATASTORE_": "store-1"})
-
-    def test_no_datastore_vars_returns_empty(self):
-        result = _parse_datastores({"MODEL_NAME": "gemini-2.5-pro"})
-        assert result == {}
-
-
-def test_model_config_values():
-    """Pin model config values that affect legal advice quality.
-
-    Low temperature and top_p produce consistent, citation-heavy responses
-    rather than creative ones. Changing these accidentally could degrade the
-    quality of legal guidance, so this test should break loudly.
-    """
-    from tenantfirstaid.constants import SINGLETON
-
-    assert SINGLETON.MODEL_TEMPERATURE == 0.1
-    assert SINGLETON.TOP_P == 0.1
-    assert SINGLETON.MAX_TOKENS == 65535
-    assert isinstance(SINGLETON.SAFETY_SETTINGS, dict)
-    assert len(SINGLETON.SAFETY_SETTINGS) == 5
-
-
 def test_system_prompt_placeholders_are_substituted():
     """Ensure str.format() placeholders are resolved, not left raw."""
     assert "{RESPONSE_WORD_LIMIT}" not in DEFAULT_INSTRUCTIONS
@@ -233,7 +31,6 @@ def test_system_prompt_placeholders_are_substituted():
 
 def test_system_prompt_has_no_stray_placeholders():
     """Guard against someone adding an unrecognised {placeholder} to system_prompt.md."""
-    import re
 
     # Match {WORD} but not markdown links like [text](url) or tool names like `{text}`.
     stray = re.findall(r"(?<!\[)(?<!`)\{[A-Z_]+\}(?!`)(?!\])", DEFAULT_INSTRUCTIONS)

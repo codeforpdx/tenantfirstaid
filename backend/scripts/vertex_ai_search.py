@@ -23,10 +23,9 @@ from typing import Literal
 
 from google.cloud import discoveryengine_v1beta as discoveryengine
 
-from tenantfirstaid.constants import SINGLETON, DatastoreKey
+from tenantfirstaid.datastores import CorpusConfig, DatastoreKey
 from tenantfirstaid.google_auth import (
     discoveryengine_client_options,
-    load_gcp_credentials,
 )
 from tenantfirstaid.langchain_tools import filter_builder, repair_mojibake
 from tenantfirstaid.location import OregonCity, UsaState
@@ -148,19 +147,26 @@ def search(
     max_extractive_segment_count: int = 3,
     spell_correction: SpellMode = SpellMode.AUTO,
     datastore_override: str | None = None,
+    corpus: CorpusConfig | None = None,
 ) -> SearchResults:
-    """Run a search against the Vertex AI Search datastore and return results."""
-    credentials = load_gcp_credentials(SINGLETON.GOOGLE_APPLICATION_CREDENTIALS)
+    """Run a search against the Vertex AI Search datastore and return results.
 
-    location = SINGLETON.GOOGLE_CLOUD_LOCATION
+    Pass ``corpus`` to reuse an already-resolved configuration. A sweep calls this
+    in a loop, and re-reading the environment on each iteration would let a value
+    change part-way through one run.
+    """
+    corpus = corpus if corpus is not None else CorpusConfig.from_env()
+    credentials = corpus.gcp.load_credentials()
+
+    location = corpus.gcp.location
     client = discoveryengine.SearchServiceClient(
         credentials=credentials,
         client_options=discoveryengine_client_options(location),
     )
 
-    datastore = datastore_override or SINGLETON.VERTEX_AI_DATASTORES[DatastoreKey.LAWS]
+    datastore = datastore_override or corpus.require(DatastoreKey.LAWS)
     serving_config = (
-        f"projects/{SINGLETON.GOOGLE_CLOUD_PROJECT}"
+        f"projects/{corpus.gcp.project}"
         f"/locations/{location}"
         f"/collections/default_collection"
         f"/dataStores/{datastore}"
@@ -207,6 +213,7 @@ def _shmoo(
     max_answer_sweep: int = 5,
     max_segment_sweep: int = 10,
     datastore: str,
+    corpus: CorpusConfig,
 ) -> None:
     """Sweep extractive answer and segment counts, reporting where targets appear."""
     targets_lower = [t.lower() for t in targets]
@@ -246,6 +253,7 @@ def _shmoo(
             max_extractive_answer_count=n,
             max_extractive_segment_count=1,
             datastore_override=datastore,
+            corpus=corpus,
         )
         passages = response.passages()
         hits = _check(passages)
@@ -269,6 +277,7 @@ def _shmoo(
             max_extractive_answer_count=1,
             max_extractive_segment_count=n,
             datastore_override=datastore,
+            corpus=corpus,
         )
         passages = response.passages()
         hits = _check(passages)
@@ -360,7 +369,10 @@ def main() -> None:
     if args.city and city is None:
         print(f"Warning: unrecognized city '{args.city}', no city filter applied.")
 
-    datastore = args.datastore or SINGLETON.VERTEX_AI_DATASTORES[DatastoreKey.LAWS]
+    # Resolved once here rather than inside each search, so every request in a
+    # run is addressed through the same configuration.
+    corpus = CorpusConfig.from_env()
+    datastore = args.datastore or corpus.require(DatastoreKey.LAWS)
 
     if args.command == "shmoo":
         _shmoo(
@@ -372,6 +384,7 @@ def main() -> None:
             max_answer_sweep=args.max_answer_sweep,
             max_segment_sweep=args.max_segment_sweep,
             datastore=datastore,
+            corpus=corpus,
         )
         return
 
@@ -392,6 +405,7 @@ def main() -> None:
         max_extractive_answer_count=args.answers,
         max_extractive_segment_count=args.segments,
         datastore_override=datastore,
+        corpus=corpus,
     )
 
     response.display(raw=args.raw, width=args.width)

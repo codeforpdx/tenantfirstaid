@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from gcs_helpers import patch_singleton
+from gcs_helpers import patch_gcp_env
 from google.api_core import exceptions as gcp_exceptions
 
 from scripts.upload_to_gcs import (
@@ -251,9 +251,8 @@ class TestMain:
         bucket_obj.blob.return_value = blob
 
         with (
-            patch_singleton("scripts.upload_to_gcs.SINGLETON"),
+            patch_gcp_env(),
             patch("scripts.upload_to_gcs.storage.Client") as client_cls,
-            patch("scripts.upload_to_gcs.load_gcp_credentials"),
             patch(
                 "sys.argv",
                 [

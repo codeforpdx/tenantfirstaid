@@ -33,9 +33,58 @@ run = "uv sync"
 description = "Run the Flask backend locally."
 run = "uv run python -m tenantfirstaid.app"
 
+[tasks.credentials-check]
+description = "Verify GOOGLE_APPLICATION_CREDENTIALS loads and still refreshes. No API call, no cost."
+depends = ["sync"]
+run = '''
+set -eu
+# A prerequisite verifier narrow enough to be a dependency, which gcloud-login-check is
+# not. That task answers "can I retrieve?", which bundles four conditions -- credentials,
+# a non-placeholder VERTEX_AI_DATASTORE_LAWS, a datastore that still exists, and
+# servingConfigs.search. Three of those are irrelevant to the corpus lifecycle commands,
+# so as a `depends` it would fail runs that would have worked, including the case where
+# the datastore is gone and a planned datastore-listing command (#318) is exactly the
+# tool that would say so.
+#
+# This checks only what every command here genuinely cannot proceed without: that the
+# value in .env resolves to a credential and that the credential still refreshes. A
+# refresh is an OAuth round trip against Google's token endpoint, not a call to any
+# project API, so it is free and attributable to no quota -- cheap enough to run before
+# every command rather than being a thing you remember to run.
+uv run python - <<'PY'
+import sys
+
+import google.auth.exceptions
+import google.auth.transport.requests
+
+from tenantfirstaid.google_auth import GcpEnvironment
+
+try:
+    credentials = GcpEnvironment.from_env().load_credentials()
+except ValueError as exc:
+    sys.exit(f"{exc}")
+
+# Loading only parses. An authorization file whose refresh token has been revoked or has
+# aged out parses perfectly and fails at the first API call -- as an unhandled
+# RefreshError traceback, several layers below anything the reader recognises. Forcing
+# the refresh here turns that into one sentence at the point where it is actionable.
+try:
+    credentials.refresh(google.auth.transport.requests.Request())
+except google.auth.exceptions.RefreshError as exc:
+    sys.exit(
+        f"credentials loaded but no longer refresh: {exc}\n\n"
+        "They have most likely expired or been revoked. Re-authenticate with:\n"
+        "    mise run //:gcloud-login"
+    )
+
+print("credentials OK -- loaded and refreshed.")
+PY
+'''
+
+
 [tasks.gcloud-login-check]
 description = "Smoke-test GOOGLE_APPLICATION_CREDENTIALS by querying the Vertex AI Search datastore directly, the same way the app does."
-depends = ["sync"]
+depends = ["sync", "credentials-check"]
 usage = '''
 arg "<options>" var=#true required=#false help="Extra vertex_ai_search args, e.g. --city portland."
 '''
@@ -194,10 +243,37 @@ depends = ["sync"]
 usage = '''
 flag "--container" help="Run in the Dockerfile ci image instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+flag "--no-env" help="Ignore backend/.env and run with the values CI uses, to catch tests that only pass because you hold real credentials."
 arg "<options>" var=#true required=#false help="Extra pytest args, e.g. --cov (was TEST_OPTIONS)."
 '''
 run = '''
 set -eu
+if [ -n "${usage_no_env:-}" ]; then
+  if [ -n "${usage_container:-}" ]; then
+    echo "--no-env cannot be combined with --container: the container lane bind-mounts backend/.env." >&2
+    exit 2
+  fi
+  # Reproduce the environment of pr-check.yml's backend-test job: no .env file, and
+  # the same placeholder values -- including a credentials path that deliberately
+  # does not exist. A developer's .env points GOOGLE_APPLICATION_CREDENTIALS at a
+  # real file, so a test that forgets to mock the credential load passes here and
+  # fails only in CI. Keep these in step with .github/workflows/pr-check.yml.
+  unset ENV LANGSMITH_API_KEY LANGSMITH_PROJECT LANGSMITH_TRACING LANGCHAIN_TRACING_V2 \
+        MAIL_SERVER MAIL_PORT SENDER_EMAIL RECIPIENT_EMAIL APP_PASSWORD
+  # Unset by prefix, so a locally-configured jurisdiction cannot leak into the run.
+  for _var in $(env | sed -n 's/^\(VERTEX_AI_DATASTORE_[A-Za-z0-9_]*\)=.*/\1/p'); do
+    unset "$_var"
+  done
+  # Read by the root backend/conftest.py, which hides the file itself:
+  # load_dotenv(override=True) would otherwise beat every export below.
+  export TFA_TEST_IGNORE_ENV_FILE=1
+  export GOOGLE_CLOUD_LOCATION=global
+  export GOOGLE_CLOUD_PROJECT=no-env-fake-google-cloud-project
+  export GOOGLE_APPLICATION_CREDENTIALS=/nonexistent/no-env-fake-google-credentials.json
+  export MODEL_NAME=gemini-2.5-pro
+  export SHOW_MODEL_THINKING=true
+  export VERTEX_AI_DATASTORE_LAWS=ci-placeholder-not-a-real-datastore
+fi
 if [ -n "${usage_container:-}" ]; then
   # Bind the repo ROOT (real .git) and run from /src/backend. Pin uv to the image venv
   # (/app/.venv, not the host's macOS /src/backend/.venv) and put /src/backend on the
@@ -217,9 +293,14 @@ description = "Full backend check: clean, sync, fmt, lint, typecheck, test."
 usage = '''
 flag "--container" help="Run the whole suite in the Dockerfile ci image (verify-only fmt)."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
+flag "--no-env" help="Ignore backend/.env and run with the values CI uses, to catch tests that only pass because you hold real credentials."
 '''
 run = '''
 set -eu
+if [ -n "${usage_no_env:-}" ] && [ -n "${usage_container:-}" ]; then
+  echo "--no-env cannot be combined with --container: the container lane bind-mounts backend/.env." >&2
+  exit 2
+fi
 if [ -n "${usage_container:-}" ]; then
   # One build, one container over the repo-root bind (fmt is verify-only here). Running
   # from /src/backend with the real .git means ruff/ty honor .gitignore; ty/pytest use
@@ -241,7 +322,7 @@ fi
 # arg).
 mise run clean
 mise run fmt
-mise run --continue-on-error --output keep-order lint ::: typecheck ::: test
+mise run --continue-on-error --output keep-order lint ::: typecheck ::: test ${usage_no_env:+--no-env}
 '''
 
 [tasks.install]
@@ -264,8 +345,14 @@ description = "Regenerate all frontend build-time assets (types + referral catal
 run = "mise run //frontend:generate-frontend-assets"
 
 [tasks.docs]
-description = "Build the API docs site with great-docs (into great-docs/_site). Needs Quarto: on the host install it yourself; --container uses the Dockerfile ci image, which ships Quarto."
+description = "Build the API docs site with great-docs (into great-docs/_site). Quarto is provisioned automatically; --container builds in the Dockerfile docs image instead."
 depends = ["sync"]
+# Task-scoped rather than a [tools] entry, following the same reasoning as
+# //:gcloud-login: Quarto is a ~250MB download that only doc builds need, so
+# provisioning it on demand keeps it out of every `mise install` and `mise run setup`,
+# including for frontend-only contributors. Held at the version backend/Dockerfile
+# installs (QUARTO_VERSION), so a host build and a --container build render identically.
+tools = { "aqua:quarto-dev/quarto-cli" = "1.9.38" }
 usage = '''
 flag "--container" help="Build in the Dockerfile ci image (which has Quarto) instead of on the host."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"
@@ -383,8 +470,12 @@ uv run great-docs check-links $ignore ${usage_options:-}
 '''
 
 [tasks.docs-proofread]
-description = "Spell/grammar-check docs with great-docs (needs harper-cli; use --container)."
+description = "Spell/grammar-check docs with great-docs. harper-cli is provisioned automatically; --container runs in the Dockerfile docs image instead."
 depends = ["sync"]
+# Task-scoped for the same reason as Quarto on `docs`: only this task needs it.
+# Held at the version backend/Dockerfile installs (HARPER_VERSION), so a host run and
+# a --container run flag the same words.
+tools = { harper-cli = "2.6.0" }
 usage = '''
 flag "--container" help="Run in the Dockerfile docs image (which ships harper-cli)."
 flag "--engine <engine>" help="Container engine: auto|docker|container|podman." default="auto"

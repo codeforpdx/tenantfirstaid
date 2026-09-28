@@ -172,7 +172,7 @@ graph TB
 
 ### Nginx
 
-Nginx (config: [`config/tenantfirstaid.conf`](config/tenantfirstaid.conf)) does two things:
+Nginx (config: [`deployment/config/tenantfirstaid.conf`](deployment/config/tenantfirstaid.conf)) does two things:
 
 1. **Serves static files**: the built React frontend (`frontend/dist/`) is served directly from disk, with a fallback to `index.html` for client-side routing.
 2. **Proxies API requests**: requests to `/api/` are forwarded to Gunicorn via a Unix domain socket (no TCP overhead).
@@ -181,7 +181,7 @@ All HTTP traffic is redirected to HTTPS. TLS is managed by Certbot.
 
 ### Gunicorn + systemd
 
-The Flask backend runs under Gunicorn with 10 worker processes and a 300-second timeout (config: [`config/tenantfirstaid-backend.service`](config/tenantfirstaid-backend.service)). Systemd restarts the process on failure and ensures it starts on server reboot.
+The Flask backend runs under Gunicorn with 10 worker processes and a 300-second timeout (config: [`deployment/config/tenantfirstaid-backend.service`](deployment/config/tenantfirstaid-backend.service)). Systemd restarts the process on failure and ensures it starts on server reboot.
 
 ---
 
@@ -265,11 +265,11 @@ Secrets exist in two places:
 | `MAIL_SERVER` | SMTP server hostname | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/app.py](backend/tenantfirstaid/app.py) |
 | `SENDER_EMAIL` | Sender address for feedback emails | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/app.py](backend/tenantfirstaid/app.py), [backend/tenantfirstaid/feedback.py](backend/tenantfirstaid/feedback.py) |
 | `RECIPIENT_EMAIL` | Recipient address for feedback emails | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/feedback.py](backend/tenantfirstaid/feedback.py) |
-| `MODEL_NAME` | Gemini model identifier (e.g. `gemini-2.5-pro`) | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py) |
-| `GOOGLE_CLOUD_PROJECT` | GCP project ID | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py), [pr-check.yml](.github/workflows/pr-check.yml) |
-| `GOOGLE_CLOUD_LOCATION` | GCP region (e.g. `global`) | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py) |
-| `VERTEX_AI_DATASTORE_LAWS` | Vertex AI Search datastore ID for the Oregon laws corpus. Can be a bare datastore ID or a full resource URI. Additional datastores follow the same `VERTEX_AI_DATASTORE_<NAME>` pattern and are picked up automatically. | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py) |
-| `SHOW_MODEL_THINKING` | Toggle Gemini reasoning display (staging only; hardcoded `false` in production) | [deploy.staging.yml](.github/workflows/deploy.staging.yml), [backend/tenantfirstaid/constants.py](backend/tenantfirstaid/constants.py) |
+| `MODEL_NAME` | Gemini model identifier (e.g. `gemini-2.5-pro`) | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/google_models.py](backend/tenantfirstaid/google_models.py) |
+| `GOOGLE_CLOUD_PROJECT` | GCP project ID | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/google_auth.py](backend/tenantfirstaid/google_auth.py), [pr-check.yml](.github/workflows/pr-check.yml) |
+| `GOOGLE_CLOUD_LOCATION` | GCP region (e.g. `global`) | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/google_auth.py](backend/tenantfirstaid/google_auth.py) |
+| `VERTEX_AI_DATASTORE_LAWS` | Vertex AI Search datastore ID for the Oregon laws corpus. Can be a bare datastore ID or a full resource URI. Additional datastores follow the same `VERTEX_AI_DATASTORE_<NAME>` pattern and are picked up automatically. | [deploy.production.yml](.github/workflows/deploy.production.yml), [backend/tenantfirstaid/datastores.py](backend/tenantfirstaid/datastores.py) |
+| `SHOW_MODEL_THINKING` | Toggle Gemini reasoning display (staging only; hardcoded `false` in production) | [deploy.staging.yml](.github/workflows/deploy.staging.yml), [backend/tenantfirstaid/google_models.py](backend/tenantfirstaid/google_models.py) |
 | `LANGSMITH_PROJECT` | LangSmith project name that groups traces in the UI (e.g. `tenantfirstaid-prod`, `tenantfirstaid-staging`) | [deploy.production.yml](.github/workflows/deploy.production.yml), [deploy.staging.yml](.github/workflows/deploy.staging.yml) |
 
 ### Local development
@@ -280,12 +280,12 @@ Copy `backend/.env.example` to `backend/.env` and fill in the required values. S
 
 ## Server configuration
 
-The [`config/`](config/) directory contains reference copies of the two server configuration files:
+The [`deployment/config/`](deployment/config/) directory contains reference copies of the two server configuration files:
 
 | File | Deployed to | Managed by |
 |------|-------------|------------|
-| [`config/tenantfirstaid.conf`](config/tenantfirstaid.conf) | `/etc/nginx/sites-available/tenantfirstaid` | Manual — server admin |
-| [`config/tenantfirstaid-backend.service`](config/tenantfirstaid-backend.service) | `/etc/systemd/system/tenantfirstaid-backend.service` | Manual — server admin |
+| [`deployment/config/tenantfirstaid.conf`](deployment/config/tenantfirstaid.conf) | `/etc/nginx/sites-available/tenantfirstaid` | Manual — server admin |
+| [`deployment/config/tenantfirstaid-backend.service`](deployment/config/tenantfirstaid-backend.service) | `/etc/systemd/system/tenantfirstaid-backend.service` | Manual — server admin |
 
 > **These files are not auto-deployed.** The CI pipeline only deploys application code. If you change a config file in this repository, a server admin must manually copy it to the server and reload the relevant service.
 
@@ -502,7 +502,7 @@ If the timer is disabled: `sudo systemctl enable --now certbot.timer`.
 | **Upload via SCP** | Droplet unreachable or SSH key invalid | Check droplet status in Digital Ocean console; verify `SSH_KEY` secret is current |
 | **uv sync** | Lockfile conflict or network error | Re-run the workflow; if persistent, check `uv.lock` in the repo |
 | **Write env file** | Malformed secret value (newline in secret) | Edit the offending secret in GitHub environment settings |
-| **systemctl restart** | Service unit file missing or broken | Manually apply `config/tenantfirstaid-backend.service` to the server |
+| **systemctl restart** | Service unit file missing or broken | Manually apply `deployment/config/tenantfirstaid-backend.service` to the server |
 
 **Resolve**: fix the root cause and re-trigger the deploy (push a fix commit, or use `workflow_dispatch` on the staging workflow).
 
@@ -550,7 +550,7 @@ For Google Cloud (Vertex AI) access needed for local development, see [README.md
 
 ### DataDog (current)
 
-The production Gunicorn service is instrumented with DataDog for log collection and correlation. The following variables are set in the systemd service unit ([`config/tenantfirstaid-backend.service`](config/tenantfirstaid-backend.service)):
+The production Gunicorn service is instrumented with DataDog for log collection and correlation. The following variables are set in the systemd service unit ([`deployment/config/tenantfirstaid-backend.service`](deployment/config/tenantfirstaid-backend.service)):
 
 | Variable | Value | Purpose |
 |----------|-------|---------|
@@ -581,7 +581,7 @@ See issues tagged [`observability`](https://github.com/codeforpdx/tenantfirstaid
 
 - [Architecture.md](Architecture.md) — code organization and system design
 - [README.md](README.md) — local development setup
-- [`config/`](config/) — server configuration files (Nginx, systemd)
+- [`deployment/config/`](deployment/config/) — server configuration files (Nginx, systemd)
 - [`.github/workflows/deploy.production.yml`](.github/workflows/deploy.production.yml) — production CI/CD workflow
 - [`.github/workflows/deploy.staging.yml`](.github/workflows/deploy.staging.yml) — staging CI/CD workflow
 - [`backend/evaluate/EVALUATION.md`](backend/evaluate/EVALUATION.md) — LLM evaluation with LangSmith

@@ -245,15 +245,42 @@ reference:
         - location.city_or_state_input_sanitizer
 
     # Guide ch. 6 — Configuration & Logging.
-    - title: "Config · Environment"
-      desc: The import-time settings singleton and credential loading.
+    - title: "Config · GCP identity"
+      desc: The project, region and credentials every other half is read through.
       contents:
-        - constants.SINGLETON
-        - constants._GoogEnvAndPolicy  # type of SINGLETON; documents each config field
-        - constants.DatastoreKey
-        - constants.DEFAULT_INSTRUCTIONS
+        - name: google_auth.GcpEnvironment
+          include_inherited: true
         - google_auth.load_gcp_credentials
+        - google_auth.load_env_file
         - google_auth.discoveryengine_client_options
+
+    - title: "Config · Corpus and model"
+      desc: >
+        The two halves of the configuration, each readable without the other. Only
+        the application needs both.
+      contents:
+        - name: datastores.CorpusConfig
+          include_inherited: true
+        - datastores.parse_datastores
+        - datastores.DatastoreKey
+        - datastores.DEFAULT_VERTEX_AI_SEARCH_LOCATION
+        - name: google_models.ModelConfig
+          include_inherited: true
+        - name: google_models.Gemini25ModelConfig
+          include_inherited: true
+
+    - title: "Config · Application"
+      desc: The import-time singleton composing both halves.
+      contents:
+        - config.SINGLETON
+        - config._AppConfig  # type of SINGLETON; documents each config field
+
+    - title: "Content · Authored text"
+      desc: The system prompt and the values substituted into it.
+      contents:
+        - constants.DEFAULT_INSTRUCTIONS
+        - constants.OREGON_LAW_CENTER_PHONE_NUMBER
+        - constants.RESPONSE_WORD_LIMIT
 
     - title: "Config · Logging"
       desc: Centralized logging setup.

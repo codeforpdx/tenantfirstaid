@@ -11,6 +11,8 @@ import evaluate.langsmith_dataset  # noqa: F401
 # attributes of the `evaluate` package.
 import evaluate.measure_evaluator_variance  # noqa: F401
 import evaluate.run_langsmith_evaluation  # noqa: F401
+from evaluate.tracing import LangsmithConfig
+from tenantfirstaid.google_auth import GcpEnvironment, load_env_file
 from tenantfirstaid.location import OregonCity, UsaState
 
 
@@ -23,10 +25,10 @@ def _no_langsmith_tracing(monkeypatch: pytest.MonkeyPatch, mocker):
     `LANGCHAIN_TRACING_V2` before `LANGSMITH_TRACING`. The env vars are kept
     as cheap defense-in-depth, not the actual guarantee.
 
-    `LANGSMITH_API_KEY` is bound at import time into three consuming modules,
-    so `delenv` alone cannot protect a real `Client()` construction there;
-    the fixture patches each module's own binding instead, following the
-    pattern in `test_langsmith_dataset.py`.
+    `delenv` alone cannot protect a real `Client()` construction, because
+    `LangsmithConfig.from_env()` reloads `.env` over the ambient environment; the
+    fixture substitutes the reader itself. One patch covers every caller, since they
+    reach it through the `tracing` module rather than binding its result.
 
     A test that wants real tracing back on will need to override this
     fixture's `tracing_is_enabled` patch itself, not just set env vars.
@@ -35,9 +37,34 @@ def _no_langsmith_tracing(monkeypatch: pytest.MonkeyPatch, mocker):
         monkeypatch.setenv(var, "false")
     mocker.patch("langsmith.utils.tracing_is_enabled", return_value=False)
     monkeypatch.delenv("LANGSMITH_API_KEY", raising=False)
-    mocker.patch("evaluate.langsmith_dataset.LANGSMITH_API_KEY", None)
-    mocker.patch("evaluate.run_langsmith_evaluation.LANGSMITH_API_KEY", None)
-    mocker.patch("evaluate.measure_evaluator_variance.LANGSMITH_API_KEY", None)
+    mocker.patch(
+        "evaluate.tracing.LangsmithConfig.from_env",
+        return_value=LangsmithConfig(api_key=None),
+    )
+
+
+@pytest.fixture(autouse=True)
+def _no_real_gcp_credentials(request: pytest.FixtureRequest, mocker):
+    """Keep the suite from loading real credentials off the machine it runs on.
+
+    `RagBuilder` loads credentials while constructing, through
+    `GcpEnvironment.load_credentials()`. On a developer machine `.env` points
+    `GOOGLE_APPLICATION_CREDENTIALS` at a real file, so that succeeds and the test
+    passes; CI has no `.env` and points the variable at a path that deliberately
+    does not exist, so the same test fails there. Substituting the loader makes the
+    suite behave identically either way, and keeps a unit test from depending on
+    whether whoever ran it has authenticated.
+
+    Skipped for `require_repo_secrets` tests, the one group meant to reach GCP for
+    real -- patching there would silently hand a live test a `MagicMock` instead
+    of a credential, rather than the real failure that group exists to surface.
+
+    Tests of the loader itself call `load_gcp_credentials` directly, which this
+    does not touch.
+    """
+    if request.node.get_closest_marker("require_repo_secrets"):
+        return
+    mocker.patch.object(GcpEnvironment, "load_credentials", return_value=MagicMock())
 
 
 @pytest.fixture(autouse=True)
@@ -97,3 +124,16 @@ def mock_chat_manager(mocker):
         [{"type": "text", "text": "Mocked legal advice."}]
     )
     return instance
+
+
+@pytest.fixture(autouse=True)
+def _fresh_env_file_snapshot():
+    """Reset the one-time ``.env`` snapshot between tests.
+
+    :func:`~tenantfirstaid.google_auth.load_env_file` is cached so a process reads
+    the file once. Tests need the opposite -- one that patches the file away must
+    not be decided by whether an earlier test already loaded it.
+    """
+    load_env_file.cache_clear()
+    yield
+    load_env_file.cache_clear()

@@ -84,7 +84,7 @@ description = "One-time gcloud login for local Vertex AI/RAG credentials. Prints
 # provisions it on demand for contributors who actually run this task, instead of
 # every `mise install`/`mise run setup` (including frontend-only contributors)
 # downloading the full Cloud SDK.
-tools = { gcloud = "579.0.0" }
+tools = { gcloud = "586.0.0" }
 run = '''
 set -eu
 gcloud auth application-default login

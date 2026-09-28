@@ -23,8 +23,8 @@ to choose the runtime. Ad-hoc tool flags pass through after `--`
 | `fmt`             | Sort imports and format with ruff. On the host this **mutates**; `--container` verifies only, `--container --write` reformats the host tree via the container. |
 | `lint`            | Lint with ruff.                                                        |
 | `typecheck`       | Type-check. `--checker ty` (default, fast), `mypy`, or `pyrefly`.      |
-| `test`            | Run pytest.                                                            |
-| `check`           | Full suite: clean, sync, fmt, lint, typecheck, test.                   |
+| `test`            | Run pytest. `--no-env` ignores `backend/.env` and uses CI's values.    |
+| `check`           | Full suite: clean, sync, fmt, lint, typecheck, test. Forwards `--no-env` to `test`. |
 | `clean`           | Remove `__pycache__` and build artifacts.                             |
 | `install`         | Install this package into the environment.                            |
 | `generate-types`  | Regenerate the frontend's TypeScript types from the Pydantic models.  |
@@ -45,6 +45,14 @@ to choose the runtime. Ad-hoc tool flags pass through after `--`
   yourself; `--container` uses the `ci` image, which ships Quarto.
 - **`docs-serve`** just serves whatever `docs` last produced; run `docs`
   (or `docs --container`) again first if you've edited a `.qmd` file.
+- **`--no-env`** reproduces CI's *environment*, as `--container` reproduces its
+  *tooling*. It hides `backend/.env` and exports the placeholder values
+  `.github/workflows/pr-check.yml` sets, including a
+  `GOOGLE_APPLICATION_CREDENTIALS` path that does not exist. Without it, a test
+  that forgets to mock a credential load still passes locally, because a
+  developer's `.env` names a real credentials file -- so the failure appears
+  only once the branch is pushed. The two flags are mutually exclusive: the
+  container lane bind-mounts the very file `--no-env` hides.
 :::
 
 `check` is the command you'll run most. Here it is end to end — the ordered

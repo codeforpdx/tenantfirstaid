@@ -38,7 +38,7 @@ Live at https://tenantfirstaid.com/
 - The `tenantfirstaid` Google project admin will need to manually assign a role to you (gmail account).  Reach out in the Discord channel #[tenantfirstaid-general](https://discord.com/channels/1068260532806766733/1367177752792531115) to arrange this.
 - You need to authenticate with the gcloud CLI to develop. `gcloud` is pinned as a per-task tool in the root `mise.toml`, so it's provisioned on first use — no separate install:
     1. `mise run //:gcloud-login` (root-qualified) — runs `gcloud auth application-default login` + `set-quota-project`, then prints the resulting [application default credentials](https://cloud.google.com/docs/authentication/application-default-credentials) file path
-    1. add the printed path as `GOOGLE_APPLICATION_CREDENTIALS=<PATH_TO_CREDS>` to your `backend/.env` file (HINT: don't use path shortcuts like `~` for home, python won't be able to find it).
+    1. add the printed path as `GOOGLE_APPLICATION_CREDENTIALS=<PATH_TO_CREDS>` to your `backend/.env` file
 </details>
 
 <details>
@@ -189,6 +189,14 @@ Separately, every backend and frontend check task accepts `--container` (plus `-
 - **It doesn't save you from setting up the repo.** `--container` changes where the check itself runs, but your local install still happens first — expect an `npm install` (and, for anything that regenerates types, a backend venv sync) before the container starts. So it's a way to reproduce CI, not a way to skip `mise run //:setup` or avoid installing Node and uv. Making it fully self-contained is possible and partly built, but isn't wired up yet.
 - **Lint and type errors will match CI even when your local packages don't.** For `mise run lint --container` and `mise run typecheck --container`, the eslint, TypeScript and plugin versions come from the image rather than your `node_modules`. If CI reports an error you can't reproduce — or your editor is happy but the build isn't — this is the thing to reach for.
 - **`--container` doesn't cascade.** It applies only to the command you type, not to any step that command triggers. Add it to each thing you want containerized.
+
+The backend's `test` and `check` tasks take a second, narrower reproduce-CI flag, `--no-env`. Where `--container` changes *where* a check runs, `--no-env` changes *what environment it sees*: it ignores your `backend/.env` and substitutes the placeholder values `.github/workflows/pr-check.yml` uses, including a `GOOGLE_APPLICATION_CREDENTIALS` path that deliberately does not exist. That matters because a developer's `.env` points at real credentials, so a test that forgets to mock a credential load passes on your machine and fails only in CI. Reach for it before pushing if a test touches configuration or Google Cloud:
+
+```sh
+% mise run //backend:check --no-env
+```
+
+The two flags can't be combined — the container lane bind-mounts `backend/.env`, which is the file `--no-env` exists to hide.
 
 The project has separate Dockerfiles for backend and frontend, each with multiple build stages, if you need to build an image directly. Use `--target` to pick a stage:
 

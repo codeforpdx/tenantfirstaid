@@ -38,7 +38,9 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
 from pydantic import BaseModel
 
-from tenantfirstaid.constants import DEFAULT_INSTRUCTIONS, SINGLETON, DatastoreKey
+from tenantfirstaid.config import SINGLETON
+from tenantfirstaid.constants import DEFAULT_INSTRUCTIONS
+from tenantfirstaid.datastores import DatastoreKey
 
 
 # Primitive inputs and outputs
