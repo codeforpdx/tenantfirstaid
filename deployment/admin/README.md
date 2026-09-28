@@ -242,18 +242,32 @@ anything and promote artifacts but cannot delete directly — no role here grant
 can routinely remove a live corpus is a scheduled job whose behaviour is in this repository
 and gated by the reference veto. That is worth more than the convenience of a single role.
 
-**That line is narrower than it sounds.** `tfaCorpusMaintainer` and `tfaReaper` both hold
-`storage.buckets.update` at project scope, which can add a bucket lifecycle rule that
-deletes its objects immediately — functionally equivalent to the delete permission each
-role deliberately withholds, and not limited to the corpus buckets either role is meant to
-touch (a maintainer's `storage.objects.get` has the same project-wide reach, and would
-read OpenTofu state). Scoping either by resource is not yet done: this project's custom
-roles mix `storage.*` with `discoveryengine.*` permissions, and applying a resource
-condition to the whole binding would also gate the `discoveryengine.*` calls unless
-those permissions are confirmed to support IAM Conditions — unverified against the live
-API — and there is no existing bucket-naming convention that distinguishes "corpus" from
-"state" to scope to even if they did. Documented here as accepted risk rather than fixed
-in code; see the matching comments in `roles.tf`.
+**That line is narrower than it sounds.** `tfaCorpusMaintainer`, `tfaReaper` and
+`tfaCorpusAdmin` all hold `storage.buckets.update` at project scope, which can add a
+bucket lifecycle rule that deletes its objects immediately — functionally equivalent to
+the delete permission each role deliberately withholds, and not limited to the corpus
+buckets any of them is meant to touch (`tfaCorpusMaintainer`'s `storage.objects.get` has
+the same project-wide reach, and would read OpenTofu state). A *positive* resource
+condition can't close this: these roles mix `storage.*` with `discoveryengine.*`
+permissions, and scoping the binding to "corpus buckets only" would need a bucket-naming
+convention this project does not have, and would in any case gate the `discoveryengine.*`
+calls too, since their resource names never look like a GCS bucket path.
+
+The OpenTofu state bucket is closed anyway, by inverting the shape: every binding of these
+three roles carries a condition that *excludes* that one named bucket rather than
+*allowing* a class of them (see the `locals` block in `bindings.tf`, mirrored in
+`deployment/mise.toml`'s `grant` task). An exclude condition evaluates true — permission
+granted — for anything that is not literally that bucket, including every
+`discoveryengine.*` call, so it narrows storage access without the positive form's risk of
+silently gating discoveryengine permissions. (Unverified: whether GCP accepts a condition
+at all on a binding whose role carries `discoveryengine.*` permissions. If it does not,
+`grant` or `apply-admin` fails loudly on the first attempt, naming the unsupported
+permission, rather than the condition being silently ignored.)
+
+What remains open is a *promoted production* corpus bucket: no such bucket has a name
+committed anywhere in this repository yet, so there is nothing yet to name in an exclude
+condition for it either. See the matching comments in `roles.tf` for where that stands
+per role, and revisit once the environment-pointer files land.
 
 `tfaCorpusAdmin` is consequently **the most dangerous role in the project — more dangerous
 than the reaper's.** That inverts the usual assumption and is worth stating plainly: the

@@ -191,7 +191,7 @@ jobs:
       # deployment/mise.toml alone; pinning it here too would be a second source of
       # truth for CI and contributors to drift between.
       - name: Install mise
-        uses: jdx/mise-action@v2
+        uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         with:
           # The action's own install step runs at the repo root, where only the root
           # mise.toml is discoverable -- and that declares no OpenTofu. Skip it and

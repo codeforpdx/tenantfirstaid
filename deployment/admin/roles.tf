@@ -92,16 +92,24 @@ resource "google_project_iam_custom_role" "corpus_maintainer" {
     "storage.buckets.create",
     "storage.buckets.get",
     "storage.objects.create",
-    # Known gap: at project level this also reads OpenTofu state, including the state
-    # for deployment/envs/* once those land, which is likely to record provider-recorded
+    # At project level this also reads OpenTofu state, including the state for
+    # deployment/envs/* once those land, which is likely to record provider-recorded
     # secrets. A custom role cannot scope a single permission to "corpus buckets only" --
-    # there is no naming convention that distinguishes them from the state bucket today,
-    # and this project's roles mix storage.* with discoveryengine.* permissions in one
-    # role, so a resource condition on the binding would also gate the discoveryengine
-    # calls unless discoveryengine permissions are confirmed to support IAM Conditions,
-    # which has not been checked against the live API. Until one of those is resolved,
-    # this is accepted risk, not an oversight -- see roles.tf and README.md's "where the
-    # line is drawn" for the matching caveat on storage.buckets.update below.
+    # there is no naming convention that distinguishes them from the state bucket, and
+    # this role mixes storage.* with discoveryengine.* permissions, so a *positive*
+    # resource condition (only allow if the resource matches a corpus bucket) would also
+    # gate the discoveryengine calls, since their resource names never look like a GCS
+    # bucket path.
+    #
+    # The state-bucket half of this is closed: every binding of this role carries an
+    # *exclude* condition naming the state bucket specifically (see the locals block in
+    # bindings.tf and the mirrored logic in deployment/mise.toml's grant task), which is
+    # safe on a mixed role because it evaluates true -- permission granted -- for
+    # anything that is not literally that one bucket, including every discoveryengine
+    # call. What remains open is a *promoted production* corpus bucket: no such bucket
+    # has a name committed anywhere in this repository yet, so there is nothing yet to
+    # name in an exclude condition for it. Revisit once the environment-pointer files
+    # land and a promoted bucket's name becomes a value this module can read.
     "storage.objects.get",
     "storage.objects.list",
     # storage.objects.delete is deliberately absent, and its absence does more than
@@ -135,10 +143,9 @@ resource "google_project_iam_custom_role" "corpus_maintainer" {
     # changed, so it can be used to add an immediate-delete lifecycle rule to any
     # bucket in the project, including a promoted production corpus or the OpenTofu
     # state bucket -- functionally equivalent to the delete this role deliberately
-    # withholds. Same known gap as storage.objects.get above: no clean way to scope
-    # this to "corpus buckets, never the state bucket" without either an unverified
-    # assumption about discoveryengine's IAM Conditions support or inventing a bucket
-    # naming convention this project does not otherwise have. Accepted risk for now.
+    # withholds. Same shape as storage.objects.get above, and the same fix: the state
+    # bucket is excluded at the binding, the production-corpus case stays open pending a
+    # committed bucket name to exclude.
     "storage.buckets.update",
   ]
 
@@ -153,14 +160,14 @@ resource "google_project_iam_custom_role" "reaper" {
   description = "Collect expired, unreferenced corpus artifacts. Held by a service account, never a person, and complete on its own rather than layered."
   stage       = "GA"
 
-  # Known gap, same root cause as tfaCorpusMaintainer's above: storage.buckets.delete and
+  # Same root cause as tfaCorpusMaintainer's above: storage.buckets.delete and
   # storage.objects.delete are project-wide, so nothing here stops the reaper's own
-  # service account from being used (by a bug or a compromised trigger) to delete the
-  # OpenTofu state bucket or an unrelated bucket, not only an expired scratch artifact.
-  # The reference veto that makes the reaper safe lives entirely in its reviewed code,
-  # not in IAM -- see README.md's "The roles, and where the line is drawn". Scoping this
-  # by resource would need the same unverified discoveryengine-conditions assumption or
-  # bucket-naming convention noted above, so it is accepted risk rather than enforced.
+  # service account from being used (by a bug or a compromised trigger) to delete an
+  # unrelated bucket, not only an expired scratch artifact. The reference veto that makes
+  # the reaper safe lives entirely in its reviewed code, not in IAM -- see README.md's
+  # "The roles, and where the line is drawn". The OpenTofu state bucket specifically is
+  # excluded at the binding (bindings.tf's locals block); a promoted production corpus
+  # bucket is not, for the same "no committed name to exclude yet" reason noted above.
   permissions = [
     # Find candidates and read their leases and manifests.
     "storage.buckets.list",
@@ -202,6 +209,11 @@ resource "google_project_iam_custom_role" "corpus_admin" {
   ])
   stage = "GA"
 
+  # Same root cause and same fix as tfaCorpusMaintainer's and tfaReaper's above: these
+  # storage permissions are project-wide, so every binding of this role (bindings.tf and
+  # deployment/mise.toml's grant task) excludes the OpenTofu state bucket specifically. A
+  # promoted production corpus bucket is not excluded, for lack of a committed name to
+  # exclude -- the one gap this role cannot close any better than the other two can.
   permissions = [
     # Layered on tfaContributor. What it adds is the reaper's collection powers in
     # human hands...

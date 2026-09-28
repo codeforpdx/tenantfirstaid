@@ -467,7 +467,7 @@ echo ">> following logs (Ctrl-C to stop)..."
 
 [tasks.check]
 description = "Run all host checks (backend + deployment + frontend)."
-# The two suites share no toolchain or outputs, so run them concurrently. `depends`
+# The three suites share no toolchain or outputs, so run them concurrently. `depends`
 # can't be used here: mise aborts sibling dependencies as soon as one fails, so a
 # fast frontend failure would kill an in-progress backend run before it reports (and
 # vice versa). --continue-on-error lets both report; --output keep-order keeps each
