@@ -36,7 +36,11 @@ async function streamText({
   // Add empty bot message immediately so "Typing..." appears before the API responds.
   setMessages((prev) => [
     ...prev,
-    new AIMessage({ content: "", id: botMessageId }),
+    new AIMessage({
+      content: "",
+      id: botMessageId,
+      additional_kwargs: { complete: false },
+    }),
   ]);
 
   try {
@@ -66,6 +70,17 @@ async function streamText({
             const parsed = JSON.parse(processedText) as { type?: string };
             if (parsed.type === "end_of_stream") {
               receivedDone = true;
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === botMessageId && msg.type === "ai"
+                    ? new AIMessage({
+                        content: msg.content,
+                        id: botMessageId,
+                        additional_kwargs: { complete: true },
+                      })
+                    : msg,
+                ),
+              );
               onDone?.();
               return;
             }
@@ -76,6 +91,7 @@ async function streamText({
           const botMessage = new AIMessage({
             content: fullText,
             id: botMessageId,
+            additional_kwargs: { complete: false },
           });
           setMessages((prev) =>
             prev.map((msg) => (msg.id === botMessageId ? botMessage : msg)),
@@ -102,6 +118,12 @@ async function streamText({
       processLines(lines);
     }
   } catch (error) {
+    // The request was intentionally cancelled (e.g. jurisdiction changed
+    // mid-stream) — the message list has already moved on, so don't patch
+    // it with an error meant for a conversation that's no longer showing.
+    if (error instanceof DOMException && error.name === "AbortError") {
+      return;
+    }
     console.error("Error:", error);
     const errorMessage: UiMessage = {
       type: "ui",

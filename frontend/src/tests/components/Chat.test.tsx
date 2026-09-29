@@ -13,6 +13,7 @@ vi.mock("../../hooks/useMessages", () => ({
     setMessages: vi.fn(),
     addMessage: vi.fn(),
   }),
+  CHAT_MESSAGES_STORAGE_PREFIX: "chat_messages:",
 }));
 
 vi.mock("../../pages/Chat/components/MessageWindow", () => ({

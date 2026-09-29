@@ -2,7 +2,7 @@
 
 ## Overview
 
-Tenant First Aid is a chatbot application that provides legal information related to housing and eviction in Oregon. The system uses a Retrieval-Augmented Generation (RAG) architecture to provide accurate, contextual responses based on Oregon housing law documents.  The LangChain framework is used to abstract models and agents.
+Tenant First Aid is a chatbot application that provides legal information related to housing and eviction in Oregon. The system uses a Retrieval-Augmented Generation (RAG) architecture to provide accurate, contextual responses based on Oregon housing law documents. The LangChain framework is used to abstract models and agents.
 
 The application follows a modern web architecture with a Flask-based Python backend serving a React frontend, deployed on Digital Ocean infrastructure.
 
@@ -77,6 +77,10 @@ reading paths (new reader, backend contributor, corpus operator):
 
 The frontend is a modern React application built with TypeScript and Vite. It provides a clean, accessible chat interface for users to interact with the legal advice chatbot.
 
+**Client-Side Message Persistence:** `useMessages` accepts an optional `storageKey`. Chat and letter pages supply a key on both public and private devices. When given, the hook restores messages from `sessionStorage` and persists completed conversation history so it survives refresh. The persistence effect depends on the persistable message subset, so incomplete streaming updates do not re-serialize or rewrite unchanged history. On chat restore, a trailing unanswered user question receives a UI-only interruption notice asking the user to send it again. The notice is excluded from storage and backend history. On letter restore, any completed AI response suppresses automatic regeneration and the generation dialog, even if it contains no letter chunk; an interrupted initial response still retries. Chat keys include jurisdiction (`chat_messages:<jurisdiction>`); letter keys include jurisdiction and referring org (`letter_messages:<jurisdiction>,<org>`). Changing the chat storage key resets messages and aborts old requests; letter remounts on jurisdiction/org changes. On public devices, stored messages are removed when the inactivity warning expires.
+
+**Device Privacy:** `DevicePrivacyGuard` stays mounted at the root and prompts for a device choice only on chat and letter routes. The choice is saved in `sessionStorage` when possible. On public devices, five minutes without user activity opens a 120-second warning that continues across route navigation. No idle clearing runs before a choice or on private devices. If the warning expires, the guard removes the device-privacy choice and all `chat_messages:*` and `letter_messages:*` entries from `sessionStorage`, then attempts to close the page and redirects to the home page when the browser blocks scripted closing. Cleanup is intentionally limited to Tenant First Aid's known keys so other applications' session data is not removed.
+
 ### Directory/File Structure
 
 ```
@@ -95,7 +99,7 @@ frontend/
 │   │   └── HousingContext.tsx      # Housing context for chat/letter generation
 │   ├── hooks/                      # Custom React hooks
 │   │   ├── useIsMobile.tsx         # Checking mobile state
-│   │   ├── useMessages.tsx         # Message handling logic
+│   │   ├── useMessages.tsx         # Message handling + persistence logic
 │   │   ├── useHousingContext.tsx   # Custom hook for housing context
 │   │   └── useLetterContent.tsx    # State management for letter generation
 │   ├── generated/                  # Auto-generated frontend data (gitignored)
@@ -148,7 +152,8 @@ frontend/
 │   │       ├── buildLocationPrefix.ts # Helper function for location prefix
 │   │       ├── scrolling.ts        # Helper function for window scrolling
 │   │       ├── dompurify.ts        # Helper function for sanitizing text
-│   │       └── formatLocation.ts   # Formats OregonCity/UsaState into a display string (e.g. "Portland, OR")
+│   │       ├── formatLocation.ts   # Formats OregonCity/UsaState into a display string (e.g. "Portland, OR")
+│   │       └── reloadPage.ts       # Wrapper around window.location.reload()
 │   └── tests/                     # Testing suite
 │   │   ├── components/            # Component testing
 │   │   │   ├── About.test.tsx     # About component testing
