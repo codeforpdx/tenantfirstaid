@@ -148,10 +148,14 @@ not from documentation. Every permission claim in this file is derived that way,
 running the thing and reading the 403 — the roles here are not what their names suggest,
 and `projectIamAdmin` in particular sounds sufficient for this module and is not.)*
 
-> Deliberately no names or email addresses here. This repository is public. Permission
-> *names* are public GCP API surface and safe to publish — which is why the table above
-> exists — but the identities holding them are personal addresses. Name the role and the
-> channel; let `gcloud projects get-iam-policy` answer who, to whoever is entitled to ask.
+> Deliberately no *personal* names or email addresses here. This repository is public.
+> Permission *names* are public GCP API surface and safe to publish — which is why the
+> table above exists — but the identities holding human roles are personal addresses. Name
+> the role and the channel; let `gcloud projects get-iam-policy` answer who, to whoever is
+> entitled to ask. Service-account addresses are a different thing: they are project-owned,
+> not personal, and already appear elsewhere in this repository (`admin/service_accounts.tf`
+> commits the reaper's `account_id` outright) — see
+> [Service accounts in this project](#service-accounts-in-this-project) below.
 
 Everything else — `reaper/`, and later `envs/<name>/` — is applied by a maintainer, taking
 the reaper's service-account email as an input rather than creating it. That split is a
@@ -211,3 +215,24 @@ is not, and why Google Groups remain the intended end state — all in
 It needs no GCP credentials. The first apply of `deployment/admin/` is what proves the
 rest, and it fails loudly if a permission name is wrong — which is the real verification
 for the permission table above.
+
+## Service accounts in this project
+
+`deployment/admin/` creates one service account — see
+[Bootstrap: the IAM configuration](#2-the-iam-configuration). It is not the only one in the
+project. The IAM console (`IAM > Allow > View by principals`, filtered to
+`Type: Service account`) lists four, as of 2026-09-29. These are safe to publish here: a
+service-account address is project-owned, not personal, unlike the human addresses the
+[no-personal-addresses rule](#2-the-iam-configuration) above is protecting.
+
+| Account | Managed by Tofu? | Purpose |
+|---|---|---|
+| `tfa-corpus-reaper@tenantfirstaid.iam.gserviceaccount.com` | yes — `admin/service_accounts.tf` | Runs the scheduled reaper. |
+| `tenantfirstaid@tenantfirstaid.iam.gserviceaccount.com` | no | Likely the identity behind the `GOOGLE_SERVICE_ACCOUNT_CREDENTIALS` secret used by `pr-check.yml`, `deploy.production.yml` and `deploy.staging.yml` — unconfirmed. Whoever holds that secret should check its `client_email` against this account before relying on the guess. |
+| `langsmith-deployment@tenantfirstaid.iam.gserviceaccount.com` | no | Not this repo's CI/CD, despite the name. Its own IAM description says "for use in CodePDX Plus/TenantFirstAid (LangSmith Org/Workspace) deployment" — LangSmith's own hosted deployment product. |
+| The default Compute Engine service account | no, and shouldn't be | Auto-created by GCP, which owns its lifecycle, so it is not imported into Tofu. |
+
+The two hand-created accounts should eventually move into `admin/` via `terraform import`,
+once each is understood well enough to import without a plan that wants to change roles a
+live consumer needs. TODO comments tracking this live at the top of
+[`admin/service_accounts.tf`](admin/service_accounts.tf).
