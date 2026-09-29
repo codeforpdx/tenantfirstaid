@@ -180,6 +180,9 @@ jobs:
   deployment-check:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+
     defaults:
       run:
         working-directory: deployment
