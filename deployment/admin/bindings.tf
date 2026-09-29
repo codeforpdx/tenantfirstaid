@@ -40,10 +40,11 @@
 # to an error was unconfirmed, and each of those is a different silent failure mode: a
 # maintainer discovering a runtime 403 on create-datastore-gcs or documents.import despite
 # the grant looking correct, in the worst case. The resource.service guard narrows the
-# question to whether Discovery Engine populates resource.service in the first place: CEL's
-# || only absorbs an error on the right side if the left side itself resolves to true
-# without erroring, so an unpopulated resource.service would make this guard error rather
-# than settle anything. Unverified against live GCP -- see the TODO in README.md.
+# question to whether Discovery Engine leaves both attributes unevaluable: CEL's || is
+# commutative with respect to errors, so it returns true when either side is true even if
+# the other side errors. A discoveryengine request is therefore denied only if
+# resource.service errors AND the resource.name comparison errors or is false. Unverified
+# against live GCP -- see the TODO in README.md.
 locals {
   state_bucket = "tenantfirstaid-tofu-state"
   exclude_state_bucket_condition = {
