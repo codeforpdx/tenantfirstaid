@@ -269,13 +269,13 @@ populates `resource.name` the way a GCS request does; if it doesn't, `resource.n
 "..."` could evaluate to true, to false, or to an error, and any of those is a maintainer
 hitting a runtime 403 on `create-datastore-gcs` or `documents.import` despite the grant
 looking correct — a silent failure, not the loud one this document claimed. The expression
-now leads with `resource.service != "storage.googleapis.com" ||`, so every
-`discoveryengine.*` permission short-circuits before a `resource.name` comparison is ever
-evaluated. That narrows the question to whether Discovery Engine populates
-`resource.service` in the first place — CEL's `||` only absorbs an error on the right side
-if the left side itself resolves to `true` without erroring, so an unpopulated
-`resource.service` would make the guard itself error rather than settle anything. This has
-not been checked against live GCP.
+now leads with `resource.service != "storage.googleapis.com" ||`, so a
+`discoveryengine.*` request is granted as soon as either side of the `||` is true. That
+narrows the question to whether Discovery Engine leaves both attributes unevaluable — CEL's
+`||` is commutative with respect to errors, so it returns `true` when either side is
+`true` even if the other side errors. A discoveryengine request is denied only if
+`resource.service` errors *and* the `resource.name` comparison errors or is `false`. This
+has not been checked against live GCP.
 
 **TODO (@lee-coates):** verify the `tfaCorpusMaintainer` exclude condition end to end —
 grant the role to a test principal (`mise run //deployment:grant <test-principal>
