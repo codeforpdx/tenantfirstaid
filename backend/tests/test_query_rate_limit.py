@@ -30,6 +30,7 @@ from tenantfirstaid.app import QUERY_RATE_LIMIT, app, limiter
 # Shared fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def client():
     app.testing = True
@@ -57,8 +58,11 @@ def _post_query(client, *, remote_addr="127.0.0.1"):
     """POST /api/query from a given IP and drain the streaming body."""
     resp = client.post(
         "/api/query",
-        json={"messages": [{"role": "human", "content": "hi"}],
-              "city": None, "state": "or"},
+        json={
+            "messages": [{"role": "human", "content": "hi"}],
+            "city": None,
+            "state": "or",
+        },
         environ_base={"REMOTE_ADDR": remote_addr},
     )
     # Draining is required for streaming responses: if the generator is not
@@ -72,6 +76,7 @@ def _post_query(client, *, remote_addr="127.0.0.1"):
 # ---------------------------------------------------------------------------
 # 1. Boundary — exactly at and one over the limit
 # ---------------------------------------------------------------------------
+
 
 class TestBoundary:
     @patch("tenantfirstaid.chat.LangChainChatManager")
@@ -119,6 +124,7 @@ class TestBoundary:
 # 2. Per-IP isolation — two IPs each get their own window
 # ---------------------------------------------------------------------------
 
+
 class TestPerIpIsolation:
     @patch("tenantfirstaid.chat.LangChainChatManager")
     def test_exhausting_one_ip_does_not_block_another(self, mock_cm_cls, client):
@@ -153,6 +159,7 @@ class TestPerIpIsolation:
 # 3. Window reset — quota refills after limiter.reset()
 # ---------------------------------------------------------------------------
 
+
 class TestWindowReset:
     @patch("tenantfirstaid.chat.LangChainChatManager")
     def test_reset_allows_requests_again(self, mock_cm_cls, client):
@@ -164,7 +171,9 @@ class TestWindowReset:
         for _ in range(11):
             _post_query(client)
 
-        assert _post_query(client).status_code == 429, "Should be throttled before reset"
+        assert _post_query(client).status_code == 429, (
+            "Should be throttled before reset"
+        )
 
         limiter.reset()
 
@@ -176,6 +185,7 @@ class TestWindowReset:
 # ---------------------------------------------------------------------------
 # 4. Env-var wiring — QUERY_RATE_LIMIT is read from the environment
 # ---------------------------------------------------------------------------
+
 
 class TestEnvVarWiring:
     def test_query_rate_limit_defaults_to_ten_per_minute(self):
@@ -192,13 +202,13 @@ class TestEnvVarWiring:
         # module-level constant (not hard-coded).  If someone sets
         # QUERY_RATE_LIMIT=5 per minute in their environment, the route
         # should honour it — this test verifies the indirection is in place.
-        from tenantfirstaid.app import QUERY_RATE_LIMIT as wired_limit
-        assert wired_limit == os.getenv("QUERY_RATE_LIMIT", "10 per minute")
+        assert QUERY_RATE_LIMIT == os.getenv("QUERY_RATE_LIMIT", "10 per minute")
 
 
 # ---------------------------------------------------------------------------
 # 5. Regression — /api/feedback limit is unchanged and independent
 # ---------------------------------------------------------------------------
+
 
 class TestFeedbackRegression:
     @patch("tenantfirstaid.feedback.EmailMessage")
@@ -206,10 +216,12 @@ class TestFeedbackRegression:
     def test_feedback_still_throttles_at_three(self, mock_email_cls, client):
         # The fix must not change /api/feedback's existing "3 per minute" limit.
         for _ in range(3):
-            client.post("/api/feedback",
-                        data={"name": "J", "subject": "S", "feedback": "F"})
-        resp = client.post("/api/feedback",
-                           data={"name": "J", "subject": "S", "feedback": "F"})
+            client.post(
+                "/api/feedback", data={"name": "J", "subject": "S", "feedback": "F"}
+            )
+        resp = client.post(
+            "/api/feedback", data={"name": "J", "subject": "S", "feedback": "F"}
+        )
         assert resp.status_code == 429
 
     @patch("tenantfirstaid.chat.LangChainChatManager")
@@ -228,8 +240,9 @@ class TestFeedbackRegression:
         assert _post_query(client).status_code == 429, "/api/query should be throttled"
 
         # /api/feedback has its own counter; the first request should still succeed.
-        resp = client.post("/api/feedback",
-                           data={"name": "J", "subject": "S", "feedback": "F"})
+        resp = client.post(
+            "/api/feedback", data={"name": "J", "subject": "S", "feedback": "F"}
+        )
         assert resp.status_code == 200, (
             "/api/feedback counter is independent of /api/query"
         )
@@ -245,8 +258,9 @@ class TestFeedbackRegression:
         mock_cm_cls.return_value.generate_streaming_response.side_effect = _mock_stream
 
         for _ in range(4):
-            client.post("/api/feedback",
-                        data={"name": "J", "subject": "S", "feedback": "F"})
+            client.post(
+                "/api/feedback", data={"name": "J", "subject": "S", "feedback": "F"}
+            )
 
         resp = _post_query(client)
         assert resp.status_code == 200, (
@@ -257,6 +271,7 @@ class TestFeedbackRegression:
 # ---------------------------------------------------------------------------
 # 6. Response shape — 429 carries the Retry-After header
 # ---------------------------------------------------------------------------
+
 
 class TestRateLimitResponseShape:
     @patch("tenantfirstaid.chat.LangChainChatManager")
