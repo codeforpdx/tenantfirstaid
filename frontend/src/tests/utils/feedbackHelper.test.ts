@@ -7,7 +7,7 @@ describe("sendFeedback", () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    fetchSpy = vi.fn().mockResolvedValue({});
+    fetchSpy = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetchSpy);
   });
 
@@ -86,6 +86,86 @@ describe("sendFeedback", () => {
     const html = await getTranscriptHtml();
     expect(html).not.toContain("John Smith");
     expect(html).toContain("background-color: black");
+  });
+
+  it("should redact words containing regex or HTML special characters", async () => {
+    const messages: ChatMessage[] = [
+      new HumanMessage({
+        content: "Call (503) 555-1234 for Tom's unit",
+        id: "1",
+      }),
+      new AIMessage({ content: "Noted.", id: "2" }),
+    ];
+
+    await sendFeedback(messages, "feedback", "", "(503) 555-1234, Tom's");
+
+    const html = await getTranscriptHtml();
+    expect(html).not.toContain("555-1234");
+    expect(html).not.toContain("Tom&#039;s");
+  });
+
+  it("should still send when a redaction term is an invalid regex", async () => {
+    const messages: ChatMessage[] = [
+      new HumanMessage({ content: "I code in C++ at (503", id: "1" }),
+      new AIMessage({ content: "Noted.", id: "2" }),
+    ];
+
+    await sendFeedback(messages, "feedback", "", "C++, (503");
+
+    const html = await getTranscriptHtml();
+    expect(html).not.toContain("C++");
+    expect(html).not.toContain("(503");
+  });
+
+  it("should not corrupt HTML entities when a term matches entity text", async () => {
+    const messages: ChatMessage[] = [
+      new HumanMessage({ content: "rent & deposit for Tom's unit", id: "1" }),
+      new AIMessage({ content: "Noted.", id: "2" }),
+    ];
+
+    await sendFeedback(messages, "feedback", "", "amp, 039");
+
+    const html = await getTranscriptHtml();
+    expect(html).toContain("rent &amp; deposit for Tom&#039;s unit");
+    expect(html).not.toContain("background-color: black");
+  });
+
+  it("should not match a later term inside an earlier redaction", async () => {
+    const messages: ChatMessage[] = [
+      new HumanMessage({ content: "Tom is here", id: "1" }),
+      new AIMessage({ content: "Noted.", id: "2" }),
+    ];
+
+    await sendFeedback(messages, "feedback", "", "Tom, black");
+
+    const html = await getTranscriptHtml();
+    expect(html.match(/<span/g)).toHaveLength(1);
+    expect(html).toContain("</span> is here");
+  });
+
+  it("should treat accented letters as part of a word", async () => {
+    const messages: ChatMessage[] = [
+      new HumanMessage({ content: "José and Nguyễn", id: "1" }),
+      new AIMessage({ content: "Noted.", id: "2" }),
+    ];
+
+    await sendFeedback(messages, "feedback", "", "Jos, Nguyễn");
+
+    const html = await getTranscriptHtml();
+    expect(html).toContain("José");
+    expect(html).not.toContain("Nguyễn");
+  });
+
+  it("should throw when the server responds with an error", async () => {
+    fetchSpy.mockResolvedValue({ ok: false, status: 500 });
+    const messages: ChatMessage[] = [
+      new HumanMessage({ content: "Hello", id: "1" }),
+      new AIMessage({ content: "Hi", id: "2" }),
+    ];
+
+    await expect(sendFeedback(messages, "feedback", "", "")).rejects.toThrow(
+      "500",
+    );
   });
 
   it("should post to /api/feedback with correct form fields", async () => {
