@@ -7,7 +7,10 @@ import { Navigate, useParams, useSearchParams } from "react-router-dom";
 import { useLetterContent } from "./hooks/useLetterContent";
 import { streamText } from "./pages/Chat/utils/streamHelper";
 import LetterGenerationDialog from "./pages/Letter/components/LetterGenerationDialog";
-import { buildLetterUserMessage } from "./pages/Letter/utils/letterHelper";
+import {
+  buildLetterUserMessage,
+  sanitizeOrg,
+} from "./pages/Letter/utils/letterHelper";
 import {
   classifyStateSegment,
   pathFor,
@@ -180,7 +183,10 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
 
   return (
     <>
-      <LetterGenerationDialog ref={dialogRef} />
+      <LetterGenerationDialog
+        ref={dialogRef}
+        isRedirected={sanitizeOrg(org) !== ""}
+      />
       <div className="min-h-full lg:h-full w-full flex flex-col lg:flex-row transition-all duration-300 lg:relative lg:bg-paper-background">
         <div className="flex-1 lg:my-0 w-full lg:flex-1 flex lg:order-2">
           <MessageContainer isOngoing={isOngoing} letterContent={letterContent}>

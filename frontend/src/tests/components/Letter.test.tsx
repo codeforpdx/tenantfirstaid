@@ -45,15 +45,6 @@ vi.mock("../../pages/Chat/components/MessageWindow", () => ({
   default: () => <div data-testid="message-window" />,
 }));
 
-vi.mock("../../LetterGenerationDialog", () => ({
-  default: ({ ref }: { ref: React.Ref<HTMLDialogElement | null> }) => (
-    <dialog ref={ref} open>
-      <p>Some content</p>
-      <button>close</button>
-    </dialog>
-  ),
-}));
-
 import * as streamHelper from "../../pages/Chat/utils/streamHelper";
 import useMessages from "../../hooks/useMessages";
 import HousingContextProvider from "../../contexts/HousingContext";
@@ -195,6 +186,24 @@ describe("Letter component - effect orchestration", () => {
         }),
       );
     });
+  });
+
+  it("shows the redirect notice for a partner org link", async () => {
+    await renderLetter("/letter/or?org=legal-aid");
+
+    expect(
+      screen.getByText(/It'll take a few seconds/, { selector: "p" })
+        .textContent,
+    ).toMatch(/redirected/);
+  });
+
+  it("omits the redirect notice when the org sanitizes to empty", async () => {
+    await renderLetter("/letter/or?org=%21%21");
+
+    expect(
+      screen.getByText(/It'll take a few seconds/, { selector: "p" })
+        .textContent,
+    ).not.toMatch(/redirected/);
   });
 
   it("adds error message when stream ends without calling onDone", async () => {

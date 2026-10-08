@@ -7,6 +7,18 @@ interface BuildLetterReturnType {
 }
 
 /**
+ * Strips a partner org name to safe characters, returning "" when nothing remains.
+ */
+function sanitizeOrg(org: string | undefined): string {
+  const CHARACTER_LIMIT = 100; // Limit character count to prevent token overflow
+  return (org ?? "")
+    .replace(/[^a-zA-Z0-9\s\-_.]/g, "") // Prevent injection attacks
+    .replace(/\s+/g, " ") // Normalize whitespace
+    .trim()
+    .slice(0, CHARACTER_LIMIT);
+}
+
+/**
  * Builds the initial letter-generation prompt for a given org and jurisdiction.
  *
  * @param org - Optional partner organization the user was redirected from.
@@ -18,12 +30,7 @@ function buildLetterUserMessage(
 ): BuildLetterReturnType {
   const locationString = formatLocation(location.city, location.state);
 
-  const CHARACTER_LIMIT = 100; // Limit character count to prevent token overflow
-  const sanitizedOrg = org
-    ?.replace(/[^a-zA-Z0-9\s\-_.]/g, "") // Prevent injection attacks
-    .replace(/\s+/g, " ") // Normalize whitespace
-    .trim()
-    .slice(0, CHARACTER_LIMIT);
+  const sanitizedOrg = sanitizeOrg(org);
 
   const promptParts = [
     sanitizedOrg && `I'm redirected from ${sanitizedOrg}.`,
@@ -42,4 +49,4 @@ function buildLetterUserMessage(
   };
 }
 
-export { buildLetterUserMessage };
+export { buildLetterUserMessage, sanitizeOrg };
