@@ -1,30 +1,60 @@
 import { deserializeAiMessage } from "../../../hooks/useMessages";
 import type { ChatMessage, UiMessage } from "../../../shared/types/messages";
-import sanitizeText from "../../../shared/utils/sanitizeText";
+import {
+  escapeHtml,
+  stripAnchorTags,
+} from "../../../shared/utils/sanitizeText";
 
-function redactText(message: string, wordsToRedact: string) {
-  let redactedMessage = message;
-  const redactList = wordsToRedact
-    .split(/\s*,\s*/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-  redactList.forEach((word) => {
-    const regex = new RegExp(`\\b${word.replace(/\s+/g, "\\s+")}\\b`, "gi");
-    redactedMessage = redactedMessage.replace(regex, () => {
-      return `<span style="
+const REDACTED_SPAN = `<span style="
         background-color: black;
         color:transparent;
         white-space: nowrap;
         user-select: none;
       ">${"_".repeat(10)}</span>`;
-    });
-  });
-  return redactedMessage;
+
+// Unicode-aware word boundary; a capture group instead of lookbehind keeps
+// older Safari (< 16.4) working. The consumed delimiter means back-to-back
+// matches like "C++C++" only redact the first.
+const NON_WORD = "[^\\p{L}\\p{N}_]";
+
+function buildRedactRegex(wordsToRedact: string): RegExp | null {
+  const terms = wordsToRedact
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+    // Longest first so a term that contains another redacts in full.
+    .sort((a, b) => b.length - a.length)
+    .map((s) =>
+      s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+"),
+    );
+  if (terms.length === 0) return null;
+  return new RegExp(
+    `(^|${NON_WORD})(${terms.join("|")})(?=$|${NON_WORD})`,
+    "giu",
+  );
+}
+
+/**
+ * Strips anchors, redacts matches in the raw text, then HTML-escapes everything between them.
+ * Redacting before escaping keeps terms from matching entities or inserted markup.
+ */
+function redactAndEscape(text: string, regex: RegExp | null) {
+  text = stripAnchorTags(text);
+  if (regex === null) return escapeHtml(text);
+  let result = "";
+  let lastIndex = 0;
+  for (const match of text.matchAll(regex)) {
+    const start = match.index + match[1].length;
+    result += escapeHtml(text.slice(lastIndex, start)) + REDACTED_SPAN;
+    lastIndex = start + match[2].length;
+  }
+  return result + escapeHtml(text.slice(lastIndex));
 }
 
 /**
  * Submits user feedback along with a redacted chat transcript to the backend.
  * Builds an HTML transcript, applies word redaction, and sends via FormData.
+ * Throws if there is no exchange to send, the request fails, or the server responds with an error.
  */
 export default async function sendFeedback(
   messages: ChatMessage[],
@@ -32,15 +62,20 @@ export default async function sendFeedback(
   emailsToCC: string,
   wordsToRedact: string,
 ) {
-  if (messages.length < 2) return;
+  const transcriptMessages = messages.filter(
+    (msg): msg is Exclude<ChatMessage, UiMessage> => msg.type !== "ui",
+  );
+  if (transcriptMessages.length < 2) {
+    throw new Error("Not enough messages to send feedback");
+  }
 
-  const messageChain = messages
-    .filter((msg): msg is Exclude<ChatMessage, UiMessage> => msg.type !== "ui")
+  const redactRegex = buildRedactRegex(wordsToRedact);
+  const messageChain = transcriptMessages
     .map(
       (msg) =>
         `<p><strong>${
           msg.type === "human" ? "User" : "AI"
-        }</strong>: ${redactText(sanitizeText(msg.type === "ai" ? deserializeAiMessage(msg.text) : msg.text), wordsToRedact)}</p>`,
+        }</strong>: ${redactAndEscape(msg.type === "ai" ? deserializeAiMessage(msg.text) : msg.text, redactRegex)}</p>`,
     )
     .join("");
 
@@ -75,8 +110,11 @@ export default async function sendFeedback(
   formData.append("emailsToCC", emailsToCC);
   formData.append("transcript", blob, "transcript.html");
 
-  await fetch("/api/feedback", {
+  const response = await fetch("/api/feedback", {
     method: "POST",
     body: formData,
   });
+  if (!response.ok) {
+    throw new Error(`Feedback request failed with status ${response.status}`);
+  }
 }

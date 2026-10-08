@@ -147,7 +147,6 @@ frontend/
 │   │   └── utils/
 │   │       ├── buildLocationPrefix.ts # Helper function for location prefix
 │   │       ├── scrolling.ts        # Helper function for window scrolling
-│   │       ├── dompurify.ts        # Helper function for sanitizing text
 │   │       └── formatLocation.ts   # Formats OregonCity/UsaState into a display string (e.g. "Portland, OR")
 │   └── tests/                     # Testing suite
 │   │   ├── components/            # Component testing
@@ -168,7 +167,6 @@ frontend/
 │   │   │   ├── useLetterContent.test.tsx # useLetterContent testing
 │   │   │   └── useMessages.test.ts # useMessages testing
 │   │   └── utils/                  # Utility function testing
-│   │       ├── dompurify.test.ts   # dompurify testing
 │   │       ├── exportHelper.test.ts # exportHelper testing
 │   │       ├── feedbackHelper.test.ts # feedbackHelper testing
 │   │       ├── letterHelper.test.ts # letterHelper testing

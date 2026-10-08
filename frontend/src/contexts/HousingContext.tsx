@@ -1,5 +1,4 @@
 import { createContext, useCallback, useMemo, useState } from "react";
-import DOMPurify, { SANITIZE_USER_SETTINGS } from "../shared/utils/dompurify";
 import type { Location } from "../types/models";
 import type { JurisdictionKey } from "../shared/constants/jurisdictions";
 
@@ -39,9 +38,7 @@ export default function HousingContextProvider({ children }: Props) {
 
   const handleIssueDescription = useCallback(
     (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setIssueDescription(
-        DOMPurify.sanitize(event.target.value, SANITIZE_USER_SETTINGS),
-      );
+      setIssueDescription(event.target.value);
     },
     [],
   );

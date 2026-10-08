@@ -1,12 +1,9 @@
-import { useLocation } from "react-router-dom";
-
 interface Props {
   ref: React.RefObject<HTMLDialogElement | null>;
+  isRedirected: boolean;
 }
 
-export default function LetterGenerationDialog({ ref }: Props) {
-  const location = useLocation();
-  const isRedirected = location.pathname !== "/letter";
+export default function LetterGenerationDialog({ ref, isRedirected }: Props) {
   const redirectMessage = isRedirected
     ? "You've been redirected here so we can help you create a letter to your landlord. "
     : "";
