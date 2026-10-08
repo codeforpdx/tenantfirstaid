@@ -25,16 +25,18 @@ describe("sendFeedback", () => {
     });
   }
 
-  it("should not send when messages array has fewer than 2 messages", async () => {
-    await sendFeedback([], "feedback", "", "");
-    expect(fetchSpy).not.toHaveBeenCalled();
+  it("should throw without sending when fewer than 2 non-ui messages exist", async () => {
+    await expect(sendFeedback([], "feedback", "", "")).rejects.toThrow();
 
-    await sendFeedback(
-      [new HumanMessage({ content: "Single", id: "1" })],
-      "feedback",
-      "",
-      "",
-    );
+    const uiMessage: UiMessage = { type: "ui", text: "Error", id: "2" };
+    await expect(
+      sendFeedback(
+        [new HumanMessage({ content: "Single", id: "1" }), uiMessage],
+        "feedback",
+        "",
+        "",
+      ),
+    ).rejects.toThrow();
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -115,6 +117,23 @@ describe("sendFeedback", () => {
     const html = await getTranscriptHtml();
     expect(html).not.toContain("C++");
     expect(html).not.toContain("(503");
+  });
+
+  it("should strip anchor tags around a redacted term", async () => {
+    const messages: ChatMessage[] = [
+      new HumanMessage({ content: "Hi", id: "1" }),
+      new AIMessage({
+        content: '<a href="https://example.com/john">John</a> called',
+        id: "2",
+      }),
+    ];
+
+    await sendFeedback(messages, "feedback", "", "John");
+
+    const html = await getTranscriptHtml();
+    expect(html).not.toContain("href");
+    expect(html).not.toContain("john");
+    expect(html).toContain("background-color: black");
   });
 
   it("should not corrupt HTML entities when a term matches entity text", async () => {

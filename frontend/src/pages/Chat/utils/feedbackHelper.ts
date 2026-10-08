@@ -1,6 +1,9 @@
 import { deserializeAiMessage } from "../../../hooks/useMessages";
 import type { ChatMessage, UiMessage } from "../../../shared/types/messages";
-import sanitizeText from "../../../shared/utils/sanitizeText";
+import {
+  escapeHtml,
+  stripAnchorTags,
+} from "../../../shared/utils/sanitizeText";
 
 const REDACTED_SPAN = `<span style="
         background-color: black;
@@ -10,7 +13,8 @@ const REDACTED_SPAN = `<span style="
       ">${"_".repeat(10)}</span>`;
 
 // Unicode-aware word boundary; a capture group instead of lookbehind keeps
-// older Safari (< 16.4) working.
+// older Safari (< 16.4) working. The consumed delimiter means back-to-back
+// matches like "C++C++" only redact the first.
 const NON_WORD = "[^\\p{L}\\p{N}_]";
 
 function buildRedactRegex(wordsToRedact: string): RegExp | null {
@@ -31,25 +35,26 @@ function buildRedactRegex(wordsToRedact: string): RegExp | null {
 }
 
 /**
- * Redacts matches in the raw text, then HTML-escapes everything between them.
+ * Strips anchors, redacts matches in the raw text, then HTML-escapes everything between them.
  * Redacting before escaping keeps terms from matching entities or inserted markup.
  */
 function redactAndEscape(text: string, regex: RegExp | null) {
-  if (regex === null) return sanitizeText(text);
+  text = stripAnchorTags(text);
+  if (regex === null) return escapeHtml(text);
   let result = "";
   let lastIndex = 0;
   for (const match of text.matchAll(regex)) {
     const start = match.index + match[1].length;
-    result += sanitizeText(text.slice(lastIndex, start)) + REDACTED_SPAN;
+    result += escapeHtml(text.slice(lastIndex, start)) + REDACTED_SPAN;
     lastIndex = start + match[2].length;
   }
-  return result + sanitizeText(text.slice(lastIndex));
+  return result + escapeHtml(text.slice(lastIndex));
 }
 
 /**
  * Submits user feedback along with a redacted chat transcript to the backend.
  * Builds an HTML transcript, applies word redaction, and sends via FormData.
- * Throws if the request fails or the server responds with an error.
+ * Throws if there is no exchange to send, the request fails, or the server responds with an error.
  */
 export default async function sendFeedback(
   messages: ChatMessage[],
@@ -57,11 +62,15 @@ export default async function sendFeedback(
   emailsToCC: string,
   wordsToRedact: string,
 ) {
-  if (messages.length < 2) return;
+  const transcriptMessages = messages.filter(
+    (msg): msg is Exclude<ChatMessage, UiMessage> => msg.type !== "ui",
+  );
+  if (transcriptMessages.length < 2) {
+    throw new Error("Not enough messages to send feedback");
+  }
 
   const redactRegex = buildRedactRegex(wordsToRedact);
-  const messageChain = messages
-    .filter((msg): msg is Exclude<ChatMessage, UiMessage> => msg.type !== "ui")
+  const messageChain = transcriptMessages
     .map(
       (msg) =>
         `<p><strong>${
