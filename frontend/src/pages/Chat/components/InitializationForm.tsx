@@ -84,6 +84,7 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
         <textarea
           className="h-25 md:h-16 w-full"
           placeholder="Briefly describe your specific housing situation or question about housing."
+          value={issueDescription}
           onChange={handleIssueDescription}
         />
       </div>

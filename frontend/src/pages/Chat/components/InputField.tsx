@@ -73,7 +73,13 @@ export default function InputField({
         onChange={onChange}
         onInput={resizeTextArea}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
+          // keyCode 229 covers Safari, which ends composition before keydown.
+          if (
+            e.key === "Enter" &&
+            !e.shiftKey &&
+            !e.nativeEvent.isComposing &&
+            e.keyCode !== 229
+          ) {
             e.preventDefault();
             handleSend();
           }

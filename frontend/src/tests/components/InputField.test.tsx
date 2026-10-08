@@ -64,6 +64,36 @@ describe("InputField keyboard handling", () => {
     streamSpy.mockRestore();
   });
 
+  it("Enter does not submit while an IME composition is active", () => {
+    const streamSpy = vi
+      .spyOn(streamHelper, "streamText")
+      .mockResolvedValue(undefined);
+    const { setMessages } = renderInputField("你好");
+
+    const textarea = screen.getByPlaceholderText(/Type your message here/i);
+    fireEvent.keyDown(textarea, { key: "Enter", isComposing: true });
+
+    expect(setMessages).not.toHaveBeenCalled();
+    expect(streamSpy).not.toHaveBeenCalled();
+
+    streamSpy.mockRestore();
+  });
+
+  it("Enter does not submit on Safari's IME commit keydown (keyCode 229)", () => {
+    const streamSpy = vi
+      .spyOn(streamHelper, "streamText")
+      .mockResolvedValue(undefined);
+    const { setMessages } = renderInputField("你好");
+
+    const textarea = screen.getByPlaceholderText(/Type your message here/i);
+    fireEvent.keyDown(textarea, { key: "Enter", keyCode: 229 });
+
+    expect(setMessages).not.toHaveBeenCalled();
+    expect(streamSpy).not.toHaveBeenCalled();
+
+    streamSpy.mockRestore();
+  });
+
   it("Enter does nothing when the input is empty", () => {
     const streamSpy = vi
       .spyOn(streamHelper, "streamText")

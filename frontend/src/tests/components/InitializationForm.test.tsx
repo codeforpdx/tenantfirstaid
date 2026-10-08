@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { describe, it, expect, vi } from "vitest";
 import InitializationForm from "../../pages/Chat/components/InitializationForm";
 import HousingContextProvider from "../../contexts/HousingContext";
@@ -125,5 +126,56 @@ describe("InitializationForm", () => {
     const msg = getSubmittedMessage();
     expect(msg).toBeDefined();
     expect(msg!.content).toBe("I'm in Eugene, OR.");
+  });
+
+  it("sends special characters without HTML-escaping them", async () => {
+    renderInitializationForm("/chat/or");
+
+    fireEvent.change(
+      screen.getByPlaceholderText(/briefly describe your specific/i),
+      { target: { value: 'Is rent < $1000 & a "2x" deposit OK?' } },
+    );
+
+    fireEvent.submit(
+      screen.getByRole("button", { name: "enter chat" }).closest("form")!,
+    );
+
+    await waitFor(() => expect(mockSetMessages).toHaveBeenCalled());
+
+    expect(getSubmittedMessage()!.content).toBe(
+      'I\'m in OR. Is rent < $1000 & a "2x" deposit OK?',
+    );
+  });
+
+  it("shows the retained description when the form remounts", () => {
+    function RemountHarness() {
+      const [shown, setShown] = useState(true);
+      return (
+        <>
+          <button onClick={() => setShown((prev) => !prev)}>toggle</button>
+          {shown && <FormHarness />}
+        </>
+      );
+    }
+    render(
+      <MemoryRouter initialEntries={["/chat/or"]}>
+        <HousingContextProvider>
+          <Routes>
+            <Route path="/chat/:state?/:city?" element={<RemountHarness />} />
+          </Routes>
+        </HousingContextProvider>
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(
+      screen.getByPlaceholderText(/briefly describe your specific/i),
+      { target: { value: "My deposit was not returned" } },
+    );
+    fireEvent.click(screen.getByText("toggle"));
+    fireEvent.click(screen.getByText("toggle"));
+
+    expect(
+      screen.getByPlaceholderText(/briefly describe your specific/i),
+    ).toHaveValue("My deposit was not returned");
   });
 });
