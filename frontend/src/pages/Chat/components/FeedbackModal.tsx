@@ -54,20 +54,20 @@ export default function FeedbackModal({ messages, setOpenFeedback }: Props) {
             </p>
           )}
           <textarea
-            className="h-[80%] w-full"
+            className="flex-[4] min-h-0 w-full"
             placeholder="Please enter your feedback with regards to the chatbot here. A copy of your chat transcript will automatically be included with your response."
             value={feedback}
             onChange={(event) => setFeedback(event.target.value)}
           />
           <input
-            className="h-[20%] w-full"
+            className="flex-1 min-h-0 w-full"
             placeholder="Enter email(s) to CC transcript separated by commas"
             type="text"
             value={emailsToCC}
             onChange={(event) => setEmailsToCC(event.target.value)}
           />
           <input
-            className="h-[20%] w-full"
+            className="flex-1 min-h-0 w-full"
             placeholder="Please enter word(s) to redact separated by commas"
             type="text"
             value={wordsToRedact}
@@ -75,7 +75,7 @@ export default function FeedbackModal({ messages, setOpenFeedback }: Props) {
           />
         </>
       ) : (
-        <div className="flex items-center justify-center h-[80%] w-full">
+        <div className="flex items-center justify-center flex-1 w-full">
           <p>{status === "sending" ? "Sending…" : "Feedback Sent!"}</p>
         </div>
       )}
