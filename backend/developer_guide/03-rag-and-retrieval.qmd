@@ -128,7 +128,7 @@ The query pipeline, from user request through RAG retrieval to a streamed answer
 5. **Session update** — conversation state is persisted for continuity.
 
 Where the corpus itself comes from is covered in
-[Corpus Ingestion](07-corpus-ingestion.qmd).
+[Corpus Ingestion](08-corpus-ingestion.qmd).
 
 ## Where to go next
 

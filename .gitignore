@@ -87,3 +87,21 @@ combined_training_gemini-2.0.jsonl
 /.claude/scheduled_tasks.lock
 /backend/.eval_history/
 /.playwright-mcp
+
+# --- OpenTofu ---------------------------------------------------------------
+# Provider plugins and local working state, rebuilt by `tofu init`.
+.terraform/
+# State never lives in the repository; it lives in the GCS backend. These patterns catch
+# a local run that forgot -backend-config, which would otherwise commit resource
+# identifiers and any sensitive values the providers recorded.
+*.tfstate
+*.tfstate.*
+crash.log
+# Saved plans (`tofu plan -out=...`) embed resource values, including sensitive ones.
+tfplan
+*.tfplan
+# Per-operator inputs, which hold identities such as the reaper's service-account email.
+# Any name, not just the conventional terraform.tfvars: --var-file accepts an arbitrary
+# path, and a PII-bearing var file under a different name must not become committable
+# just because it wasn't spelled the usual way.
+*.tfvars

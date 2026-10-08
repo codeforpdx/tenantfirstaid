@@ -90,8 +90,9 @@ host, install Quarto and harper-cli yourself.
 
 ## Corpus ingestion tasks
 
-These build and publish the Vertex AI Search corpus, in the order shown. The
-narrative is in [Corpus Ingestion](07-corpus-ingestion.qmd). Required inputs
+These build and publish the Vertex AI Search corpus, in the order shown, and
+they need `tfaCorpusMaintainer` — see [Access & Roles](07-access-and-roles.qmd).
+The narrative is in [Corpus Ingestion](08-corpus-ingestion.qmd). Required inputs
 (bucket / datastore / app IDs) are task flags; ad-hoc script flags pass through
 after `--`.
 
@@ -116,3 +117,24 @@ mise run create-datastore-gcs  --bucket tfa-corpus-2025 --datastore-id tfa-laws-
 mise run create-app-gcs        --datastore-id tfa-laws-2025 --app-id tfa-laws-app
 # Then set VERTEX_AI_DATASTORE_LAWS=tfa-laws-2025 in backend/.env
 ```
+
+## Access tasks
+
+These live in `deployment/` rather than `backend/`, so address them as
+`mise run //deployment:<task>` from anywhere in the repo. Granting and revoking
+needs project-admin rights; `list-access` is read-only and needs only
+`resourcemanager.projects.getIamPolicy`.
+
+| Task          | Purpose                                                                       |
+| ------------: | :---------------------------------------------------------------------------- |
+| `list-access` | Show who currently holds each Tenant First Aid custom role.                     |
+| `grant`       | Grant or revoke a role for one person. Takes the Google account as a positional argument, plus `--role <contributor\|corpus-maintainer\|corpus-admin>`, `--revoke`, `--expires <days>`, `--dry-run`. |
+| `apply-admin` | Apply the role definitions themselves. Needs elevation (`--elevate`); `--plan-only` shows the plan without applying. |
+
+: Access tasks {#tbl-access-tasks}
+
+::: {.callout-note title="`grant` binds the whole stack"}
+The roles are layers, so `--role corpus-maintainer` binds `tfaContributor` *and*
+`tfaCorpusMaintainer`. `--revoke` and `--expires` apply only to the top layer, so
+a lapsed break-glass grant drops back to ordinary access rather than to nothing.
+:::

@@ -1,0 +1,38 @@
+# Copy to terraform.tfvars and fill in, or pass with -var-file.
+#
+# terraform.tfvars is gitignored and must stay so: this repository is public, and a
+# personal address is PII. Nothing here should ever need a real person's email -- see
+# below.
+
+project_id = "tenantfirstaid"
+
+# ---------------------------------------------------------------------------
+# Everything below is optional. The defaults bind no humans at all.
+# ---------------------------------------------------------------------------
+#
+# Applied as-is, this module creates the four custom roles and the reaper's service
+# account, and binds only the reaper. Human roles are then assigned by hand by the
+# project admin -- the same Discord ask as always, but naming a custom role instead of a
+# broad predefined one. That is the change worth having: "what can a contributor do?"
+# becomes answerable from roles.tf. Who holds the role stays in the project IAM policy,
+# where the Admin Activity log already records every grant.
+#
+# Setting the two groups below is the better end state, because assigning a project role
+# by hand requires resourcemanager.projects.setIamPolicy -- the permission that grants
+# permissions -- so onboarding otherwise has to be done by someone who could escalate to
+# Owner. A group owner needs no GCP permissions at all. Switching later is additive:
+# create the group, add the members, set the variable, remove the hand-made bindings.
+#
+# A group *address* is not PII, so these are safe to set. A personal address is, so
+# individuals are never valid here.
+
+# contributor_group       = "group:tfa-contributors@googlegroups.com"
+# corpus_maintainer_group = "group:tfa-corpus-maintainers@googlegroups.com"
+
+# The only role that can destroy a corpus a deployed environment is serving. A list
+# rather than a group, so that widening it is a deliberate act per person. Prefer fixing
+# the reaper to adding anyone here; prefer a hand-made console grant to writing an
+# address into this file at all.
+corpus_admin_members = [
+  # "user:someone@example.com",
+]
