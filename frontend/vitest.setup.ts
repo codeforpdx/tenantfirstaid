@@ -15,3 +15,11 @@ if (typeof window !== "undefined" && !window.matchMedia) {
     dispatchEvent: () => false,
   });
 }
+
+// jsdom implements neither element scrolling nor modal dialogs; stub them so
+// components that call these on mount render. Tests may override them.
+if (typeof window !== "undefined") {
+  HTMLElement.prototype.scrollTo ??= () => {};
+  HTMLDialogElement.prototype.showModal ??= () => {};
+  HTMLDialogElement.prototype.close ??= () => {};
+}

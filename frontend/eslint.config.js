@@ -30,4 +30,9 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Fast refresh never loads test files, so shared test helpers may mix exports.
+    files: ["src/tests/**"],
+    rules: { "react-refresh/only-export-components": "off" },
+  },
 );

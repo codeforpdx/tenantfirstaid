@@ -1,22 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import type { ChatMessage } from "../../../shared/types/messages";
-import type { Location } from "../../../types/models";
+import type { AddMessage } from "../../../hooks/useMessages";
 import InputField from "./InputField";
 import MessageContent from "./MessageContent";
 import ExportMessagesButton from "./ExportMessagesButton";
 import InitializationForm from "./InitializationForm";
 import MessageAvatar from "./MessageAvatar";
 import FeedbackModal from "./FeedbackModal";
-import { useLocation } from "react-router-dom";
 import clsx from "clsx";
 
 interface Props {
   messages: ChatMessage[];
-  addMessage: (
-    args: Location,
-  ) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
+  addMessage: AddMessage;
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   isOngoing: boolean;
+  /** Number of leading messages to hide (the letter page hides its setup exchange). */
+  hiddenMessageCount?: number;
 }
 
 /**
@@ -28,20 +27,14 @@ export default function MessageWindow({
   addMessage,
   setMessages,
   isOngoing,
+  hiddenMessageCount = 0,
 }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [openFeedback, setOpenFeedback] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
-  const loc = useLocation();
-
-  // Hides the initial user prompt and AI letter response on the letter page
-  // (index 0 = user prompt, index 1 = AI letter generation).
-  const LETTER_PAGE_HIDDEN_MESSAGES = 2;
-  const displayedMessages = loc.pathname.startsWith("/letter")
-    ? messages.slice(LETTER_PAGE_HIDDEN_MESSAGES)
-    : messages;
+  const displayedMessages = messages.slice(hiddenMessageCount);
 
   const handleClearSession = () => {
     window.location.reload();
@@ -110,13 +103,14 @@ export default function MessageWindow({
         {messages.length > 0 ? (
           <>
             <InputField
+              messages={messages}
               addMessage={addMessage}
               setMessages={setMessages}
               isLoading={isLoading}
               setIsLoading={setIsLoading}
               inputRef={inputRef}
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              setValue={setInputValue}
             />
             <div className="flex justify-center gap-4 mt-4">
               <button
@@ -148,6 +142,7 @@ export default function MessageWindow({
           <InitializationForm
             addMessage={addMessage}
             setMessages={setMessages}
+            setIsLoading={setIsLoading}
           />
         )}
       </div>

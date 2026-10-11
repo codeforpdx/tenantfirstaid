@@ -1,14 +1,15 @@
 import { AIMessage } from "@langchain/core/messages";
 import type { Location } from "../../../types/models";
 import type { ChatMessage, UiMessage } from "../../../shared/types/messages";
+import type { AddMessage } from "../../../hooks/useMessages";
 
 /**
  * Options for streaming AI responses into the chat message list.
  */
 export interface StreamTextOptions {
-  addMessage: (
-    args: Location,
-  ) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
+  addMessage: AddMessage;
+  /** Conversation to send, including the new user message. */
+  history: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   housingLocation: Location;
   setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>;
@@ -24,6 +25,7 @@ export interface StreamTextOptions {
  */
 async function streamText({
   addMessage,
+  history,
   setMessages,
   housingLocation,
   setIsLoading,
@@ -40,7 +42,7 @@ async function streamText({
   ]);
 
   try {
-    const reader = await addMessage(housingLocation);
+    const reader = await addMessage({ messages: history, ...housingLocation });
     if (!reader) {
       console.error("Stream reader is unavailable");
       const nullReaderError: UiMessage = {

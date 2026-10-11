@@ -1,33 +1,8 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
-import {
-  vi,
-  describe,
-  it,
-  expect,
-  beforeEach,
-  afterEach,
-  beforeAll,
-} from "vitest";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
+import { Routes, Route } from "react-router-dom";
 import { HumanMessage } from "@langchain/core/messages";
-import type { ChatMessage } from "../../shared/types/messages";
-
-beforeAll(() => {
-  if (!("scrollTo" in HTMLElement.prototype)) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    HTMLElement.prototype.scrollTo = function () {};
-  }
-  HTMLDialogElement.prototype.showModal = vi.fn();
-  HTMLDialogElement.prototype.close = vi.fn();
-});
+import { messagesAddedBy, renderWithProviders } from "../testUtils";
 
 vi.mock("../../pages/Chat/utils/streamHelper", () => ({
   streamText: vi.fn(),
@@ -42,29 +17,24 @@ vi.mock("../../hooks/useLetterContent", () => ({
 }));
 
 vi.mock("../../pages/Chat/components/MessageWindow", () => ({
-  default: () => <div data-testid="message-window" />,
+  default: ({ hiddenMessageCount }: { hiddenMessageCount?: number }) => (
+    <div data-testid="message-window" data-hidden={hiddenMessageCount} />
+  ),
 }));
 
 import * as streamHelper from "../../pages/Chat/utils/streamHelper";
 import useMessages from "../../hooks/useMessages";
-import HousingContextProvider from "../../contexts/HousingContext";
 
 let mockStreamText: ReturnType<typeof vi.fn>;
 let mockUseMessages: ReturnType<typeof vi.fn>;
 
 const renderLetter = async (initialEntry = "/letter/or/portland?org=org") => {
   const { default: Letter } = await import("../../Letter");
-  const queryClient = new QueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <HousingContextProvider>
-        <MemoryRouter initialEntries={[initialEntry]}>
-          <Routes>
-            <Route path="/letter/:state?/:city?" element={<Letter />} />
-          </Routes>
-        </MemoryRouter>
-      </HousingContextProvider>
-    </QueryClientProvider>,
+  return renderWithProviders(
+    <Routes>
+      <Route path="/letter/:state?/:city?" element={<Letter />} />
+    </Routes>,
+    { route: initialEntry },
   );
 };
 
@@ -87,7 +57,7 @@ describe("Letter component - effect orchestration", () => {
     vi.clearAllMocks();
   });
 
-  it("first effect adds user message before second effect calls streamText", async () => {
+  it("adds the user message before calling streamText", async () => {
     const callOrder: string[] = [];
     const mockSetMessages = vi.fn(() => {
       callOrder.push("setMessages");
@@ -123,6 +93,10 @@ describe("Letter component - effect orchestration", () => {
         housingLocation: { state: "or", city: "portland" },
       }),
     );
+    // The message sent to the backend is the one added to the chat.
+    const [userMessage] = messagesAddedBy(mockSetMessages);
+    expect(userMessage).toBeInstanceOf(HumanMessage);
+    expect(mockStreamText.mock.calls[0][0].history).toEqual([userMessage]);
   });
 
   it("shows loading state before second message arrives", async () => {
@@ -223,24 +197,25 @@ describe("Letter component - effect orchestration", () => {
       expect(mockStreamText).toHaveBeenCalled();
     });
 
+    const addedTexts = messagesAddedBy(mockSetMessages).map((msg) => msg.text);
     // Should not add the instruction message (no letter was cleanly generated).
-    const addedInstructionMessage = mockSetMessages.mock.calls.find((call) => {
-      const result = call[0]([]);
-      return result.some(
-        (msg: ChatMessage) =>
-          "text" in msg && msg.text.includes("initial template"),
-      );
-    });
-    expect(addedInstructionMessage).toBeUndefined();
-
+    expect(addedTexts.some((text) => text.includes("initial template"))).toBe(
+      false,
+    );
     // Should add the error message so the user isn't left with an empty panel.
-    const addedErrorMessage = mockSetMessages.mock.calls.find((call) => {
-      const result = call[0]([]);
-      return result.some(
-        (msg: ChatMessage) =>
-          "text" in msg && msg.text.includes("Unable to generate"),
-      );
-    });
-    expect(addedErrorMessage).toBeDefined();
+    expect(addedTexts.some((text) => text.includes("Unable to generate"))).toBe(
+      true,
+    );
+  });
+
+  it("hides the setup prompt and letter response from the message list", async () => {
+    await renderLetter();
+
+    const messageWindow = await screen.findByTestId(
+      "message-window",
+      {},
+      { timeout: 2000 },
+    );
+    expect(messageWindow).toHaveAttribute("data-hidden", "2");
   });
 });

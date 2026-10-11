@@ -1,17 +1,10 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
 import FrequentInquiries from "../../shared/components/FrequentInquiries";
-import HousingContextProvider from "../../contexts/HousingContext";
+import { renderWithProviders } from "../testUtils";
 
 const renderPanel = (entry = "/chat/or") =>
-  render(
-    <HousingContextProvider>
-      <MemoryRouter initialEntries={[entry]}>
-        <FrequentInquiries />
-      </MemoryRouter>
-    </HousingContextProvider>,
-  );
+  renderWithProviders(<FrequentInquiries />, { route: entry });
 
 describe("FrequentInquiries", () => {
   beforeEach(() => {

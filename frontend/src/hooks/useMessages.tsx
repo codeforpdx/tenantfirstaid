@@ -23,21 +23,36 @@ export function deserializeAiMessage(text: string): string {
     .join("\n");
 }
 
-async function addNewMessage(
-  messages: ChatMessage[],
-  { city, state }: Location,
-) {
-  const serializedMsg = messages.map((msg) => ({
-    role: msg.type,
-    content: msg.type === "ai" ? deserializeAiMessage(msg.text) : msg.text,
-    id: msg.id,
-  }));
+/** Arguments for sending the conversation history to the backend. */
+export interface AddMessageArgs extends Location {
+  messages: ChatMessage[];
+}
+
+export type AddMessage = (
+  args: AddMessageArgs,
+) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
+
+async function addNewMessage({ messages, city, state }: AddMessageArgs) {
+  // Exclude UI-only messages and empty placeholders from backend history.
+  const serializedMsg = messages
+    .filter(
+      (msg): msg is Exclude<ChatMessage, UiMessage> =>
+        msg.type !== "ui" && msg.text.trim() !== "",
+    )
+    .map((msg) => ({
+      role: msg.type,
+      content: msg.type === "ai" ? deserializeAiMessage(msg.text) : msg.text,
+      id: msg.id,
+    }));
   const response = await fetch("/api/query", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify({ messages: serializedMsg, city, state }),
   });
+  if (!response.ok) {
+    throw new Error(`Query failed with status ${response.status}`);
+  }
   return response.body?.getReader();
 }
 
@@ -48,16 +63,7 @@ async function addNewMessage(
 export default function useMessages() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-  const addMessage = useMutation({
-    mutationFn: async ({ city, state }: Location) => {
-      // Exclude UI-only messages and empty placeholders from backend history.
-      const filteredMessages = messages.filter(
-        (msg): msg is Exclude<ChatMessage, UiMessage> =>
-          msg.type !== "ui" && msg.text.trim() !== "",
-      );
-      return await addNewMessage(filteredMessages, { city, state });
-    },
-  });
+  const addMessage = useMutation({ mutationFn: addNewMessage });
 
   return {
     messages,

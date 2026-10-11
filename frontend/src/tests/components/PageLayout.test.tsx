@@ -1,32 +1,13 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render } from "@testing-library/react";
 import { describe, it } from "vitest";
-import HousingContextProvider from "../../contexts/HousingContext";
-import { MemoryRouter } from "react-router-dom";
-
-beforeAll(() => {
-  if (!("scrollTo" in HTMLElement.prototype)) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    HTMLElement.prototype.scrollTo = function () {};
-  }
-  HTMLDialogElement.prototype.showModal = vi.fn();
-  HTMLDialogElement.prototype.close = vi.fn();
-});
+import { renderWithProviders } from "../testUtils";
 
 const renderLayout = async (path: string) => {
   const { default: Layout } = await import("../../layouts/PageLayout");
-  const queryClient = new QueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <HousingContextProvider>
-        <MemoryRouter initialEntries={[path]}>
-          <Layout>
-            <div />
-          </Layout>
-        </MemoryRouter>
-      </HousingContextProvider>
-    </QueryClientProvider>,
+  return renderWithProviders(
+    <Layout>
+      <div />
+    </Layout>,
+    { route: path },
   );
 };
 

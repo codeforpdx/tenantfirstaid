@@ -1,6 +1,6 @@
 import type { ChatMessage } from "../../../shared/types/messages";
 import BeaverIcon from "../../../shared/components/BeaverIcon";
-import type { Location } from "../../../types/models";
+import type { AddMessage } from "../../../hooks/useMessages";
 import { streamText } from "../utils/streamHelper";
 import useHousingContext from "../../../hooks/useHousingContext";
 import { buildLocationPrefix } from "../../../shared/utils/buildLocationPrefix";
@@ -8,17 +8,20 @@ import { scrollToTop } from "../../../shared/utils/scrolling";
 import { HumanMessage } from "@langchain/core/messages";
 
 interface Props {
-  addMessage: (
-    args: Location,
-  ) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
+  addMessage: AddMessage;
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 /**
  * Initial chat form for describing a housing issue.
  * The jurisdiction is set via the navbar location picker.
  */
-export default function InitializationForm({ addMessage, setMessages }: Props) {
+export default function InitializationForm({
+  addMessage,
+  setMessages,
+  setIsLoading,
+}: Props) {
   const {
     housingLocation,
     issueDescription,
@@ -27,22 +30,24 @@ export default function InitializationForm({ addMessage, setMessages }: Props) {
   } = useHousingContext();
 
   const handleInitialInput = async () => {
-    const userMessageId = Date.now().toString();
     const content = [
       buildLocationPrefix(housingLocation.city, housingLocation.state),
       issueDescription,
     ]
       .join(" ")
       .trim();
-    setMessages((prev) => [
-      ...prev,
-      new HumanMessage({ content, id: userMessageId }),
-    ]);
+    const userMessage = new HumanMessage({
+      content,
+      id: Date.now().toString(),
+    });
+    setMessages((prev) => [...prev, userMessage]);
 
     await streamText({
       addMessage,
+      history: [userMessage],
       setMessages,
       housingLocation,
+      setIsLoading,
     });
   };
 

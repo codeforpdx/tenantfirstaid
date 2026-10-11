@@ -4,26 +4,7 @@ import {
   streamText,
   type StreamTextOptions,
 } from "../../pages/Chat/utils/streamHelper";
-
-function createMockReader(
-  chunks: string[],
-): ReadableStreamDefaultReader<Uint8Array> {
-  let index = 0;
-  return {
-    read: vi.fn(async () => {
-      if (index >= chunks.length) {
-        return { done: true, value: undefined };
-      }
-      const encoder = new TextEncoder();
-      const value = encoder.encode(chunks[index]);
-      index++;
-      return { done: false, value };
-    }),
-    releaseLock: vi.fn(),
-    cancel: vi.fn(),
-    closed: Promise.resolve(undefined),
-  } as unknown as ReadableStreamDefaultReader<Uint8Array>;
-}
+import { createMockReader } from "../testUtils";
 
 describe("streamText", () => {
   let mockAddMessage: ReturnType<typeof vi.fn>;
@@ -52,12 +33,14 @@ describe("streamText", () => {
 
     await streamText({
       addMessage: mockAddMessage,
+      history: [],
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
     } as StreamTextOptions);
 
     expect(mockAddMessage).toHaveBeenCalledWith({
+      messages: [],
       city: "portland",
       state: "or",
     });
@@ -77,6 +60,7 @@ describe("streamText", () => {
 
     await streamText({
       addMessage: mockAddMessage,
+      history: [],
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
@@ -102,6 +86,7 @@ describe("streamText", () => {
 
     await streamText({
       addMessage: mockAddMessage,
+      history: [],
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
@@ -131,6 +116,7 @@ describe("streamText", () => {
 
     await streamText({
       addMessage: mockAddMessage,
+      history: [],
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
@@ -162,6 +148,7 @@ describe("streamText", () => {
 
     await streamText({
       addMessage: mockAddMessage,
+      history: [],
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
@@ -184,6 +171,7 @@ describe("streamText", () => {
 
     await streamText({
       addMessage: mockAddMessage,
+      history: [],
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       setIsLoading: mockSetIsLoading,
@@ -211,6 +199,7 @@ describe("streamText", () => {
 
     await streamText({
       addMessage: mockAddMessage,
+      history: [],
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       onDone: mockOnDone,
@@ -230,6 +219,7 @@ describe("streamText", () => {
 
     await streamText({
       addMessage: mockAddMessage,
+      history: [],
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
       onDone: mockOnDone,
@@ -250,6 +240,7 @@ describe("streamText", () => {
 
     await streamText({
       addMessage: mockAddMessage,
+      history: [],
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
     } as StreamTextOptions);
@@ -273,6 +264,7 @@ describe("streamText", () => {
 
     await streamText({
       addMessage: mockAddMessage,
+      history: [],
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
     } as StreamTextOptions);
@@ -296,6 +288,7 @@ describe("streamText", () => {
 
     await streamText({
       addMessage: mockAddMessage,
+      history: [],
       setMessages: mockSetMessages,
       housingLocation: { city: "portland", state: "or" },
     } as StreamTextOptions);
