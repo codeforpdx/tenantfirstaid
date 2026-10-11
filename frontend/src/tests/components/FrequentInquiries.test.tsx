@@ -11,12 +11,10 @@ describe("FrequentInquiries", () => {
     localStorage.clear();
   });
 
-  it("renders the first inquiry expanded by default", () => {
+  it("renders every inquiry collapsed by default", () => {
     renderPanel();
 
-    const buttons = screen.getAllByRole("button");
-    expect(buttons[0]).toHaveAttribute("aria-expanded", "true");
-    buttons.slice(1).forEach((b) => {
+    screen.getAllByRole("button").forEach((b) => {
       expect(b).toHaveAttribute("aria-expanded", "false");
     });
   });
@@ -25,6 +23,7 @@ describe("FrequentInquiries", () => {
     renderPanel();
 
     const firstButton = screen.getAllByRole("button")[0];
+    fireEvent.click(firstButton);
     expect(firstButton).toHaveAttribute("aria-expanded", "true");
 
     fireEvent.click(firstButton);
@@ -35,7 +34,7 @@ describe("FrequentInquiries", () => {
     renderPanel();
 
     const buttons = screen.getAllByRole("button");
-    // First is open by default.
+    fireEvent.click(buttons[0]);
     expect(buttons[0]).toHaveAttribute("aria-expanded", "true");
 
     // Open the second inquiry.
@@ -92,7 +91,8 @@ describe("FrequentInquiries", () => {
   it("remembers when every inquiry was collapsed", () => {
     const { unmount } = renderPanel();
 
-    // Collapse the default-open first inquiry, then remount.
+    // Open and then collapse the first inquiry, then remount.
+    fireEvent.click(screen.getAllByRole("button")[0]);
     fireEvent.click(screen.getAllByRole("button")[0]);
     unmount();
     renderPanel();
@@ -102,7 +102,7 @@ describe("FrequentInquiries", () => {
     });
   });
 
-  it("renders with the default inquiry open when storage access throws", () => {
+  it("renders collapsed and still toggles when storage access throws", () => {
     const getItem = vi
       .spyOn(Storage.prototype, "getItem")
       .mockImplementation(() => {
@@ -117,7 +117,7 @@ describe("FrequentInquiries", () => {
       renderPanel();
 
       const buttons = screen.getAllByRole("button");
-      expect(buttons[0]).toHaveAttribute("aria-expanded", "true");
+      expect(buttons[0]).toHaveAttribute("aria-expanded", "false");
 
       // Toggling must still work even though persistence fails.
       fireEvent.click(buttons[1]);
@@ -128,14 +128,13 @@ describe("FrequentInquiries", () => {
     }
   });
 
-  it("falls back to the first inquiry when the stored index is invalid", () => {
+  it("renders every inquiry collapsed when the stored index is invalid", () => {
     localStorage.setItem("faqOpenIndex", "999");
     renderPanel();
 
-    expect(screen.getAllByRole("button")[0]).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
+    screen.getAllByRole("button").forEach((b) => {
+      expect(b).toHaveAttribute("aria-expanded", "false");
+    });
   });
 
   it("links 'draft it here' to the letter page for the active jurisdiction", () => {
@@ -196,7 +195,8 @@ describe("FrequentInquiries", () => {
     renderPanel();
     const buttons = screen.getAllByRole("button");
 
-    // The first inquiry is open by default; its panel must stay interactive.
+    // Open the first inquiry; its panel must stay interactive.
+    fireEvent.click(buttons[0]);
     const openPanel = document.getElementById(
       buttons[0].getAttribute("aria-controls") ?? "",
     );
