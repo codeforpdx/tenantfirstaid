@@ -218,4 +218,26 @@ describe("Letter component - effect orchestration", () => {
     );
     expect(messageWindow).toHaveAttribute("data-hidden", "2");
   });
+
+  it("gives every message it adds a distinct id within the same millisecond", async () => {
+    const dateNow = vi.spyOn(Date, "now").mockReturnValue(1000);
+    try {
+      const mockSetMessages = vi.fn();
+      mockUseMessages.mockReturnValue({
+        addMessage: vi.fn(),
+        messages: [],
+        setMessages: mockSetMessages,
+      });
+
+      await renderLetter();
+      await waitFor(() => {
+        expect(messagesAddedBy(mockSetMessages)).toHaveLength(2);
+      });
+
+      const ids = messagesAddedBy(mockSetMessages).map((msg) => msg.id);
+      expect(new Set(ids).size).toBe(ids.length);
+    } finally {
+      dateNow.mockRestore();
+    }
+  });
 });

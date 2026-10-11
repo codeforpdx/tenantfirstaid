@@ -3,6 +3,7 @@ import { HumanMessage } from "@langchain/core/messages";
 import type { ChatMessage } from "../../../shared/types/messages";
 import type { AddMessage } from "../../../hooks/useMessages";
 import { streamText } from "../utils/streamHelper";
+import { createId } from "../../../shared/utils/createId";
 import useHousingContext from "../../../hooks/useHousingContext";
 import clsx from "clsx";
 
@@ -39,7 +40,7 @@ export default function InputField({
 
     const userMessage = new HumanMessage({
       content: value,
-      id: Date.now().toString(),
+      id: createId(),
     });
     setMessages((prev) => [...prev, userMessage]);
 

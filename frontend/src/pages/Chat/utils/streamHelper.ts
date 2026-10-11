@@ -2,6 +2,7 @@ import { AIMessage } from "@langchain/core/messages";
 import type { Location } from "../../../types/models";
 import type { ChatMessage, UiMessage } from "../../../shared/types/messages";
 import type { AddMessage } from "../../../hooks/useMessages";
+import { createId } from "../../../shared/utils/createId";
 
 /**
  * Options for streaming AI responses into the chat message list.
@@ -31,7 +32,7 @@ async function streamText({
   setIsLoading,
   onDone,
 }: StreamTextOptions): Promise<void> {
-  const botMessageId = (Date.now() + 1).toString();
+  const botMessageId = createId();
 
   setIsLoading?.(true);
 

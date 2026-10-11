@@ -6,6 +6,10 @@ import {
 } from "../../pages/Chat/utils/streamHelper";
 import { createMockReader } from "../testUtils";
 
+vi.mock("../../shared/utils/createId", () => ({
+  createId: () => "1000001",
+}));
+
 describe("streamText", () => {
   let mockAddMessage: ReturnType<typeof vi.fn>;
   let mockSetMessages: ReturnType<typeof vi.fn>;
@@ -16,7 +20,6 @@ describe("streamText", () => {
     mockSetMessages = vi.fn();
     mockSetIsLoading = vi.fn();
     vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.spyOn(Date, "now").mockReturnValue(1000000);
   });
 
   afterEach(() => {

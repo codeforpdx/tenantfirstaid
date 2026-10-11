@@ -26,6 +26,7 @@ import LetterDisclaimer from "./pages/Letter/components/LetterDisclaimer";
 import useHousingContext from "./hooks/useHousingContext";
 import ChatPageLayout from "./layouts/ChatPageLayout";
 import { buildLocationPrefix } from "./shared/utils/buildLocationPrefix";
+import { createId } from "./shared/utils/createId";
 
 /**
  * Routes /letter requests by classifying the leading segment: an out-of-state
@@ -112,7 +113,7 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
       .trim();
     const userMessage = new HumanMessage({
       content,
-      id: Date.now().toString(),
+      id: createId(),
     });
     setMessages((prev) => [...prev, userMessage]);
 
@@ -128,7 +129,7 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
           const uiMessage: UiMessage = {
             type: "ui",
             text: "What was generated is just an initial template. Please include details of your specific housing situation to update the letter.",
-            id: Date.now().toString(),
+            id: createId(),
           };
           setMessages((prev) => [...prev, uiMessage]);
         },
@@ -138,7 +139,7 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
         const uiMessage: UiMessage = {
           type: "ui",
           text: "Unable to generate letter. Please try again or refresh the page.",
-          id: Date.now().toString(),
+          id: createId(),
         };
         setMessages((prev) => [...prev, uiMessage]);
       }

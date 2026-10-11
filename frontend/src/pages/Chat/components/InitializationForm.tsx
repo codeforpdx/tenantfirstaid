@@ -2,6 +2,7 @@ import type { ChatMessage } from "../../../shared/types/messages";
 import BeaverIcon from "../../../shared/components/BeaverIcon";
 import type { AddMessage } from "../../../hooks/useMessages";
 import { streamText } from "../utils/streamHelper";
+import { createId } from "../../../shared/utils/createId";
 import useHousingContext from "../../../hooks/useHousingContext";
 import { buildLocationPrefix } from "../../../shared/utils/buildLocationPrefix";
 import { scrollToTop } from "../../../shared/utils/scrolling";
@@ -38,7 +39,7 @@ export default function InitializationForm({
       .trim();
     const userMessage = new HumanMessage({
       content,
-      id: Date.now().toString(),
+      id: createId(),
     });
     setMessages((prev) => [...prev, userMessage]);
 
