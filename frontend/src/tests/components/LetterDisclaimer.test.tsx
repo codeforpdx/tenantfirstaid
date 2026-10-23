@@ -1,19 +1,11 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
-import { BrowserRouter } from "react-router-dom";
+import { cleanup, screen } from "@testing-library/react";
 import { describe, it, afterEach } from "vitest";
+import { renderWithProviders } from "../testUtils";
 
 const renderLetterDisclaimer = async (isOngoing: boolean) => {
   const { default: LetterDisclaimer } =
     await import("../../pages/Letter/components/LetterDisclaimer");
-  const queryClient = new QueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <LetterDisclaimer isOngoing={isOngoing} />
-      </BrowserRouter>
-    </QueryClientProvider>,
-  );
+  return renderWithProviders(<LetterDisclaimer isOngoing={isOngoing} />);
 };
 
 describe("LetterDisclaimer component", () => {

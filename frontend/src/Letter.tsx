@@ -23,14 +23,10 @@ import {
   type JurisdictionOption,
 } from "./shared/constants/jurisdictions";
 import LetterDisclaimer from "./pages/Letter/components/LetterDisclaimer";
-import MessageContainer from "./shared/components/MessageContainer";
 import useHousingContext from "./hooks/useHousingContext";
-import type { Location } from "./types/models";
-import FeaturesPanel from "./shared/components/FeaturesPanel";
-import FrequentInquiries from "./shared/components/FrequentInquiries";
-import MobilePanel from "./shared/components/MobilePanel";
-import clsx from "clsx";
+import ChatPageLayout from "./layouts/ChatPageLayout";
 import { buildLocationPrefix } from "./shared/utils/buildLocationPrefix";
+import { createId } from "./shared/utils/createId";
 
 /**
  * Routes /letter requests by classifying the leading segment: an out-of-state
@@ -87,8 +83,6 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
   const { addMessage, messages, setMessages } = useMessages();
   const isOngoing = messages.length > 0;
   const { letterContent } = useLetterContent(messages);
-  const [startStreaming, setStartStreaming] = useState(false);
-  const streamLocationRef = useRef<Location | null>(null);
   const [isGenerating, setIsGenerating] = useState(true);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -104,13 +98,12 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
     handleCityChange(jurisdiction.key);
   }, [jurisdiction, handleHousingLocation, handleCityChange]);
 
-  // Adds the initial user message once and triggers streaming.
+  // Adds the initial user message once and streams the letter.
   useEffect(() => {
     if (hasInitialized.current) return;
+    hasInitialized.current = true;
     const loc = toLocation(jurisdiction);
     const output = buildLetterUserMessage(org, loc);
-    hasInitialized.current = true;
-    const userMessageId = Date.now().toString();
     const content = [
       buildLocationPrefix(loc.city, loc.state),
       issueDescription,
@@ -118,55 +111,47 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
     ]
       .join(" ")
       .trim();
-    setMessages((prev) => [
-      ...prev,
-      new HumanMessage({ content, id: userMessageId }),
-    ]);
-    streamLocationRef.current = output.selectedLocation;
-    setStartStreaming(true);
-  }, [jurisdiction, org, setMessages, issueDescription]);
-
-  useEffect(() => {
-    if (startStreaming === false || streamLocationRef.current === null) return;
-    // Reset state to prevent re-running
-    setStartStreaming(false);
+    const userMessage = new HumanMessage({
+      content,
+      id: createId(),
+    });
+    setMessages((prev) => [...prev, userMessage]);
 
     const runGenerateLetter = async () => {
-      if (streamLocationRef.current !== null) {
-        let cleanCompletion = false;
-        await streamText({
-          addMessage,
-          setMessages,
-          housingLocation: streamLocationRef.current,
-          onDone: () => {
-            cleanCompletion = true;
-            const uiMessage: UiMessage = {
-              type: "ui",
-              text: "What was generated is just an initial template. Please include details of your specific housing situation to update the letter.",
-              id: Date.now().toString(),
-            };
-            setMessages((prev) => [...prev, uiMessage]);
-          },
-        });
-        // No done chunk received — surface an error instead of a silent empty panel.
-        if (!cleanCompletion) {
+      let cleanCompletion = false;
+      await streamText({
+        addMessage,
+        history: [userMessage],
+        setMessages,
+        housingLocation: output.selectedLocation,
+        onDone: () => {
+          cleanCompletion = true;
           const uiMessage: UiMessage = {
             type: "ui",
-            text: "Unable to generate letter. Please try again or refresh the page.",
-            id: Date.now().toString(),
+            text: "What was generated is just an initial template. Please include details of your specific housing situation to update the letter.",
+            id: createId(),
           };
           setMessages((prev) => [...prev, uiMessage]);
-        }
-        // Clear spinner after a short delay for a smoother transition.
-        timerRef.current = setTimeout(
-          () => setIsGenerating(false),
-          LOADING_DISPLAY_DELAY_MS,
-        );
+        },
+      });
+      // No done chunk received — surface an error instead of a silent empty panel.
+      if (!cleanCompletion) {
+        const uiMessage: UiMessage = {
+          type: "ui",
+          text: "Unable to generate letter. Please try again or refresh the page.",
+          id: createId(),
+        };
+        setMessages((prev) => [...prev, uiMessage]);
       }
+      // Clear spinner after a short delay for a smoother transition.
+      timerRef.current = setTimeout(
+        () => setIsGenerating(false),
+        LOADING_DISPLAY_DELAY_MS,
+      );
     };
 
     runGenerateLetter();
-  }, [startStreaming, addMessage, setMessages]);
+  }, [jurisdiction, org, addMessage, setMessages, issueDescription]);
 
   // Clear any pending timer if the component unmounts before it fires.
   useEffect(() => {
@@ -187,50 +172,26 @@ function LetterView({ jurisdiction, org }: LetterViewProps) {
         ref={dialogRef}
         isRedirected={sanitizeOrg(org) !== ""}
       />
-      <div className="min-h-full lg:h-full w-full flex flex-col lg:flex-row transition-all duration-300 lg:relative lg:bg-paper-background">
-        <div className="flex-1 lg:my-0 w-full lg:flex-1 flex lg:order-2">
-          <MessageContainer isOngoing={isOngoing} letterContent={letterContent}>
-            <div
-              className={clsx(
-                "flex flex-col min-h-0",
-                letterContent === "" ? "flex-1" : "flex-1/3",
-              )}
-            >
-              {isGenerating ? (
-                <div className="h-full flex items-center justify-center">
-                  <div className="animate-pulse text-lg">
-                    Generating Letter...
-                  </div>
-                </div>
-              ) : (
-                <MessageWindow
-                  messages={messages}
-                  addMessage={addMessage}
-                  setMessages={setMessages}
-                  isOngoing={isOngoing}
-                />
-              )}
-            </div>
-          </MessageContainer>
-        </div>
-        <div
-          className={clsx(
-            "flex flex-col w-full bg-paper-background",
-            "border-b lg:border-b-0 border-gray-light",
-            "lg:order-1 lg:my-0 lg:w-1/5 lg:border-r",
-            "[@media(max-height:800px)]:my-0 [@media(max-height:800px)]:self-stretch [@media(max-height:800px)]:overflow-hidden",
-          )}
-        >
-          <MobilePanel title="Frequent Inquiries">
-            <div className="flex-1 min-h-0 lg:overflow-y-auto [@media(max-height:800px)]:overflow-y-auto">
-              <FrequentInquiries />
-            </div>
-          </MobilePanel>
-        </div>
-        <FeaturesPanel
-          disclaimer={<LetterDisclaimer isOngoing={isOngoing} />}
-        />
-      </div>
+      <ChatPageLayout
+        isOngoing={isOngoing}
+        letterContent={letterContent}
+        disclaimer={<LetterDisclaimer isOngoing={isOngoing} />}
+      >
+        {isGenerating ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="animate-pulse text-lg">Generating Letter...</div>
+          </div>
+        ) : (
+          <MessageWindow
+            messages={messages}
+            addMessage={addMessage}
+            setMessages={setMessages}
+            isOngoing={isOngoing}
+            // Hide the initial prompt and the AI letter response.
+            hiddenMessageCount={2}
+          />
+        )}
+      </ChatPageLayout>
     </>
   );
 }

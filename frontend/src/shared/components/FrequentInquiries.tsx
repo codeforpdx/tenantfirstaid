@@ -181,16 +181,15 @@ const OPEN_FAQ_STORAGE_KEY = "faqOpenIndex";
 
 /**
  * Reads the persisted open-FAQ index so the accordion survives route changes.
- * Falls back to the first entry; "none" means the user collapsed all of them.
+ * Falls back to all collapsed; "none" means the user collapsed all of them.
  */
 function initialOpenIndex(): number | null {
   const stored = readStorage(OPEN_FAQ_STORAGE_KEY);
-  if (stored === null) return 0;
-  if (stored === "none") return null;
+  if (stored === null || stored === "none") return null;
   const index = Number(stored);
   return Number.isInteger(index) && index >= 0 && index < INQUIRIES.length
     ? index
-    : 0;
+    : null;
 }
 
 /**

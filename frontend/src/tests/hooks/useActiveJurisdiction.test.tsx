@@ -1,13 +1,8 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
-import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import useActiveJurisdiction from "../../hooks/useActiveJurisdiction";
-import HousingContextProvider from "../../contexts/HousingContext";
-
-function LocationProbe() {
-  const { pathname } = useLocation();
-  return <div data-testid="pathname">{pathname}</div>;
-}
+import { LocationProbe, renderWithProviders } from "../testUtils";
 
 function Consumer() {
   const { active, options, selectLocation } = useActiveJurisdiction();
@@ -22,17 +17,16 @@ function Consumer() {
 }
 
 const renderConsumer = (entry: string) =>
-  render(
-    <HousingContextProvider>
-      <MemoryRouter initialEntries={[entry]}>
-        <LocationProbe />
-        <Routes>
-          <Route path="/chat/:state?/:city?" element={<Consumer />} />
-          <Route path="/letter/:state?/:city?" element={<Consumer />} />
-          <Route path="/about" element={<Consumer />} />
-        </Routes>
-      </MemoryRouter>
-    </HousingContextProvider>,
+  renderWithProviders(
+    <>
+      <LocationProbe />
+      <Routes>
+        <Route path="/chat/:state?/:city?" element={<Consumer />} />
+        <Route path="/letter/:state?/:city?" element={<Consumer />} />
+        <Route path="/about" element={<Consumer />} />
+      </Routes>
+    </>,
+    { route: entry },
   );
 
 describe("useActiveJurisdiction", () => {

@@ -1,7 +1,6 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect } from "vitest";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
 vi.mock("../../hooks/useLetterContent", () => ({
   useLetterContent: () => ({ letterContent: "" }),
@@ -21,27 +20,18 @@ vi.mock("../../pages/Chat/components/MessageWindow", () => ({
 
 import Chat from "../../Chat";
 import RegionNotice from "../../shared/components/RegionNotice";
-import HousingContextProvider from "../../contexts/HousingContext";
-
-function LocationProbe() {
-  const { pathname } = useLocation();
-  return <div data-testid="pathname">{pathname}</div>;
-}
+import { LocationProbe, renderWithProviders } from "../testUtils";
 
 const renderChat = (initialEntry: string) => {
-  const queryClient = new QueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <HousingContextProvider>
-        <MemoryRouter initialEntries={[initialEntry]}>
-          <RegionNotice />
-          <LocationProbe />
-          <Routes>
-            <Route path="/chat/:state?/:city?" element={<Chat />} />
-          </Routes>
-        </MemoryRouter>
-      </HousingContextProvider>
-    </QueryClientProvider>,
+  return renderWithProviders(
+    <>
+      <RegionNotice />
+      <LocationProbe />
+      <Routes>
+        <Route path="/chat/:state?/:city?" element={<Chat />} />
+      </Routes>
+    </>,
+    { route: initialEntry },
   );
 };
 

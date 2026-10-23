@@ -1,12 +1,11 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { describe, it, expect, vi } from "vitest";
 import InitializationForm from "../../pages/Chat/components/InitializationForm";
-import HousingContextProvider from "../../contexts/HousingContext";
 import useSyncJurisdiction from "../../hooks/useSyncJurisdiction";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { HumanMessage } from "@langchain/core/messages";
-import type { ChatMessage } from "../../shared/types/messages";
+import { messagesAddedBy, renderWithProviders } from "../testUtils";
 
 vi.mock("../../pages/Chat/utils/streamHelper", () => ({
   streamText: vi.fn(),
@@ -19,31 +18,29 @@ const mockSetMessages = vi.fn();
 function FormHarness() {
   useSyncJurisdiction();
   return (
-    <InitializationForm addMessage={vi.fn()} setMessages={mockSetMessages} />
+    <InitializationForm
+      addMessage={vi.fn()}
+      setMessages={mockSetMessages}
+      setIsLoading={vi.fn()}
+    />
   );
 }
 
 const renderInitializationForm = (entry = "/chat") => {
   mockSetMessages.mockClear();
-  render(
-    <MemoryRouter initialEntries={[entry]}>
-      <HousingContextProvider>
-        <Routes>
-          <Route path="/chat/:state?/:city?" element={<FormHarness />} />
-        </Routes>
-      </HousingContextProvider>
-    </MemoryRouter>,
+  renderWithProviders(
+    <Routes>
+      <Route path="/chat/:state?/:city?" element={<FormHarness />} />
+    </Routes>,
+    { route: entry },
   );
 };
 
-/** Extracts the HumanMessage added by the first setMessages call. */
+/** Extracts the HumanMessage the form added via setMessages. */
 function getSubmittedMessage(): HumanMessage | undefined {
-  const updater = mockSetMessages.mock.calls.find(
-    (call) => typeof call[0] === "function",
-  )?.[0];
-  if (!updater) return undefined;
-  const result: ChatMessage[] = updater([]);
-  return result.find((msg): msg is HumanMessage => msg instanceof HumanMessage);
+  return messagesAddedBy(mockSetMessages).find(
+    (msg): msg is HumanMessage => msg instanceof HumanMessage,
+  );
 }
 
 describe("InitializationForm", () => {
@@ -157,14 +154,11 @@ describe("InitializationForm", () => {
         </>
       );
     }
-    render(
-      <MemoryRouter initialEntries={["/chat/or"]}>
-        <HousingContextProvider>
-          <Routes>
-            <Route path="/chat/:state?/:city?" element={<RemountHarness />} />
-          </Routes>
-        </HousingContextProvider>
-      </MemoryRouter>,
+    renderWithProviders(
+      <Routes>
+        <Route path="/chat/:state?/:city?" element={<RemountHarness />} />
+      </Routes>,
+      { route: "/chat/or" },
     );
 
     fireEvent.change(

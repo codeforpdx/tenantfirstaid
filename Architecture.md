@@ -103,6 +103,7 @@ frontend/
 │   ├── types/                      # Auto-generated TypeScript types (gitignored) — do not edit manually, re-run `mise run //frontend:generate-frontend-assets` to regenerate (this splices the backend's `uv` onto the frontend's `PATH`)
 │   │   └── models.ts                  # All exported types: ResponseChunk, Location, OregonCity, UsaState, chunk interfaces
 │   ├── layouts/                    # Layouts
+│   │   ├── ChatPageLayout.tsx      # Shared layout for the Chat and Letter pages
 │   │   └── PageLayout.tsx          # Layout for pages
 │   ├── pages/
 │   │   ├── Chat/                   # Chat page components
@@ -166,13 +167,14 @@ frontend/
 │   │   ├── hooks/                 # Hook testing
 │   │   │   ├── useLetterContent.test.tsx # useLetterContent testing
 │   │   │   └── useMessages.test.ts # useMessages testing
-│   │   └── utils/                  # Utility function testing
-│   │       ├── exportHelper.test.ts # exportHelper testing
-│   │       ├── feedbackHelper.test.ts # feedbackHelper testing
-│   │       ├── letterHelper.test.ts # letterHelper testing
-│   │       ├── sanitizeText.test.ts # sanitizeText testing
-│   │       ├── streamHelper.test.ts # streamHelper testing
-│   │       └── formatLocation.test.ts # formatLocation testing
+│   │   ├── utils/                  # Utility function testing
+│   │   │   ├── exportHelper.test.ts # exportHelper testing
+│   │   │   ├── feedbackHelper.test.ts # feedbackHelper testing
+│   │   │   ├── letterHelper.test.ts # letterHelper testing
+│   │   │   ├── sanitizeText.test.ts # sanitizeText testing
+│   │   │   ├── streamHelper.test.ts # streamHelper testing
+│   │   │   └── formatLocation.test.ts # formatLocation testing
+│   │   └── testUtils.tsx           # Shared test helpers (provider render, fake stream readers)
 ├── public/
 │   └── favicon.svg                 # Site favicon
 ├── package.json                    # Dependencies and scripts

@@ -1,34 +1,30 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import HousingContextProvider from "../../contexts/HousingContext";
 import InputField from "../../pages/Chat/components/InputField";
 import * as streamHelper from "../../pages/Chat/utils/streamHelper";
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
+import type { ChatMessage } from "../../shared/types/messages";
+import { renderWithProviders } from "../testUtils";
 
-const renderInputField = (value: string) => {
+const renderInputField = (value: string, messages: ChatMessage[] = []) => {
   const setMessages = vi.fn();
   const setIsLoading = vi.fn();
-  const onChange = vi.fn();
+  const setValue = vi.fn();
   const inputRef = { current: null as HTMLTextAreaElement | null };
-  const queryClient = new QueryClient();
-
-  render(
-    <QueryClientProvider client={queryClient}>
-      <HousingContextProvider>
-        <InputField
-          addMessage={vi.fn()}
-          setMessages={setMessages}
-          isLoading={false}
-          setIsLoading={setIsLoading}
-          value={value}
-          inputRef={inputRef}
-          onChange={onChange}
-        />
-      </HousingContextProvider>
-    </QueryClientProvider>,
+  renderWithProviders(
+    <InputField
+      messages={messages}
+      addMessage={vi.fn()}
+      setMessages={setMessages}
+      isLoading={false}
+      setIsLoading={setIsLoading}
+      value={value}
+      inputRef={inputRef}
+      setValue={setValue}
+    />,
   );
 
-  return { setMessages, onChange };
+  return { setMessages, setValue };
 };
 
 describe("InputField keyboard handling", () => {
@@ -36,13 +32,13 @@ describe("InputField keyboard handling", () => {
     const streamSpy = vi
       .spyOn(streamHelper, "streamText")
       .mockResolvedValue(undefined);
-    const { setMessages, onChange } = renderInputField("hello world");
+    const { setMessages, setValue } = renderInputField("hello world");
 
     const textarea = screen.getByPlaceholderText(/Type your message here/i);
     fireEvent.keyDown(textarea, { key: "Enter", shiftKey: false });
 
-    // handleSend clears the textarea via onChange and appends a message.
-    expect(onChange).toHaveBeenCalled();
+    // handleSend clears the textarea and appends a message.
+    expect(setValue).toHaveBeenCalledWith("");
     expect(setMessages).toHaveBeenCalled();
     expect(streamSpy).toHaveBeenCalled();
 
@@ -105,6 +101,29 @@ describe("InputField keyboard handling", () => {
 
     expect(setMessages).not.toHaveBeenCalled();
     expect(streamSpy).not.toHaveBeenCalled();
+
+    streamSpy.mockRestore();
+  });
+
+  it("sends the prior messages plus the new one as history", () => {
+    const streamSpy = vi
+      .spyOn(streamHelper, "streamText")
+      .mockResolvedValue(undefined);
+    const prior: ChatMessage[] = [
+      new HumanMessage({ content: "first", id: "1" }),
+      new AIMessage({ content: '{"type":"text","content":"reply"}', id: "2" }),
+    ];
+    renderInputField("follow-up", prior);
+
+    const textarea = screen.getByPlaceholderText(/Type your message here/i);
+    fireEvent.keyDown(textarea, { key: "Enter", shiftKey: false });
+
+    const { history } = streamSpy.mock.calls[0][0];
+    expect(history.map((msg) => msg.text)).toEqual([
+      "first",
+      '{"type":"text","content":"reply"}',
+      "follow-up",
+    ]);
 
     streamSpy.mockRestore();
   });

@@ -55,6 +55,7 @@ export default function MessageContainer({
         className={clsx(
           "flex flex-col min-h-0 h-[60%] md:h-full",
           letterContent === "" ? "flex-1" : "flex-1/3",
+          !isOngoing && "lg:overflow-y-auto",
         )}
       >
         {children}

@@ -1,53 +1,52 @@
 import { useCallback, useEffect } from "react";
 import { HumanMessage } from "@langchain/core/messages";
 import type { ChatMessage } from "../../../shared/types/messages";
-import type { Location } from "../../../types/models";
+import type { AddMessage } from "../../../hooks/useMessages";
 import { streamText } from "../utils/streamHelper";
+import { createId } from "../../../shared/utils/createId";
 import useHousingContext from "../../../hooks/useHousingContext";
 import clsx from "clsx";
 
 interface Props {
-  addMessage: (
-    args: Location,
-  ) => Promise<ReadableStreamDefaultReader<Uint8Array> | undefined>;
+  messages: ChatMessage[];
+  addMessage: AddMessage;
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   isLoading: boolean;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   value: string;
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  setValue: (value: string) => void;
 }
 
 /**
  * Auto-resizing text input for composing and sending chat messages.
  */
 export default function InputField({
+  messages,
   addMessage,
   setMessages,
   isLoading,
   setIsLoading,
   inputRef,
   value,
-  onChange,
+  setValue,
 }: Props) {
   const { housingLocation } = useHousingContext();
 
   const handleSend = async () => {
     if (!value.trim()) return;
 
-    onChange({
-      target: { value: "" },
-    } as React.ChangeEvent<HTMLTextAreaElement>);
+    setValue("");
 
-    const userMessageId = Date.now().toString();
-    // Add user message
-    setMessages((prev) => [
-      ...prev,
-      new HumanMessage({ content: value, id: userMessageId }),
-    ]);
+    const userMessage = new HumanMessage({
+      content: value,
+      id: createId(),
+    });
+    setMessages((prev) => [...prev, userMessage]);
 
     await streamText({
       addMessage,
+      history: [...messages, userMessage],
       setMessages,
       housingLocation,
       setIsLoading,
@@ -70,7 +69,7 @@ export default function InputField({
     <div className="flex gap-2 mt-4 justify-center items-center mx-auto max-w-[700px]">
       <textarea
         value={value}
-        onChange={onChange}
+        onChange={(e) => setValue(e.target.value)}
         onInput={resizeTextArea}
         onKeyDown={(e) => {
           // keyCode 229 covers Safari, which ends composition before keydown.
