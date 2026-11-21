@@ -67,6 +67,39 @@ class TestQueryRoute:
         assert resp.status_code == 200
         assert resp.mimetype == "text/plain"
 
+    @patch("tenantfirstaid.chat.LangChainChatManager")
+    def test_query_within_limit_returns_200(self, mock_cm_cls, client):
+        # A short burst that stays under the limit should all succeed.
+        mock_cm_cls.return_value.generate_streaming_response.side_effect = (
+            lambda *args, **kwargs: iter([{"type": "text", "text": "Hi"}])
+        )
+        payload = {
+            "messages": [{"role": "human", "content": "Help"}],
+            "city": None,
+            "state": "or",
+        }
+        for _ in range(5):
+            resp = client.post("/api/query", json=payload)
+            resp.get_data()  # Drain the streaming body before the next request.
+            assert resp.status_code == 200
+
+    @patch("tenantfirstaid.chat.LangChainChatManager")
+    def test_query_rate_limiting_returns_429(self, mock_cm_cls, client):
+        # Exceeding the per-IP limit (10 per minute) should be rejected with 429.
+        mock_cm_cls.return_value.generate_streaming_response.side_effect = (
+            lambda *args, **kwargs: iter([{"type": "text", "text": "Hi"}])
+        )
+        payload = {
+            "messages": [{"role": "human", "content": "Help"}],
+            "city": None,
+            "state": "or",
+        }
+        for _ in range(10):
+            resp = client.post("/api/query", json=payload)
+            resp.get_data()  # Drain the streaming body before the next request.
+        resp = client.post("/api/query", json=payload)
+        assert resp.status_code == 429
+
     def test_get_query_returns_405(self, client):
         resp = client.get("/api/query")
         assert resp.status_code == 405
