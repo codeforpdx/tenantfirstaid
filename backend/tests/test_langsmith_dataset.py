@@ -5,7 +5,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from hypothesis import given, settings
@@ -3047,9 +3047,15 @@ def test_render_transcript_empty_messages():
 # ── cmd_experiment_markdown ────────────────────────────────────────────────────
 
 
+# A fixed run id with hex letters in every group. The markdown export is PII-scanned
+# and a random uuid4 occasionally reads as a card number (long digit runs joined by
+# hyphens), which made the "no PII warning" test flaky.
+_MD_RUN_ID = UUID("0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d")
+
+
 def _make_md_run(messages, city=None, state="or", start_time=None):
     r = MagicMock()
-    r.id = uuid4()
+    r.id = _MD_RUN_ID
     r.inputs = {"city": city, "state": state, "messages": messages}
     r.start_time = start_time or datetime(2026, 6, 20, tzinfo=timezone.utc)
     return r

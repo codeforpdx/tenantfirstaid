@@ -8,7 +8,7 @@ a single stderr handler with the colorized format used across the codebase.
 import logging
 import os
 import sys
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 
 _FORMAT: str = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
@@ -87,7 +87,7 @@ def configure_logging() -> None:
 
 
 @contextmanager
-def temporary_formatted_handler(logger: logging.Logger) -> Iterator[None]:
+def temporary_formatted_handler(logger: logging.Logger) -> Generator[None]:
     """Attach the project formatter to `logger` for the duration of the block.
 
     Useful at module-import time when the root logger has not yet been
