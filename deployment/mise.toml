@@ -1,0 +1,616 @@
+# Deployment project config (mise monorepo). Addressed from the repo root as
+# `//deployment:<task>`, or by bare name from inside this directory.
+#
+# This directory holds the OpenTofu configuration. See README.md here, and
+# Deployment.md at the repo root for how deploys actually run.
+
+[tools]
+# OpenTofu, not Terraform: the project standardised on it, and the two have diverged
+# enough that `tofu` is the binary every task here invokes. Pinned for reproducibility
+# like uv and node; bump as new releases land.
+opentofu = "1.12.6"
+
+[tasks.fmt]
+description = "Format the OpenTofu configuration. Pass --check to verify without writing."
+usage = '''
+flag "--check" help="Verify formatting without rewriting files."
+'''
+run = '''
+set -eu
+tofu fmt -recursive ${usage_check:+-check}
+'''
+
+[tasks.validate]
+description = "Validate the OpenTofu configuration for every environment."
+run = '''
+set -eu
+# Every root module. admin/ holds the IAM configuration and is the one most worth
+# catching mistakes in, since only a project admin can apply it.
+for dir in admin/; do
+  # A root module with no .tf files has nothing to validate yet; skip rather than fail,
+  # so this task is usable before the configuration exists.
+  if ! ls "$dir"*.tf >/dev/null 2>&1; then
+    echo "skip $dir (no .tf files yet)"
+    continue
+  fi
+  echo "validating $dir"
+  tofu -chdir="$dir" init -backend=false -input=false >/dev/null
+  tofu -chdir="$dir" validate
+done
+'''
+
+[tasks.apply-admin]
+description = "Apply admin/ (service account, custom roles, bindings), elevating privileges for the duration."
+# gcloud is pinned per-task rather than in the root [tools] table, the same way
+# //:gcloud-login does it: this is a rare admin action, and nobody running `mise install`
+# should pull the full Cloud SDK for it.
+tools = { gcloud = "586.0.0" }
+usage = '''
+flag "--var-file <path>" help="Optional. Only needed to bind a group; the module applies without it. A bare filename is looked for under admin/; a path containing a slash, or an absolute path, is used as given. Never committed: this repository is public."
+flag "--minutes <minutes>" help="Lifetime of the temporary grant. Long enough for a slow apply, short enough that forgetting to revoke is not a standing privilege."
+flag "--plan-only" help="Stop after the plan, without applying it."
+flag "--elevate" help="Grant the three roles this module needs for the duration, then drop them. For a projectIamAdmin holder; an Owner already holds everything."
+'''
+run = '''
+set -eu
+project="tenantfirstaid"
+var_file="${usage_var_file:-terraform.tfvars}"
+minutes="${usage_minutes:-20}"
+# Must match the bucket in admin/versions.tf. `tofu init` reads it before anything else
+# runs, so the elevation has to cover it or the apply dies at the first command.
+state_bucket="tenantfirstaid-tofu-state"
+
+# gcloud's credential store is not application default credentials, and //:gcloud-login
+# populates only ADC -- see the longer note in the grant task. Without this, every gcloud
+# call below fails with "no active account" while `tofu` itself works fine, which is a
+# baffling way to meet the problem halfway through a privileged apply.
+CLOUDSDK_AUTH_ACCESS_TOKEN="$(gcloud auth application-default print-access-token 2>/dev/null || true)"
+[ -n "$CLOUDSDK_AUTH_ACCESS_TOKEN" ] || {
+  echo "no application default credentials found. Run: mise run //:gcloud-login" >&2
+  exit 1
+}
+export CLOUDSDK_AUTH_ACCESS_TOKEN
+
+# Applying this module needs iam.roles.create, iam.serviceAccounts.create and
+# resourcemanager.projects.setIamPolicy at once, and no single predefined role short of
+# Owner holds all three -- see README.md, "Bootstrap: the parts a human does once". A
+# projectIamAdmin or organizationAdmin holder can still apply it, because setIamPolicy is
+# the permission that grants permissions: bind the missing roles, apply, unbind.
+#
+# There is a third, less obvious one. `tofu init` reads the GCS backend before any of the
+# above matters, and reading it needs storage.buckets.get, which is in no IAM-admin role
+# and in none of the four roles this project defines -- so a projectIamAdmin holder who
+# elevated only for IAM would fail on the very first command. It is granted through
+# roles/storage.admin, because roles/storage.editor carries neither buckets.get nor
+# buckets.update and roles/storage.legacyBucketOwner cannot be bound at project level at
+# all. storage.admin over the whole project would include objects.delete on the
+# production corpus, so this grant is narrowed by resource as well as by time: see the
+# condition below.
+#
+# That is opt-in via --elevate, never the default. Elevating is a privileged act and the
+# common case (an Owner) does not need it, so the task must not quietly reach for
+# setIamPolicy on behalf of someone who only meant to run an apply. Without the flag this
+# fails on a plain 403 naming the permission, which is the right thing to read before
+# deciding to escalate.
+#
+# That is not a loophole. Anyone holding setIamPolicy can already grant themselves
+# anything at any moment, so this adds no capability -- it makes the escalation explicit,
+# bounded and legible instead of a console click that stays granted. Three properties
+# carry that: each binding has a request.time condition so it lapses even if the revoke
+# never runs; only the roles the apply needs are granted, never Owner, and the broadest
+# of them is pinned to a single bucket; and
+# SetIamPolicy is an Admin Activity write, which is always on and cannot be disabled, so
+# the grant and the revoke are both permanently in the audit log.
+elevated_roles=""
+
+revoke() {
+  # Runs on every exit path, including a failed apply or a Ctrl-C mid-plan. Leaving a
+  # standing roleAdmin grant behind is the failure this whole task exists to avoid.
+  [ -n "$elevated_roles" ] || return 0
+  echo ""
+  echo "revoking temporary grants"
+  for role in $elevated_roles; do
+    # --all removes the binding whatever its condition. Safe because only roles the
+    # caller did not already hold were granted above, so nothing pre-existing is touched.
+    gcloud projects remove-iam-policy-binding "$project" \
+      --member="$member" --role="$role" --all --quiet >/dev/null 2>&1 \
+      && echo "  - $role" \
+      || echo "  ! $role NOT revoked -- it expires on its own, but check by hand" >&2
+  done
+}
+
+if [ -n "${usage_elevate:-}" ]; then
+  # //backend:whoami is the single source of truth for "who does ADC say I am" -- it reads
+  # the same ADC that OpenTofu's google provider authenticates as, and, unlike reading an
+  # access token's tokeninfo directly, it also handles a service-account credential
+  # correctly (the serviceAccount: prefix), which a hardcoded user: prefix here got wrong.
+  #
+  # --output interleave, not mise's default: whoami depends on sync, so this runs two
+  # tasks, and mise's default output mode can prefix each line with "[//backend:whoami] "
+  # once more than one task is involved -- which would land in $member and make every
+  # gcloud call below fail on a member string gcloud has never seen the shape of.
+  # `tail -n1` additionally drops anything sync itself writes to stdout ahead of the
+  # identity line, and the prefix check below is what actually catches either case rather
+  # than trusting the output mode never changes.
+  member="$(mise run --output interleave //backend:whoami 2>/dev/null | tail -n1)"
+  case "$member" in
+    user:*|serviceAccount:*) ;;
+    *)
+      echo "could not determine your Google identity (got '$member'). Run: mise run //backend:whoami" >&2
+      exit 1 ;;
+  esac
+  # Not `date -u -d`, which is GNU-only: BSD date on macOS spells it -v, and a
+  # maintainer laptop is exactly where this runs. python3 is already a dependency of the
+  # tasks in this file.
+  expiry=$(python3 -c "import datetime,sys
+print((datetime.datetime.now(datetime.timezone.utc)
+       + datetime.timedelta(minutes=int(sys.argv[1]))).strftime('%Y-%m-%dT%H:%M:%SZ'))" "$minutes")
+  echo "elevating $member until $expiry"
+
+  # Armed before the first grant, not after the last: a failure partway through would
+  # otherwise leave a role bound with nothing to clean it up.
+  #
+  # INT and TERM are trapped separately from EXIT and explicitly exit, rather than relying
+  # on EXIT alone: under dash (mise's default shell), registering a trap for a signal
+  # overrides its default terminate-the-process behaviour, so a script that traps INT but
+  # never exits from that handler keeps running after a Ctrl-C instead of stopping. The
+  # explicit `exit` is what actually ends the run; it triggers the EXIT trap in turn, so
+  # revoke still runs exactly once.
+  trap revoke EXIT
+  trap 'exit 1' INT TERM
+
+  # Whether (member, role) is already bound, in any condition, is the authoritative check
+  # for both "does elevation still need to grant this role" and "is it safe to register
+  # this role for the --all revoke below". A permission probe cannot tell "holds this
+  # permission via some broader, unrelated role" apart from "holds this exact role" --
+  # and a caller who holds tfaCorpusMaintainer, say, would pass a storage.buckets.get
+  # probe without holding roles/storage.admin at all, so the probe answers the wrong
+  # question either way. --all removes whatever binding matches (member, role) regardless
+  # of its condition, so granting based on a probe and revoking based on "did we grant it"
+  # is safe only if the probe never says "already held" for a role that in fact is not.
+  role_bound() {
+    gcloud projects get-iam-policy "$project" \
+      --flatten="bindings[].members" \
+      --filter="bindings.role=$1 AND bindings.members=$member" \
+      --format="value(bindings.role)" | grep -q .
+  }
+
+  # Each role is skipped only if this exact role is already bound to the caller, in any
+  # condition; otherwise it is granted. A caller who already holds it is never registered
+  # for revoke, so the exit trap cannot strip access they came in with.
+  time_bound="request.time < timestamp(\"$expiry\")"
+  for role in roles/iam.roleAdmin roles/iam.serviceAccountAdmin roles/storage.admin; do
+    if role_bound "$role"; then
+      echo "  = $role (already held)"
+      continue
+    fi
+    # storage.admin is the one role here broad enough to matter if it leaked past the
+    # window, so it carries a second, independent limit: the resource. Matching the
+    # bucket itself and everything under it, not merely a name prefix -- a bare
+    # startsWith(bucket) would also match a differently-owned bucket that happens to
+    # share the prefix, e.g. a future "tenantfirstaid-tofu-state-2". No commas in the
+    # expression; gcloud splits --condition on them.
+    condition="$time_bound"
+    if [ "$role" = "roles/storage.admin" ]; then
+      condition="$condition && (resource.name == \"projects/_/buckets/$state_bucket\" || resource.name.startsWith(\"projects/_/buckets/$state_bucket/\"))"
+    fi
+    gcloud projects add-iam-policy-binding "$project" \
+      --member="$member" --role="$role" \
+      --condition="title=tfa apply-admin,description=Temporary grant to apply deployment/admin/,expression=$condition" \
+      --quiet >/dev/null
+    elevated_roles="$elevated_roles $role"
+    echo "  + $role"
+  done
+
+  if [ -n "$elevated_roles" ]; then
+    # curl against the REST API, not `gcloud projects test-iam-permissions`, which does
+    # not exist -- there is no such subcommand. Used only here, to poll for propagation
+    # of a grant already made; role_bound() above is the authoritative check for whether
+    # to grant or revoke, since a permission can be held through a role other than the
+    # one this task binds.
+    #
+    # The curl's own failure is checked directly, not through a pipe into a JSON parser:
+    # piping a failed curl onward lets the parser succeed on empty input and report "holds
+    # nothing" either way, which would make a transient network blip look identical to
+    # propagation still being in progress -- burning the full timeout below on a poll
+    # that could never succeed. A transient failure here must stop the task, so it is
+    # checked as `perms=$(held_permissions) || exit 1` below rather than inside a `case`
+    # word, where a nonzero exit from a command substitution is invisible: `case` only
+    # sees the (empty) stdout, and would read a curl failure as "propagation still
+    # pending" and burn the timeout instead of stopping.
+    #
+    # python3 rather than jq: jq is not declared in this task's tools and is not
+    # guaranteed present on a maintainer laptop, while python3 is already a dependency of
+    # the date parsing elsewhere in this file.
+    held_permissions() {
+      response=$(curl -sf -X POST \
+        "https://cloudresourcemanager.googleapis.com/v1/projects/$project:testIamPermissions" \
+        -H "Authorization: Bearer $CLOUDSDK_AUTH_ACCESS_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d '{"permissions":["iam.roles.create","iam.serviceAccounts.create"]}') || {
+        echo "could not reach the Cloud Resource Manager API to check propagation." >&2
+        return 1
+      }
+      echo "$response" | python3 -c "import json, sys; print(' '.join(json.load(sys.stdin).get('permissions', [])))"
+    }
+    # Poll rather than sleeping a fixed interval: propagation in this project has been
+    # observed between 75 and 105 seconds, so any short fixed wait fails routinely.
+    # Named rather than dotted: a poll that stalls should say what it is stalled on. The
+    # previous version printed only dots, so a probe that could never succeed looked
+    # exactly like propagation being slow.
+    echo "waiting for propagation of:$elevated_roles"
+    deadline=$(( $(date +%s) + 300 ))
+    # Waits on every role that was actually granted, not just the last one: a partial
+    # wait lets the apply start against a grant that has not landed.
+    landed() {
+      # Called once per iteration, as its own statement, and its exit status checked
+      # directly -- not inline as a `case` word, where the earlier bug lived: `case
+      # " $(held_permissions) " in` swallows a nonzero exit from the substitution, so a
+      # curl failure read as an empty string and the `*) return 1` branch made it look
+      # exactly like propagation still in progress. exit here (not return) deliberately
+      # stops the whole task, since a transient API failure mid-poll is not something the
+      # 300s timeout should silently absorb.
+      perms=$(held_permissions) || exit 1
+      for role in $elevated_roles; do
+        case "$role" in
+          roles/storage.admin)
+            # tofu init only reads the bucket, but this is a real read against the exact
+            # resource-scoped condition just granted, and a real read cannot lie.
+            gcloud storage buckets describe "gs://$state_bucket" >/dev/null 2>&1 || return 1 ;;
+          roles/iam.roleAdmin)
+            case " $perms " in *" iam.roles.create "*) ;; *) return 1 ;; esac ;;
+          roles/iam.serviceAccountAdmin)
+            case " $perms " in *" iam.serviceAccounts.create "*) ;; *) return 1 ;; esac ;;
+          *)
+            return 1 ;;
+        esac
+      done
+    }
+    until landed; do
+      [ "$(date +%s)" -lt "$deadline" ] || { echo " gave up after 300s." >&2; exit 1; }
+      sleep 10
+      echo -n "."
+    done
+    echo " live."
+  fi
+fi
+
+# The var file is optional. Every variable except project_id defaults, and project_id
+# defaults to this project, so the module applies with no inputs at all -- creating the
+# roles and the reaper, binding no humans. A var file is only needed to bind a group, and
+# demanding one otherwise would invent a bootstrap step that does nothing.
+#
+# A bare filename (the common case, "terraform.tfvars") is resolved under admin/, the
+# conventional location. Anything containing a slash, or an absolute path, is taken as
+# given rather than silently prefixed with admin/ -- prefixing an already-relative or
+# absolute path the caller typed produced a path that never existed, so the module
+# applied with defaults and the caller's group bindings were dropped with no error.
+case "$var_file" in
+  /*|*/*) var_file_path="$var_file" ;;
+  *)      var_file_path="admin/$var_file" ;;
+esac
+
+if [ -f "$var_file_path" ]; then
+  var_file_arg="-var-file=$var_file_path"
+  echo "using $var_file_path"
+else
+  var_file_arg=""
+  echo "no $var_file_path; applying with defaults (roles and reaper only, no human bindings)."
+fi
+
+# No -backend-config: the bucket and prefix are committed in admin/versions.tf, so
+# there is no per-caller value to get wrong.
+tofu -chdir=admin/ init -input=false
+tofu -chdir=admin/ plan -input=false ${var_file_arg:+"$var_file_arg"} -out=tfplan
+
+if [ -n "${usage_plan_only:-}" ]; then
+  echo ""
+  echo "plan only; nothing applied."
+  exit 0
+fi
+
+# This creates the roles that govern every other permission in the project, and
+# prevent_destroy means a mistake here is awkward to undo. Applying a saved plan file
+# never prompts for confirmation regardless of -auto-approve, so the plan printed above
+# is the only review this gets -- read it.
+tofu -chdir=admin/ apply tfplan
+'''
+
+[tasks.grant]
+description = "Grant or revoke one of the custom roles for a person. Onboarding, one command."
+tools = { gcloud = "586.0.0" }
+usage = '''
+arg "<principal>" help="An EXISTING Google account, e.g. someone@gmail.com. This binds a role to an identity; it never creates one. A bare address is treated as a user."
+flag "--role <role>" help="contributor (default), corpus-maintainer, or corpus-admin." default="contributor"
+flag "--revoke" help="Remove the binding instead of adding it. Offboarding."
+flag "--expires <days>" help="Make the grant lapse after N days. Standing access is the thing worth minimising; a contributor who still needs it re-asks."
+flag "--dry-run" help="Print the change without making it."
+'''
+run = '''
+set -eu
+# Deliberately gcloud, not tofu, and the reason is the same artifact-versus-infrastructure
+# split the rest of this repository runs on.
+#
+# google_project_iam_member is convergent: a principal Tofu binds must be present in the
+# configuration at *every* apply, or the next apply removes them. So a Tofu-managed roster
+# has to live somewhere Tofu reads. It cannot live in git -- this repository is public and
+# a personal address is PII -- which leaves a laptop-local gitignored tfvars, and then a
+# second admin's apply silently de-provisions everyone the first admin added. That is the
+# "concurrency breaks" failure the plan documents for corpus generations, reappearing in
+# IAM where the cost is people losing access rather than a rebuildable artifact.
+#
+# So Tofu owns the role *definition*, which is durable, reviewable and in git, and the
+# roster stays in the project IAM policy. That is not an unaudited place: SetIamPolicy is
+# an Admin Activity write, always on and undisableable, so every grant and revoke here is
+# permanently logged with who did it. A tfvars file would be a worse record.
+project="tenantfirstaid"
+# Must match state_bucket in the apply-admin task above and the bucket in
+# admin/versions.tf. tfaCorpusMaintainer and tfaCorpusAdmin mix storage.* with
+# discoveryengine.* permissions, so every binding of either below carries a condition
+# that *excludes* this one named bucket rather than *allowing* a class of them -- see
+# admin/bindings.tf's locals block, which this mirrors, for why the exclude form is safe
+# on a mixed role and the allow form is not.
+state_bucket="tenantfirstaid-tofu-state"
+# Leads with the resource.service check so a discoveryengine request never reaches the
+# resource.name comparisons at all -- see admin/bindings.tf's locals block for why.
+exclude_state_bucket="resource.service != \"storage.googleapis.com\" || (resource.name != \"projects/_/buckets/$state_bucket\" && !resource.name.startsWith(\"projects/_/buckets/$state_bucket/\"))"
+
+# ---------------------------------------------------------------------------
+# Drive gcloud with the credentials this repository actually documents.
+# ---------------------------------------------------------------------------
+#
+# gcloud keeps its own credential store, and it is not application default credentials.
+# `mise run //:gcloud-login` populates only ADC -- it runs `gcloud auth application-default
+# login`, never `gcloud auth login` -- so every gcloud command here fails with "You do not
+# currently have an active account selected" for exactly the setup the onboarding docs
+# prescribe. That is a confusing error to meet while trying to fix someone's access.
+#
+# Minting an access token from ADC and handing it to gcloud makes the CLI act as the same
+# identity the app, the corpus scripts and the OpenTofu provider all use. The alternative
+# -- telling admins to also run `gcloud auth login` -- means two credential stores that can
+# drift apart, so the grant you make and the access you test could be different people.
+CLOUDSDK_AUTH_ACCESS_TOKEN="$(gcloud auth application-default print-access-token 2>/dev/null || true)"
+[ -n "$CLOUDSDK_AUTH_ACCESS_TOKEN" ] || {
+  echo "no application default credentials found." >&2
+  echo "Run: mise run //:gcloud-login" >&2
+  exit 1
+}
+export CLOUDSDK_AUTH_ACCESS_TOKEN
+
+# The roles are layers, so a grant binds a stack: tfaContributor is the base everyone
+# holds, and the other two carry only what they add. Listed base-first; the last entry is
+# the layer the caller named.
+case "${usage_role}" in
+  contributor)       role_ids="tfaContributor" ;;
+  corpus-maintainer) role_ids="tfaContributor tfaCorpusMaintainer" ;;
+  corpus-admin)      role_ids="tfaContributor tfaCorpusAdmin" ;;
+  # tfaReaper is absent on purpose: it belongs to the reaper's service account, which
+  # admin/ creates and binds. A human holding it could delete a live corpus with none of
+  # the reference veto that makes the reaper safe.
+  *)
+    echo "unknown --role '${usage_role}'. Use contributor, corpus-maintainer or corpus-admin." >&2
+    exit 1 ;;
+esac
+named_role_id="${role_ids##* }"
+
+# A revoke peels off only the layer named, leaving the base intact. Removing
+# tfaCorpusAdmin should return someone to ordinary contributor access, not lock them out
+# -- that is what makes handing a break-glass role back cheap. It also means a bare
+# `--role contributor --revoke` is not full offboarding by itself for someone who also
+# holds a higher layer: it leaves that layer bound, and offboarding them needs one revoke
+# per layer they were granted, highest first.
+if [ -n "${usage_revoke:-}" ]; then
+  target_role_ids="$named_role_id"
+else
+  target_role_ids="$role_ids"
+fi
+
+# A bare address is the common case; an explicit prefix is accepted so a group can be
+# bound the same way once groups exist.
+case "${usage_principal}" in
+  user:*|group:*|serviceAccount:*) member="${usage_principal}" ;;
+  *@*)                             member="user:${usage_principal}" ;;
+  *)
+    echo "'${usage_principal}' is not an email address or a prefixed principal." >&2
+    exit 1 ;;
+esac
+
+# Fail on the useful error rather than the confusing one. Without this, granting before
+# admin/ has ever been applied reports that the *role* does not exist, which reads like a
+# typo in --role rather than a missing bootstrap step.
+#
+# The failure is classified rather than collapsed into "missing". A non-zero exit here can
+# equally mean unauthenticated, offline, or lacking iam.roles.get, and reporting any of
+# those as an absent role sends the admin off to run apply-admin against a project where
+# the role already exists.
+#
+# Only a definitive NOT_FOUND stops the run. Anything else -- and IAM_PERMISSION_DENIED is
+# the common one, because iam.roles.get is not in projectIamAdmin -- is advisory: the check
+# must not demand a permission the grant itself does not need, or it would block admins who
+# can perfectly well do the thing. The binding call below fails on its own terms if the
+# role really is absent.
+for role_id in $target_role_ids; do
+  if ! describe_error=$(gcloud iam roles describe "$role_id" --project="$project" 2>&1 >/dev/null); then
+    case "$describe_error" in
+      *NOT_FOUND*|*"not found"*|*"was not found"*)
+        echo "no custom role $role_id in $project." >&2
+        echo "Apply the IAM module first: mise run //deployment:apply-admin --elevate" >&2
+        exit 1 ;;
+      *)
+        echo "note: could not confirm $role_id exists (no iam.roles.get?); continuing." >&2 ;;
+    esac
+  fi
+done
+
+if [ -n "${usage_revoke:-}" ]; then
+  verb="remove"; preposition="from"
+  # --all, not --condition=None: a binding made with --expires carries a condition, and a
+  # revoke that named no condition would silently fail to remove it -- reporting success
+  # while leaving the access in place. --all removes the pair whatever its condition.
+  condition_arg="--all"
+  expiry=""
+else
+  verb="add"; preposition="to"
+  condition_arg="--condition=None"
+  expiry=""
+fi
+
+if [ -n "${usage_expires:-}" ] && [ -z "${usage_revoke:-}" ]; then
+  case "${usage_expires}" in
+    ''|*[!0-9]*) echo "--expires takes a whole number of days." >&2; exit 1 ;;
+  esac
+  # python3 rather than `date -u -d`, which is GNU-only and fails on macOS.
+  expiry=$(python3 -c "import datetime,sys
+print((datetime.datetime.now(datetime.timezone.utc)
+       + datetime.timedelta(days=int(sys.argv[1]))).strftime('%Y-%m-%dT%H:%M:%SZ'))" "$usage_expires")
+  echo "$verb $named_role_id $preposition $member, expiring $expiry"
+  case "$target_role_ids" in
+    *" "*) echo "  base layers granted without an expiry: ${target_role_ids% *}" ;;
+  esac
+else
+  echo "$verb $target_role_ids $preposition $member"
+fi
+
+if [ -n "${usage_dry_run:-}" ]; then
+  echo "dry run; nothing changed."
+  exit 0
+fi
+
+# corpus-admin is the one role that can destroy a corpus a deployed environment is
+# serving -- more dangerous than the reaper's, because the reference veto lives in the
+# reaper's reviewed code and a human has no such constraint. Granting it should take a
+# deliberate keystroke.
+if [ "$named_role_id" = "tfaCorpusAdmin" ] && [ -z "${usage_revoke:-}" ]; then
+  echo ""
+  echo "tfaCorpusAdmin can permanently delete the corpus production is serving."
+  echo "Prefer fixing the reaper to granting this. Type 'grant' to continue:"
+  # Not plain `read -r confirm`: mise does not connect a task's stdin to the terminal
+  # unless the task is `raw = true`, which this one is not (raw disables the concurrent,
+  # prefixed output every other task in this file relies on). Without a real stdin, read
+  # hits EOF, fails, and -- under `set -e` -- exits before the "aborted." line ever
+  # prints, so granting tfaCorpusAdmin looks like it fails for no reason. Reading directly
+  # from the controlling terminal sidesteps that regardless of how mise wired stdin, and
+  # failing closed here is the safe direction: no confirmation is not a confirmation.
+  if [ ! -r /dev/tty ]; then
+    echo "no interactive terminal to confirm from -- refusing to grant tfaCorpusAdmin unattended." >&2
+    exit 1
+  fi
+  read -r confirm < /dev/tty
+  [ "$confirm" = "grant" ] || { echo "aborted."; exit 1; }
+fi
+
+# Whether a base layer is already bound, in any condition -- used below to avoid adding a
+# second, unconditional binding for a role the caller holds only conditionally.
+role_bound() {
+  gcloud projects get-iam-policy "$project" \
+    --flatten="bindings[].members" \
+    --filter="bindings.role=projects/$project/roles/$1 AND bindings.members=$member" \
+    --format="value(bindings.role)" | grep -q .
+}
+
+# Granting needs resourcemanager.projects.setIamPolicy, which a projectIamAdmin or Owner
+# already holds -- no elevation, unlike apply-admin. Anyone who cannot run this should not
+# be onboarding people.
+for role_id in $target_role_ids; do
+  # A base layer already held is left exactly as it is, rather than re-added with
+  # --condition=None. Without this, someone granted `--role contributor --expires 30` and
+  # later `--role corpus-maintainer` (no --expires) ends up holding tfaContributor twice --
+  # once expiring, once not -- and IAM policies are additive, so the unconditional copy
+  # makes the expiry meaningless. This only runs on the add path: a revoke's
+  # target_role_ids is the named layer alone, so it never touches a base layer.
+  if [ -z "${usage_revoke:-}" ] && [ "$role_id" != "$named_role_id" ] && role_bound "$role_id"; then
+    echo "  = $role_id (already held; left as-is)"
+    continue
+  fi
+  # The expiry goes on the named layer alone. A break-glass grant should lapse back to
+  # ordinary access, so time-bounding the contributor base underneath it would expire the
+  # very thing the layering exists to preserve.
+  #
+  # tfaCorpusMaintainer and tfaCorpusAdmin additionally always carry the exclude-state-
+  # bucket condition, expiry or not -- these are the two roles that mix storage.* with
+  # discoveryengine.* permissions and can otherwise read or destroy OpenTofu state. See
+  # the note above $exclude_state_bucket for why an exclude, rather than an allow, is the
+  # safe shape here.
+  role_condition_arg="$condition_arg"
+  if [ -z "${usage_revoke:-}" ]; then
+    case "$role_id" in
+      tfaCorpusMaintainer|tfaCorpusAdmin) storage_condition="$exclude_state_bucket" ;;
+      *)                                  storage_condition="" ;;
+    esac
+    if [ -n "$expiry" ] && [ "$role_id" = "$named_role_id" ]; then
+      # No commas in the expression: gcloud splits --condition on them.
+      if [ -n "$storage_condition" ]; then
+        role_condition_arg="--condition=title=tfa grant expiry,description=Lapses unless renewed; also withholds storage permissions from the OpenTofu state bucket.,expression=($storage_condition) && (request.time < timestamp(\"$expiry\"))"
+      else
+        role_condition_arg="--condition=title=tfa grant expiry,description=Lapses unless renewed,expression=request.time < timestamp(\"$expiry\")"
+      fi
+    elif [ -n "$storage_condition" ]; then
+      role_condition_arg="--condition=title=tfa exclude state bucket,description=Withholds this role's storage permissions from the OpenTofu state bucket. Its discoveryengine permissions are unaffected.,expression=$storage_condition"
+    fi
+  fi
+  gcloud projects "${verb}-iam-policy-binding" "$project" \
+    --member="$member" --role="projects/$project/roles/$role_id" \
+    "$role_condition_arg" --quiet >/dev/null
+done
+
+echo "done. Membership changes can take a few minutes to take effect."
+if [ -z "${usage_revoke:-}" ]; then
+  # GCP does not check that the address belongs to a real Google account, and this task
+  # validates only its syntax -- so a typo produces a binding that matches nobody, reports
+  # success, and leaves the contributor on 403 while the console shows the grant sitting
+  # there looking correct. Nothing here can close that gap; only the person signing in can.
+  echo ""
+  echo "This bound a role to an existing account -- it did not create one, and nothing"
+  echo "has checked that $member exists. Confirm by having them run:"
+  echo ""
+  echo "    gcloud auth application-default login"
+  echo "    mise run //backend:gcloud-login-check"
+  echo ""
+  echo "Until that passes, treat the grant as unverified."
+fi
+'''
+
+[tasks.list-access]
+description = "Show who holds each Tenant First Aid custom role."
+tools = { gcloud = "586.0.0" }
+run = '''
+set -eu
+# Read-only: one get-iam-policy call, no flags, nothing mutated.
+#
+# gcloud's credential store is not ADC, and //:gcloud-login populates only ADC -- see the
+# longer note in the grant task. Needs resourcemanager.projects.getIamPolicy, which any
+# project admin holds; no elevation.
+CLOUDSDK_AUTH_ACCESS_TOKEN="$(gcloud auth application-default print-access-token 2>/dev/null || true)"
+[ -n "$CLOUDSDK_AUTH_ACCESS_TOKEN" ] || {
+  echo "no application default credentials found. Run: mise run //:gcloud-login" >&2
+  exit 1
+}
+export CLOUDSDK_AUTH_ACCESS_TOKEN
+
+# The roster is the project IAM policy rather than a file in this repository, so this is
+# how you read it.
+rows=$(gcloud projects get-iam-policy tenantfirstaid \
+  --flatten="bindings[].members" \
+  --filter="bindings.role:projects/tenantfirstaid/roles/tfa" \
+  --format="table(bindings.role.basename():label=ROLE, bindings.members:label=PRINCIPAL)")
+
+# An empty result is ambiguous enough to be worth a sentence: it means nobody holds a
+# custom role, which before admin/ has been applied is because none of them exist.
+if [ -z "$rows" ]; then
+  echo "No principals hold a Tenant First Aid custom role."
+  # Not `apply-admin --plan-only`: that still runs `tofu init`, which reads the state
+  # bucket and fails for a projectIamAdmin holder without --elevate. This is read-only
+  # and needs only iam.roles.list, which most admins already hold.
+  echo "If that is unexpected, check the roles exist: gcloud iam roles list --project=tenantfirstaid --filter=name:tfa"
+else
+  echo "$rows"
+fi
+'''
+
+[tasks.check]
+description = "Full deployment check: formatting and configuration validity."
+run = '''
+set -eu
+mise run fmt --check
+mise run validate
+'''

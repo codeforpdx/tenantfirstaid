@@ -8,7 +8,7 @@ guide-section: "Operations"
 The RAG system answers from a searchable knowledge base built out of Oregon
 housing-law documents. This chapter explains how those documents become a Vertex
 AI Search datastore. For the exact command invocations, see the
-[Command Reference](08-command-reference.qmd).
+[Command Reference](09-command-reference.qmd).
 
 ::: {#fig-ingestion-pipeline}
 ```{mermaid}
@@ -63,7 +63,7 @@ contributor rules for the rationale.
 ## Pipeline stages
 
 The five stages run in order. Each is a `mise run` task (full flags in the
-[Command Reference](08-command-reference.qmd)).
+[Command Reference](09-command-reference.qmd)).
 
 1. **Enforce ASCII** (`enforce-ascii`) — walks the documents tree and rewrites
    known non-ASCII offenders, rejecting anything it cannot fix. Run with
@@ -93,4 +93,4 @@ ID so the backend retrieves against the new corpus (see
 
 ## Where to go next
 
-- [Command Reference](08-command-reference.qmd) — every task and its flags.
+- [Command Reference](09-command-reference.qmd) — every task and its flags.
